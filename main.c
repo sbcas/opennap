@@ -797,6 +797,7 @@ main (int argc, char **argv)
 		ASSERT ((ufd[i].revents & POLLHUP) == 0);
 		ASSERT ((ufd[i].revents & POLLERR) == 0);
 		Clients[i]->destroy = 1;
+		n--;
 	    }
 #endif /* HAVE_POLL */
 	}

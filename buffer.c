@@ -251,82 +251,56 @@ buffer_compress (z_streamp zip, BUFFER **b)
 
     ASSERT (buffer_validate (*b));
 
-    /* in order to avoid blocking, we only compress `Compression_Threshold'
-       bytes at a time, max */
-    if ((*b)->datasize - (*b)->consumed > Compression_Threshold)
-    {
-	bytes = Compression_Threshold;
-	flush = Z_NO_FLUSH;
-    }
-    else
-    {
-	bytes = (*b)->datasize - (*b)->consumed;
-	/* if there is no more pending data, flush so we can send everything
-	   together */
-	flush = ((*b)->next != 0) ? Z_NO_FLUSH : Z_SYNC_FLUSH;
-    }
-
-    zip->next_in = (uchar *) (*b)->data + (*b)->consumed;
-    zip->avail_in = bytes;
-
-    r = buffer_new ();
+    r = buffer_new();
     if (!r)
+	return 0; /* out of memory */
+    r->data = MALLOC (16384);
+    if (!r->data)
+    {
+	log ("buffer_compress(): ERROR: OUT OF MEMORY");
+	FREE (r);
 	return 0;
+    }
+    r->datamax = 16384;
+    /* we subtract the unused portion of the buffer after the loop */
+    r->datasize = 16384;
 
-    /* if flushing, loop until we get all the output from the compressor */
+    /* set up the output */
+    zip->next_out = (uchar *) r->data;
+    zip->avail_out = r->datamax;
+
     do
     {
-	/* ensure there is at least 2k of buffer space available */
-	n = (bytes > 2048) ? bytes : 2048;
-	if (r->datasize + n > r->datamax)
-	{
-	    r->datamax = r->datasize + n;
-	    r->data = REALLOC (r->data, r->datamax);
-	    if (!r->data)
-	    {
-		log ("buffer_compress(): ERROR: OUT OF MEMORY");
-		FREE (r);
-		return 0;
-	    }
-	}
-	zip->next_out = (uchar *) r->data + r->datasize;
-	zip->avail_out = r->datamax - r->datasize;
-	/* set this to the full amount and then subtract the leftover bytes
-	   once we exit the loop */
-	r->datasize = r->datamax;
+	bytes = (*b)->datasize - (*b)->consumed;
+
+	/* set up the input */
+	zip->next_in = (uchar *) (*b)->data + (*b)->consumed;
+	zip->avail_in = bytes;
+
+	/* force a flush if this is the last input to compress */
+	flush = (bytes == buffer_size (*b)) ? Z_SYNC_FLUSH : Z_NO_FLUSH;
 
 	n = deflate (zip, flush);
 	if (n != Z_OK)
 	{
-	    log ("buffer_compress: deflate: %s (error %d)",
+	    log ("buffer_compress(): deflate: %s (error %d)",
 		    NONULL (zip->msg), n);
-	    FREE (r->data);
-	    FREE (r);
-	    return 0;
+	    break;
 	}
+
+	bytes -= zip->avail_in;
+	*b = buffer_consume (*b, bytes);
     }
-    while (flush == Z_SYNC_FLUSH && zip->avail_out == 0);
+    while (*b != 0 && zip->avail_out > 0);
 
-    ASSERT (zip->avail_in == 0);	/* should have compressed all data */
+    r->datasize -= zip->avail_out;
 
-    if (flush == Z_SYNC_FLUSH && (unsigned int)bytes == zip->avail_in)
-	log ("buffer_compress: huh? flush was set but didn't output anything");
-
-    bytes -= zip->avail_in; /* sanity check, shouldn't be necessary unless
-			       something fishy happened */
-
-    r->datasize -= zip->avail_out;	/* remove extra space from output
-					   buffer */
-    *b = buffer_consume (*b, bytes);	/* pop the compressed bytes */
-
+    /* if we produced no output, return NULL instead of an empty buffer */
     if (r->datasize == 0)
     {
-	/* nothing came out of the compressor, this means we probably
-	   still have input pending */
-	ASSERT (flush == Z_NO_FLUSH);
 	FREE (r->data);
 	FREE (r);
-	return 0;
+	r = 0;
     }
 
     return r;
