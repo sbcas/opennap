@@ -20,6 +20,11 @@ search should use <= and >= for AT MOST and AT LEAST
 
 added support for sharing generic media types
 
+fixes to compile under Red Hat Linux 6.0 (Alpha)
+
+added -l option to opennap and metaserver to specify a specific ip to listen
+on for incoming connections instead of any device
+
 Changes from 0.09
 =================
 
