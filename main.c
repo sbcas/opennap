@@ -123,7 +123,7 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_BROWSE, browse }, /* 211 */
     { MSG_CLIENT_RESUME_REQUEST, resume }, /* 215 */
     { MSG_CLIENT_DOWNLOAD_START, download_start }, /* 218 */
-    { MSG_CLIENT_DOWNLOAD_START, download_end }, /* 219 */
+    { MSG_CLIENT_DOWNLOAD_END, download_end }, /* 219 */
     { MSG_CLIENT_UPLOAD_START, upload_start }, /* 220 */
     { MSG_CLIENT_UPLOAD_END, upload_end }, /* 220 */
     { MSG_CLIENT_REMOVE_HOTLIST, remove_hotlist }, /* 303 */
@@ -132,7 +132,7 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_PART, part },
     { MSG_CLIENT_PUBLIC, public },
     { MSG_SERVER_PUBLIC, public },
-    { MSG_CLIENT_DOWNLOAD_ACK, download_ack }, /* 600 */
+    { MSG_CLIENT_USERSPEED, user_speed }, /* 600 */
     { MSG_CLIENT_ANNOUNCE, announce },
     { MSG_CLIENT_KILL, kill_user },
     { MSG_CLIENT_DOWNLOAD, download },

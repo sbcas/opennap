@@ -55,6 +55,13 @@ pass_message (const char *id, int s, int d)
     return 0;
 }
 
+static void
+usage(void)
+{
+    puts("usage: spyserv [ -h SERVER ] [ -p SERVERPORT ] [ -l LOCALPORT ]");
+    exit(0);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -68,16 +75,21 @@ main (int argc, char **argv)
     char *host = NAP_SERVER;
     int port = NAP_PORT;
 
-    while ((r = getopt (argc, argv, "h:p:")) != EOF)
+    while ((r = getopt (argc, argv, "hs:p:l:")) != EOF)
     {
 	switch (r)
 	{
-	case 'h':
+	    case 'l':
+		localport = atoi(optarg);
+		break;
+	case 's':
 	    host = optarg;
 	    break;
 	case 'p':
 	    port = atoi (optarg);
 	    break;
+	default:
+	    usage();
 	}
     }
 
@@ -87,6 +99,12 @@ main (int argc, char **argv)
     {
 	perror ("socket");
 	exit (1);
+    }
+    c=1;
+    if(setsockopt(s,SOL_SOCKET,SO_REUSEADDR,&c,sizeof(c))!=0)
+    {
+	perror("setsockopt");
+	exit(1);
     }
     memset (&sin, 0, sizeof (sin));
     sin.sin_port = htons (localport);
@@ -118,7 +136,8 @@ main (int argc, char **argv)
     puts ("got client");
 
     /* make connection to server */
-    puts ("making connection to server");
+    printf ("connecting to server...");
+    fflush(stdout);
     r = socket (PF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (r < 0)
     {

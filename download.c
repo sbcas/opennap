@@ -48,6 +48,7 @@ HANDLER (download)
     }
 }
 
+/* 220 */
 HANDLER(upload_start)
 {
     (void)pkt;
@@ -56,6 +57,7 @@ HANDLER(upload_start)
     con->user->uploads++;
 }
 
+/* 221 */
 HANDLER(upload_end)
 {
     (void)pkt;
@@ -64,6 +66,7 @@ HANDLER(upload_end)
     con->user->uploads--;
 }
 
+/* 218 */
 HANDLER(download_start)
 {
     (void)pkt;
@@ -72,10 +75,36 @@ HANDLER(download_start)
     con->user->downloads++;
 }
 
+/* 219 */
 HANDLER(download_end)
 {
     (void)pkt;
     ASSERT(VALID(con));
     CHECK_USER_CLASS("download_end");
     con->user->downloads--;
+}
+
+/* 500 <user> <filename> */
+HANDLER(download_firewall)
+{
+    (void)con;
+    (void)pkt;
+    log("download_firewall(): command not implemented yet");
+}
+
+/* 600 <user> */
+/* client is requesting the link speed of <user> */
+HANDLER(user_speed)
+{
+    USER *user;
+    CHECK_USER_CLASS("user_speed");
+    user=hash_lookup(Users,pkt);
+    if(!user)
+    {
+	/* TODO: what error does the server return here? */
+	log("user_speed():no such user %s", pkt);
+	return;
+    }
+    send_cmd(con,MSG_SERVER_USER_SPEED /* 601 */, "%s %d",
+	    user->nick,user->speed);
 }

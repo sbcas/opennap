@@ -65,12 +65,15 @@ HANDLER (upload_ok)
 	hash = row[0];
     }
 
+    log ("upload_ok(): %s notified server that %s may download \"%s\"",
+	    sender->nick, recip->nick, field[1]);
+
     if (recip->con)
     {
 	/* local connection */
-	send_cmd (recip->con, MSG_SERVER_FILE_READY, "%s %lu %d \"%s\" %s %d",
-		recip->nick, recip->host, recip->port, field[1], hash,
-		recip->speed);
+	send_cmd (recip->con, MSG_SERVER_FILE_READY /* 204 */,
+		"%s %lu %d \"%s\" %s %d", sender->nick, sender->host,
+		sender->port, field[1], hash, sender->speed);
     }
     else if (con->class == CLASS_USER)
     {

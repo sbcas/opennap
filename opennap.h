@@ -154,8 +154,9 @@ struct _hotlist
 #define MSG_SERVER_CHANNEL_USER_LIST	408	/* list of users in a channel */
 #define MSG_SERVER_CHANNEL_USER_LIST_END	409
 #define MSG_SERVER_TOPIC		410	/* server and client */
-#define MSG_CLIENT_DOWNLOAD_ACK		600
-#define MSG_SERVER_UPLOAD_COMPLETE_ACK	601
+#define MSG_SERVER_DOWNLOAD_FIREWALL	500
+#define MSG_CLIENT_USERSPEED		600
+#define MSG_SERVER_USER_SPEED		601
 #define MSG_CLIENT_WHOIS		603	/* whois query */
 #define MSG_SERVER_WHOIS_RESPONSE	604
 #define MSG_CLIENT_SETUSERLEVEL		606
@@ -271,7 +272,7 @@ HANDLER (browse);
 HANDLER (change_data_port);
 HANDLER (client_quit);
 HANDLER (download);
-HANDLER (download_ack);
+HANDLER (download_firewall);
 HANDLER (download_start);
 HANDLER (download_end);
 HANDLER (join);
@@ -299,6 +300,7 @@ HANDLER (upload_ok);
 HANDLER (upload_start);
 HANDLER (upload_end);
 HANDLER (topic);
+HANDLER (user_speed);
 HANDLER (whois);
 
 #define CHECK_USER_CLASS(f) if (con->class != CLASS_USER) { log ("%s: not USER class", f); return; }

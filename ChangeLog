@@ -9,6 +9,10 @@ set SO_REUSEADDR on the main server socket
 
 fixed off-by-1 error in patchnap.c
 
+fixed downloads to follow the correct sequence.  server should not send the
+204 message to the downloader until recieving the 608 response from the
+uploader
+
 Changes from 0.06
 =================
 

@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-January 12, 2000
+January 15, 2000
 
 0.  Forward
 
@@ -455,6 +455,7 @@ appropriate, examples of the <data> section for each message are given.
 	User nosuchuser is not currently online.
 	Channel #nosuchchannel does not exist!
 	permission denied
+	ping failed, shtien is not online
 
 405	join acknowledge [SERVER]
 
@@ -515,31 +516,17 @@ appropriate, examples of the <data> section for each message are given.
 	be used to request files from users who have specified their data
 	port as 0 in their login message
 
-501	alternate download ack
+501	alternate download ack [SERVER]
 
-	???
+	[i'm not sure this message really exists.  -ed]
 
-600	??? upload/download ack
+600	request user's link speed [CLIENT]
 
 	<nick>
 
-	<nick> is the user we are uploading/downloading to/from
-
-	client request.
-
-	[it appears that a requesting client notifies the server that it
-	has accepted the transaction with <nick>.  -ed]
-
-601	??? end of download ack
+601	link speed response [SERVER]
 
 	<nick> <linespeed>
-
-	<nick> is the user we are requesting a file from
-
-	server response.
-
-	[it appears to be the response to a 600 client message notifying that
-	the transaction has completed.  -ed]
 
 603	whois request [CLIENT]
 
@@ -597,12 +584,12 @@ appropriate, examples of the <data> section for each message are given.
 
 	lefty "generic band - generic song.mp3"
 
-608	upload finished [CLIENT]
+608	accept upload request [CLIENT]
 
 	<nick> "<filename>"
 
 	client is notifying server that upload of <filename> to <nick> is
-	complete
+	accepted, and that the requesting client may begin download
 
 	Example:
 
