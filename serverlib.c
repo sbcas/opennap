@@ -260,4 +260,3 @@ pop_user (CONNECTION * con, char **pkt, USER ** user)
     return 0;
 
 }
-

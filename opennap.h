@@ -19,7 +19,8 @@
 #include "list.h"
 
 #define OUTOFMEMORY(f) log("%s(): OUT OF MEMORY at %s:%d", f, __FILE__, __LINE__)
-#define logerr(f,s) log("%s(): %s: %s (errno %d)", f, s, strerror (errno), errno)
+#define _logerr(f,s,e) log("%s(): %s: %s (errno %d)", f, s, strerror(e), e)
+#define logerr(f,s) _logerr(f,s,errno)
 
 #define MAGIC_USER 0xeaee402a
 #define MAGIC_CHANNEL 0xa66544cb
@@ -266,7 +267,7 @@ typedef struct
     char *nick;
     char *password;
     char *email;
-    short level;
+    unsigned short level;
     short nuked;
     time_t created;
     time_t lastSeen;
@@ -713,6 +714,11 @@ typedef unsigned int socklen_t;
 #define READ read
 #define WRITE write
 #define CLOSE close
+/* use N_ERRNO instead of `errno' when checking the error code for network
+   related functions */
+#define N_ERRNO errno
+/* log message for errors with socket related system calls */
+#define nlogerr logerr
 #else
 #define READ(a,b,c) recv(a,b,c,0)
 #define WRITE(a,b,c) send(a,b,c,0)
@@ -722,6 +728,9 @@ typedef unsigned int socklen_t;
 #define EINPROGRESS WSAEINPROGRESS
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #define _POSIX_PATH_MAX 256
+/* winsock uses h_errno so we have to wrap the test for it here */
+#define N_ERRNO h_errno
+#define nlogerr(f,s) _logerr(f,s,h_errno)
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
@@ -731,10 +740,15 @@ typedef unsigned int socklen_t;
 
 #define strcasecmp stricmp
 #define strncasecmp strnicmp
+#define vsnprintf _vsnprintf
+#define snprintf _snprintf
 
+#if 0
 // see snprintf.c
 extern int snprintf (char *str, size_t count, const char *fmt, ...);
 extern int vsnprintf (char *str, size_t count, const char *fmt, va_list args);
+#endif
+
 extern int _getopt (int, char **, char *);
 
 #define getopt _getopt

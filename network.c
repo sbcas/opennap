@@ -118,11 +118,6 @@ bind_interface (int fd, unsigned int ip, int port)
     return 0;
 }
 
-#ifdef WIN32
-#undef errno
-#define errno h_errno
-#endif
-
 int
 make_tcp_connection (const char *host, int port, unsigned int *ip)
 {
@@ -151,10 +146,9 @@ make_tcp_connection (const char *host, int port, unsigned int *ip)
 	    inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
     if (connect (f, (struct sockaddr*) &sin, sizeof (sin)) < 0)
     {
-	if (errno != EINPROGRESS)
+	if (N_ERRNO != EINPROGRESS)
 	{
-	    log ("make_tcp_connection: connect: %s (errno %d)",
-		    strerror (errno), errno);
+	    nlogerr("make_tcp_connection","connect");
 	    CLOSE (f);
 	    return -1;
 	}
@@ -175,14 +169,12 @@ check_connect_status (int f)
 
     if (getsockopt (f, SOL_SOCKET, SO_ERROR, SOCKOPTCAST &err, &len) != 0)
     {
-	log ("check_connect_status: getsockopt: %s (errno %d).",
-		strerror (errno), errno);
+	nlogerr ("check_connect_status","getsockopt");
 	return -1;
     }
     if (err != 0)
     {
-	log ("check_connect_status: connect: %s (errno %d).",
-		strerror (err), err);
+	_logerr ("check_connect_status","connect", err);
 	return -1;
     }
     return 0;
@@ -301,7 +293,7 @@ get_local_port (int fd)
     socklen_t sinsize = sizeof (sin);
     if (getsockname (fd, (struct sockaddr *) &sin, &sinsize))
     {
-	logerr ("get_local_port", "getsockname");
+	nlogerr ("get_local_port", "getsockname");
 	return 0;
     }
     return (ntohs (sin.sin_port));

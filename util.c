@@ -275,21 +275,6 @@ safe_realloc (void **ptr, int bytes)
     return 0;
 }
 
-int
-form_message (char *d, int dsize, int tag, const char *fmt, ...)
-{
-    va_list ap;
-    int len;
-
-    va_start (ap, fmt);
-    vsnprintf (d + 4, dsize - 4, fmt, ap);
-    va_end (ap);
-    len = strlen (d + 4);
-    set_tag (d, tag);
-    set_len (d, len);
-    return (len + 4);
-}
-
 void
 print_args (int ac, char **av)
 {
@@ -354,7 +339,7 @@ b64_encode (char *out, int *outsize, char *in, int insize)
     return 0;
 }
 
-static short b64_lookup[128] = {
+static char b64_lookup[128] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,
@@ -454,4 +439,19 @@ generate_pass (const char *pass)
     b64_encode (output + 11, &outsize, hash, 16);
     output[sizeof (output) - 3] = 0; /* strip the trailing == */
     return (STRDUP (output));
+}
+
+int
+form_message (char *d, int dsize, int tag, const char *fmt, ...)
+{
+    va_list ap;
+    int len;
+
+    va_start (ap, fmt);
+    vsnprintf (d + 4, dsize - 4, fmt, ap);
+    va_end (ap);
+    len = strlen (d + 4);
+    set_tag (d, tag);
+    set_len (d, len);
+    return (len + 4);
 }

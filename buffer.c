@@ -376,10 +376,9 @@ send_queued_data (CONNECTION * con)
 	       con->sendbuf->datasize - con->sendbuf->consumed);
     if (n == -1)
     {
-	if (errno != EWOULDBLOCK && errno != EDEADLK)
+	if (N_ERRNO != EWOULDBLOCK && N_ERRNO != EDEADLK)
 	{
-	    log ("send_queued_data(): write: %s (errno %d)",
-		 strerror (errno), errno);
+	    nlogerr ("send_queued_data", "write");
 	    return -1;
 	}
 	return 0;

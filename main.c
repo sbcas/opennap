@@ -156,8 +156,8 @@ accept_connection (int s)
 	sinsize = sizeof (sin);
 	if ((f = accept (s, (struct sockaddr *) &sin, &sinsize)) < 0)
 	{
-	    if (errno != EAGAIN)
-		logerr ("accept_connection", "accept");
+	    if (N_ERRNO != EWOULDBLOCK)
+		nlogerr ("accept_connection", "accept");
 	    return;
 	}
 	if ((cli = new_connection ()) == 0)
@@ -240,13 +240,8 @@ report_stats (int fd)
 	}
     }
 #endif /* linux */
-#if SIZEOF_LONG == 4
-    snprintf (Buf, sizeof (Buf), "%d %d %.2f %Lu 0\n", Users->dbsize,
-	      Num_Files, loadavg, (unsigned long long) (Num_Gigs) * 1024);
-#else
-    snprintf (Buf, sizeof (Buf), "%d %d %.2f %lu 0\n", Users->dbsize,
-	      Num_Files, loadavg, (unsigned long) (Num_Gigs) * 1024);
-#endif /* SIZEOF_LONG */
+    snprintf (Buf, sizeof (Buf), "%d %d %.2f %.0f 0\n", Users->dbsize,
+	      Num_Files, loadavg, ((double) Num_Gigs) * 1024.0);
     WRITE (n, Buf, strlen (Buf));
     CLOSE (n);
 }

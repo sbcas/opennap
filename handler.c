@@ -284,10 +284,7 @@ handle_connection (CONNECTION * con)
 	if (n <= 0)
 	{
 	    if (n == -1)
-	    {
-		log ("handle_connection(): read: %s (errno %d)",
-		     strerror (errno), errno);
-	    }
+		nlogerr ("handle_connection", "read");
 	    else
 		log ("handle_connection(): EOF from %s", con->host);
 	    con->destroy = 1;
@@ -348,10 +345,9 @@ handle_connection (CONNECTION * con)
 		4 - con->recvbuf->datasize);
 	    if (n == -1)
 	    {
-		if (errno != EWOULDBLOCK)
+		if (N_ERRNO != EWOULDBLOCK)
 		{
-		    log ("handle_connection(): read: %s (errno %d)",
-			strerror (errno), errno);
+		    nlogerr("handle_connection", "read");
 		    con->destroy = 1;
 		}
 		return;
@@ -391,10 +387,9 @@ handle_connection (CONNECTION * con)
 		   we have to check for this here so we don't close the
 		   connection on this nonfatal error.  we just wait for the
 		   next packet to arrive */
-		if (errno != EWOULDBLOCK)
+		if (N_ERRNO != EWOULDBLOCK)
 		{
-		    log ("handle_connection(): read: %s (errno %d)",
-			strerror (errno), errno);
+		    nlogerr("handle_connection", "read");
 		    con->destroy = 1;
 		}
 		return;
