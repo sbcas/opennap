@@ -204,7 +204,7 @@ HANDLER (login)
 	    log ("login(): bad password for user %s", row[0]);
 	    if (con->class == CLASS_UNKNOWN)
 	    {
-		send_cmd (con, MSG_SERVER_ERROR, "invalid password");
+		send_cmd (con, MSG_SERVER_ERROR, "Invalid Password");
 		con->destroy = 1;
 	    }
 	    else
@@ -452,6 +452,7 @@ HANDLER (reginfo)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
+    CHECK_SERVER_CLASS ("reginfo");
 
     if (*pkt != ':')
     {

@@ -510,3 +510,15 @@ strlower (char *s)
     	*s++ = tolower ((unsigned char)*s);
     return r;
 }
+
+int
+safe_realloc (void **ptr, int bytes)
+{
+    void *t;
+
+    t = REALLOC (*ptr, bytes);
+    if (!t)
+	return -1;
+    *ptr = t;
+    return 0;
+}

@@ -95,13 +95,14 @@ buffer_group (BUFFER *b, int n)
 
 	/* allocate 1 extra byte to hold a nul (\0) char */
 	b->datamax = b->datasize + l + 1;
-	b->data = REALLOC (b->data, b->datamax);
-	if (!b->data)
+	if (safe_realloc ((void **) &b->data, b->datamax))
 	{
 	    log ("buffer_group(): ERROR: OUT OF MEMORY");
 	    /* this will probably not make some of the other routines happy
 	       because they don't expect a 0 byte buffer at the beginning
 	       of the list, but its better than dumping core here */
+	    if (b->data)
+		FREE (b->data);
 	    b->datasize = b->datamax = b->consumed = 0;
 	    return -1;
 	}

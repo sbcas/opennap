@@ -8,6 +8,7 @@
 #ifdef WIN32
 #include <windows.h>
 #endif
+#include <stdio.h>
 #include <mysql.h>
 #include "opennap.h"
 #include "debug.h"

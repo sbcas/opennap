@@ -300,6 +300,12 @@ appropriate, examples of the <data> section for each message are given.
 
 	client is requesting notification when <user> logs in or out.
 
+208	hotlist [CLIENT]
+
+	<user>
+
+	???
+
 209	user signon [SERVER]
 
 	<user> <speed>

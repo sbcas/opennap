@@ -74,6 +74,7 @@ HANDLER (priv_errmsg)
     USER *user;
 
     ASSERT (validate_connection (con));
+    CHECK_SERVER_CLASS ("priv_errmsg");
     (void) tag;
     (void) len;
     nick = next_arg (&pkt);
