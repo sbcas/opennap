@@ -14,64 +14,70 @@
 #include "opennap.h"
 #include "debug.h"
 
-static FILE *MotdFp = 0;
-
-#if 0
 /* in-memory copy of the motd */
 static char *Motd = 0;
 static int MotdLen = 0;
-#endif
 
+/* ???
+   display the server motd */
 HANDLER (show_motd)
 {
-    size_t l;
-
     (void) tag;
     (void) len;
     (void) pkt;
 
     ASSERT (validate_connection (con));
-    CHECK_USER_CLASS ("show_motd");
 
     /* we print the version info here so that clients can enable features
        only present in this server, but without disturbing the windows
        client */
     send_cmd (con, MSG_SERVER_MOTD, "VERSION %s %s", PACKAGE, VERSION);
 
-    if(MotdFp)
-    {
-	rewind(MotdFp);
-
-	/* we don't call send_cmd() here because we want to avoid copying the
-	   buffer, just use it directly saving time */
-	set_tag (Buf, MSG_SERVER_MOTD);
-	while (fgets (Buf + 4, sizeof (Buf) - 4, MotdFp))
-	{
-	    l = strlen (Buf + 4) - 1;
-	    set_len (Buf, l);
-	    queue_data (con, Buf, 4 + l);
-	}
-    }
+    /* motd_init() preformats the entire motd */
+    queue_data(con,Motd,MotdLen);
 }
 
 void
 motd_init(void)
 {
     char path[_POSIX_PATH_MAX];
+    FILE *fp;
+    int len;
 
     snprintf (path, sizeof (path), "%s/motd", Config_Dir);
-    MotdFp = fopen (path, "r");
-    if (!MotdFp)
+    fp = fopen (path, "r");
+    if (!fp)
     {
 	if(errno !=ENOENT)
 	    logerr("motd_init", path);
 	return;
     }
+    /* preformat the motd so it can be bulk dumped to the client */
+    while(fgets(Buf,sizeof(Buf)-1,fp))
+    {
+	len=strlen(Buf);
+	if(Buf[len-1]=='\n')
+	    len--;
+	if(safe_realloc((void**)&Motd, MotdLen + len + 4))
+	    break;
+	set_tag(&Motd[MotdLen], MSG_SERVER_MOTD);
+	set_len(&Motd[MotdLen], len);
+	MotdLen+=4;
+	memcpy(Motd+MotdLen,Buf,len);
+	MotdLen+=len;
+    }
+    fclose(fp);
+    log("motd_init(): motd is %d bytes", MotdLen);
 }
 
 void
 motd_close(void)
 {
-    if(MotdFp)
-	fclose(MotdFp);
+    if(Motd)
+    {
+	FREE(Motd);
+	Motd=0;
+	MotdLen=0;
+    }
+    ASSERT(MotdLen==0);
 }
