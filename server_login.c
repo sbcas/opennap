@@ -98,8 +98,6 @@ HANDLER (server_login)
 	return;
     }
 
-    /* TODO: ensure that this server is not already connected */
-
     if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 3)
     {
 	log ("server_login(): wrong number of fields");
@@ -107,6 +105,8 @@ HANDLER (server_login)
 	con->destroy = 1;
 	return;
     }
+
+    log("server_login(): request from %s (%s)", fields[0], con->host);
 
     /* check to see if this server is already linked */
     if (is_linked (con, fields[0]))
@@ -118,6 +118,8 @@ HANDLER (server_login)
 
     if (ip != con->ip)
     {
+	log("server_login(): %s does not match %s (%s)",
+		con->host, fields[0], my_ntoa(ip));
 	send_cmd (con, MSG_SERVER_ERROR,
 		  "Your IP address does not match that name");
 	notify_mods(SERVERLOG_MODE,"Failed server connect from %s != %s",
@@ -135,6 +137,7 @@ HANDLER (server_login)
     /* see if there is any entry for this server */
     if ((pass = get_server_pass (con->host, &localPass)) == 0)
     {
+	log("server_login(): no servers entry for %s", con->host);
 	notify_mods(SERVERLOG_MODE,
 		"Failed server login from %s (%s): no entry in servers file",
 		fields[0], con->host);
@@ -149,6 +152,7 @@ HANDLER (server_login)
     compress = atoi (fields[2]);
     if (compress < 0 || compress > 9)
     {
+	log("server_login(): invalid compression level %s", fields[2]);
 	notify_mods(SERVERLOG_MODE,
 		"Failed server login from %s: invalid compression level %s",
 		con->host, fields[2]);
@@ -173,6 +177,7 @@ HANDLER (server_login)
 
 	if ((con->opt.auth->nonce = generate_nonce ()) == NULL)
 	{
+	    log("server_login(): failed to generate nonce");
 	    send_cmd (con, MSG_SERVER_ERROR, "unable to generate nonce");
 	    con->destroy = 1;
 	    return;
@@ -237,6 +242,7 @@ HANDLER (server_login_ack)
     pass = get_server_pass (con->host, NULL);
     if (!pass)
     {
+	log("server_login_ack(): unable to find password for %s", con->host);
 	notify_mods(SERVERLOG_MODE,
 		"Failed server login from %s: no password found", con->host);
 	send_cmd (con, MSG_SERVER_ERROR, "Permission Denied");
@@ -259,6 +265,7 @@ HANDLER (server_login_ack)
 
     if (strcmp (hash, pkt) != 0)
     {
+	log("server_login(): invalid password for %s", con->host);
 	notify_mods(SERVERLOG_MODE,
 		"Failed server login from %s: invalid password", con->host);
 	send_cmd (con, MSG_SERVER_ERROR, "Permission Denied");
@@ -291,6 +298,8 @@ HANDLER (server_login_ack)
     con->opt.server = CALLOC (1, sizeof (SERVER));
     /* set up the compression handlers for this connection */
     init_compress (con, con->compress);
+
+    log("server_login_ack(): server %s has joined", con->host);
 
     notify_mods (SERVERLOG_MODE, "Server %s has joined", con->host);
 
