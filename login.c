@@ -212,7 +212,8 @@ HANDLER (login)
 	    {
 		/* this could happen if two clients simultaneously connect
 		   and register */
-		send_cmd (con, MSG_SERVER_ERROR, "%s is already registered.");
+		send_cmd (con, MSG_SERVER_ERROR, "%s is already registered.",
+			av[0]);
 	    }
 	    else
 	    {

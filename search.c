@@ -795,8 +795,7 @@ HANDLER (remote_search_end)
     search = find_search (pkt);
     if (!search)
     {
-	log ("remote_end_match(): could not find entry for search id %s",
-	     search->id);
+	log ("remote_end_match(): could not find entry for search id %s",pkt);
 	return;
     }
     ASSERT (search->numServers <= list_count (Servers));

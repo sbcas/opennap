@@ -154,7 +154,7 @@ HANDLER (alter_port)
     {
 	log ("alter_port(): %d is an invalid port", p);
 	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is an invalid port", p);
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%d is an invalid port", p);
 	return;
     }
     user->port = p;
