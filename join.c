@@ -68,6 +68,7 @@ HANDLER (join)
 	    FREE (chan);
 	    return;
 	}
+	chan->level = LEVEL_USER;
 	/* set the default topic */
 	snprintf (Buf, sizeof (Buf), "Welcome to the %s channel.",
 		  chan->name);

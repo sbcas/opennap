@@ -63,6 +63,14 @@ sync_user (USER * user, CONNECTION * con)
     }
 }
 
+static void
+sync_chan (CHANNEL *chan, CONNECTION *con)
+{
+    if (chan->level != LEVEL_USER)
+	send_cmd (con, MSG_CLIENT_CHANNEL_LEVEL, ":%s %s %s",
+		Server_Name, chan->name, Levels[chan->level]);
+}
+
 void
 synch_server (CONNECTION * con)
 {
@@ -72,6 +80,8 @@ synch_server (CONNECTION * con)
 
     /* send our peer server a list of all users we know about */
     hash_foreach (Users, (hash_callback_t) sync_user, con);
+    /* sync the channel level */
+    hash_foreach (Channels, (hash_callback_t) sync_chan, con);
 
     log ("synch_server(): done");
 }
