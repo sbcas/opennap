@@ -54,7 +54,7 @@ HANDLER (whois)
 	/* check to see if this is a registered nick */
 	db = hash_lookup (User_Db, pkt);
 	if (db)
-	    send_cmd (con, MSG_SERVER_WHOWAS, "%s %s %d", db->nick,
+	    send_cmd (con, MSG_SERVER_WHOWAS, "%s \"%s\" %d", db->nick,
 		      Levels[db->level], db->lastSeen);
 	else
 	    nosuchuser (con);

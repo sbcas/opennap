@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-July 27, 2000
+August 3, 2000
 
 0.  Foreward
 
@@ -226,7 +226,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	NAME: kev  ADDRESS:  CITY: ephrata  STATE: pa  PHONE:  AGE: 60 or older INCOME: $100,000 or more        EDUCATION: Graduate Degree
 
-100	client notification of shared file [CLIENT]
+100 (0x64)	client notification of shared file [CLIENT]
 
 	Format: "<filename>" <md5> <size> <bitrate> <frequency> <time>
 
@@ -240,13 +240,13 @@ appropriate, examples of the <data> section for each message are given.
 
 	"generic band - generic song.mp3" b92870e0d41bc8e698cf2f0a1ddfeac7 443332 128 44100 60
 
-102	remove file [CLIENT]
+102 (0x66)	remove file [CLIENT]
 
 	Format: <filename>
 
 	client requests to remove file from shared library
 
-200	client search request [CLIENT]
+200 (0xc8)	client search request [CLIENT]
 
     [FILENAME CONTAINS "artist name"] MAX_RESULTS <max> [FILENAME CONTAINS
 "song"] [LINESPEED <compare> <link-type>] [BITRATE <compare> "<br>"] [FREQ
@@ -284,7 +284,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	[Thanks to Ben Byer <bbyer@rice.edu> for this contribution.  -ed]
 
-201	search response [SERVER]
+201 (0xc9)	search response [SERVER]
 
 	"<filename>" <md5> <size> <bitrate> <frequency> <length> <nick> <ip>
 	<link-type> [weight]
@@ -308,11 +308,11 @@ appropriate, examples of the <data> section for each message are given.
 
 	"random band - random song.mp3" 7d733c1e7419674744768db71bff8bcd 2558199 128 44100 159 lefty 3437166285 4
 
-202	end of search response from server [SERVER]
+202 (0xca)	end of search response from server [SERVER]
 
 	Format: (empty)
 
-203	download request [CLIENT]
+203 (0xcb)	download request [CLIENT]
 
 	Format: <nick> "<filename>"
 
@@ -326,7 +326,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	SEE ALSO: 500 alternate download request
 
-204	download ack [SERVER]
+204 (0xcc)	download ack [SERVER]
 
 	<nick> <ip> <port> "<filename>" <md5> <linespeed>
 
@@ -343,7 +343,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	lefty 4877911892 6699 "generic band - generic song.mp3" 10fe9e623b1962da85eea61df7ac1f69 3
 
-205	private message to/from another user [CLIENT, SERVER]
+205 (0xcd)	private message to/from another user [CLIENT, SERVER]
 
 	<nick> <message>
 
@@ -359,7 +359,7 @@ appropriate, examples of the <data> section for each message are given.
 	are ever linked they will have to make a new message type for this
 	situation.  -ed]
 
-206	get error [SERVER]
+206 (0xce)	get error [SERVER]
 
 	<nick> <filename>
 
@@ -367,7 +367,7 @@ appropriate, examples of the <data> section for each message are given.
 	requested to download is unavailable (such as the user is not logged
 	in).
 
-207	add hotlist entry [CLIENT]
+207 (0xcf)	add hotlist entry [CLIENT]
 
 	<user>
 
@@ -375,7 +375,7 @@ appropriate, examples of the <data> section for each message are given.
 	hotlist.  The server will send 209 and 210 messages when a user
 	on the hotlist has logged in or out, respectively.
 
-208	hotlist [CLIENT]
+208 (0xd0)	hotlist [CLIENT]
 
 	<user>
 
@@ -385,14 +385,14 @@ appropriate, examples of the <data> section for each message are given.
 	after the initial list is sent, clients should use the 207 message
 	instead.
 
-209	user signon [SERVER]
+209 (0xd1)	user signon [SERVER]
 
 	<user> <speed>
 
 	server is notifying client that a user in their hotlist, <user>,
 	has signed on the server with link <speed>
 
-210	user signoff [SERVER]
+210 (0xd2)	user signoff [SERVER]
 
 	<user>
 
@@ -403,14 +403,14 @@ appropriate, examples of the <data> section for each message are given.
 	browse a nonexistent client.  [why don't they just use 404 for
 	this? -ed]
 
-211	browse a user's files [CLIENT]
+211 (0xd3)	browse a user's files [CLIENT]
 
 	<nick>
 
 	the client sends this message when it wants to get a list of the files
 	shared by a specific client
 
-212	browse response [SERVER]
+212 (0xd4)	browse response [SERVER]
 
 	<nick> "<filename>" <md5> <size> <bitrate> <frequency> <time>
 
@@ -426,13 +426,13 @@ appropriate, examples of the <data> section for each message are given.
 
 	foouser "generic band - generic song.mp3" b92870e0d41bc8e698cf2f0a1ddfeac7 443332 128 44100 60
 
-213	end of browse list [SERVER]
+213 (0xd5)	end of browse list [SERVER]
 
 	<nick>
 
 	indicates no more entries in the browse list for <user>
 
-214	server stats [CLIENT, SERVER]
+214 (0xd6)	server stats [CLIENT, SERVER]
 
 	client: no data
 	server: <users> <# files> <size>
@@ -444,7 +444,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	553 64692 254
 
-215	request resume [CLIENT]
+215 (0xd7)	request resume [CLIENT]
 
 	<checksum> <filesize>
 
@@ -452,21 +452,21 @@ appropriate, examples of the <data> section for each message are given.
 	the characteristics.  the server responds with a list of 216 messages
 	for each match, followed by a 217 message to terminate the list
 
-216	resume search response [SERVER]
+216 (0xd8)	resume search response [SERVER]
 
 	<user> <ip> <port> <filename> <checksum> <size> <speed>
 
 	this message contains the matches for the resume request (215).  the
 	list is terminated by a 217 message.
 
-217	end of resume search list [SERVER]
+217 (0xd9)	end of resume search list [SERVER]
 
 	no data.
 
 	this messag terminates a list of 216 messages initiated by a 215
 	client request
 
-218	downloading file [CLIENT]
+218 (0xda)	downloading file [CLIENT]
 
 	no body.
 
@@ -474,7 +474,7 @@ appropriate, examples of the <data> section for each message are given.
 	process of downloading a file.  this adds 1 to the download count
 	which the server maintains.
 
-219	download complete [CLIENT]
+219 (0xdb)	download complete [CLIENT]
 
 	no body.
 
@@ -482,21 +482,21 @@ appropriate, examples of the <data> section for each message are given.
 	completed the file for which a prior 218 message was sent.  this
 	subtracts one from the download count the server maintains
 
-220	uploading file [CLIENT]
+220 (0xdc)	uploading file [CLIENT]
 
 	no body.
 
 	client sends this message to indicate they are uploading a file.
 	this adds one to the upload count maintained by the server.
 
-221	upload complete [CLIENT]
+221 (0xdd)	upload complete [CLIENT]
 
 	no body.
 
 	client sends this message when they are finished uploading a file.
 	this subtracts one from the upload count maintained by the server.
 
-300	optional ports [CLIENT]
+300 (0x12c)	optional ports [CLIENT]
 
 	<port>
 
@@ -504,21 +504,21 @@ appropriate, examples of the <data> section for each message are given.
 	data connections if the one currently in use is unreachable by other
 	parties.
 
-301	hotlist ack [SERVER]
+301 (0x12d)	hotlist ack [SERVER]
 
 	<user>
 
 	server is notifying client that <user> has successfully be added to
 	their hotlist
 
-302	hotlist error [SERVER]
+302 (0x12e)	hotlist error [SERVER]
 
 	<user>
 
 	server is notifying client that it was unable to add <user> to their
 	hotlist.  [can you only add registered nicks to your hotlist? -ed]
 
-303	remove user from hotlist [CLIENT]
+303 (0x12f)	remove user from hotlist [CLIENT]
 
 	<user>
 
@@ -540,7 +540,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	unknown command.  server returns 0 regardless of any parameters
 
-320	user ignore list [CLIENT, SERVER]
+320 (0x140)	user ignore list [CLIENT, SERVER]
 
 	client: no data
 	server: <count>
@@ -548,41 +548,41 @@ appropriate, examples of the <data> section for each message are given.
 	client request to display the list of ignored users.
 	server returns the number of users being ignored
 
-321	user ignore list entry [SERVER]
+321 (0x141)	user ignore list entry [SERVER]
 
 	<user>
 
 	server sends each ignored nick in response to a 320 request.  the
 	list is terminated by a 320 message with the number of ignored users.
 
-322	add user to ignore list [CLIENT, SERVER]
+322 (0x142)	add user to ignore list [CLIENT, SERVER]
 
 	<user>
 
 	server acks the request by returning the nick
 
-323	remove user from ignore list [CLIENT]
+323 (0x143)	remove user from ignore list [CLIENT]
 
 	<user>
 
 	server acks the request by returning the nick to be removed from
 	the ignore list.
 
-324	user is not ignored [SERVER]
+324 (0x144)	user is not ignored [SERVER]
 
 	<user>
 
 	server indicates that <user> is not currently ignored in response to
 	a 323 request.
 
-325	user is already ignored [SERVER]
+325 (0x145)	user is already ignored [SERVER]
 
 	<user>
 
 	server indicates the specified user is already on the user's ignore
 	list
 
-326	clear ignore list [CLIENT, SERVER]
+326 (0x146)	clear ignore list [CLIENT, SERVER]
 
 	client: no data.
 	server: <count>
@@ -596,13 +596,13 @@ appropriate, examples of the <data> section for each message are given.
 
 333	unblock ip [CLIENT]
 
-400	join channel [CLIENT]
+400 (0x190)	join channel [CLIENT]
 
 	<channel-name>
 
 	the client sends this command to join a channel
 
-401	part channel [CLIENT, SERVER]
+401 (0x191)	part channel [CLIENT, SERVER]
 
 	<channel-name>
 
@@ -611,11 +611,11 @@ appropriate, examples of the <data> section for each message are given.
 	that this is sometimes sent even when the client has not requested,
 	so a client _must_ be prepared to accept it at any time.
 
-402	send public message [CLIENT]
+402 (0x192)	send public message [CLIENT]
 
 	<channel> <message>
 
-403	public message [SERVER]
+403 (0x193)	public message [SERVER]
 
 	<channel> <nick> <text>
 
@@ -626,7 +626,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	80's espinozaf hello...hola
 
-404	error message [SERVER]
+404 (0x194)	error message [SERVER]
 
 	<text>
 
@@ -640,14 +640,14 @@ appropriate, examples of the <data> section for each message are given.
 	permission denied
 	ping failed, blah is not online
 
-405	join acknowledge [SERVER]
+405 (0x195)	join acknowledge [SERVER]
 
 	<channel>
 
 	the server sends this message to the client to acknowlege that it
 	has joined the requested channel (400)
 	
-406	join message [SERVER]
+406 (0x196)	join message [SERVER]
 
 	<channel> <user> <sharing> <link-type>
 
@@ -657,7 +657,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	80's WilmaFlinstone 12 2
 
-407	user parted channel [SERVER]
+407 (0x197)	user parted channel [SERVER]
 
 	<channel> <nick> <sharing> <linespeed>
 
@@ -665,20 +665,20 @@ appropriate, examples of the <data> section for each message are given.
 
 	80's DLongley 23 7
 
-408	channel user list entry [SERVER]
+408 (0x198)	channel user list entry [SERVER]
 
 	this message is identical to the join (406) message.  the server will
 	send the list of users in the channel prior to the client join command
 	in this message.  joins that occur after the client has joined will
 	be noted by a 406 message.
 
-409	end of channel user list [SERVER]
+409 (0x199)	end of channel user list [SERVER]
 
 	<channel>
 
 	this message is sent by the server to indicate it has sent all informati	about the users in a channel
 
-410	channel topic [CLIENT, SERVER]
+410 (0x19a)	channel topic [CLIENT, SERVER]
 
 	<channel> <topic>
 
@@ -688,21 +688,21 @@ appropriate, examples of the <data> section for each message are given.
 	[why didn't they put a field to indicate WHO changed the topic?  as
 	it is now you can only tell that it was changed.  -ed]
 
-420	channel ban list [CLIENT]
+420 (0x1a4)	channel ban list [CLIENT]
 
 	<channel>
 
-421	channel ban list entry [SERVER]
+421 (0x1a5)	channel ban list entry [SERVER]
 
-422	channel ban [CLIENT]
-
-	<channel> <user|ip> [ "<reason>" ]
-
-423	channel unban [CLIENT]
+422 (0x1a6)	channel ban [CLIENT]
 
 	<channel> <user|ip> [ "<reason>" ]
 
-424	channel ban clear [CLIENT]
+423 (0x1a7)	channel unban [CLIENT]
+
+	<channel> <user|ip> [ "<reason>" ]
+
+424 (0x1a8)	channel ban clear [CLIENT]
 
 	Format: <channel>
 
@@ -715,7 +715,7 @@ appropriate, examples of the <data> section for each message are given.
 	topic for the channel is the default, otherwise it sends the current
 	channel topic.  -ed]
 
-500	alternate download request [CLIENT]
+500 (0x1f4)	alternate download request [CLIENT]
 
 	<nick> "<filename>"
 
@@ -726,7 +726,7 @@ appropriate, examples of the <data> section for each message are given.
 	be used to request files from users who have specified their data
 	port as 0 in their login message
 
-501	alternate download ack [SERVER]
+501 (0x1f5)	alternate download ack [SERVER]
 
 	<nick> <ip> <port> "<filename>" <md5> <speed>
 
@@ -735,25 +735,25 @@ appropriate, examples of the <data> section for each message are given.
 	outware.  the uploader is responsible for connecting to the
 	downloader to transfer the file.
 
-600	request user's link speed [CLIENT]
+600 (0x258)	request user's link speed [CLIENT]
 
 	<nick>
 
-601	link speed response [SERVER]
+601 (0x259)	link speed response [SERVER]
 
 	<nick> <linespeed>
 
-602	??? [CLIENT]
+602 (0x25a)	??? [CLIENT]
 
 	<?>
 
 	server returns a 404 with "*gulp* Drink milk, it does a body good!"
 
-603	whois request [CLIENT]
+603 (0x25b)	whois request [CLIENT]
 
 	<nick>
 
-604	whois response [SERVER]
+604 (0x25c)	whois response [SERVER]
 
 	<nick> "<user-level>" <time> "<channels>" "<status>" <shared>
 	<downloads> <uploads> <link-type> "<client-info>" [ <total downloads>
@@ -785,7 +785,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	lefty "User" 1203 "80's " "Active" 0 0 0 3 "nap v0.8"
 
-605	whowas response [SERVER]
+605 (0x25d)	whowas response [SERVER]
 
 	<user> <level> <last-seen>
 
@@ -797,7 +797,7 @@ appropriate, examples of the <data> section for each message are given.
 	<last-seen> is the last time at which this user was seen, measured
 		as seconds since 12:00am on January 1, 1970 (UNIX time_t).
 
-606	change user level [CLIENT]
+606 (0x25e)	change user level [CLIENT]
 
 	<nick> <level>
 
@@ -807,7 +807,7 @@ appropriate, examples of the <data> section for each message are given.
 	[I have not verified this message since I don't have admin status
 	on any of the servers.  -ed]
 
-607	upload request [SERVER]
+607 (0x25f)	upload request [SERVER]
 
 	<nick> "<filename>"
 
@@ -818,7 +818,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	lefty "generic band - generic song.mp3"
 
-608	accept upload request [CLIENT]
+608 (0x260)	accept upload request [CLIENT]
 
 	<nick> "<filename>"
 
@@ -829,7 +829,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	lefty "generic band - generic song.mp3"
 
-609     get error [SERVER]      (same as [206])
+609 (0x261)     get error [SERVER]      (same as [206])
 
         <nick> <filename>
 
@@ -837,26 +837,26 @@ appropriate, examples of the <data> section for each message are given.
         requested to download is unavailable (such as the user is not logged
         in).
 
-610	kill (disconnect) a user [CLIENT]
+610 (0x262)	kill (disconnect) a user [CLIENT]
 
 	<nick>
 
 	client request to disconnect a user.
 
-611	nuke a user [CLIENT]
+611 (0x263)	nuke a user [CLIENT]
 
 	<nick>
 
 	client request to delete account for <nick>
 
-612	ban user [CLIENT]
+612 (0x264)	ban user [CLIENT]
 
 	<nick | ip> [ "<reason>" ]
 
 	client request to place a ban on either a specific nickname or
 	an ip address
 
-613	set data port for user [CLIENT, SERVER]
+613 (0x265)	set data port for user [CLIENT, SERVER]
 
 	client: <user> <port>
 	server: <port>
@@ -867,17 +867,17 @@ appropriate, examples of the <data> section for each message are given.
 	client.  NOTE: the target client can change its port number to
 	whatever it wishes using the 703 command.
 
-614	unban user [CLIENT]
+614 (0x266)	unban user [CLIENT]
 
 	Format: <nick | ip> [ "<reason>" ]
 
-615	show bans for server [CLIENT]
+615 (0x267)	show bans for server [CLIENT]
 
 	Format: (empty)
 
 	client requests the list of banned ips for the current server
 
-616	(ip?) ban list entry [SERVER]
+616 (0x268)	(ip?) ban list entry [SERVER]
 
 	Format: <ip> <nick> "<reason>" <time> <n>
 
@@ -895,7 +895,7 @@ appropriate, examples of the <data> section for each message are given.
 	
 	207.172.245. valkyrie "DoS exploit" 947304224 0
 
-617	list channels [CLIENT, SERVER]
+617 (0x269)	list channels [CLIENT, SERVER]
 
 	Format: (empty)
 
@@ -904,7 +904,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	server indicates end of channel list using this message.
 
-618	channel list entry [SERVER]
+618 (0x26a)	channel list entry [SERVER]
 
 	Format: <channel-name> <number-of-users> <topic>
 
@@ -915,7 +915,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	Help 50 OpenNap help channel
 
-619	queue limit [CLIENT]
+619 (0x26b)	queue limit [CLIENT]
 
 	Format: <nick> "<filename>" <n>
 
@@ -931,7 +931,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	joebob "C:\MP3\Generic Band - Generic Song.mp3" 3
 
-620	queue limit [SERVER]
+620 (0x26c)	queue limit [SERVER]
 
 	<nick> "<filename>" <filesize> <digit>
 
@@ -948,7 +948,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	joebob "C:\MP3\Generic Band - Generic Song.mp3" 1234567 3
 
-621	message of the day [CLIENT, SERVER]
+621 (0x26d)	message of the day [CLIENT, SERVER]
 
 	<text>
 
@@ -959,27 +959,27 @@ appropriate, examples of the <data> section for each message are given.
 	a user logs in, so this command allows a user to reread it upon
 	request.
 
-622	muzzle a user [CLIENT]
+622 (0x26e)	muzzle a user [CLIENT]
 
 	<nick> [ "<reason>" ]
 
 	client requests that <nick> not be allowed to send public messages
 
-623	unmuzzle a user [CLIENT]
+623 (0x26f)	unmuzzle a user [CLIENT]
 
 	<nick> [ "<reason>" ]
 
 	client requests that the enforced silence on <nick> be lifted
 
-624	un-nuke a user [CLIENT]
+624 (0x270)	un-nuke a user [CLIENT]
 
 	<user>
 
-625	change a user's linespeed [CLIENT]
+625 (0x271)	change a user's linespeed [CLIENT]
 
 	<user> <speed>
 
-626	data port error [CLIENT, SERVER]
+626 (0x272)	data port error [CLIENT, SERVER]
 
 	<user>
 
@@ -989,21 +989,21 @@ appropriate, examples of the <data> section for each message are given.
 	then relays the message to the uploader, substituing the
 	downloader's nickname in the message.
 
-627	operator message [CLIENT, SERVER]
+627 (0x273)	operator message [CLIENT, SERVER]
 
 	client: <text>
 	server: <nick> <text>
 
 	client request to send a message to all admins/moderators
 
-628	global message [CLIENT, SERVER]
+628 (0x274)	global message [CLIENT, SERVER]
 
 	client: <text>
 	server: <nick> <text>
 
 	client request send a message to all users
 
-629	banned users [SERVER]
+629 (0x275)	banned users [SERVER]
 
 	Format: <nick>
 
@@ -1016,7 +1016,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	permission denied.
 
-652	cloak user [CLIENT]
+652 (0x28c)	cloak user [CLIENT]
 
 	sets the current user to "invisible"
 
@@ -1057,7 +1057,7 @@ appropriate, examples of the <data> section for each message are given.
 
 749	missing.
 
-750	server ping [CLIENT, SERVER]
+750 (0x2ee)	server ping [CLIENT, SERVER]
 
         server: none
         client: <user>
@@ -1067,19 +1067,19 @@ appropriate, examples of the <data> section for each message are given.
 
 	[server returns an empty 750 command in response. server ping? -ed]
 
-751	ping user [CLIENT, SERVER]
+751 (0x2ef)	ping user [CLIENT, SERVER]
 
 	<user>
 
 	client is attempting to determine if <user>'s connection is alive
 
-752	pong response [CLIENT, SERVER]
+752 (0x2f0)	pong response [CLIENT, SERVER]
 
 	<user>
 
 	this message is sent in response to the the 751 (PING) requeset
 
-753	change password for another user [CLIENT]
+753 (0x2f1)	change password for another user [CLIENT]
 
 	<user> <password> "<reason>"
 
@@ -1097,13 +1097,13 @@ appropriate, examples of the <data> section for each message are given.
 
 772-799	missing.
 
-800	reload config [CLIENT]
+800 (0x320)	reload config [CLIENT]
 
 	<config variable>
 
 	resets configuration parameter to its default value
 
-801	server version [CLIENT]
+801 (0x321)	server version [CLIENT]
 
 	no data.
 
@@ -1115,43 +1115,47 @@ appropriate, examples of the <data> section for each message are given.
 
 	[returns permission denied. -ed]
 
-810	set config [CLIENT]
+810 (0x32a)	set config [CLIENT]
 
 	<config string>
 
 	request a change in server configuration variables
 
-811	???
+811 (0x32b)	???	[CLIENT]
 
 	[returns permission denied. -ed]
 
-820	clear channel
+820 (0x334)	clear channel [CLIENT]
 
 	<channel>
 
 	remove all users from the specified channel
 
-821	??? [CLIENT, SERVER]
+821 (0x335)	redirect client to another server [CLIENT, SERVER]
 
-	client: <user> <?> <?>
-	server: <?> <?>
+	client: <user> <server> <port>
+	server: <server> <port>
 	
-	[no idea what this is for.  it sends the two arguments after the
-	nick to <user>.  all additional parameters seem to be dropped.  -ed]
+	This command allows an administrator to redirect clients to another
+	server.
 
-822	??? [CLIENT, SERVER]
+822 (0x336)	cycle client [CLIENT, SERVER]
 
-	client: <user> <?>
-	server: <?>
+	client: <user> <metaserver>
+	server: <metaserver>
 
-823	??? [CLIENT]
+	This commands allows an administrator to make a client restart the
+	login process by first connecting to the metaserver (redirector) at
+	<host>.
 
-	<channel> <?> ...?
+823 (0x337)	set channel level [CLIENT]
 
-	unknown command.  takes at least one additional argument besides the
-	channel name.  no obvious effect
+	<channel> <level>
 
-824	emote [CLIENT, SERVER]
+	Sets <channel> such that users must be at least <level> in order to
+	enter the channel
+
+824 (0x338)	emote [CLIENT, SERVER]
 
 	client: <channel> "<text>"
 	server: <channel> <user> "<text>"
@@ -1159,7 +1163,7 @@ appropriate, examples of the <data> section for each message are given.
 	A variation of the public message command to indicate an action by
 	the user.  Often implemented as the "/me" command in IRC clients.
 
-825	user list entry [SERVER]
+825 (0x339)	user list entry [SERVER]
 
 	<channel> <user> <files shared> <speed>
 
@@ -1172,7 +1176,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	[This appears to be exactly the same format as the 408 message.  -ed]
 
-826	channel limit [CLIENT]
+826 (0x33a)	channel limit [CLIENT]
 
 	<channel> <limit>
 
@@ -1182,14 +1186,14 @@ appropriate, examples of the <data> section for each message are given.
 	channels have a limit of 200.  there appears to be no restriction on
 	any channel member changing the limit, and no notification is given
 
-827	show all channels [CLIENT, SERVER]
+827 (0x33b)	show all channels [CLIENT, SERVER]
 
 	no data.
 
 	client request to show all channels, including "hidden" channels.
 	the server also sends this message to terminate
 
-828	channel list [SERVER]
+828 (0x33c)	channel list [SERVER]
 
 	<channel> <users> <n1> <level> <limit> "<topic>"
 
@@ -1203,11 +1207,11 @@ appropriate, examples of the <data> section for each message are given.
 	<n1> is either 0 or 1.  seems to be 1 if the channel was user
 	created, or 0 if a predefined channel???
 
-829	kick user from channel [CLIENT]
+829 (0x33d)	kick user from channel [CLIENT]
 
 	<channel> <user> [ "<reason>" ]
 
-830	list users in channel [CLIENT, SERVER]
+830 (0x33e)	list users in channel [CLIENT, SERVER]
 
 	<channel>
 
@@ -1215,7 +1219,7 @@ appropriate, examples of the <data> section for each message are given.
 	with a 825 response for each user, followed by an 830 response with
 	no data [why didn't they just use the 409 message? -ed]
 
-831	global user list [CLIENT]
+831 (0x33f)	global user list [CLIENT]
 
 	[returns permission denied.  -ed]
 

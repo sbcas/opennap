@@ -556,6 +556,9 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_SERVER_VERSION	801
 #define MSG_CLIENT_SERVER_CONFIG	810
 #define MSG_CLIENT_CLEAR_CHANNEL	820
+#define MSG_CLIENT_REDIRECT		821
+#define MSG_CLIENT_CYCLE		822
+#define MSG_CLIENT_SET_CHAN_LEVEL	823
 #define MSG_CLIENT_EMOTE		824
 #define MSG_SERVER_NAMES_LIST		825
 #define MSG_CLIENT_CHANNEL_LIMIT	826
@@ -592,7 +595,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_USAGE_STATS		10115
 #define MSG_CLIENT_REHASH		10117	/* reload config file */
 #define MSG_CLIENT_REGISTER_USER	10200
-#define MSG_CLIENT_CHANNEL_LEVEL	10201	/* set min channel user level */
+#define MSG_CLIENT_CHANNEL_LEVEL	10201	/* deprecated, use 823 instead*/
 #define MSG_CLIENT_KICK_USER		10202	/* deprecated, use 829 instead*/
 #define MSG_CLIENT_USER_MODE		10203	/* set a user mode */
 #define MSG_SERVER_USER_MODE		10203
@@ -764,6 +767,7 @@ HANDLER (clear_channel);
 HANDLER (clear_ignore);
 HANDLER (client_quit);
 HANDLER (cloak);
+HANDLER (cycle_client);
 HANDLER (data_port_error);
 HANDLER (download);
 HANDLER (download_end);
@@ -791,6 +795,7 @@ HANDLER (ping_server);
 HANDLER (privmsg);
 HANDLER (public);
 HANDLER (queue_limit);
+HANDLER (redirect_client);
 HANDLER (reginfo);
 HANDLER (register_nick);
 HANDLER (register_user);

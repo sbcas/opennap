@@ -358,7 +358,7 @@ HANDLER (join)
     }
 }
 
-/* 10201 [ :<sender> ] <channel> [level] [timestamp]
+/* 823 [ :<sender> ] <channel> [level] [timestamp]
    sets the minimum user level required to enter a channel */
 HANDLER (channel_level)
 {
@@ -368,6 +368,7 @@ HANDLER (channel_level)
     char *av[3];
     CHANNEL *chan;
 
+    (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
     if (ISSERVER (con))
@@ -430,7 +431,8 @@ HANDLER (channel_level)
 		return;
 	    }
 	}
-	pass_message_args (con, tag, ":%s %s %s", sender, chan->name,
+	pass_message_args (con, MSG_CLIENT_SET_CHAN_LEVEL, ":%s %s %s",
+		sender, chan->name,
 			   Levels[level]);
 	chan->level = level;
 	notify_ops (chan, "%s set channel %s to level %s",

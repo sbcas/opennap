@@ -158,6 +158,9 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_SERVER_VERSION, server_version},	/* 801 */
     {MSG_CLIENT_SERVER_CONFIG, server_config},	/* 810 */
     {MSG_CLIENT_CLEAR_CHANNEL, clear_channel},	/* 820 */
+    {MSG_CLIENT_REDIRECT, redirect_client},	/* 821 */
+    {MSG_CLIENT_CYCLE, cycle_client},		/* 822 */
+    {MSG_CLIENT_SET_CHAN_LEVEL, channel_level},	/* 823 */
     {MSG_CLIENT_EMOTE, emote},	/* 824 */
     {MSG_CLIENT_CHANNEL_LIMIT, channel_limit},	/* 826 */
     {MSG_CLIENT_FULL_CHANNEL_LIST, full_channel_list},	/* 827 */
@@ -188,7 +191,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_USAGE_STATS, server_usage},	/* 10115 */
     {MSG_CLIENT_REHASH, rehash},		/* 10116 */
     {MSG_CLIENT_REGISTER_USER, register_user},	/* 10200 */
-    {MSG_CLIENT_CHANNEL_LEVEL, channel_level},	/* 10201 */
+    {MSG_CLIENT_CHANNEL_LEVEL, channel_level},	/* 10201 - deprecated */
     {MSG_CLIENT_KICK_USER, kick},	/* 10202 - deprecated */
     {MSG_CLIENT_USER_MODE, user_mode_cmd},	/* 10203 */
     {MSG_CLIENT_OP, channel_op},	/* 10204 */

@@ -80,7 +80,7 @@ sync_chan (CHANNEL * chan, CONNECTION * con)
     LIST *list;
 
     if (chan->level != LEVEL_USER)
-	send_cmd (con, MSG_CLIENT_CHANNEL_LEVEL, ":%s %s %s %d",
+	send_cmd (con, MSG_CLIENT_SET_CHAN_LEVEL, ":%s %s %s %d",
 		  Server_Name, chan->name, Levels[chan->level],
 		  chan->timestamp);
     if (chan->limit != Channel_Limit)

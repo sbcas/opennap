@@ -1,10 +1,10 @@
 opennap v0.36 (ALPHA)
 the open source (TM) napster server
 ===================================
-July 26, 2000
+Aug 3, 2000
 
 http://opennap.sourceforge.net
-IRC: #opennap on irc.openprojects.net and EFNet
+IRC: #opennap on EFNet
 Email: opennap-dev@lists.sourceforge.net
 
 opennap is an Open Source(TM) server implementation of the popular
@@ -136,6 +136,7 @@ commands:
 	killserver
 	links
 	reconfig
+	rehash		reread configuration files
 	register
 	stats
 	usermode
@@ -357,7 +358,9 @@ are implemented as additional functionality in the opennap server.
 	motd into memory.  If [server] is not specified, the server to which
 	the client is connected is affected.
 
-10201	set channel level [CLIENT]
+10201	set channel level [CLIENT] (DEPRECATED)
+
+	NOTE: DEPRECATED.  Correct numeric is 823.
 
 	Format: <channel> [level]
 
