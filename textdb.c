@@ -12,6 +12,7 @@
 #include <limits.h>
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 #ifndef WIN32
 #include <unistd.h>
 #endif
@@ -156,6 +157,13 @@ textdb_store (TEXTDB_RES * result)
 		return -1;
 	    }
 	}
+#if USE_CRLF
+	if (fputc ('\r', result->db->stream) == EOF)
+	{
+	    logerr ("textdb_store", "fputc");
+	    return -1;
+	}
+#endif /* USE_CRLF */
 	if (fputc ('\n', result->db->stream) == EOF)
 	{
 	    logerr ("textdb_store", "fputc");
@@ -190,6 +198,13 @@ textdb_store (TEXTDB_RES * result)
 		return -1;
 	    }
 	}
+#if USE_CRLF
+	if (fputc ('\r', result->db->stream) == EOF)
+	{
+	    logerr ("textdb_store", "fputc");
+	    return -1;
+	}
+#endif /* USE_CRLF */
 	if (fputc ('\n', tmpStream) == EOF)
 	{
 	    logerr ("textdb_store", "fputc");

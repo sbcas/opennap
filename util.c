@@ -473,12 +473,15 @@ char *
 next_arg (char **s)
 {
     char *r = *s;
-    *s = strchr (r, ' ');
+
+    *s = strpbrk (r, " \t\r\n");
     if (*s)
     {
 	*(*s)++ = 0;
-	while (**s == ' ')
+	while (ISSPACE (**s))
 	    ++*s;
+	if (!**s)
+	    *s = 0;	/* no more arguments */
     }
     return r;
 }

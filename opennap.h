@@ -637,6 +637,8 @@ typedef unsigned int socklen_t;
 #define PACKAGE "opennap"
 #define VERSION "0.20"
 
+#define USE_CRLF 1
+
 #define strcasecmp stricmp
 #define strncasecmp strnicmp
 
