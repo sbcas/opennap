@@ -65,7 +65,7 @@ HANDLER (download)
 		{
 		    send_user (sender, MSG_SERVER_FILE_READY /* 204 */ ,
 			       "%s %u %d \"%s\" %s %d", user->nick,
-			       BSWAP32(user->host), user->port, info->filename,
+			       user->host, user->port, info->filename,
 			       info->hash, user->speed);
 		}
 	    }
@@ -99,7 +99,7 @@ HANDLER (download)
 	    /* error, both clients are firewalled */
 	    ASSERT (ISUSER (con));
 	    send_cmd (con, MSG_SERVER_FILE_READY /* 204 */ ,
-		      "%s %lu %d \"%s\" firewallerror %d",
+		      "%s %u %d \"%s\" firewallerror %d",
 		      user->nick, user->host, user->port, av[1], user->speed);
 	    return;
 	}

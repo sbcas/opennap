@@ -7,7 +7,7 @@
 #include "opennap.h"
 #include "debug.h"
 
-char *Levels[LEVEL_ELITE+1] = {
+char *Levels[LEVEL_ELITE + 1] = {
     "Leech",
     "User",
     "Moderator",
@@ -15,25 +15,8 @@ char *Levels[LEVEL_ELITE+1] = {
     "Elite"
 };
 
-#if 0
 static void
-sync_file (DATUM *info, CONNECTION *con)
-{
-    ASSERT (validate_connection (con));
-
-    if (info->type == CT_MP3)
-	send_cmd (con, MSG_CLIENT_ADD_FILE, ":%s \"%s\" %s %d %hu %hu %hu",
-		info->user->nick, info->filename, info->hash, info->size,
-		info->bitrate, info->frequency, info->duration);
-    else
-	send_cmd (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %d %s %s",
-		info->user->nick, info->filename, info->size,
-		info->hash, Content_Types[info->type]);
-}
-#endif
-
-static void
-sync_user (USER *user, CONNECTION *con)
+sync_user (USER * user, CONNECTION * con)
 {
     LIST *list;
 
@@ -52,35 +35,36 @@ sync_user (USER *user, CONNECTION *con)
 
     /* send a login message for this user */
     send_cmd (con, MSG_CLIENT_LOGIN, "%s %s %d \"%s\" %d",
-	    user->nick, user->pass, user->port, user->clientinfo, user->speed);
+	      user->nick, user->pass, user->port, user->clientinfo,
+	      user->speed);
 
     /* send the user's host */
-    send_cmd (con, MSG_SERVER_USER_IP, "%s %lu %hu %s", user->nick,
-	    BSWAP32 (user->host), user->conport, user->server);
+    send_cmd (con, MSG_SERVER_USER_IP, "%s %u %hu %s", user->nick,
+	      user->host, user->conport, user->server);
 
     /* update the user's level */
     if (user->level != LEVEL_USER)
     {
 	send_cmd (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s",
-	    Server_Name, user->nick, Levels[user->level]);
+		  Server_Name, user->nick, Levels[user->level]);
     }
 
     /* do this before the joins so the user's already in the channel see
        the real file count */
     if (user->shared)
-	send_cmd(con,MSG_SERVER_USER_SHARING,"%s %d %d",user->nick,user->shared,
-		user->libsize);
+	send_cmd (con, MSG_SERVER_USER_SHARING, "%s %d %d", user->nick,
+		  user->shared, user->libsize);
 
     /* send the channels this user is listening on */
     for (list = user->channels; list; list = list->next)
     {
 	send_cmd (con, MSG_CLIENT_JOIN, ":%s %s",
-		user->nick, ((CHANNEL *) list->data)->name);
+		  user->nick, ((CHANNEL *) list->data)->name);
     }
 }
 
 void
-synch_server (CONNECTION *con)
+synch_server (CONNECTION * con)
 {
     ASSERT (validate_connection (con));
 

@@ -90,7 +90,7 @@ search_callback (DATUM * match, SEARCH * parms)
 		  match->frequency,
 		  match->duration,
 		  match->user->nick,
-		  BSWAP32 (match->user->host), match->user->speed);
+		  match->user->host, match->user->speed);
     }
 
     return 1;			/* accept match */
@@ -737,7 +737,7 @@ HANDLER (remote_search_result)
 	send_cmd (search->con, MSG_SERVER_SEARCH_RESULT,
 		  "\"%s\" %s %s %s %s %s %s %u %d",
 		  av[2], av[3], av[4], av[5], av[6], av[7], user->nick,
-		  BSWAP32 (user->host), user->speed);
+		  user->host, user->speed);
     }
 }
 

@@ -19,8 +19,8 @@ invalid_nick (const char *s)
 
     while (*s)
     {
-	if (*s & 0x80 || ISSPACE (*s) || iscntrl (*s) || !isprint((uchar)*s) ||
-		*s == ':')
+	if (*s & 0x80 || ISSPACE (*s) || iscntrl (*s)
+	    || !isprint ((uchar) * s) || *s == ':')
 	    return 1;
 	count++;
 	s++;
@@ -43,14 +43,13 @@ invalid_password (const char *s)
 }
 
 static void
-sync_reginfo (USERDB *db)
+sync_reginfo (USERDB * db)
 {
     log ("sync_reginfo(): sending registration info to peers");
     pass_message_args (NULL, MSG_SERVER_REGINFO,
 		       ":%s %s %s %s %s %d %d", Server_Name,
 		       db->nick, db->password, db->email,
-		       Levels[db->level], db->created,
-		       db->lastSeen);
+		       Levels[db->level], db->created, db->lastSeen);
 }
 
 /* <nick> <pass> <port> <client-info> <speed> [ <email> ] */
@@ -68,19 +67,21 @@ HANDLER (login)
     if (con->class == CLASS_USER)
     {
 	log ("login(): recived command %d from a logged in user: %s", tag,
-		pkt);
+	     pkt);
 	send_cmd (con, MSG_SERVER_NOSUCH, "you are already logged in");
 	return;
     }
 
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
+
     if ((tag == MSG_CLIENT_LOGIN && ac < 5) ||
-	    (tag == MSG_CLIENT_LOGIN_REGISTER && ac < 6))
+	(tag == MSG_CLIENT_LOGIN_REGISTER && ac < 6))
     {
 	log ("login(): too few avs in message (tag=%d)", tag);
-	if (con->class ==  CLASS_UNKNOWN)
+	if (con->class == CLASS_UNKNOWN)
 	{
-	    send_cmd (con, MSG_SERVER_ERROR, "Too few parameters for command");
+	    send_cmd (con, MSG_SERVER_ERROR,
+		      "Too few parameters for command");
 	    con->destroy = 1;
 	}
 	return;
@@ -88,8 +89,7 @@ HANDLER (login)
     speed = atoi (av[4]);
     if (speed < 0 || speed > 10)
     {
-	log ("login(): invalid speed %d from %s (%s)",
-		speed, av[0], av[4]);
+	log ("login(): invalid speed %d from %s (%s)", speed, av[0], av[4]);
 	if (con->class == CLASS_UNKNOWN)
 	{
 	    send_cmd (con, MSG_SERVER_ERROR, "%d is an invalid speed", speed);
@@ -118,7 +118,7 @@ HANDLER (login)
 	log ("login(): password for %s contains invalid characters", av[0]);
 	if (con->class == CLASS_UNKNOWN)
 	    send_cmd (con, MSG_SERVER_ERROR,
-		    "Your password contains illegal characters.");
+		      "Your password contains illegal characters.");
 	return;
     }
 
@@ -133,7 +133,7 @@ HANDLER (login)
 	{
 	    log ("login(): user %s is already active", user->nick);
 	    send_cmd (con, MSG_SERVER_ERROR, "user %s is already active",
-		user->nick);
+		      user->nick);
 	    con->destroy = 1;
 	}
 	else
@@ -148,7 +148,8 @@ HANDLER (login)
 	    {
 		/* pass this message to everyone */
 		pass_message_args (NULL, MSG_CLIENT_KILL,
-		    ":%s %s nick collision", Server_Name, user->nick);
+				   ":%s %s nick collision", Server_Name,
+				   user->nick);
 		/* destroy the connection */
 		user->con->destroy = 1;
 	    }
@@ -171,8 +172,8 @@ HANDLER (login)
 	    if (con->class == CLASS_UNKNOWN)
 	    {
 		send_cmd (con, MSG_SERVER_NOSUCH,
-			"You are banned from this server: %s",
-			NONULL (Ban[i]->reason));
+			  "You are banned from this server: %s",
+			  NONULL (Ban[i]->reason));
 		con->destroy = 1;
 	    }
 	    notify_mods ("Banned user %s attempted to log in", av[0]);
@@ -245,7 +246,8 @@ HANDLER (login)
 		   kind of icky, but its the best we can do */
 		log ("login(): sending KILL for user %s", av[0]);
 		pass_message_args (NULL, MSG_CLIENT_KILL,
-			":%s %s invalid password", Server_Name, av[0]);
+				   ":%s %s invalid password", Server_Name,
+				   av[0]);
 		sync_reginfo (db);
 	    }
 	    goto failed;
@@ -258,18 +260,19 @@ HANDLER (login)
 
 	/* set the default userlevel */
 	user->level = db->level;
-	if(user->level != LEVEL_USER)
-	    log ("login(): set %s to level %s", user->nick, Levels[user->level]);
+	if (user->level != LEVEL_USER)
+	    log ("login(): set %s to level %s", user->nick,
+		 Levels[user->level]);
     }
     else if (tag == MSG_CLIENT_LOGIN_REGISTER)
     {
 	/* create the db entry now */
 	log ("login(): registering user %s", av[0]);
 
-	db = CALLOC (1, sizeof(USERDB));
+	db = CALLOC (1, sizeof (USERDB));
 	if (!db)
 	{
-	    OUTOFMEMORY("login");
+	    OUTOFMEMORY ("login");
 	    return;
 	}
 	db->nick = STRDUP (av[0]);
@@ -300,7 +303,7 @@ HANDLER (login)
     {
 	/* save the ip address of this client */
 	user->local = 1;
-	user->host = con->ip;
+	user->host = BSWAP32 (con->ip);	/* needs to be in little endian */
 	user->conport = con->port;
 	user->server = STRDUP (Server_Name);
 	if (!user->server)
@@ -340,13 +343,14 @@ HANDLER (login)
     if (Num_Servers)
     {
 	pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
-		av[0], av[1], av[2], av[3], av[4]);
-	if (ISUSER(con))
-	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %lu %hu %s",
-		    av[0], user->host, user->conport, Server_Name);
+			   av[0], av[1], av[2], av[3], av[4]);
+	if (ISUSER (con))
+	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %u %hu %s",
+			       av[0], user->host, user->conport, Server_Name);
 	if (user->level != LEVEL_USER)
 	    pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
-		    ":%s %s %s", Server_Name, user->nick, Levels[user->level]);
+			       ":%s %s %s", Server_Name, user->nick,
+			       Levels[user->level]);
     }
 
     /* check the global hotlist to see if there are any users waiting to be
@@ -363,12 +367,12 @@ HANDLER (login)
 	{
 	    ASSERT (validate_connection (u->data));
 	    send_cmd (u->data, MSG_SERVER_USER_SIGNON, "%s %d",
-		    user->nick, user->speed);
+		      user->nick, user->speed);
 	}
     }
     return;
 
-failed:
+  failed:
     /* clean up anything we allocated here */
     if (con->class == CLASS_UNKNOWN)
 	con->destroy = 1;
@@ -401,7 +405,7 @@ HANDLER (user_ip)
 
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("user_ip");
-    if (split_line (field, sizeof (field) / sizeof (char* ), pkt) != 4)
+    if (split_line (field, sizeof (field) / sizeof (char *), pkt) != 4)
     {
 	log ("user_ip(): wrong number of arguments");
 	return;
@@ -413,13 +417,12 @@ HANDLER (user_ip)
 	return;
     }
 
-    if(Num_Servers>1)
-	pass_message_args(con,tag,"%s %s %s %s", user->nick,
-		field[1],field[2],field[3]);
+    if (Num_Servers > 1)
+	pass_message_args (con, tag, "%s %s %s %s", user->nick,
+			   field[1], field[2], field[3]);
 
-    user->host = strtoul (field[1], 0, 10);
-    user->host = BSWAP32 (user->host);
-    user->conport = strtoul (field[2], 0, 10);
+    user->host = strtol (field[1], 0, 10);
+    user->conport = atoi (field[2]);
     user->server = STRDUP (field[3]);
     if (!user->server)
 	OUTOFMEMORY ("user_ip");
@@ -473,7 +476,7 @@ HANDLER (reginfo)
 	log ("reginfo(): too few fields in message");
 	return;
     }
-    if (split_line (fields, sizeof (fields)/sizeof(char*), pkt) != 6)
+    if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 6)
     {
 	log ("reginfo(): wrong number of fields");
 	return;
@@ -499,8 +502,9 @@ HANDLER (reginfo)
 	db = CALLOC (1, sizeof (USERDB));
 
     if (Num_Servers > 1)
-	pass_message_args(con,tag,":%s %s %s %s %s %s %s",
-		server,fields[0],fields[1],fields[2],fields[3],fields[4],fields[5]);
+	pass_message_args (con, tag, ":%s %s %s %s %s %s %s",
+			   server, fields[0], fields[1], fields[2], fields[3],
+			   fields[4], fields[5]);
 
     db->password = STRDUP (fields[1]);
     db->email = STRDUP (fields[2]);
@@ -514,7 +518,7 @@ HANDLER (reginfo)
     db->created = atol (fields[4]);
     db->lastSeen = get_level (fields[5]);
     if (userdb_store (db))
-	log("reginfo(): userdb_store failed (ignored)");
+	log ("reginfo(): userdb_store failed (ignored)");
     else
 	log ("reginfo(): updated accounts table for %s", fields[0]);
 }

@@ -51,7 +51,7 @@ HANDLER (upload_ok)
     {
 	/* firewalled user, give the info back to the uploader */
 	send_cmd (con, MSG_SERVER_UPLOAD_FIREWALL /* 501 */ ,
-		"%s %lu %d \"%s\" %s %d",
+		"%s %u %d \"%s\" %s %d",
 		recip->nick, recip->host, recip->port, av[1], info->hash,
 		recip->speed);
     }
