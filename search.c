@@ -508,11 +508,7 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    i++;
 	    max_results = atoi (av[i]);
 	    if (Max_Search_Results && max_results > Max_Search_Results)
-	    {
-		log ("search(): client requested a maximum of %d results",
-		     max_results);
 		max_results = Max_Search_Results;
-	    }
 	}
 	else if (!strcasecmp ("type", av[i]))
 	{

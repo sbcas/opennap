@@ -305,7 +305,8 @@ handle_connection (CONNECTION * con)
 	if (n <= 0)
 	{
 	    if (n == -1)
-		nlogerr ("handle_connection", "read");
+		log ("handle_connection(): read: %s (errno %d) for host %s",
+		     strerror(N_ERRNO), N_ERRNO, con->host);
 	    else
 		log ("handle_connection(): EOF from %s", con->host);
 	    con->destroy = 1;
@@ -351,7 +352,8 @@ handle_connection (CONNECTION * con)
 	    {
 		if (N_ERRNO != EWOULDBLOCK)
 		{
-		    nlogerr ("handle_connection", "read");
+		    log ("handle_connection(): read: %s (errno %d) for host %s",
+			 strerror(N_ERRNO), N_ERRNO, con->host);
 		    con->destroy = 1;
 		}
 		return;
@@ -401,7 +403,8 @@ handle_connection (CONNECTION * con)
 		   next packet to arrive */
 		if (N_ERRNO != EWOULDBLOCK)
 		{
-		    nlogerr ("handle_connection", "read");
+		log ("handle_connection(): read: %s (errno %d) for host %s",
+		     strerror(N_ERRNO), N_ERRNO, con->host);
 		    con->destroy = 1;
 		}
 		return;

@@ -379,7 +379,8 @@ send_queued_data (CONNECTION * con)
     {
 	if (N_ERRNO != EWOULDBLOCK && N_ERRNO != EDEADLK)
 	{
-	    nlogerr ("send_queued_data", "write");
+	    log("send_queued_data(): write: %s (errno %d) for host %s",
+		strerror (N_ERRNO), N_ERRNO, con->host);
 	    return -1;
 	}
 	return 0;

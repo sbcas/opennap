@@ -130,6 +130,4 @@ HANDLER (remote_notify_mods)
     level = atoi (av[1]);
     notify_mods (level, "[%s] %s", av[0] + 1, av[2]);
     pass_message_args (con, tag, ":%s %d \"%s\"", av[0] + 1, level, av[2]);
-    log ("remote_notify_mods(): broadcast from %s (level %d): %s",
-	 av[0] + 1, level, av[2]);
 }
