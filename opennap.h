@@ -104,7 +104,9 @@ struct _user
     unsigned int speed:4;	/* link speed */
     unsigned int local:1;	/* nonzero if locally connected */
     unsigned int muzzled:1;	/* non-zero if this user is muzzled */
-    unsigned int xxx:7;		/* unused */
+    unsigned int sharing:1;
+    unsigned int unsharing:1;
+    unsigned int xxx:5;		/* unused */
     unsigned short shared;	/* # of shared files */
 
     unsigned short totalup;	/* total number of uploads */

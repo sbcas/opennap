@@ -248,6 +248,7 @@ insert_datum (DATUM * info, char *av)
     Num_Files++;
     Local_Files++;
 
+#if 0
     /* notify peer servers that this user's file count has increased */
     /* TODO: this should be changed so that the servers will periodically
        exchnage user info rather than for each message.  if a user adds
@@ -255,6 +256,10 @@ insert_datum (DATUM * info, char *av)
     pass_message_args (info->user->con, MSG_SERVER_USER_SHARING,
 		       "%s %d %d", info->user->nick, info->user->shared,
 		       info->user->libsize);
+#else
+    /* note that we began sharing */
+    info->user->sharing = 1;
+#endif
 }
 
 static DATUM *

@@ -48,6 +48,11 @@ HANDLER (remove_file)
     /* this invokes free_datum() indirectly */
     hash_remove (user->files, info->filename);
 
+#if 1
+    /* note that we are unsharing */
+    user->unsharing = 1;
+#else
     pass_message_args (con, MSG_SERVER_USER_SHARING, "%s %d %d",
 		       user->nick, user->shared, user->libsize);
+#endif
 }
