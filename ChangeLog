@@ -1,3 +1,99 @@
+2000-08-07  drscholl  <drscholl@users.sourceforge.net>
+
+	* Makefile.am, Makefile.in, NEWS, browse.c, configure, configure.in, handler.c, join.c, login.c, main.c, napster.txt, opennap.h, opennap.init:
+	changed basename() to my_basename() to avoid compilation errors on some
+	systems.
+
+	look for -lz in /usr/local/lib
+
+	opennap should return message 13 when receving unknown commands prior to
+	receipt of the login (2) message.
+
+	added support for tcp_wrappers
+
+	mods+ could not bypass the strict channel join setting
+
+	opennap should send the 316 numeric prior to disconnecting clients to be
+	compatible with the napster.com servers
+
+	updated napster.txt with new information
+
+	sysv-init style script for starting opennap at boot from
+	Geoffrey Lee <snailtalk@linux-mandrake.com>
+
+2000-08-05  drscholl  <drscholl@users.sourceforge.net>
+
+	* configure, configure.in, init.c, login.c:
+	check for -lz in /usr/local/lib
+
+	cast pid_t to int in dump_pid()
+
+	added eject_client() to find a client with 0 files shared that has been
+	connected the longest and kill it.  if the server is full, login() will call
+	eject_client() to try and kill someone else to make room for the current
+	login.
+
+2000-08-04  drscholl  <drscholl@users.sourceforge.net>
+
+	* ban.c, main.c, opennap.h, redirect.c, synch.c, README:
+	extended the ban command to accept a timeout
+
+	* Makefile.am, Makefile.in, README, handler.c, join.c, napster.txt, opennap.h, redirect.c, synch.c, whois.c:
+	added support for client redirect (821) and client cycle (822) numerics
+
+	changed set chan level to 823 to match official servers
+
+	updated napster.txt with new information obtained from release of nap source
+
+	the whowas response should have quoted the user's level similar to the whois
+	response
+
+2000-08-03  drscholl  <drscholl@users.sourceforge.net>
+
+	* FAQ, add_file.c, handler.c, remove_file.c, synch.c:
+	added more checking to prevent a user's library size from being negative
+
+2000-07-31  drscholl  <drscholl@users.sourceforge.net>
+
+	* add_file.c:
+	finally found buffer overrun in add_directory().  strncpy() does not write
+	a \0 to the end of the string if all the space was used up before getting to
+	the end of the string
+
+2000-07-30  drscholl  <drscholl@users.sourceforge.net>
+
+	* add_file.c, glob.c, search.c:
+	rewrote tokenize() to reduce the number of strcmp() calls when reaping bad
+	tokens.
+
+	glob_match() was not case-insensitive
+
+2000-07-29  drscholl  <drscholl@users.sourceforge.net>
+
+	* ChangeLog, NEWS, config.c, main.c, opennap.h, sample.conf, server_usage.c:
+	added stats reporting for total bytes sent/received
+
+	server_usage() now reports searches/sec and total bytes in/out
+
+2000-07-28  drscholl  <drscholl@users.sourceforge.net>
+
+	* browse.c: reverted previous changes
+
+	* add_file.c, download.c, init.c, main.c, opennap.h, remove_file.c, search.c, upload_complete.c, util.c:
+	reverted back to storing full pathnames in the DATUM struct.  it was causing
+	too much load having to regenerate the filename every time match() needed to
+	be called.
+
+	* config.c, join.c, main.c, opennap.h, search.c, server_usage.c:
+	added `search_timeout' variable to set the expiration time of remote
+	searches (default: 180 secs)
+
+	bytes in/out was not time averaged in server_usage()
+
+	* channel.c, free_user.c, login.c, main.c, opennap.h, remove_connection.c, synch.c:
+	cache the server names so that each USER struct can reference it a single
+	time instead of once for each user
+
 2000-07-28  drscholl  <drscholl@users.sourceforge.net>
 
 	* browse.c: reverted previous changes

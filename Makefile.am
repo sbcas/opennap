@@ -10,7 +10,7 @@ opennap_SOURCES=opennap.h main.c add_file.c search.c \
 	list_users.c ping.c resume.c change.c ban.c network.c buffer.c \
 	server_usage.c server_links.c init.c handler.c timer.c list.c \
 	list.h userdb.c serverlib.c kick.c usermode.c channel.c glob.c \
-	redirect.c
+	redirect.c filter.c
 #mkpass_SOURCES=mkpass.c md5.c debug.c util.c
 metaserver_SOURCES=metaserver.c
 setup_SOURCES=setup.c
@@ -18,7 +18,7 @@ EXTRA_DIST=sample.conf sample.motd napster.txt .indent.pro \
 	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp \
 	opennap.opt sample.users sample.servers opennap.spec \
 	getopt.c mkpass.dsp sample.channels \
-	napchk logchk setup.dsp opennap.init
+	napchk logchk setup.dsp opennap.init sample.filter
 INCLUDES=-DSHAREDIR=\"$(pkgdatadir)\"
 
 .PHONY: log

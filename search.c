@@ -156,6 +156,7 @@ tokenize (char *s)
 	    *ptr++ = 0;
 	strlower (s);		/* convert to lower case to save time */
 
+#if 0
 	/* don't bother with common words, if there is more than 5,000 of
 	   any of these it doesnt do any good for the search engine because
 	   it won't match on them.  its doubtful that these would narrow
@@ -196,7 +197,7 @@ tokenize (char *s)
 	}
 	else if (*s == 'f')
 	{
-	    if (!*(s + 1) || !strcmp ("iles", s + 1))
+	    if (!*(s + 1) || !strcmp ("iles", s + 1) || !strcmp("or",s+1))
 	    {
 		s = ptr;
 		continue;
@@ -212,7 +213,8 @@ tokenize (char *s)
 	}
 	else if (*s == 'i')
 	{
-	    if (!*(s + 1) || !strcmp ("n", s + 1) || !strcmp ("t", s + 1))
+	    if (!*(s + 1) || !strcmp ("n", s + 1) || !strcmp ("t", s + 1) ||
+		    !strcmp("mport", s+1))
 	    {
 		s = ptr;
 		continue;
@@ -231,7 +233,7 @@ tokenize (char *s)
 	    if (!*(s + 1) || !strcmp ("e", s + 1) || !strcmp ("p3", s + 1) ||
 		!strcmp ("usic", s + 1) || !strcmp ("y", s + 1) ||
 		!strcmp ("p3's", s + 1) || !strcmp ("edia", s + 1) ||
-		!strcmp ("p3s", s + 1) || !strcmp ("mp3z", s + 1) ||
+		!strcmp ("p3s", s + 1) || !strcmp ("p3z", s + 1) ||
 		!strcmp ("nt", s + 1))
 	    {
 		s = ptr;
@@ -287,6 +289,14 @@ tokenize (char *s)
 		continue;
 	    }
 	}
+	else if (*s == 'v')
+	{
+	    if (!strcmp ("arious", s+1))
+	    {
+		s=ptr;
+		continue;
+	    }
+	}
 	else if (*s == 'w')
 	{
 	    if (!strcmp ("indows", s + 1) || !strcmp ("inamp", s + 1))
@@ -303,6 +313,22 @@ tokenize (char *s)
 		continue;
 	    }
 	}
+	else if (*s == '0')
+	{
+	    if (!strcmp ("1", s+1) || !strcmp ("2",s+1) || !strcmp ("3",s+1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+#else
+	/* new dynamic table from config file */
+	if(is_filtered(s))
+	{
+	    s=ptr;
+	    continue;
+	}
+#endif
 
 	/* don't add duplicate tokens to the list.  this will cause searches
 	   on files that have the same token more than once to show up how

@@ -232,10 +232,9 @@ init_server (const char *cf)
     MD5 = hash_init (2053, (hash_destroy) free_flist);
 #endif
     load_channels ();
-
     init_random ();
-
     motd_init ();
+    load_filter ();
 
     return 0;
 }

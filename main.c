@@ -222,7 +222,7 @@ accept_connection (int s)
 	}
 	else
 	{
-	    cli->ip = sin.sin_addr.s_addr;
+	    cli->ip = BSWAP32(sin.sin_addr.s_addr);
 	    cli->host = STRDUP (inet_ntoa (sin.sin_addr));
 	    if (!cli->host)
 	    {
@@ -631,6 +631,7 @@ main (int argc, char **argv)
     free_hash (Hotlist);
     free_hash (User_Db);
     free_timers ();
+    free_filter ();
 
     list_free (Bans, (list_destroy_t) free_ban);
 

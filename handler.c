@@ -21,7 +21,8 @@ HANDLER (server_stats)
 {
     (void) pkt;
     (void) len;
-    send_cmd (con, tag, "%d %d %.0f", Users->dbsize, Num_Files,
+    (void) tag;
+    send_cmd (con, MSG_SERVER_STATS, "%d %d %.0f", Users->dbsize, Num_Files,
 	      Num_Gigs / 1048576.);
 }
 

@@ -124,6 +124,7 @@ HANDLER (kill_user)
 		  "You have been killed%s%s: %s",
 		  killer && killer->cloaked ? "" : " by ",
 		  killer && killer->cloaked ? "" : killernick, REASON);
+	send_cmd (user->con, MSG_SERVER_DISCONNECTING, "0");
     }
     /* remote user, just remove from the global list */
     else

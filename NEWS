@@ -29,6 +29,11 @@ Programs are now installed in /usr/local/sbin by default.
 If `stats_port' is set to -1 in the config file, opennap will not listen
 for stats reporting (by default it listens on port 8889).
 
+Search token filtering is now configurable instead of hard-coded.  opennap
+will read the file `filter' in the configuration directory for a list of
+words (one per line) that should be skipped when indexing.  A
+`sample.filter' file is now included with the distribution.
+
 [opennap 0.35]
 
 added `max_clones' configuration variable to control how many clients may

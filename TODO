@@ -6,5 +6,4 @@
 
 * add a timeout to check for blocked server connect() call
 
-* create a list of servernames with refcounts to conserve memory for the
-  user->server field
+* find bug which results in negative total library size
