@@ -197,7 +197,7 @@ HANDLER (channel_ban)
 	{
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH,
-			  "%s is already banned from %s", b->target,
+			  "%s is already banned from channel %s", b->target,
 			  chan->name);
 	    return;
 	}
@@ -284,6 +284,11 @@ HANDLER (channel_unban)
 	    return;
 	}
     }
+    if(!is_ip(av[1]) && invalid_nick(av[1]))
+    {
+	invalid_nick_msg(con);
+	return;
+    }
     ASSERT (validate_channel (chan));
     for (list = &chan->bans; *list; list = &(*list)->next)
     {
@@ -307,8 +312,7 @@ HANDLER (channel_unban)
 	}
     }
     if (ISUSER (con))
-	send_cmd (con, MSG_SERVER_NOSUCH, "No ban on %s for %s", av[0],
-		  av[1]);
+	send_cmd (con, MSG_SERVER_NOSUCH, "no such ban");
 }
 
 /* 420 <channel> */

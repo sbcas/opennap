@@ -173,32 +173,39 @@ HANDLER (login)
     {
 	ASSERT (validate_user (user));
 
-	if (con->class == CLASS_UNKNOWN)
+	if (ISUNKNOWN(con))
 	{
 	    /* check for ghosts.  if another client from the same ip address
-	       logs in, kill both clients (for now) */
+	       logs in, kill the older client and proceed normally */
 	    if (user->host == con->ip)
 	    {
 		log ("login(): killing ghost for %s at %s",
 			user->nick, my_ntoa(user->host));
 		pass_message_args(NULL,MSG_CLIENT_KILL,":%s %s \"ghost\"",
 			Server_Name, user->nick);
+		/* remove the old entry */
 		if(ISUSER(user->con))
 		{
 		    /* TODO: there is a numeric for this somewhere */
-		    send_cmd(user->con,MSG_SERVER_NOSUCH,"You were killed by %s: ghost",Server_Name);
+		    send_cmd(user->con,MSG_SERVER_NOSUCH,
+			    "You were killed by %s: ghost",Server_Name);
+		    remove_user(user->con);
+		    user->con->uopt = 0;
 		    user->con->destroy=1;
+		    /* avoid free'g con->user in remove_connection() */
+		    user->con->class = CLASS_UNKNOWN;
 		}
-		/* notify the user to log back in */
-		send_cmd(con,MSG_SERVER_ERROR,"killed your ghost, please log in again");
+		else
+		    hash_remove(Users,user->nick);
 	    }
 	    else
 	    {
 		log ("login(): %s is already active", user->nick);
 		send_cmd (con, MSG_SERVER_ERROR, "%s is already active",
 			user->nick);
+		con->destroy = 1;
+		return;
 	    }
-	    con->destroy = 1;
 	}
 	else if (ISSERVER (con))
 	{
@@ -206,12 +213,15 @@ HANDLER (login)
 
 	    /* issue a KILL for this user if we have one of them locally
 	       connected */
-	    if (user->local)
+	    if (ISUSER (user->con))
 	    {
 		/* pass this message to everyone */
 		pass_message_args (NULL, MSG_CLIENT_KILL,
 				   ":%s %s \"nick collision\"", Server_Name,
 				   user->nick);
+		send_cmd(user->con,MSG_SERVER_NOSUCH,
+			"You were killed by %s: nick collision",
+			Server_Name);
 		/* destroy the connection */
 		user->con->destroy = 1;
 	    }
@@ -222,13 +232,15 @@ HANDLER (login)
 		   for each server, which is overkill */
 		hash_remove (Users, user->nick);
 	    }
+	    return;
 	}
 	else
 	{
+	    /* This Should Never Happen (TM) */
 	    log ("login(): ERROR!  received collision from USER class!");
 	    con->destroy = 1;
+	    return;
 	}
-	return;
     }
 
     /* check for a user ban, mods+ are exempt */

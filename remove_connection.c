@@ -30,11 +30,43 @@ server_split (USER * user, CONNECTION * con)
     }
 }
 
+/* free resources associated with CLASS_USER connection. this is broken out
+   here so that login() can call this directly to remove a "ghost" user and
+   allow the new connection to complete. */
+void
+remove_user (CONNECTION *con)
+{
+    LIST *u;
+    HOTLIST *hotlist;
+
+    ASSERT(ISUSER(con));
+
+    /* remove user from global list, calls free_user() indirectly */
+    ASSERT (validate_user (con->user));
+    hash_remove (Users, con->user->nick);
+
+    /* if this user had hotlist entries, remove them from the lists */
+    for (u = con->uopt->hotlist; u; u = u->next)
+    {
+	hotlist = u->data;
+	ASSERT (validate_hotlist (hotlist));
+	hotlist->users = list_delete (hotlist->users, con);
+	if (!hotlist->users)	/* no more users, free entry */
+	    hash_remove (Hotlist, hotlist->nick);
+    }
+
+    list_free (con->uopt->hotlist, 0);
+    list_free (con->uopt->ignore, free_pointer);
+
+    if (con->uopt->files)
+	free_hash (con->uopt->files);
+
+    FREE (con->uopt);
+}
+
 void
 remove_connection (CONNECTION * con)
 {
-    HOTLIST *hotlist;
-
     ASSERT (validate_connection (con));
 
     /* close socket */
@@ -45,30 +77,7 @@ remove_connection (CONNECTION * con)
 
     if (ISUSER (con))
     {
-	LIST *u;
-
-	/* remove user from global list, calls free_user() indirectly */
-	ASSERT (validate_user (con->user));
-	hash_remove (Users, con->user->nick);
-
-	/* if this user had hotlist entries, remove them from the lists */
-	for (u = con->uopt->hotlist; u; u = u->next)
-	{
-	    hotlist = u->data;
-	    ASSERT (validate_hotlist (hotlist));
-	    hotlist->users = list_delete (hotlist->users, con);
-	    if (!hotlist->users)	/* no more users, free entry */
-		hash_remove (Hotlist, hotlist->nick);
-	}
-
-	list_free (con->uopt->hotlist, 0);
-	list_free (con->uopt->ignore, free_pointer);
-
-	if (con->uopt->files)
-	    free_hash (con->uopt->files);
-
-	FREE (con->uopt);
-
+	remove_user(con);
     }
     else if (ISSERVER (con))
     {
