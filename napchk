@@ -1,0 +1,49 @@
+#!/bin/sh
+# OpenNAP crontab checking file, used to restart your OpenNAP server
+# if for some reason it crashed, or the host system reboots.
+#
+# To check to see if your OpenNAP server is running do one of the
+# following (10 minute intervals):
+#
+#    0,10,20,30,40,50 * * * *   /home/mydir/napchk
+#
+# If you do not wish to recieve email when your OpenNAP server was
+# restarted, do the following:
+#
+#    0,10,20,30,40,50 * * * *   /home/mydir/napchk >/dev/null 2>&1
+#
+#                                  -- WoLf (itzwolf@usa.net)
+
+# Set this to the home opennap path
+OPENNAPPATH=/home/wolf/opennap
+
+# Set this to the opennap shared folder path
+OPENNAPSHAREPATH=$OPENNAPPATH/share/opennap
+
+# Set this to the path where opennap binary is located
+OPENNAPBINPATH=$OPENNAPPATH/bin
+
+# The rest should not need to be changed.
+
+cd $OPENNAPSHAREPATH
+if test -r pid; then
+     OPENNAPPID=$(cat pid)
+     if $(kill -CHLD $OPENNAPPID >/dev/null 2>&1); then
+     # OpenNAP is still running, Exit
+        exit 0
+     fi
+     echo ""
+     echo "Found an old pid file, Removing..."
+     rm -f pid
+fi
+echo ""
+echo "OpenNAP is not running, Restarting..."
+echo ""
+
+cd $OPENNAPBINPATH
+if test -r opennap ;then
+   ./opennap -b
+   exit 0
+fi
+echo "Could not reload OpenNAP"
+exit 0
