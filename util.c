@@ -564,6 +564,7 @@ add_client (CONNECTION *cli)
 	    FREE(cli);
 	    return -1;
 	}
+	cli->id = Max_Clients;
 	Clients[Max_Clients++] = cli;
 	while (Max_Clients < Num_Clients + 10)
 	    Clients[Max_Clients++] = 0;
