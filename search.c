@@ -396,11 +396,7 @@ generate_search_id (void)
 	OUTOFMEMORY ("generate_search_id");
 	return 0;
     }
-    if (get_random_bytes (id, 4) == -1)
-    {
-	FREE (id);
-	return 0;
-    }
+    get_random_bytes (id, 4);
     expand_hex (id, 4);
     id[8] = 0;
     return id;

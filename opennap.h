@@ -490,7 +490,7 @@ void free_timers (void);
 void free_user (USER *);
 char *generate_nonce (void);
 int get_level (const char *);
-int get_random_bytes (char *d, int);
+void get_random_bytes (char *d, int);
 void handle_connection (CONNECTION *);
 void init_compress (CONNECTION *, int);
 int init_db (void);

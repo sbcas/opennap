@@ -426,9 +426,8 @@ main (int argc, char **argv)
 	}
     }
 
-#ifndef HAVE_DEV_RANDOM
+    /* initialize the random number generator */
     init_random ();
-#endif /* !HAVE_DEV_RANDOM */
 
     /* schedule periodic events */
     add_timer (Collect_Interval, -1, (timer_cb_t) fdb_garbage_collect,

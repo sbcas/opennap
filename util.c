@@ -208,15 +208,35 @@ expand_hex (char *v, int vsize)
     }
 }
 
-#ifndef HAVE_DEV_RANDOM
 static int Stale_Random = 1;
 static struct md5_ctx Random_Context;
 
 void
 init_random (void)
 {
+#ifdef HAVE_DEV_RANDOM
+    int f;
+    char seed[8];
+#endif
+
     md5_init_ctx (&Random_Context);
     Stale_Random = 1;
+#ifdef HAVE_DEV_RANDOM
+    /* seed the random number generate with a better random value */
+    if ((f = open ("/dev/random", O_RDONLY)) > 0)
+    {
+	if (read (f, seed, sizeof(seed)) != sizeof(seed))
+	    log ("init_random(): could not read enough random bytes");
+	else
+	{
+	    md5_process_bytes (seed, sizeof (seed), &Random_Context);
+	    Stale_Random = 0;
+	}
+	close (f);
+    }
+    else
+	log ("generate_nonce(): /dev/random: %s", strerror (errno));
+#endif
 }
 
 void
@@ -225,31 +245,10 @@ add_random_bytes (char *s, int ssize)
     md5_process_bytes (s, ssize, &Random_Context);
     Stale_Random = 0;
 }
-#endif /* !HAVE_DEV_RANDOM */
 
-int
+void
 get_random_bytes (char *d, int dsize)
 {
-#ifdef HAVE_DEV_RANDOM
-    int f;
-
-    f = open ("/dev/random", O_RDONLY);
-    if (f < 0)
-    {
-	log ("generate_nonce(): /dev/random: %s", strerror (errno));
-	return -1;
-    }
-
-    if (read (f, d, dsize) != dsize)
-    {
-	log ("get_random_bytes(): could not read enough random bytes");
-	close (f);
-	return -1;
-    }
-
-    close (f);
-    return 0;
-#else
     char buf[16];
 
     ASSERT (Stale_Random == 0);
@@ -257,8 +256,6 @@ get_random_bytes (char *d, int dsize)
     md5_read_ctx (&Random_Context, buf);
     memcpy (d, buf, dsize);
     md5_process_bytes (buf, 16, &Random_Context);	/* feedback */
-    return 0;
-#endif /* HAVE_DEV_RANDOM */
 }
 
     /* generate our own nonce value */
@@ -275,11 +272,7 @@ generate_nonce (void)
     }
     nonce[16] = 0;
 
-    if (get_random_bytes (nonce, 8) == -1)
-    {
-	FREE(nonce);
-	return 0;
-    }
+    get_random_bytes (nonce, 8);
 
     /* expand the binary data into hex for transport */
     expand_hex (nonce, 8);
