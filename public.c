@@ -32,11 +32,8 @@ HANDLER (public)
     /* protect against DOS attack against the windows napster client */
     if (len > 128)
     {
-	log ("public(): user %s is a biscuit-head (possible DOS attempt)",
-		sender->nick);
-	if (ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"BAD DOG!  NO BISCUIT!");
-	return;
+	pkt[128] = 0;	/* crop the message */
+	log ("public(): cropped %d byte message from user %s", len, sender->nick);
     }
 
     /* can't use split line here because the text field is considered all
@@ -130,11 +127,10 @@ HANDLER (emote)
     /* protect against DOS attack against the windows napster client */
     if (len > 128)
     {
-	log ("emote(): user %s is a biscuit-head (possible DOS attempt)",
-		user->nick);
-	if (ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"BAD DOG!  NO BISCUIT!");
-	return;
+	/* crop message */
+	pkt[127]='"';
+	pkt[128]=0;
+	log ("emote(): cropped %d byte message from user %s", len, user->nick);
     }
 
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
