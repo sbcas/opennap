@@ -126,7 +126,7 @@ HANDLER (level)
 	log ("level(): updated level in user database");
 	db->level = level;
     }
-    else if (user->level > LEVEL_USER)
+    else
     {
 	char email[64];
 
@@ -139,7 +139,7 @@ HANDLER (level)
 	    return;
 	}
 	db->nick = STRDUP (user->nick);
-	db->password = STRDUP (user->pass);
+	db->password = generate_pass (user->pass);
 	db->level = user->level;
 	if (user->email)
 	    db->email = STRDUP (user->email);

@@ -22,91 +22,12 @@
 #include "opennap.h"
 #include "debug.h"
 
-/* no such user */
-void
-nosuchuser (CONNECTION * con, char *nick)
-{
-    ASSERT (VALID (con));
-    send_cmd (con, MSG_SERVER_NOSUCH, "User %s is not currently online.",
-	      nick);
-}
-
-void
-permission_denied (CONNECTION * con)
-{
-    send_cmd (con, MSG_SERVER_NOSUCH, "permission denied");
-}
-
 /* writes `val' as a two-byte value in little-endian format */
 void
 set_val (char *d, unsigned short val)
 {
     val = BSWAP16 (val);
     memcpy (d, &val, 2);
-}
-
-void
-send_cmd (CONNECTION * con, unsigned int msgtype, const char *fmt, ...)
-{
-    va_list ap;
-    size_t l;
-
-    va_start (ap, fmt);
-    vsnprintf (Buf + 4, sizeof (Buf) - 4, fmt, ap);
-    va_end (ap);
-
-    set_tag (Buf, msgtype);
-    l = strlen (Buf + 4);
-    set_len (Buf, l);
-    queue_data (con, Buf, 4 + l);
-}
-
-/* send a message to all peer servers.  `con' is the connection the message
-   was received from and is used to avoid sending the message back from where
-   it originated. */
-void
-pass_message (CONNECTION * con, char *pkt, size_t pktlen)
-{
-    LIST *list;
-
-    for (list = Servers; list; list = list->next)
-	if (list->data != con)
-	    queue_data (list->data, pkt, pktlen);
-}
-
-/* wrapper for pass_message() */
-void
-pass_message_args (CONNECTION * con, unsigned int msgtype, const char *fmt,
-		   ...)
-{
-    va_list ap;
-    size_t l;
-
-    if (!Servers)
-	return;			/* nothing to do */
-
-    va_start (ap, fmt);
-    vsnprintf (Buf + 4, sizeof (Buf) - 4, fmt, ap);
-    va_end (ap);
-    set_tag (Buf, msgtype);
-    l = strlen (Buf + 4);
-    set_len (Buf, l);
-    pass_message (con, Buf, 4 + l);
-}
-
-/* destroys memory associated with the CHANNEL struct.  this is usually
-   not called directly, but in association with the hash_remove() and
-   hash_destroy() calls */
-void
-free_channel (CHANNEL * chan)
-{
-    ASSERT (validate_channel (chan));
-    FREE (chan->name);
-    if (chan->topic)
-	FREE (chan->topic);
-    if (chan->users)
-	list_free (chan->users, 0);
-    FREE (chan);
 }
 
 /* this is like strtok(2), except that all fields are returned as once.  nul
@@ -150,48 +71,6 @@ split_line (char **template, int templatecount, char *pkt)
 	    pkt++;
     }
     return i;
-}
-
-int
-pop_user (CONNECTION * con, char **pkt, USER ** user)
-{
-    ASSERT (validate_connection (con));
-    if (con->class == CLASS_SERVER)
-    {
-	char *ptr;
-
-	if (**pkt != ':')
-	{
-	    log ("pop_user(): server message did not contain nick: %s", *pkt);
-	    return -1;
-	}
-	++*pkt;
-	ptr = next_arg (pkt);
-	*user = hash_lookup (Users, ptr);
-	if (!*user)
-	{
-	    log ("pop_user(): could not find user %s", ptr);
-	    return -1;
-	}
-
-	/* this should not return a user who is local to us.  if so, it
-	   means that some other server has passed us back a message we
-	   sent to them */
-	if ((*user)->local)
-	{
-	    log
-		("pop_user(): fatal error, received server message for local user!");
-	    return -1;
-	}
-    }
-    else
-    {
-	ASSERT (con->class == CLASS_USER);
-	ASSERT (con->user != 0);
-	*user = con->user;
-    }
-    return 0;
-
 }
 
 static char hex[] = "0123456789ABCDEF";
@@ -255,7 +134,7 @@ get_random_bytes (char *d, int dsize)
 
     ASSERT (Stale_Random == 0);
     ASSERT (dsize <= 16);
-    md5_read_ctx (&Random_Context, buf);
+    md5_finish_ctx (&Random_Context, buf);
     memcpy (d, buf, dsize);
     md5_process_bytes (buf, 16, &Random_Context);	/* feedback */
 }
@@ -281,105 +160,6 @@ generate_nonce (void)
 
     return nonce;
 }
-
-/* array magic.  this assumes that all pointers are of the same size as
-   `char*' */
-/* appends `ptr' to the array `list' */
-void *
-array_add (void *list, int *listsize, void *ptr)
-{
-    char **plist;
-
-    ASSERT (list == 0 || VALID_LEN (list, *listsize * sizeof (char *)));
-
-    ASSERT (VALID (ptr));
-    list = REALLOC (list, sizeof (char *) * (*listsize + 1));
-
-    plist = (char **) list;
-    plist[*listsize] = ptr;
-    ++*listsize;
-    return list;
-}
-
-/* removes `ptr' from the array `list'.  note that this does not reclaim
-   the space left over, it just shifts down the remaining entries */
-void *
-array_remove (void *list, int *listsize, void *ptr)
-{
-    int i;
-    char **plist = (char **) list;
-
-    ASSERT (VALID_LEN (list, *listsize * sizeof (char *)));
-
-    ASSERT (VALID (ptr));
-    for (i = 0; i < *listsize; i++)
-    {
-	if (ptr == plist[i])
-	{
-	    if (i < *listsize - 1)
-		memmove (&plist[i], &plist[i + 1],
-			 sizeof (char *) * (*listsize - i - 1));
-
-	    --*listsize;
-	    list = REALLOC (list, *listsize * sizeof (char *));
-
-	    break;
-	}
-    }
-    return list;
-}
-
-#ifdef DEBUG
-int
-validate_connection (CONNECTION * con)
-{
-    ASSERT_RETURN_IF_FAIL (VALID_LEN (con, sizeof (CONNECTION)), 0);
-    ASSERT_RETURN_IF_FAIL (con->magic == MAGIC_CONNECTION, 0);
-    ASSERT_RETURN_IF_FAIL ((con->class == CLASS_USER) ^ (con->user == 0), 0);
-    ASSERT_RETURN_IF_FAIL (VALID_STR (con->host), 0);
-    if (con->sendbuf)
-	ASSERT_RETURN_IF_FAIL (buffer_validate (con->sendbuf), 0);
-    if (con->recvbuf)
-	ASSERT_RETURN_IF_FAIL (buffer_validate (con->recvbuf), 0);
-    if (ISUSER (con))
-	ASSERT_RETURN_IF_FAIL (list_validate (con->uopt.hotlist), 0);
-    return 1;
-}
-
-int
-validate_user (USER * user)
-{
-    ASSERT_RETURN_IF_FAIL (VALID_LEN (user, sizeof (USER)), 0);
-    ASSERT_RETURN_IF_FAIL (user->magic == MAGIC_USER, 0);
-    ASSERT_RETURN_IF_FAIL (VALID_STR (user->nick), 0);
-    ASSERT_RETURN_IF_FAIL (VALID_STR (user->clientinfo), 0);
-    ASSERT_RETURN_IF_FAIL (user->con == 0
-			   || VALID_LEN (user->con, sizeof (CONNECTION)), 0);
-    ASSERT_RETURN_IF_FAIL (user->email == 0 || VALID_STR (user->email), 0);
-    ASSERT_RETURN_IF_FAIL (list_validate (user->channels), 0);
-    return 1;
-}
-
-int
-validate_channel (CHANNEL * chan)
-{
-    ASSERT_RETURN_IF_FAIL (VALID_LEN (chan, sizeof (CHANNEL)), 0);
-    ASSERT_RETURN_IF_FAIL (chan->magic == MAGIC_CHANNEL, 0);
-    ASSERT_RETURN_IF_FAIL (VALID_STR (chan->name), 0);
-    ASSERT_RETURN_IF_FAIL (list_validate (chan->users), 0);
-    return 1;
-}
-
-int
-validate_hotlist (HOTLIST * h)
-{
-    ASSERT_RETURN_IF_FAIL (VALID_LEN (h, sizeof (HOTLIST)), 0);
-    ASSERT_RETURN_IF_FAIL (h->magic == MAGIC_HOTLIST, 0);
-    ASSERT_RETURN_IF_FAIL (VALID_STR (h->nick), 0);
-    ASSERT_RETURN_IF_FAIL (list_validate (h->users), 0);
-    return 1;
-}
-#endif
 
 USER *
 new_user (void)
@@ -495,82 +275,6 @@ safe_realloc (void **ptr, int bytes)
     return 0;
 }
 
-/* this function sends a command to an arbitrary user without the caller
-   needing to know if its a local client or not */
-void
-send_user (USER * user, int tag, char *fmt, ...)
-{
-    int len, offset;
-    va_list ap;
-
-    if (user->local)
-    {
-	/* deliver directly */
-	va_start (ap, fmt);
-	vsnprintf (Buf + 4, sizeof (Buf) - 4, fmt, ap);
-	va_end (ap);
-	set_tag (Buf, tag);
-	len = strlen (Buf + 4);
-	set_len (Buf, len);
-    }
-    else
-    {
-	/* encapsulate and send to remote server */
-	snprintf (Buf + 4, sizeof (Buf) - 4, ":%s %s ", Server_Name,
-		  user->nick);
-	offset = strlen (Buf + 4);
-	set_tag (Buf, MSG_SERVER_ENCAPSULATED);
-	va_start (ap, fmt);
-	vsnprintf (Buf + 8 + offset, sizeof (Buf) - 8 - offset, fmt, ap);
-	va_end (ap);
-	set_tag (Buf + 4 + offset, tag);
-	len = strlen (Buf + 8 + offset);
-	set_len (Buf + 4 + offset, len);
-	len += offset + 4;
-	set_len (Buf, len);
-    }
-    queue_data (user->con, Buf, len + 4);
-}
-
-int
-add_client (CONNECTION * cli)
-{
-    if (Max_Clients == Num_Clients)
-    {
-	/* no space left, allocate more */
-	if (safe_realloc
-	    ((void **) &Clients, sizeof (CONNECTION *) * (Max_Clients + 10)))
-	{
-	    OUTOFMEMORY ("add_client");
-	    CLOSE (cli->fd);
-	    FREE (cli->host);
-	    FREE (cli);
-	    return -1;
-	}
-	memset (&Clients[Max_Clients+1], 0, sizeof (CONNECTION *) * 9);
-	Max_Clients += 10;
-	Clients[Num_Clients] = cli;
-	cli->id = Num_Clients;
-    }
-    else
-    {
-	int i;
-
-	/* find an empty spot for this connection */
-	for (i = 0; i < Max_Clients; i++)
-	{
-	    if (!Clients[i])
-	    {
-		Clients[i] = cli;
-		cli->id = i;
-		break;
-	    }
-	}
-    }
-    Num_Clients++;
-    return 0;
-}
-
 int
 form_message (char *d, int dsize, int tag, const char *fmt, ...)
 {
@@ -595,4 +299,159 @@ print_args (int ac, char **av)
     for (i = 0; i < ac; i++)
 	fprintf (stderr, " \"%s\"", av[i]);
     fputc ('\n', stderr);
+}
+
+static char alphabet[] =
+
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+#define alphabet(c) alphabet[(unsigned int)c]
+
+static int
+b64_encode (char *out, int *outsize, char *in, int insize)
+{
+    unsigned char a, b, c, d;
+    char *pout = out;
+
+    while (insize > 0)
+    {
+	c = d = 0xff;
+	a = (*in >> 2) & 0x3f;
+	b = (*in & 0x3) << 4;
+	in++;
+	insize--;
+	if (insize)
+	{
+	    b |= (*in >> 4) & 0xf;
+	    c = (*in & 0xf) << 2;
+	    in++;
+	    insize--;
+	    if (insize)
+	    {
+		c |= (*in >> 6) & 0x3;
+		d = *in & 0x3f;
+		in++;
+		insize--;
+	    }
+	}
+	*out++ = alphabet (a);
+	*out++ = alphabet (b);
+	if (c != 0xff)
+	{
+	    *out++ = alphabet (c);
+	    if (d != 0xff)
+		*out++ = alphabet (d);
+	    else
+		*out++ = '=';
+	}
+	else
+	{
+	    *out++ = '=';
+	    *out++ = '=';
+	}
+    }
+    *out = 0;
+    *outsize = out - pout;
+    return 0;
+}
+
+static short b64_lookup[128] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,
+    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,
+    -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
+    -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1
+};
+
+#define b64_lookup(c) b64_lookup[(unsigned int)c]
+
+static int
+b64_decode (char *out, int *outsize, const char *in)
+{
+    unsigned char a, b, c, d;
+    unsigned char b2, b3;
+    char *pout = out;
+
+    while (*in)
+    {
+	a = b64_lookup (*in++);
+	b = b64_lookup (*in++);
+	*out++ = a << 2 | b >> 4;
+	b2 = b << 4;
+	if (*in && *in != '=')
+	{
+	    c = b64_lookup (*in++);
+	    b2 |= c >> 2;
+	    *out++ = b2;
+	    b3 = c << 6;
+	    if (*in && *in != '=')
+	    {
+		d = b64_lookup (*in++);
+		b3 |= d;
+		*out++ = b3;
+	    }
+	    else
+		break;
+	}
+	else
+	    break;
+    }
+    *outsize = out - pout;
+    return 0;
+}
+
+int
+check_pass (const char *info, const char *pass)
+{
+    struct md5_ctx md;
+    char hash[16], real[16];
+    int realsize;
+
+    ASSERT (info != 0);
+    ASSERT (pass != 0);
+    if (*info != '1' || *(info + 1) != ',')
+	return -1;
+    info += 2;
+    md5_init_ctx (&md);
+    md5_process_bytes (info, 8, &md);
+    info += 8;
+    if (*info != ',')
+	return -1;
+    info++;
+    md5_process_bytes (pass, strlen (pass), &md);
+    md5_finish_ctx (&md, hash);
+    realsize = sizeof (real);
+    b64_decode (real, &realsize, info);
+    ASSERT (realsize == 16);
+    if (memcmp (real, hash, 16) == 0)
+	return 0;
+    return -1;
+}
+
+char *
+generate_pass (const char *pass)
+{
+    struct md5_ctx md;
+    char hash[16];
+    char output[36]; /* 1,xxxxxxxx,xxxxxxxxxxxxxxxxxxxxxxx== */
+    int outsize;
+    int i;
+
+    ASSERT (pass != 0);
+    output[0] = '1';
+    output[1] = ',';
+    get_random_bytes (output + 2, 8);
+    for (i = 0; i < 8; i++)
+	output[i + 2] = alphabet[((unsigned int) output[i + 2]) % 64];
+    output[10] = ',';
+    md5_init_ctx (&md);
+    md5_process_bytes (output + 2, 8, &md);
+    md5_process_bytes (pass, strlen (pass), &md);
+    md5_finish_ctx (&md, hash);
+    outsize = sizeof (output) - 11;
+    b64_encode (output + 11, &outsize, hash, 16);
+    output[sizeof (output) - 3] = 0; /* strip the trailing == */
+    return (STRDUP (output));
 }

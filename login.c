@@ -226,7 +226,7 @@ HANDLER (login)
 	}
 
 	/* verify the password */
-	if (strcmp (av[1], db->password) != 0)
+	if (check_pass (db->password, av[1]))
 	{
 	    log ("login(): bad password for user %s", av[0]);
 	    if (con->class == CLASS_UNKNOWN)
@@ -275,7 +275,7 @@ HANDLER (login)
 	    goto failed;
 	}
 	db->nick = STRDUP (av[0]);
-	db->password = STRDUP (av[1]);
+	db->password = generate_pass (av[1]);
 	db->email = STRDUP (av[5]);
 	if (!db->nick || !db->password || !db->email)
 	{
@@ -519,6 +519,7 @@ HANDLER (reginfo)
 		       server, fields[0], fields[1], fields[2], fields[3],
 		       fields[4], fields[5]);
 
+    /* this is already the MD5-hashed password, just copy it */
     db->password = STRDUP (fields[1]);
     db->email = STRDUP (fields[2]);
     if (!db->password || !db->email)

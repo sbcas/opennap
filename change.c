@@ -68,16 +68,17 @@ HANDLER (change_pass)
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;
+    /* pass this along even if it is not locally registered.  the user db
+     * is distributed so a record for it may reside on another server */
     pass_message_args (con, tag, "%s", pkt);
     db = hash_lookup (User_Db, user->nick);
     if (!db)
     {
-	log ("change_pass(): could not find user %s in the database",
-	     user->nick);
+	log ("change_pass(): %s is not registered", user->nick);
 	return;
     }
     FREE (db->password);
-    db->password = STRDUP (pkt);
+    db->password = generate_pass (pkt);
 }
 
 /* 702 [ :<user> ] <email>
@@ -216,7 +217,7 @@ HANDLER (alter_pass)
 	return;
     }
     FREE (db->password);
-    db->password = STRDUP (av[1]);
+    db->password = generate_pass (av[1]);
     if (!db->password)
     {
 	OUTOFMEMORY ("alter_pass");

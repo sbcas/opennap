@@ -50,7 +50,7 @@ int
 userdb_init (void)
 {
     FILE *fp;
-    int ac;
+    int ac, regen = 0;
     char *av[6];
     USERDB *u;
 
@@ -62,6 +62,12 @@ userdb_init (void)
     }
     User_Db = hash_init (257, (hash_destroy) userdb_free);
     log ("userdb_init(): reading %s", User_Db_Path);
+    if (fgets (Buf, sizeof (Buf), fp))
+    {
+	if (strncmp (":version 1", Buf, 10))
+	    regen = 1;
+    }
+    rewind (fp);
     while (fgets (Buf, sizeof (Buf), fp))
     {
 	ac = split_line (av, FIELDS (av), Buf);
@@ -71,7 +77,10 @@ userdb_init (void)
 	    if (u)
 	    {
 		u->nick = STRDUP (av[0]);
-		u->password = STRDUP (av[1]);
+		if (regen)
+		    u->password = generate_pass (av[1]);
+		else
+		    u->password = STRDUP (av[1]);
 		u->email = STRDUP (av[2]);
 	    }
 	    if (!u || !u->nick || !u->password || !u->email)
@@ -95,6 +104,9 @@ userdb_init (void)
     }
     fclose (fp);
     log ("userdb_init(): %d registered users", User_Db->dbsize);
+    /* reformat to version 1 specification */
+    if (regen)
+	userdb_dump ();
     return 0;
 }
 
@@ -109,7 +121,12 @@ dump_userdb (USERDB * db, FILE * fp)
     fputc (' ', fp);
     fputs (Levels[db->level], fp);
     fputc (' ', fp);
-    fprintf (fp, "%d %d\r\n", (int) db->created, (int) db->lastSeen);
+#ifdef WIN32
+#define FMT "%d %d\r\n"
+#else
+#define FMT "%d %d\n"
+#endif
+    fprintf (fp, FMT, (int) db->created, (int) db->lastSeen);
 }
 
 int
@@ -126,6 +143,11 @@ userdb_dump (void)
 	logerr ("userdb_dump", path);
 	return -1;
     }
+#ifdef WIN32
+    fputs (":version 1\r\n", fp);
+#else
+    fputs (":version 1\n", fp);
+#endif
     hash_foreach (User_Db, (hash_callback_t) dump_userdb, fp);
     if (fflush (fp))
     {
