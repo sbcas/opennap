@@ -843,19 +843,11 @@ typedef unsigned int socklen_t;
 #define PACKAGE "opennap"
 #define VERSION "0.31"
 
-#define USE_CRLF 1
-
 #define strcasecmp stricmp
 #define strncasecmp strnicmp
 #define vsnprintf _vsnprintf
 #define snprintf _snprintf
 #define getuid() 0	/* just fake it */
-
-#if 0
-// see snprintf.c
-extern int snprintf (char *str, size_t count, const char *fmt, ...);
-extern int vsnprintf (char *str, size_t count, const char *fmt, va_list args);
-#endif
 
 extern int _getopt (int, char **, char *);
 

@@ -1,3 +1,149 @@
+2000-06-08  drscholl  <drscholl@users.sourceforge.net>
+
+	* server_login.c:
+	server link log messages are important after all
+
+	* kill_user.c, search.c:
+	removed log() message from kill_user().  notify_mods() is sufficient
+
+
+	removed old log() in search_callback().  problem seems to be fixed.
+
+	* server_login.c:
+	added more notify_mods() calls in server_login() indicating server link
+	failures
+
+2000-06-07  drscholl  <drscholl@users.sourceforge.net>
+
+	* motd.c:
+	the motd file is now loaded into memory once at startup to reduce the
+	overhead of fileio every time a user logs in
+
+2000-06-06  drscholl  <drscholl@users.sourceforge.net>
+
+	* search.c:
+	removed log message for bitrate test since it seems to be working
+
+	* search.c:
+	added a log() message to search_callback() to print why the minbitrate test
+	fails for a search to track down the problem we have seen
+
+	* list_users.c:
+	added new flags to global_user_list():
+		z	muzzled users
+		c	cloaked users
+
+	* ban.c, login.c, main.c, opennap.h, util.c:
+	moved check for ip bans to login() so that the user name can be printed in
+	the mod notification
+
+	fixed ban save/load to store all bans in the long format.  bans are now
+	restored to the same order they were dumped, so that the older bans are last
+
+	* search.c:
+	max linespeed and frequency checked for "at most" when the correct string is
+	"at best"
+
+2000-06-05  drscholl  <drscholl@users.sourceforge.net>
+
+	* search.c:
+	"at most" qualifiers were not passed to peer servers properly
+
+	* tresolv.c, tresolv.h, whois.c, Makefile.am, Makefile.in, configure, configure.in, main.c:
+	removed tresolv code since it wont work effectively
+
+2000-06-04  drscholl  <drscholl@users.sourceforge.net>
+
+	* search.c:
+	bitrate/samplerate search criteria weren't using BitRate and SampleRate
+
+	* configure, free_user.c, login.c, opennap.h, serverlib.c, whois.c:
+	initial changes to integrate support for dns names in opennap
+
+	* configure, configure.in, whois.c:
+	changed whois to report the dns name for local users
+
+	* Makefile.am, Makefile.in, ban.c, configure, configure.in, main.c, tresolv.c, tresolv.h:
+	added threaded dns lookup routines
+
+2000-06-03  drscholl  <drscholl@users.sourceforge.net>
+
+	* README, configure, configure.in, privmsg.c:
+	changed server link documentation in README to only describe the method of
+	putting both passwords in the file
+
+	added op and deop commands to chanserv.  removed help for these items in
+	operserv.
+
+	* config.c:
+	allow mods+ to query config variables but not set them
+
+	* main.c, server_connect.c:
+	added notify_mods() to report server link failures
+
+	* search.c:
+	added "mp3z" to the list of tokens to ignore in filenames
+
+	* change.c, handler.c, opennap.h:
+	accept the change_email command even if its not supported
+
+	* login.c:
+	removed extraneous log messages from login()
+
+	added notify_mods() message to register_user()
+
+	* add_file.c, remove_file.c:
+	removed log message from remove_file() when the file requested is not shared
+
+	removed log message from add_file() for duplicates
+
+	instead of calling strlen() just calculate the difference between av[0] and
+	av[1] to detect long filenames in add_file/share_file
+
+	* main.c, server_usage.c:
+	added number of registered users to the server stats command
+
+	* add_file.c, config.c, init.c, main.c, motd.c, opennap.h, search.c:
+	motd is now only fopen'd once since it gets used all the time.
+
+	* ChangeLog, Makefile.am, Makefile.in, ban.c, configure, configure.in, kick.c, level.c, login.c, napster.txt, opennap.h, sample.conf:
+	fixed core in level().  user might be NULL so don't operate on it.
+
+	* config.c:
+	changed nick_expire to 31 days by default
+
+	* announce.c, buffer.c, handler.c, search.c:
+	removed several unnecessary log entries
+
+	error message from read() and write() should include the host for which the
+	error occured for better debugging
+
+2000-06-02  drscholl  <drscholl@users.sourceforge.net>
+
+	* README, change.c, join.c, level.c, login.c, muzzle.c, opennap.h, synch.c, userdb.c:
+	added timestamps to the channel modes on synch
+
+	changed the .created member of USERDB to be .timestamp.  This field is now
+	used to keep track of when the entry was last modified so it can be used to
+	synch servers better.
+
+	fixed synch of cloak status.  added ability to absolutely turn cloak on in a
+	server->server message
+
+	rewrote level() to be much cleaner
+
+	muzzle status was not correctly restored from the users file upon startup
+
+	new function create_db() created a USERDB struct based on a USER struct to
+	avoid duplicate code in level() and muzzle()
+
+	* channel.c, handler.c, join.c, level.c, opennap.h, privmsg.c, synch.c, README:
+	added timestamp to channels so that servers can sync the level and limit
+	properly
+
+	added drop channel (10207) command to turn a persistent channel into a
+	normal channel
+
 2000-06-02  drscholl  <drscholl@users.sourceforge.net>
 
 	* TODO, add_file.c:

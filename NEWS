@@ -1,3 +1,28 @@
+[opennap 0.31]
+
+added new flags 'z' and 'c' to global user list to display all muzzled and
+cloaked users, respetively.
+
+the server config command will now dump all variables if none is specified
+
+added the number of registered user to the stats dump
+
+motd is now stored in memory upon startup to avoid reading it from disk
+every time a login occurs
+
+default nick expire is now 31 days
+
+added timestamps for channel settins so that when servers link it is
+unambiguous what it should be set to if there are differences.
+
+bans file is now dumped periodically to save state
+
+added ghost feature where the server will automatically kill a previous
+login if the second login comes from the same ip for the same nickname.
+
+reduced memory usage for bitrate/samplerate to 1 byte per file by using an
+index of allowed values in the MPEG-3 standard.
+
 [opennap 0.30]
 
 added new config var max_topic to limit the max length of a channel topic

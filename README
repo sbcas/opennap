@@ -1,7 +1,7 @@
 opennap v0.31 (ALPHA)
 the open source (TM) napster server
 ===================================
-June 3, 2000
+June 8, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -385,6 +385,10 @@ are implemented as additional functionality in the opennap server.
 10207	drop channel [CLIENT]
 
 	Format: <channel> [ "<reason>" ]
+
+	marks the specified channel as being user created such that its
+	state is not stored in the persistent channels file and will
+	disappear once all users part from it.
 
 10300	share generic media file [CLIENT]
 
