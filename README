@@ -10,10 +10,11 @@ Email: opennap-dev@lists.sourceforge.net
 opennap is an Open Source(TM) server implementation of the popular
 Napster protocol.  It is written in ANSI C and was designed to run on Unix
 platforms.  So far this server has only been tested on:
-	* Red Hat Linux 6.1 (i686)
-	* Red Hat Linux 6.0 (Alpha)
-	* BSDI 4.1
-	* FreeBSD 4.3-stable
+	* Linux
+	* BSDI
+	* FreeBSD
+	* Solaris
+	* OS/2
 	* Windows 2000 (MS VC++)
 Minimal porting should be required for compilation on other Unix variants
 (if you do a port, please send patches to drscholl@users.sourceforge.net)

@@ -1,3 +1,14 @@
+[opennap 0.21]
+
+MySQL is no longer used in opennap.  The users and servers databaseses are
+now handled as a flat text files.  The location of these files is controlled
+by the new configuration variables `user_db_path' and `server_db_path'.  See
+the README file for more details.
+
+OS/2 port by Brian Smith <dbsoft@technologist.com>.
+
+Solaris port by jones@users.sourceforge.net.
+
 [opennap 0.20]
 
 opennap will now listen on port 8889 in addition to the client connection

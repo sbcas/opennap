@@ -16,7 +16,7 @@ static int
 is_ip (const char *s)
 {
     for (; *s; s++)
-	if (!isdigit (*s) && *s != '.')
+	if (!isdigit ((unsigned char) *s) && *s != '.')
 	    return 0;
     return 1;
 }

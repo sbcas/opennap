@@ -19,7 +19,7 @@ invalid_nick (const char *s)
 
     while (*s)
     {
-	if (*s & 0x80 || ISSPACE (*s) || iscntrl (*s)
+	if (*s & 0x80 || ISSPACE (*s) || iscntrl ((unsigned char) *s)
 	    || !isprint ((uchar) * s) || *s == ':')
 	    return 1;
 	count++;

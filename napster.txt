@@ -14,7 +14,7 @@ platform, but also decreases the strain on the server having to parse out
 bad client messages.
 
 Disclaimer: the following information was gathered by analyzing the protocol
-between the linux nap client and may not resemble the official windows client
+between the linux nap client and may not resemble the official Windows client
 protocol.
 
 1.  Client-Server protocol

@@ -121,7 +121,7 @@ duplicate (LIST * list, const char *s)
 
 /* consider the apostrophe to be part of the word since it doesn't make
    sense on its own */
-#define WORD_CHAR(c) (isalnum(c)||c=='\'')
+#define WORD_CHAR(c) (isalnum((unsigned char)c)||c=='\'')
 
 /* return a list of word tokens from the input string */
 LIST *

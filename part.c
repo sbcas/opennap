@@ -12,7 +12,7 @@
 /* [ :<nick> ] <channel> */
 HANDLER (part)
 {
-    CHANNEL *chan;
+    CHANNEL *chan = 0;
     USER *user;
     LIST *list;
 
@@ -48,8 +48,7 @@ HANDLER (part)
        can reuse this same function for both messages easier than
        implementing support for parsing the latter.  The 401 message
        will be translated into a 407 for sending to end users. */
-    pass_message_args (con, MSG_CLIENT_PART, ":%s %s", user->nick,
-		       chan->name);
+    pass_message_args (con, MSG_CLIENT_PART, ":%s %s", user->nick, chan->name);
 
     user->channels = list_delete (user->channels, chan);
 

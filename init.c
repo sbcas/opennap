@@ -8,6 +8,7 @@
 #include <grp.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include <netdb.h>
 #endif /* !WIN32 */
 #include <signal.h>
@@ -76,20 +77,20 @@ init_server (const char *cf)
     /* load the config file */
     config (cf ? cf : SHAREDIR "/config");
 
-#ifndef WIN32
-    if (set_max_connections (Connection_Hard_Limit))
-	return -1;
-    if (Max_Data_Size != -1 && set_data_size (Max_Data_Size))
-	return -1;
-    if (Max_Rss_Size != -1 && set_rss_size (Max_Rss_Size))
-	return -1;
-
     /* open files before dropping dropping cap */
     if (userdb_init (User_Db_Path))
     {
 	log ("init(): userdb_init failed");
 	return -1;
     }
+
+#if !defined(WIN32) && !defined(__EMX__)
+    if (set_max_connections (Connection_Hard_Limit))
+	return -1;
+    if (Max_Data_Size != -1 && set_data_size (Max_Data_Size))
+	return -1;
+    if (Max_Rss_Size != -1 && set_rss_size (Max_Rss_Size))
+	return -1;
 
     if (getuid () == 0)
     {
@@ -135,7 +136,6 @@ init_server (const char *cf)
 	    perror ("setuid");
 	    return -1;
 	}
-
     }
     log ("running as user %d, group %d", getuid (), getgid ());
 #endif /* !WIN32 */

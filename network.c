@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
 #include <netdb.h>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -197,7 +198,7 @@ my_ntoa (unsigned int ip)
     return (inet_ntoa (a));
 }
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__EMX__)
 
 #ifdef RLIMIT_FDMAX
 # define RLIMIT_FD_MAX   RLIMIT_FDMAX

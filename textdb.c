@@ -94,7 +94,8 @@ textdb_find_key (TEXTDB * db, const char *key, long *endOffset)
     while (fgets (Buf, sizeof (Buf) - 1, db->stream))
     {
 	if (Buf[0] != '#' &&
-		!strncasecmp (Buf, key, keyLen) && isspace (Buf[keyLen]))
+		!strncasecmp (Buf, key, keyLen) &&
+		isspace ((unsigned char) Buf[keyLen]))
 	{
 	    if (endOffset)
 		*endOffset = ftell (db->stream);
