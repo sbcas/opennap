@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License. */
 
@@ -9,18 +9,12 @@
 
 /* client notified us that its upload is complete */
 /* <nick> <filename> */
-void
-upload_complete (CONNECTION * con, char *pkt)
+HANDLER (upload_complete)
 {
     char *field[2];
     USER *user;
 
-    /* only end user's should send us this message */
-    if (con->class != CLASS_USER)
-    {
-	log ("upload_complete(): server sent upload-complete! (ignored)");
-	return;
-    }
+    CHECK_USER_CLASS ("upload_complete");
 
     if (split_line (field, sizeof (field) / sizeof (char *), pkt) != 2)
     {

@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -9,8 +9,7 @@
 extern MYSQL *Db;
 
 /* packet contains: <checksum> <filesize> */
-void
-resume (CONNECTION *con, char *pkt)
+HANDLER (resume)
 {
     char *fields[2];
     MYSQL_RES *result;

@@ -1,12 +1,11 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License. */
 
 #include <unistd.h>
 #include "opennap.h"
 
-void
-download_ack (CONNECTION * con, char *pkt)
+HANDLER (download_ack)
 {
     (void) con;
     (void) pkt;

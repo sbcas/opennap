@@ -31,11 +31,6 @@ void user_input (char *s)
 	    s+=4;
 	    type = 400;
 	}
-	else if (!strncmp ("part", s, 4))
-	{
-	    s+=4;
-	    type = 401;
-	}
 	else if (!strncmp ("quit", s, 4))
 	{
 	    Quit = 1;
@@ -48,10 +43,10 @@ void user_input (char *s)
 	    snprintf (Buf, sizeof (Buf), "FILENAME CONTAINS \"%s\" MAX_RESULTS 100", s);
 	    s = Buf;
 	}
-	else if (!strncmp("browse", s, 6))
+	else if (!strncmp ("part", s, 4))
 	{
-	    s+=6;
-	    type=211;
+	    s+=4;
+	    type = 401;
 	}
 	else if (!strncmp("get", s, 3))
 	{
@@ -63,10 +58,35 @@ void user_input (char *s)
 	    s += 3;
 	    type = 205;
 	}
+	else if (!strncmp("browse", s, 6))
+	{
+	    s+=6;
+	    type=211;
+	}
 	else if (!strncmp("whois", s, 5))
 	{
 	    s += 5;
 	    type = 603;
+	}
+	else if (!strncmp("list", s, 4))
+	{
+	    s += 4;
+	    type = 617;
+	}
+	else if (!strncmp("setdataport", s, 11))
+	{
+	    s += 11;
+	    type = 703;
+	}
+	else if (!strncmp("ping", s, 4))
+	{
+	    s += 4;
+	    type = 751;
+	}
+	else if (!strncmp("names", s, 5))
+	{
+	    s += 5;
+	    type = 830;
 	}
 	else
 	{
@@ -126,8 +146,18 @@ server_output (void)
     }
     Buf[bytes] = 0;
 
-    printf ("\rlen=%hd, type=%hd, data=%s\n", len, msg, Buf);
+    printf ("\rlen=%hd, type=%hd, data=%s[K\n", len, msg, Buf);
     rl_forced_update_display ();
+
+    /* handle a ping request */
+    if (msg == 751)
+    {
+	msg = 752; /* pong */
+	write (Fd, &len, 2);
+	write (Fd, &msg, 2);
+	write (Fd, Buf, len);
+    }
+
     return 0;
 }
 

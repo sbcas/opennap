@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -12,8 +12,7 @@ extern MYSQL *Db;
 
 /* handle client request for download of a file */
 /* <nick> <filename> */
-void
-download (CONNECTION * con, char *pkt)
+HANDLER (download)
 {
     char *fields[2];
     USER *user;
@@ -23,12 +22,7 @@ download (CONNECTION * con, char *pkt)
 
     ASSERT (VALID (con));
 
-    /* only end users should send us this message */
-    if (con->class != CLASS_USER)
-    {
-	log ("download(): only USER class may execute this command!");
-	return;
-    }
+    CHECK_USER_CLASS ("download");
 
     if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 2)
     {
@@ -92,7 +86,7 @@ download (CONNECTION * con, char *pkt)
     else
     {
 	/* otherwise pass it to our peer servers for delivery */
-	pass_message_args (con, MSG_SERVER_UPLOAD_REQUEST, ":%s %s \"%s\"",
+	send_cmd (user->serv, MSG_SERVER_UPLOAD_REQUEST, ":%s %s \"%s\"",
 		con->user->nick, fields[0], fields[1]);
     }
 

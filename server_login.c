@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License. */
 
@@ -18,8 +18,7 @@ extern MYSQL *Db;
 
 /* process a request to establish a peer server connection */
 /* <name> <nonce> */
-void
-server_login (CONNECTION *con, char *pkt)
+HANDLER (server_login)
 {
     char *fields[2];
     struct hostent *he;

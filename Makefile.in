@@ -62,14 +62,12 @@ MAKEINFO = @MAKEINFO@
 PACKAGE = @PACKAGE@
 VERSION = @VERSION@
 
-bin_PROGRAMS = opennap metaserver spyserv spynap
-opennap_SOURCES = opennap.h main.c add_file.c db.c search.c 	motd.c hash.h hash.c privmsg.c browse.c 	debug.c debug.h login.c whois.c close_db.c free_user.c 	join.c part.c public.c part_channel.c 	announce.c kill_user.c remove_connection.c config.c download.c 	download_ack.c upload_complete.c topic.c muzzle.c unmuzzle.c 	level.c client_quit.c server_login.c server_connect.c synch.c util.c 	md5c.c md5.h global.h hotlist.c remove_file.c list_channels.c 	list_users.c ping.c resume.c change.c
+bin_PROGRAMS = opennap metaserver
+opennap_SOURCES = opennap.h main.c add_file.c db.c search.c 	motd.c hash.h hash.c privmsg.c browse.c 	debug.c debug.h login.c whois.c free_user.c 	join.c part.c public.c part_channel.c 	announce.c kill_user.c remove_connection.c config.c download.c 	download_ack.c upload_complete.c topic.c muzzle.c unmuzzle.c 	level.c client_quit.c server_login.c server_connect.c synch.c util.c 	md5c.c md5.h global.h hotlist.c remove_file.c list_channels.c 	list_users.c ping.c resume.c change.c
 
 metaserver_SOURCES = metaserver.c
-spyserv_SOURCES = spyserv.c
-spynap_SOURCES = spynap.c
-spynap_LDADD = -lreadline
-EXTRA_DIST = sample.conf sample.motd napster.txt .indent.pro create_db.sql FAQ
+EXTRA_DIST = sample.conf sample.motd napster.txt .indent.pro create_db.sql 	FAQ patchnap.c spyserv.c spynap.c
+
 INCLUDES = -I/usr/include/mysql -DSHAREDIR=\"$(pkgdatadir)\"
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -82,12 +80,12 @@ CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 opennap_OBJECTS =  main.o add_file.o db.o search.o motd.o hash.o \
-privmsg.o browse.o debug.o login.o whois.o close_db.o free_user.o \
-join.o part.o public.o part_channel.o announce.o kill_user.o \
-remove_connection.o config.o download.o download_ack.o \
-upload_complete.o topic.o muzzle.o unmuzzle.o level.o client_quit.o \
-server_login.o server_connect.o synch.o util.o md5c.o hotlist.o \
-remove_file.o list_channels.o list_users.o ping.o resume.o change.o
+privmsg.o browse.o debug.o login.o whois.o free_user.o join.o part.o \
+public.o part_channel.o announce.o kill_user.o remove_connection.o \
+config.o download.o download_ack.o upload_complete.o topic.o muzzle.o \
+unmuzzle.o level.o client_quit.o server_login.o server_connect.o \
+synch.o util.o md5c.o hotlist.o remove_file.o list_channels.o \
+list_users.o ping.o resume.o change.o
 opennap_LDADD = $(LDADD)
 opennap_DEPENDENCIES = 
 opennap_LDFLAGS = 
@@ -95,13 +93,6 @@ metaserver_OBJECTS =  metaserver.o
 metaserver_LDADD = $(LDADD)
 metaserver_DEPENDENCIES = 
 metaserver_LDFLAGS = 
-spyserv_OBJECTS =  spyserv.o
-spyserv_LDADD = $(LDADD)
-spyserv_DEPENDENCIES = 
-spyserv_LDFLAGS = 
-spynap_OBJECTS =  spynap.o
-spynap_DEPENDENCIES = 
-spynap_LDFLAGS = 
 CFLAGS = @CFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
@@ -116,19 +107,18 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 TAR = gtar
 GZIP_ENV = --best
 DEP_FILES =  .deps/add_file.P .deps/announce.P .deps/browse.P \
-.deps/change.P .deps/client_quit.P .deps/close_db.P .deps/config.P \
-.deps/db.P .deps/debug.P .deps/download.P .deps/download_ack.P \
-.deps/free_user.P .deps/hash.P .deps/hotlist.P .deps/join.P \
-.deps/kill_user.P .deps/level.P .deps/list_channels.P \
-.deps/list_users.P .deps/login.P .deps/main.P .deps/md5c.P \
-.deps/metaserver.P .deps/motd.P .deps/muzzle.P .deps/part.P \
-.deps/part_channel.P .deps/ping.P .deps/privmsg.P .deps/public.P \
-.deps/remove_connection.P .deps/remove_file.P .deps/resume.P \
-.deps/search.P .deps/server_connect.P .deps/server_login.P \
-.deps/spynap.P .deps/spyserv.P .deps/synch.P .deps/topic.P \
+.deps/change.P .deps/client_quit.P .deps/config.P .deps/db.P \
+.deps/debug.P .deps/download.P .deps/download_ack.P .deps/free_user.P \
+.deps/hash.P .deps/hotlist.P .deps/join.P .deps/kill_user.P \
+.deps/level.P .deps/list_channels.P .deps/list_users.P .deps/login.P \
+.deps/main.P .deps/md5c.P .deps/metaserver.P .deps/motd.P \
+.deps/muzzle.P .deps/part.P .deps/part_channel.P .deps/ping.P \
+.deps/privmsg.P .deps/public.P .deps/remove_connection.P \
+.deps/remove_file.P .deps/resume.P .deps/search.P \
+.deps/server_connect.P .deps/server_login.P .deps/synch.P .deps/topic.P \
 .deps/unmuzzle.P .deps/upload_complete.P .deps/util.P .deps/whois.P
-SOURCES = $(opennap_SOURCES) $(metaserver_SOURCES) $(spyserv_SOURCES) $(spynap_SOURCES)
-OBJECTS = $(opennap_OBJECTS) $(metaserver_OBJECTS) $(spyserv_OBJECTS) $(spynap_OBJECTS)
+SOURCES = $(opennap_SOURCES) $(metaserver_SOURCES)
+OBJECTS = $(opennap_OBJECTS) $(metaserver_OBJECTS)
 
 all: all-redirect
 .SUFFIXES:
@@ -196,14 +186,6 @@ opennap: $(opennap_OBJECTS) $(opennap_DEPENDENCIES)
 metaserver: $(metaserver_OBJECTS) $(metaserver_DEPENDENCIES)
 	@rm -f metaserver
 	$(LINK) $(metaserver_LDFLAGS) $(metaserver_OBJECTS) $(metaserver_LDADD) $(LIBS)
-
-spyserv: $(spyserv_OBJECTS) $(spyserv_DEPENDENCIES)
-	@rm -f spyserv
-	$(LINK) $(spyserv_LDFLAGS) $(spyserv_OBJECTS) $(spyserv_LDADD) $(LIBS)
-
-spynap: $(spynap_OBJECTS) $(spynap_DEPENDENCIES)
-	@rm -f spynap
-	$(LINK) $(spynap_LDFLAGS) $(spynap_OBJECTS) $(spynap_LDADD) $(LIBS)
 
 tags: TAGS
 

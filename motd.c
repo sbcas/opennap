@@ -1,4 +1,4 @@
-/* Copyright (C) drscholl@sourceforge.net
+/* Copyright (C) drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 

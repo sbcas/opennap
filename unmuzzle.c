@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -6,8 +6,7 @@
 #include "debug.h"
 
 /* [ :<nick> ] <user> */
-void
-unmuzzle (CONNECTION * con, char *pkt)
+HANDLER (unmuzzle)
 {
     USER *user;
 

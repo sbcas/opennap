@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -7,8 +7,7 @@
 
 /* handle notification that a user has quit */
 /* packet contains just <user> */
-void
-client_quit (CONNECTION *con, char *pkt)
+HANDLER (client_quit)
 {
     USER *user;
 

@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License. */
 
@@ -82,20 +82,19 @@ try_connect (char *host, int port)
 
 /* process client request to link another server */
 /* <server-name> <port> */
-void
-server_connect (CONNECTION *con, char *pkt)
+HANDLER (server_connect)
 {
     char *fields[2];
 
     ASSERT (VALID (con));
 
-    if (con->class != CLASS_USER)
-	return;
+    CHECK_USER_CLASS ("server_connect");
 
     ASSERT (VALID (con->user));
 
     if ((con->user->flags & FLAG_ADMIN) != 0)
     {
+	send_cmd (con, MSG_SERVER_NOSUCH, "permission denied");
 	log ("server_connect(): user %s tried to connect to %s", pkt);
 	return; /* no privilege */
     }

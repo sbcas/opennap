@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -58,4 +58,10 @@ sql_error (const char *func, const char *query)
 {
     log ("%s(): %s", func, query);
     log ("%s(): %s", func, mysql_error (Db));
+}
+
+void
+close_db (void)
+{
+    mysql_close (Db);
 }

@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -10,8 +10,7 @@
 extern MYSQL *Db;
 
 /* packet contains: [ :<user> ] <filename> */
-void
-remove_file (CONNECTION *con, char *pkt)
+HANDLER (remove_file)
 {
     USER *user;
     MYSQL_RES	*result;
