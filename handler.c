@@ -441,12 +441,6 @@ handle_connection (CONNECTION * con)
 	    con->destroy = 1;
 	    return;
 	}
-	/* call the protocol handler */
-	dispatch_command (con, tag, len,
-	    con->recvbuf->data + con->recvbuf->consumed + 4);
-	/* mark data as processed */
-	con->recvbuf->consumed += 4 + len;
-
 	if (Servers && ISUSER (con))
 	{
 	    /* check for end of share/unshare sequence.  in order to avoid
@@ -487,6 +481,12 @@ handle_connection (CONNECTION * con)
 		}
 	    }
 	}
+	/* call the protocol handler */
+	dispatch_command (con, tag, len,
+	    con->recvbuf->data + con->recvbuf->consumed + 4);
+	/* mark data as processed */
+	con->recvbuf->consumed += 4 + len;
+
     }
     if (con->recvbuf->consumed)
     {
