@@ -1,6 +1,6 @@
 Frequently Asked Questions (FAQ) about opennap
 ==============================================
-Last updated on February 28, 2000.
+Last updated on April 26, 2000.
 
 Q:  What is opennap?
 A:  opennap is an open source server which speaks the napster protocol
@@ -40,3 +40,15 @@ A:  Running anything as root can potentially be a security risk.  Opennap
     uid/gid to run as.  After setting the max file descriptors, opennap
     calls setuid() and setgid() to drop root privilege (by default it uses
     user nobody, group nobody).
+
+Q:  Why do I get disconnected when I browse a user with many shared files?
+A:  By default, OpenNap will only queue up to 100kbytes of data for a user
+    to prevent a huge backlog of data for a dead/slow client.  A user with
+    1000 shared files will often create more than 100kbytes of output, which
+    triggers the dead client detection to prevent using too much resources.
+
+Q:  How do I fix it?
+A:  If you have memory to spare, you can increase the value of
+    client_queue_length, or alternatively decrease the number of files
+    returned by a browse command (max_browse_result) so that it does not cross
+    the 100kbytes default limit.

@@ -45,6 +45,10 @@ operserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_SERVER_CONFIG;
     else if (!strcasecmp ("reconfig", cmd))
 	tag = MSG_CLIENT_SERVER_RECONFIG;
+    else if (!strcasecmp ("chanban", cmd))
+	tag = MSG_CLIENT_CHANNEL_BAN;
+    else if (!strcasecmp ("chanunban", cmd))
+	tag = MSG_CLIENT_CHANNEL_UNBAN;
     else
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "Unknown OperServ command: %s", cmd);
