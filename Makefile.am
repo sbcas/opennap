@@ -11,6 +11,7 @@ opennap_SOURCES=opennap.h main.c add_file.c db.c search.c \
 	list_users.c ping.c resume.c change.c ban.c
 EXTRA_opennap_SOURCES=compress.c	
 opennap_LDADD=@COMPRESSDOTO@ -L@MYSQLLIBDIR@ -lmysqlclient
+opennap_DEPENDENCIES=@COMPRESSDOTO@
 metaserver_SOURCES=metaserver.c
 EXTRA_DIST=sample.conf sample.motd napster.txt .indent.pro create_db.sql \
 	FAQ patchnap.c spyserv.c spynap.c
