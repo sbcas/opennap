@@ -682,6 +682,10 @@ appropriate, examples of the <data> section for each message are given.
 
 	Help 50 OpenNap help channel
 
+619	??? [CLIENT]
+
+	<nick> "<filename>" <n>
+
 620	??? [SERVER]
 
 	<nick> "<filename>" <filesize> <digit>

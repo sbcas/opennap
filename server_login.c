@@ -178,6 +178,9 @@ HANDLER (server_login_ack)
     {
 	log ("server_login_ack(): incorrect response for server %s",
 		con->host);
+	log ("server_login_ack(): remote nonce=%s, my nonce=%s, their hash=%s, expected hash=%s",
+		con->sendernonce, con->nonce, pkt, hash);
+
 	permission_denied (con);
 	con->destroy = 1;
 	return;

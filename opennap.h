@@ -321,6 +321,8 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_LIST_CHANNELS	617
 #define MSG_SERVER_CHANNEL_LIST_END	617
 #define MSG_SERVER_CHANNEL_LIST		618
+#define MSG_CLIENT_LIMIT		619
+#define MSG_SERVER_LIMIT		620
 #define MSG_CLIENT_MOTD			621	/* client request for motd */
 #define MSG_SERVER_MOTD			621
 #define MSG_CLIENT_MUZZLE		622
@@ -477,6 +479,7 @@ HANDLER (privmsg);
 HANDLER (part);
 HANDLER (ping);
 HANDLER (public);
+HANDLER (queue_limit);
 HANDLER (reginfo);
 HANDLER (register_nick);
 HANDLER (remove_file);

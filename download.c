@@ -224,3 +224,47 @@ HANDLER (upload_request)
 		fields[0] + 1, fields[2]);
     }
 }
+
+/* 619 [ :<user> ] <nick> <filename> <limit> */
+HANDLER (queue_limit)
+{
+    int ac;
+    char av[3];
+    USER *sender, *recip;
+
+    (void) tag;
+    (void) len;
+    if (pop_user (con, &pkt, &sender) != 0)
+	return;
+    ac = split_line (av, sizeof (av) / sizeof (char *), &pkt);
+    if (ac < 3)
+    {
+	log ("queue_limit(): too few arguments");
+	if (con->class == CLASS_USER)
+	{
+	    send_cmd (con, MSG_SERVER_NOSUCH, "too few arguments");
+	    return;
+	}
+	return;
+    }
+    recip = hash_lookup (Users, av[0]);
+    if (!recip)
+    {
+	log ("queue_limit(): unable to find user %s", av[0]);
+	if (con->class == CLASS_USER)
+	    nosuchuser (con, av[0]);
+	return;
+    }
+    if (recip->con)
+    {
+	/* locally connected, deliver final message */
+	send_cmd (recip->con, MSG_SERVER_LIMIT, "%s \"%s\" %s",
+		sender->nick, av[1], av[2]);
+    }
+    else if (Num_Servers && con->class == CLASS_USER)
+    {
+	/* send to peer servers for delivery */
+	pass_message_args (con, MSG_CLIENT_LIMIT, ":%s %s \"%s\" %s",
+		sender->nick, av[0], av[1], av[2]);
+    }
+}
