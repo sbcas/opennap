@@ -27,7 +27,7 @@ if test $ac_cv_warnings != "no"; then
 fi
 
 AC_ARG_ENABLE(debug, [  --enable-debug	Turn on memory debugging code],
-	[if test $enableval=yes; then
+	[if test $enableval = yes; then
 		AC_DEFINE(DEBUG)
 	fi])
 
@@ -37,15 +37,15 @@ AC_ARG_WITH(fd-setsize,
 
 dnl support for resume is now turned off by default
 AC_ARG_ENABLE(resume, [  --enable-resume	Turn on support for resume],
-[if test $enableval=yes; then
-AC_DEFINE(RESUME)
-fi])
+	[if test $enableval = yes; then
+		AC_DEFINE(RESUME)
+	fi])
 
 dnl support for saving email address is turned off by default
-AC_ARG_ENABLE(email, [  --enable-email	Turn on support for saving client
-email addresses],
-[if test $enableval=yes; then
-AC_DEFINE(EMAIL)
-fi])
+AC_ARG_ENABLE(email,
+	[  --enable-email	Turn on support for saving client email addresses],
+	[if test $enableval = yes; then
+		AC_DEFINE(EMAIL)
+	fi])
 
 AC_OUTPUT(Makefile)
