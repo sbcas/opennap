@@ -429,6 +429,15 @@ are implemented as additional functionality in the opennap server.
 	"C:\IMAGES\Grand Canyon.jpg" 54187 bc938fdc0ef63772bfbdbf57aabb0860-54187 image/jpeg
 	"\home\drscholl\src\opennap-0.11.tar.gz" 102161 51c07734811a26853b1a2a87b67c68a1-102161 application/x-gunzip
 
+10301	new browse [CLIENT]
+
+	Format: <nick>
+
+10302	new browse result [CLIENT]
+
+	Format: <nick> "<path>" <filename> <md5> <size> <bitrate>
+		<frequency> <time> [ <filename> ... ]
+
 * References
 
 RFC1459, the IRC protocol was helpful in implementing many features.

@@ -598,10 +598,13 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_CHANNEL_MODE		10209
 #define MSG_CLIENT_CHANNEL_INVITE	10210
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
+#define MSG_CLIENT_BROWSE_NEW		10301
+#define MSG_SERVER_BROWSE_RESULT_NEW	10302
 
 /* utility routines */
 int add_client (CONNECTION *);
 void add_timer (int, int, timer_cb_t, void *);
+char *append_string (char *in, const char *fmt, ...);
 int bind_interface (int, unsigned int, int);
 BUFFER *buffer_append (BUFFER *, BUFFER *);
 BUFFER *buffer_consume (BUFFER *, int);
@@ -725,6 +728,7 @@ HANDLER (announce);
 HANDLER (ban);
 HANDLER (banlist);
 HANDLER (browse);
+HANDLER (browse_new);
 HANDLER (change_data_port);
 HANDLER (change_email);
 HANDLER (change_speed);

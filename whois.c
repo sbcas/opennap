@@ -12,7 +12,7 @@
 #include "debug.h"
 
 /* this is nasty but a necessary evil to avoid using a static buffer */
-static char *
+char *
 append_string (char *in, const char *fmt, ...)
 {
     va_list ap;

@@ -198,6 +198,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_CHANNEL_MODE, channel_mode},	/* 10209 */
     {MSG_CLIENT_CHANNEL_INVITE, channel_invite},/* 10210 */
     {MSG_CLIENT_SHARE_FILE, share_file},	/* 10300 */
+    {MSG_CLIENT_BROWSE_NEW, browse_new},	/* 10301 */
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
 
