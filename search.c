@@ -160,7 +160,8 @@ tokenize (char *s)
 	    !strcmp ("the", s) || !strcmp ("and", s) || !strcmp ("in", s) ||
 	    !strcmp ("of", s) || !strcmp ("you", s) || !strcmp ("it", s) ||
 	    !strcmp ("me", s) || !strcmp ("to", s) || !strcmp ("on", s) ||
-	    !strcmp ("love", s) ||
+	    !strcmp ("love", s) || !strcmp ("g",s) || !strcmp("m",s) ||
+	    !strcmp ("s", s) ||
 	    /* the following are common path names and don't really
 	       provide useful information */
 	    !strcmp ("mp3", s) || !strcmp ("c", s) || !strcmp ("d", s) ||
@@ -176,7 +177,8 @@ tokenize (char *s)
 	    !strcmp ("download", s) || !strcmp ("home", s) ||
 	    !strcmp ("downloads", s) || !strcmp ("live", s) ||
 	    !strcmp ("mp3s", s) || !strcmp ("2", s) || !strcmp("1", s) ||
-	    !strcmp ("mnt", s) || !strcmp ("mp3z", s))
+	    !strcmp ("mnt", s) || !strcmp ("mp3z", s) ||
+	    !strcmp ("cd", s) || !strcmp ("remix", s))
 	{
 	    s = ptr;
 	    continue;
@@ -745,13 +747,17 @@ HANDLER (remote_search)
     id = next_arg (&pkt);
     if (!nick || !id || !pkt)
     {
+	/* try to terminate the search anyway */
+	if(id)
+	    send_cmd (con, MSG_SERVER_REMOTE_SEARCH_END, "%s", id);
 	log ("remote_search(): too few parameters");
 	return;
     }
     user = hash_lookup (Users, nick);
     if (!user)
     {
-	log ("remote_search(): could not locate user %s", nick);
+	log ("remote_search(): could not locate user %s (from %s)", nick,
+		con->host);
 	/* imediately notify the peer that we don't have any matches */
 	send_cmd (con, MSG_SERVER_REMOTE_SEARCH_END, "%s", id);
 	return;
@@ -772,8 +778,8 @@ HANDLER (remote_search_result)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
+    CHECK_SERVER_CLASS ("remote_search_result");
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
-
     if (ac != 8)
     {
 	log ("remote_search_result(): wrong number of args");
@@ -792,13 +798,23 @@ HANDLER (remote_search_result)
 	user = hash_lookup (Users, av[1]);
 	if (!user)
 	{
-	    log ("remote_search_result(): could not find user %s", av[1]);
+	    log ("remote_search_result(): could not find user %s (from %s)",
+		    av[1], con->host);
 	    return;
 	}
 	send_cmd (search->con, MSG_SERVER_SEARCH_RESULT,
 		  "\"%s\" %s %s %s %s %s %s %u %d",
 		  av[2], av[3], av[4], av[5], av[6], av[7], user->nick,
 		  user->host, user->speed);
+    }
+    else
+    {
+	/* pass the message back to the server we got the request from */
+	ASSERT(ISSERVER(search->con));
+	/* should not send it back to the server we just recieved it from */
+	ASSERT(con!=search->con);
+	send_cmd (search->con, tag, "%s %s \"%s\" %s %s %s %s %s",
+		av[0], av[1], av[2], av[3], av[4], av[5], av[6], av[7]);
     }
 }
 

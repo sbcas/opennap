@@ -484,7 +484,7 @@ HANDLER (user_sharing)
     user = hash_lookup (Users, av[0]);
     if (!user)
     {
-	log ("user_sharing(): no such user %s", av[0]);
+	log ("user_sharing(): no such user %s (from %s)", av[0], con->host);
 	return;
     }
     deltanum = atoi (av[1]) - user->shared;
@@ -511,12 +511,17 @@ HANDLER (add_directory)
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("add_directory");
     dir = next_arg (&pkt);	/* directory */
+    if(!dir)
+    {
+	log("add_directory(): missing directory component");
+	return;
+    }
     dirbuf[sizeof (dirbuf) - 1] = 0;	/* ensure nul termination */
     strncpy (dirbuf, dir, sizeof (dirbuf) - 1);
     pathlen = strlen (dirbuf);
     if((size_t)pathlen>=sizeof(dirbuf)-1)
     {
-	ASSERT(pathlen<sizeof(dirbuf));
+	ASSERT((size_t)pathlen<sizeof(dirbuf));
 	log("add_directory(): directory component is too long, ignoring");
 	return;
     }
@@ -527,7 +532,7 @@ HANDLER (add_directory)
 	pathlen++;
 	if((size_t)pathlen>=sizeof(dirbuf)-1)
 	{
-	    ASSERT(pathlen<sizeof(dirbuf));
+	    ASSERT((size_t)pathlen<sizeof(dirbuf));
 	    log("add_directory(): directory component is too long, ignoring");
 	    return;
 	}

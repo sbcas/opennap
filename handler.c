@@ -475,7 +475,8 @@ handle_connection (CONNECTION * con)
 	    if (con->user->sharing)
 	    {
 		if (tag != MSG_CLIENT_ADD_FILE
-		    && tag != MSG_CLIENT_SHARE_FILE)
+		    && tag != MSG_CLIENT_SHARE_FILE
+		    && tag != MSG_CLIENT_ADD_DIRECTORY)
 		{
 		    pass_message_args (con, MSG_SERVER_USER_SHARING,
 				       "%s %d %d", con->user->nick,
