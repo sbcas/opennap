@@ -260,6 +260,8 @@ handle_connection (CONNECTION * con)
 		return;
 	    }
 	    con->recvbuf->datasize = n;
+	    if (con->recvbuf->datasize < 4)
+		return;
 	}
 	/* read the packet body */
 	memcpy (&len, con->recvbuf->data, 2);
@@ -355,7 +357,7 @@ handle_connection (CONNECTION * con)
 	    /* shift down unprocessed data */
 	    memmove (con->recvbuf->data,
 		    con->recvbuf->data + con->recvbuf->consumed, n);
-	    log ("get_input(): %d unprocessed bytes left in buffer", n);
+	    log ("handle_connection(): %d unprocessed bytes left in buffer", n);
 	}
 	con->recvbuf->datasize = n;
 	con->recvbuf->consumed = 0;	/* reset */
