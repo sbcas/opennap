@@ -685,7 +685,7 @@ main (int argc, char **argv)
 	if ((n = poll (ufd, Num_Clients + 1, pending ? 0 : Stat_Click * 1000)) < 0)
 	{
 	    perror ("poll");
-	    break;
+	    continue;
 	}
 #else
 	t.tv_sec = pending ? 0 : Stat_Click;
@@ -693,7 +693,7 @@ main (int argc, char **argv)
 	if ((n = select (maxfd + 1, &set, &wset, NULL, &t)) < 0)
 	{
 	    perror ("select");
-	    break;
+	    continue;
 	}
 #endif /* HAVE_POLL */
 

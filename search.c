@@ -86,10 +86,11 @@ HANDLER (search)
 	    /* next word should be "contains" */
 	    if (strcasecmp ("contains", fields[i]) != 0)
 	    {
+		send_cmd (con, MSG_SERVER_NOSUCH, "invalid search request");
 		log
 		    ("search: error in search string, expected '%s CONTAINS'",
 		     fields[i - 1]);
-		return;
+		goto done;
 	    }
 	    i++;
 
@@ -152,8 +153,9 @@ HANDLER (search)
 	    }
 	    else
 	    {
+		send_cmd (con, MSG_SERVER_NOSUCH, "invalid search request");
 		log ("search: bad compare function: %s", fields[i]);
-		return;
+		goto done;
 	    }
 	    i++;
 	    APPEND (Buf, fields[i]);
@@ -169,14 +171,15 @@ HANDLER (search)
 	else
 	{
 	    log ("search: unknown search field: %s", fields[i]);
-	    return;
+	    send_cmd (con, MSG_SERVER_NOSUCH, "invalid search request");
+	    goto done;
 	}
     }
     /* if we are only searching for a particular content-type, add it now */
     if (strcasecmp (type, "any"))
     {
 	snprintf (Buf + strlen (Buf), sizeof (Buf) - strlen (Buf),
-		  " && type LIKE '%%%s%%'", type);
+		" && type LIKE '%%%s%%'", type);
     }
 
     /* add the limit and make sure we don't return matches for the user that
@@ -188,13 +191,15 @@ HANDLER (search)
 
     if (mysql_query (Db, Buf) != 0)
     {
+	send_cmd (con, MSG_SERVER_NOSUCH, "db error occured");
 	sql_error ("search", Buf);
-	return;
+	goto done;
     }
     if ((result = mysql_store_result (Db)) == NULL)
     {
+	send_cmd (con, MSG_SERVER_NOSUCH, "db error occured");
 	log ("mysql_store_result() error");
-	return;
+	goto done;
     }
     numrows = mysql_num_rows (result);
     log ("search: %d matches", numrows);
@@ -221,6 +226,8 @@ HANDLER (search)
 		  user->host, user->speed /* link speed */ );
     }
     mysql_free_result (result);
+
+done:
 
     /* send end of search result message */
     send_cmd (con, MSG_SERVER_SEARCH_END, "");

@@ -24,10 +24,7 @@ char *Levels[LEVEL_ELITE+1] = {
 static void
 synch_user (USER *user, CONNECTION *con)
 {
-    int i, n;
-    MYSQL_RES *result;
-    MYSQL_ROW row;
-
+    int i;
     ASSERT (validate_connection (con));
     ASSERT (validate_user (user));
 
@@ -35,7 +32,11 @@ synch_user (USER *user, CONNECTION *con)
        them */
     ASSERT (user->con != con);
     if (user->con == con)
+    {
+	/* this really shouldnt happen! */
+	ASSERT (0);
 	return;
+    }
 
     /* send a login message for this user */
     send_cmd (con, MSG_CLIENT_LOGIN, "%s - %d \"%s\" %d",
@@ -59,19 +60,37 @@ synch_user (USER *user, CONNECTION *con)
 		user->nick, user->channels[i]->name);
     }
 
-    /* find the files that this user has shared */
-    snprintf (Buf, sizeof (Buf), "SELECT * FROM library WHERE owner = '%s'",
-	    user->nick);
-    if (mysql_query (Db, Buf) != 0)
+}
+
+void
+synch_server (CONNECTION *con)
+{
+    MYSQL_RES *result;
+    MYSQL_ROW row;
+    int i, n;
+
+    ASSERT (validate_connection (con));
+
+    log ("synch_server(): syncing user list");
+
+    /* send our peer server a list of all users we know about */
+    hash_foreach (Users, (hash_callback_t) synch_user, (void *) con);
+
+    log ("synch_server(): done");
+
+    /* now dump the contents of the library db and send in bulk */
+    log ("sync_server(): syncing db");
+
+    if (mysql_query (Db, "SELECT * FROM library") != 0)
     {
-	sql_error ("synch_user", Buf);
+	sql_error ("synch_user", "SELECT * FROM library");
 	return;
     }
     result = mysql_store_result (Db);
     n = mysql_num_rows (result);
+    ASSERT (n == Num_Files);
     for (i = 0; i < n; i++)
     {
-	mysql_data_seek (result, i);
 	row = mysql_fetch_row (result);
 	if (!strcasecmp (row[IDX_TYPE], "audio/mp3"))
 	    send_cmd (con, MSG_CLIENT_ADD_FILE, ":%s \"%s\" %s %s %s %s %s",
@@ -79,22 +98,10 @@ synch_user (USER *user, CONNECTION *con)
 		    row[IDX_SIZE], row[IDX_BITRATE], row[IDX_FREQ],
 		    row[IDX_LENGTH]);
 	else
-	    send_cmd (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %s %s",
+	    send_cmd (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %s %s %s",
 		    row[IDX_NICK], row[IDX_FILENAME], row[IDX_SIZE],
 		    row[IDX_MD5], row[IDX_TYPE]);
     }
     mysql_free_result (result);
-}
-
-void
-synch_server (CONNECTION *con)
-{
-    ASSERT (validate_connection (con));
-
-    log ("synch_server: syncing user list...");
-
-    /* send our peer server a list of all users we know about */
-    hash_foreach (Users, (hash_callback_t) synch_user, (void *) con);
-
-    log ("synch_server: done");
+    log ("synch_server(): done");
 }
