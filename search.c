@@ -163,6 +163,7 @@ tokenize (char *s)
 	    !strcmp ("documents", s) ||
 	    !strcmp ("mp3's", s) ||
 	    !strcmp ("rock", s) ||
+	    !strcmp ("new", s) ||
 	    !strcmp ("winamp", s) || !strcmp ("mp3s", s))
 	{
 	    s = ptr;

@@ -240,8 +240,13 @@ report_stats (int fd)
 	}
     }
 #endif /* linux */
+#if SIZEOF_LONG == 4
+    snprintf (Buf, sizeof (Buf), "%d %d %.2f %Lu 0\n", Users->dbsize,
+	      Num_Files, loadavg, (unsigned long long) (Num_Gigs) * 1024);
+#else
     snprintf (Buf, sizeof (Buf), "%d %d %.2f %lu 0\n", Users->dbsize,
 	      Num_Files, loadavg, (unsigned long) (Num_Gigs) * 1024);
+#endif /* SIZEOF_LONG */
     WRITE (n, Buf, strlen (Buf));
     CLOSE (n);
 }

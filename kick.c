@@ -82,5 +82,5 @@ HANDLER (kick)
     part_channel (chan, user);
 
     notify_mods ("%s kicked %s out of channel %s: %s", sender->nick,
-		 user->nick, NONULL (pkt));
+		 user->nick, chan->name, NONULL (pkt));
 }
