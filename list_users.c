@@ -79,8 +79,8 @@ global_user_list_cb (USER * user, struct guldata *data)
     if (data->server && *data->server != '*' &&
 	    strcasecmp (data->server, user->server) != 0)
 	return;			/* no match */
-    send_cmd (data->con, MSG_SERVER_GLOBAL_USER_LIST, "%s %s", user->nick,
-	    user->host);
+    send_cmd (data->con, MSG_SERVER_GLOBAL_USER_LIST, "%s %s %s", user->nick,
+	    user->host, my_ntoa(user->ip));
 }
 
 /* 831 [server] [flags] */

@@ -110,9 +110,13 @@ HANDLER (whois)
        i assume that admin+ will use another client such as BWap which
        understands the extra field */
     if (sender->level > LEVEL_MODERATOR)
+    {
 	rsp =
 	    append_string (rsp, " %s",
 			   user->server ? user->server : Server_Name);
+	/* append the ip address on as well to make life easier for clients */
+	rsp=append_string(rsp, " %s", my_ntoa(user->ip));
+    }
     send_user (sender, MSG_SERVER_WHOIS_RESPONSE, "%s", rsp);
     FREE (rsp);
 
