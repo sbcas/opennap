@@ -228,11 +228,10 @@ set_limit (int attr, int value)
     if (lim.rlim_max > 0 && lim.rlim_cur > lim.rlim_max)
 	lim.rlim_max = lim.rlim_cur;	/* adjust max value */
 #ifndef HAVE_POLL
-    if (attr == RLIMIT_FD_MAX && lim.rlim_cur < FD_SETSIZE)
+    if (attr == RLIMIT_FD_MAX && lim.rlim_cur > FD_SETSIZE)
     {
-	log ("set_limit(): compiled limit (%d) is larger than hard limit (%d)",
+	log ("set_limit(): warning: compiled limit (%d) is smaller than hard limit (%d)",
 		FD_SETSIZE, lim.rlim_max);
-	return -1;
     }
 #endif /* HAVE_POLL */
     if (setrlimit (attr, &lim))

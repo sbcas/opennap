@@ -101,7 +101,7 @@ HANDLER (privmsg)
     ptr = next_arg_noskip (&pkt);
     if (!pkt)
     {
-	unparsable(con);
+	unparsable (con);
 	return;
     }
 
@@ -128,13 +128,14 @@ HANDLER (privmsg)
 	if (!is_ignoring (user->con->uopt->ignore, sender->nick))
 	{
 	    /* reconstitute the message */
-	    send_cmd (user->con, MSG_CLIENT_PRIVMSG, "%s %s", sender->nick, pkt);
+	    send_cmd (user->con, MSG_CLIENT_PRIVMSG, "%s %s", sender->nick,
+		      pkt);
 	}
 	else
 	{
 	    /* notify the sender they are being ignored */
 	    send_user (sender, MSG_SERVER_NOSUCH, "%s is ignoring you",
-		    user->nick);
+		       user->nick);
 	}
     }
     else
@@ -144,11 +145,27 @@ HANDLER (privmsg)
 	   need to send one copy */
 	ASSERT (user->con->class == CLASS_SERVER);
 	send_cmd (user->con, MSG_CLIENT_PRIVMSG, ":%s %s %s",
-		sender->nick, user->nick, pkt);
+		  sender->nick, user->nick, pkt);
     }
 }
 
-/*  ??? <user>
+/* 320
+   list ignored users */
+HANDLER (ignore_list)
+{
+    int n = 0;
+    LIST *list;
+
+    (void) len;
+    (void) pkt;
+    ASSERT (validate_connection (con));
+    CHECK_USER_CLASS ("ignore_list");
+    for (list = con->uopt->ignore; list; list = list->next, n++)
+	send_cmd (con, MSG_SERVER_IGNORE_ENTRY /* 321 */, "%s", list->data);
+    send_cmd (con, tag, "%d", n);
+}
+
+/*  322 <user>
     add user to ignore list */
 HANDLER (ignore)
 {
@@ -164,9 +181,10 @@ HANDLER (ignore)
     list->data = STRDUP (pkt);
     list->next = con->uopt->ignore;
     con->uopt->ignore = list;
+    send_cmd (con, tag, "%s", pkt);
 }
 
-/* ??? <user>
+/* 323 <user>
    unignore user */
 HANDLER (unignore)
 {
@@ -178,6 +196,7 @@ HANDLER (unignore)
     {
 	if (!strcasecmp (pkt, (*list)->data))
 	{
+	    send_cmd (con, tag, "%s", pkt);
 	    tmpList = *list;
 	    *list = (*list)->next;
 	    FREE (tmpList->data);
@@ -185,4 +204,21 @@ HANDLER (unignore)
 	    return;
 	}
     }
+    send_cmd (con, MSG_SERVER_NOT_IGNORED /* 324 */, "%s", pkt);
+}
+
+/* 326
+   clear user's ignore list */
+HANDLER (clear_ignore)
+{
+    int n;
+
+    (void) len;
+    (void) pkt;
+    ASSERT (validate_connection (con));
+    CHECK_USER_CLASS ("clear_ignore");
+    n = list_count (con->uopt->ignore);
+    list_free (con->uopt->ignore, free_pointer);
+    con->uopt->ignore = 0;
+    send_cmd (con, tag, "%d", n);
 }

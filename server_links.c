@@ -59,13 +59,9 @@ HANDLER (ping_server)
 	return;
     }
     server = next_arg (&pkt);
-    /* napster.exe v2.0beta5a sends the user's nick, just ping the local
-       server in this case */
-    if(!*server || (ISUSER(con) && !strcasecmp(con->user->nick,server)))
-    {
-	/*server sends no args in this case */
-	send_cmd(con,tag,"");
-    }
+    /* if no server is specified, assume a ping to the local server */
+    if (ISUSER(con) && !is_server(server))
+	send_cmd(con,tag,"%s%s%s",server,pkt?" ":"", NONULL(pkt));
     else if (!strcasecmp (Server_Name, server))
 	send_user (sender, tag, "%s %s", Server_Name, NONULL (pkt));
     else

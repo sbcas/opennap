@@ -87,10 +87,13 @@ HANDLER (kick)
 
     user->channels = list_delete (user->channels, chan);
 
-    part_channel (chan, user);
-
     notify_mods (CHANNELLOG_MODE, "%s kicked %s out of channel %s: %s",
 	    sender->nick, user->nick, chan->name, ac == 3 ? av[2] : "");
+
+    /* has to come after the notify_mods() since it uses chan->name and
+       chan may disappear if there are no users left
+       Greg Prosser <greg@snickers.org> */
+    part_channel (chan, user);
 }
 
 /* 820 [ :<sender> ] <channel> [ "<reason>" ] */

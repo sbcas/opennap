@@ -106,6 +106,10 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_UPLOAD_END, upload_end},	/* 221 */
     {MSG_CLIENT_CHECK_PORT, check_port},	/* 300 */
     {MSG_CLIENT_REMOVE_HOTLIST, remove_hotlist},	/* 303 */
+    {MSG_CLIENT_IGNORE_LIST, ignore_list},	/* 320 */
+    {MSG_CLIENT_IGNORE_USER, ignore},		/* 322 */
+    {MSG_CLIENT_UNIGNORE_USER, unignore},	/* 323 */
+    {MSG_CLIENT_CLEAR_IGNORE, clear_ignore},	/* 326 */
     {MSG_CLIENT_JOIN, join},			/* 400 */
     {MSG_CLIENT_PART, part},			/* 401 */
     {MSG_CLIENT_PUBLIC, public},		/* 402 */

@@ -414,6 +414,12 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_CHECK_PORT		300
 #define MSG_SERVER_HOTLIST_ACK		301
 #define MSG_CLIENT_REMOVE_HOTLIST	303
+#define MSG_CLIENT_IGNORE_LIST		320
+#define MSG_SERVER_IGNORE_ENTRY		321
+#define MSG_CLIENT_IGNORE_USER		322
+#define MSG_CLIENT_UNIGNORE_USER	323
+#define MSG_SERVER_NOT_IGNORED		324
+#define MSG_CLIENT_CLEAR_IGNORE		326
 #define MSG_CLIENT_JOIN			400
 #define MSG_CLIENT_PART			401
 #define MSG_CLIENT_PUBLIC		402
@@ -661,6 +667,7 @@ HANDLER (channel_unban);
 HANDLER (check_password);
 HANDLER (check_port);
 HANDLER (clear_channel);
+HANDLER (clear_ignore);
 HANDLER (client_quit);
 HANDLER (cloak);
 HANDLER (data_port_error);
@@ -672,6 +679,7 @@ HANDLER (encapsulated);
 HANDLER (full_channel_list);
 HANDLER (global_user_list);
 HANDLER (ignore);
+HANDLER (ignore_list);
 HANDLER (join);
 HANDLER (kick);
 HANDLER (kill_user);

@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-April 26, 2000
+May 8, 2000
 
 0.  Forward
 
@@ -517,37 +517,50 @@ appropriate, examples of the <data> section for each message are given.
 
 	unknown command.  server returns 0 regardless of any parameters
 
-320	??? [CLIENT, SERVER]
+320	user ignore list [CLIENT, SERVER]
 
 	client: no data
-	server: 0
+	server: <count>
 
-	unknown command.  server returns 0 regardless of any parameters
+	client request to display the list of ignored users.
+	server returns the number of users being ignored
 
-321-2	??? [CLIENT, SERVER]
+321	user ignore list entry [SERVER]
 
-	<?>
+	<user>
 
-	server returns the single parameter that the client passes it
+	server sends each ignored nick in response to a 320 request.  the
+	list is terminated by a 320 message with the number of ignored users.
 
-323	??? [CLIENT]
+322	add user to ignore list [CLIENT, SERVER]
 
-	<?>
+	<user>
 
-	server returns the same parameter in a 324 command
+	server acks the request by returning the nick
 
-324	??? [SERVER]
+323	remove user from ignore list [CLIENT]
 
-	<?>
+	<user>
 
-	returns the value passed by the client in the 323 command
+	server acks the request by returning the nick to be removed from
+	the ignore list.
 
-326	??? [CLIENT, SERVER]
+324	user is not ignored [SERVER]
 
-	client: ?
-	server: <n>
+	<user>
 
-	<n> was 4 once, and 0 every other time.
+	server indicates that <user> is not currently ignored in response to
+	a 323 request.
+
+325	missing.
+
+326	clear ignore list [CLIENT, SERVER]
+
+	client: no data.
+	server: <count>
+
+	client requests the server clear its ignore list.  server returns the
+	number of entries removed from the ignore list.
 
 330	blocked ip list [CLIENT]
 
