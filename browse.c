@@ -52,7 +52,13 @@ HANDLER (browse)
     user = hash_lookup (Users, nick);
     if (!user)
     {
-	nosuchuser (con, nick);
+	if (ISUSER (con))
+	{
+	    /* the napster servers send a 210 instead of 404 for this case */
+	    send_cmd (con, MSG_SERVER_USER_SIGNOFF, "%s", nick);
+	    /* always terminate the list */
+	    send_cmd (con, MSG_SERVER_BROWSE_END, "%s", nick);
+	}
 	return;
     }
     ASSERT (validate_user (user));

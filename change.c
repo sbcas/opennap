@@ -70,8 +70,8 @@ HANDLER (change_pass)
 	return;
     if (!pkt || !*pkt)
     {
-	log("change_pass(): missing new password");
-	unparsable(con);
+	log ("change_pass(): missing new password");
+	unparsable (con);
 	return;
     }
     /* pass this along even if it is not locally registered.  the user db
@@ -100,8 +100,8 @@ HANDLER (change_email)
 	return;
     if (!pkt || !*pkt)
     {
-	log("change_email(): missing new email address");
-	unparsable(con);
+	log ("change_email(): missing new email address");
+	unparsable (con);
 	return;
     }
     pass_message_args (con, tag, ":%s %s", user->nick, pkt);
@@ -144,7 +144,7 @@ HANDLER (alter_port)
     if (!nick || !port)
     {
 	log ("alter_port(): too few arguments");
-	unparsable(con);
+	unparsable (con);
 	return;
     }
     user = hash_lookup (Users, nick);
@@ -159,7 +159,7 @@ HANDLER (alter_port)
     if (p < 0 || p > 65535)
     {
 	log ("alter_port(): %d is an invalid port", p);
-	if (ISUSER(con))
+	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "%d is an invalid port", p);
 	return;
     }
@@ -167,8 +167,8 @@ HANDLER (alter_port)
     if (user->port != p)
     {
 	/* only log when the port value is actually changed, not resets */
-	notify_mods (CHANGELOG_MODE, "%s changed %s's data port to %d: %s", 
-		sender->nick, user->nick, p, NONULL (pkt));
+	notify_mods (CHANGELOG_MODE, "%s changed %s's data port to %d: %s",
+		     sender->nick, user->nick, p, NONULL (pkt));
 	user->port = p;
     }
 
@@ -205,15 +205,16 @@ HANDLER (alter_pass)
     if (!pkt)
     {
 	log ("alter_pass(): missing arguments");
-	unparsable(con);
+	unparsable (con);
 	return;
     }
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
+
     if (ac != 3)
     {
 	log ("alter_pass(): wrong number of arguments");
 	print_args (ac, av);
-	unparsable(con);
+	unparsable (con);
 	return;
     }
     /* send this now since the account might not be locally registered */
@@ -231,9 +232,9 @@ HANDLER (alter_pass)
 	    return;
 	}
 	FREE (db->password);
-	db->password=newpass;
+	db->password = newpass;
     }
-    notify_mods (CHANGELOG_MODE, "%s changed %s's password: %s", 
+    notify_mods (CHANGELOG_MODE, "%s changed %s's password: %s",
 		 sender->nick, av[0], av[2]);
 }
 
@@ -256,7 +257,7 @@ HANDLER (alter_speed)
     {
 	log ("alter_speed(): wrong number of parameters");
 	print_args (ac, av);
-	unparsable(con);
+	unparsable (con);
 	return;
     }
     if (sender->level < LEVEL_MODERATOR)
@@ -284,8 +285,8 @@ HANDLER (alter_speed)
     ASSERT (validate_user (user));
     pass_message_args (con, tag, ":%s %s %d", sender->nick, user->nick,
 		       speed);
-    notify_mods (CHANGELOG_MODE, "%s changed %s's speed to %d.", 
-    		sender->nick, user->nick, speed);
+    notify_mods (CHANGELOG_MODE, "%s changed %s's speed to %d.",
+		 sender->nick, user->nick, speed);
 }
 
 /* 611 [ :<sender> ] <user> [ <reason> ]
@@ -306,15 +307,16 @@ HANDLER (nuke)
 	    permission_denied (con);
 	return;
     }
-    nick=next_arg(&pkt);
+    nick = next_arg (&pkt);
     if (!nick)
     {
 	log ("nuke(): too few parameters");
-	unparsable(con);
+	unparsable (con);
 	return;
     }
     /* pass the message in case its not locally registered */
-    pass_message_args (con, tag, ":%s %s %s", sender->nick, nick, NONULL(pkt));
+    pass_message_args (con, tag, ":%s %s %s", sender->nick, nick,
+		       NONULL (pkt));
     db = hash_lookup (User_Db, nick);
     if (db)
     {
@@ -326,9 +328,9 @@ HANDLER (nuke)
 		permission_denied (con);
 	    return;
 	}
-	hash_remove(User_Db, db->nick);
+	hash_remove (User_Db, db->nick);
     }
-    notify_mods (CHANGELOG_MODE, "%s nuked %s's account: %s", 
+    notify_mods (CHANGELOG_MODE, "%s nuked %s's account: %s",
 		 sender->nick, nick, NONULL (pkt));
 }
 
@@ -373,7 +375,41 @@ HANDLER (unnuke)
     }
     db->nuked = 0;
     pass_message_args (con, tag, ":%s %s", sender->nick, pkt);
-    notify_mods (CHANGELOG_MODE, "%s restored %s's account", 
-    		sender->nick, pkt);
+    notify_mods (CHANGELOG_MODE, "%s restored %s's account",
+		 sender->nick, pkt);
 }
 #endif
+
+/* 652 [ :<sender> ]
+   toggle the invisible state of the current user */
+HANDLER (cloak)
+{
+    USER *sender;
+
+    (void) len;
+    ASSERT (validate_connection (con));
+    if (pop_user (con, &pkt, &sender))
+	return;
+    if (sender->level < LEVEL_MODERATOR)
+    {
+	permission_denied (con);
+	return;
+    }
+    sender->cloaked = !sender->cloaked;
+    if (ISUSER (con))
+    {
+	/* TODO: the strings output from nap indicates that the server should
+	   send the current state back the to client.  however, i don't know
+	   what the numeric is, nor the format */
+	send_cmd (con, 650, "yes");
+	send_cmd (con, 651, "yes");
+	send_cmd (con, 652, "yes");
+	send_cmd (con, 653, "yes");
+	send_cmd (con, 654, "yes");
+	send_cmd (con, 655, "yes");
+	send_cmd (con, 656, "yes");
+	send_cmd (con, 657, "yes");
+	send_cmd (con, 658, "yes");
+    }
+    pass_message_args (con, tag, ":%s", sender->nick);
+}

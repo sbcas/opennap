@@ -106,7 +106,8 @@ struct _user
     unsigned int muzzled:1;	/* non-zero if this user is muzzled */
     unsigned int sharing:1;
     unsigned int unsharing:1;
-    unsigned int xxx:5;		/* unused */
+    unsigned int cloaked:1;
+    unsigned int xxx:4;		/* unused */
     unsigned short shared;	/* # of shared files */
 
     unsigned short totalup;	/* total number of uploads */
@@ -419,6 +420,11 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_CHANNEL_USER_LIST	408	/* list of users in a channel */
 #define MSG_SERVER_CHANNEL_USER_LIST_END	409
 #define MSG_SERVER_TOPIC		410	/* server and client */
+#define MSG_CLIENT_CHANNEL_BAN_LIST	420
+#define MSG_SERVER_CHANNEL_BAN_LIST	421
+#define MSG_CLIENT_CHANNEL_BAN		422
+#define MSG_CLIENT_CHANNEL_UNBAN	423
+#define MSG_CLIENT_CHANNEL_CLEAR_BANS	424
 #define MSG_CLIENT_DOWNLOAD_FIREWALL	500
 #define MSG_SERVER_UPLOAD_FIREWALL	501
 #define MSG_CLIENT_USERSPEED		600
@@ -454,6 +460,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_ANNOUNCE		628
 #define MSG_SERVER_ANNOUNCE		628	/* same as client message */
 #define MSG_SERVER_NICK_BANLIST		629
+#define MSG_CLIENT_CLOAK		652
 #define MSG_CLIENT_CHANGE_SPEED		700
 #define MSG_CLIENT_CHANGE_PASS		701
 #define MSG_CLIENT_CHANGE_EMAIL		702
@@ -472,8 +479,10 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_CHANNEL_LIMIT	826
 #define MSG_CLIENT_FULL_CHANNEL_LIST	827
 #define MSG_SERVER_FULL_CHANNEL_INFO	828
+#define MSG_CLIENT_KICK			829
 #define MSG_SERVER_NAMES_LIST_END	830
 #define MSG_CLIENT_NAMES_LIST		830
+#define MSG_CLIENT_GLOBAL_USER_LIST	831
 
 /* non-standard message unique to this server */
 #define MSG_CLIENT_QUIT			10000	/* user has quit */
@@ -499,12 +508,9 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_USAGE_STATS		10115
 #define MSG_CLIENT_REGISTER_USER	10200
 #define MSG_CLIENT_CHANNEL_LEVEL	10201	/* set min channel user level */
-#define MSG_CLIENT_KICK_USER		10202
+#define MSG_CLIENT_KICK_USER		10202	/* deprecated, use 829 instead*/
 #define MSG_CLIENT_USER_MODE		10203	/* set a user mode */
 #define MSG_SERVER_USER_MODE		10203
-#define MSG_CLIENT_CHANNEL_BAN		10204
-#define MSG_CLIENT_CHANNEL_UNBAN	10205
-#define MSG_CLIENT_CHANNEL_BAN_LIST	10206
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
 
 /* offsets into the row returned for library searches */
@@ -638,6 +644,7 @@ HANDLER (change_speed);
 HANDLER (change_pass);
 HANDLER (channel_ban);
 HANDLER (channel_banlist);
+HANDLER (channel_clear_bans);
 HANDLER (channel_level);
 HANDLER (channel_limit);
 HANDLER (channel_unban);
@@ -645,6 +652,7 @@ HANDLER (check_password);
 HANDLER (check_port);
 HANDLER (clear_channel);
 HANDLER (client_quit);
+HANDLER (cloak);
 HANDLER (data_port_error);
 HANDLER (download);
 HANDLER (download_end);
@@ -652,6 +660,7 @@ HANDLER (download_start);
 HANDLER (emote);
 HANDLER (encapsulated);
 HANDLER (full_channel_list);
+HANDLER (global_user_list);
 HANDLER (join);
 HANDLER (kick);
 HANDLER (kill_user);

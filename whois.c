@@ -99,3 +99,22 @@ HANDLER (whois)
 		   "%s has requested your info", con->user->nick);
     }
 }
+
+/* 831 */
+HANDLER (global_user_list)
+{
+    (void) tag;
+    (void) len;
+    (void) pkt;
+    ASSERT(validate_connection(con));
+    CHECK_USER_CLASS("global_user_list");
+    if(con->user->level<LEVEL_MODERATOR)
+    {
+	permission_denied(con);
+	return;
+    }
+    /*TODO: still dont know what the numeric and format for the server
+      response are */
+    send_cmd(con,832,"a b c d e f");
+    send_cmd(con,831,"");
+}

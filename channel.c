@@ -70,7 +70,7 @@ load_channels (void)
     }
 }
 
-/* 10204 [ :<sender> ] <channel> <user|ip> [ "<reason>" ] */
+/* 422 [ :<sender> ] <channel> <user|ip> [ "<reason>" ] */
 HANDLER (channel_ban)
 {
     CHANNEL *chan;
@@ -157,10 +157,10 @@ HANDLER (channel_ban)
 		       b->target, ac > 2 ? " \"" : "", ac > 2 ? av[2] : "",
 		       ac > 2 ? "\"" : "");
     notify_mods (BANLOG_MODE, "%s banned %s from %s: %s", sender, b->target,
-	    chan->name, NONULL (b->reason));
+		 chan->name, NONULL (b->reason));
 }
 
-/* 10205 [ :<sender> ] <channel> <user|ip> [ "<reason>" ] */
+/* 423 [ :<sender> ] <channel> <user|ip> [ "<reason>" ] */
 HANDLER (channel_unban)
 {
     char *sender, *av[3];
@@ -215,7 +215,8 @@ HANDLER (channel_unban)
 			       ac > 2 ? " \"" : "",
 			       ac > 2 ? av[2] : "", ac > 2 ? "\"" : "");
 	    notify_mods (BANLOG_MODE, "%s unbanned %s from %s: %s",
-			 sender, b->target, chan->name, (ac > 2) ? av[2] : "");
+			 sender, b->target, chan->name,
+			 (ac > 2) ? av[2] : "");
 	    free_ban (b);
 	    tmpList = *list;
 	    *list = (*list)->next;
@@ -228,7 +229,7 @@ HANDLER (channel_unban)
 		  av[1]);
 }
 
-/* 10206 <channel> */
+/* 420 <channel> */
 HANDLER (channel_banlist)
 {
     CHANNEL *chan;
@@ -246,8 +247,55 @@ HANDLER (channel_banlist)
     for (list = chan->bans; list; list = list->next)
     {
 	b = list->data;
-	send_cmd (con, tag, "%s %s \"%s\" %d", b->target, b->setby,
+	/* TODO: i have no idea what the real format of this is.  nap v1.0
+	   just displays whatever the server returns */
+	send_cmd (con, MSG_SERVER_CHANNEL_BAN_LIST,
+		  "%s %s \"%s\" %d", b->target, b->setby,
 		  NONULL (b->reason), (int) b->when);
     }
+    /* TODO: i assume the list is terminated in the same fashion the other
+       list commands are */
     send_cmd (con, tag, "");
+}
+
+/* 424 [ :<sender> ] <channel> */
+HANDLER (channel_clear_bans)
+{
+    USER *sender;
+    CHANNEL *chan;
+
+    (void) len;
+    ASSERT (validate_connection (con));
+    if (pop_user (con, &pkt, &sender))
+	return;
+    if (sender->level < LEVEL_MODERATOR)
+    {
+	permission_denied (con);
+	return;
+    }
+    chan = hash_lookup (Channels, pkt);
+    if (!chan)
+    {
+	nosuchchannel (con);
+	return;
+    }
+    if (list_find (sender->channels, chan) == 0)
+    {
+	/* not on the channel */
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "You are not on that channel");
+	return;
+    }
+    /* pass just in case servers are desynched */
+    pass_message_args (con, tag, ":%s %s", sender->nick, chan->name);
+    if (!chan->bans)
+    {
+	if (ISUSER (con))
+	    send_cmd (con,MSG_SERVER_NOSUCH, "There are no bans");
+	return;
+    }
+    list_free (chan->bans, (list_destroy_t) free_ban);
+    chan->bans = 0;
+    notify_mods (BANLOG_MODE, "%s cleared the ban list on %s", sender->nick,
+		 chan->name);
 }

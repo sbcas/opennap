@@ -110,9 +110,11 @@ only responds to private messages from users of level Moderator or above (it
 is invisible in all other ways).  It currently supports the following
 commands:
 
-	chanban
+	cban
+	cbanclear
+	cbanlist
 	chanlevel
-	chanunban
+	cunban
 	config
 	connect
 	disconnect

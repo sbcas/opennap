@@ -94,7 +94,7 @@ HANDLER (public)
 
     /* format the message */
     l = form_message (Buf, sizeof (Buf), MSG_SERVER_PUBLIC, "%s %s %s",
-	    chan->name, sender->nick, pkt);
+	    chan->name, sender->cloaked ? "Operator" : sender->nick, pkt);
 
     /* send this message to everyone in the channel */
     for (list = chan->users; list; list = list->next)

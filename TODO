@@ -4,18 +4,18 @@
   problem since when the user first connects they will likely send a large
   amount of valid information about the contents of their mp3 library
 
-* add a list users command
+* add a list users command (found numeric, still need to find the format)
 
 * server linking is still blocking for some reason, even thought the socket
   is set nonblocking before the connect() call
 
 * add a timeout to check for blocked server connect() call
 
-* channel ban
-
 * rewrite server db to use two passwords for each server
 
 * allow channels file to accept the default level as either a word or the
   number
 
-* allow muzzle status to be saved in the user db
+* find the server output for the cloak command
+
+* find the server output for the global users list

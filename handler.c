@@ -112,6 +112,10 @@ static HANDLER Protocol[] = {
     {MSG_SERVER_PUBLIC, public},		/* 403 */
     {MSG_SERVER_NOSUCH, server_error},		/* 404 */
     {MSG_SERVER_TOPIC, topic},			/* 410 */
+    {MSG_CLIENT_CHANNEL_BAN_LIST, channel_banlist},	/* 420 */
+    {MSG_CLIENT_CHANNEL_BAN, channel_ban},	/* 422 */
+    {MSG_CLIENT_CHANNEL_UNBAN, channel_unban},	/* 423 */
+    {MSG_CLIENT_CHANNEL_CLEAR_BANS, channel_clear_bans},	/* 424 */
     {MSG_CLIENT_DOWNLOAD_FIREWALL, download},	/* 500 */
     {MSG_CLIENT_USERSPEED, user_speed},		/* 600 */
     {MSG_CLIENT_WHOIS, whois},			/* 603 */
@@ -136,6 +140,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_DATA_PORT_ERROR, data_port_error},	/* 626 */
     {MSG_CLIENT_WALLOP, wallop},		/* 627 */
     {MSG_CLIENT_ANNOUNCE, announce},		/* 628 */
+    {MSG_CLIENT_CLOAK, cloak},			/* 652 */
     {MSG_CLIENT_CHANGE_SPEED, change_speed},	/* 700 */
     {MSG_CLIENT_CHANGE_PASS, change_pass},	/* 701 */
     {MSG_CLIENT_CHANGE_EMAIL, change_email},	/* 702 */
@@ -150,7 +155,9 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_EMOTE, emote},			/* 824 */
     {MSG_CLIENT_CHANNEL_LIMIT, channel_limit},	/* 826 */
     {MSG_CLIENT_FULL_CHANNEL_LIST, full_channel_list},	/* 827 */
+    {MSG_CLIENT_KICK, kick},			/* 829 */
     {MSG_CLIENT_NAMES_LIST, list_users},	/* 830 */
+    {MSG_CLIENT_GLOBAL_USER_LIST,global_user_list},	/* 831 */
 
     /* non-standard messages */
     {MSG_CLIENT_QUIT, client_quit},		/* 10000 */
@@ -176,9 +183,6 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_CHANNEL_LEVEL, channel_level},	/* 10201 */
     {MSG_CLIENT_KICK_USER, kick},		/* 10202 */
     {MSG_CLIENT_USER_MODE, user_mode},		/* 10203 */
-    {MSG_CLIENT_CHANNEL_BAN, channel_ban},	/* 10204 */
-    {MSG_CLIENT_CHANNEL_UNBAN, channel_unban},	/* 10205 */
-    {MSG_CLIENT_CHANNEL_BAN_LIST, channel_banlist},	/* 10206 */
     {MSG_CLIENT_SHARE_FILE, share_file},	/* 10300 */
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);

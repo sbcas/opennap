@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 
-/* this program allows you to do a binary edit of the linux nap v0.9 binary
+/* this program allows you to do a binary edit of the linux nap v1.0 binary
 and change the metaserver which it attempts to connect to.  what i do is set
 the metaserver to 127.0.0.1 and use the metaserver binary from opennap to
 direct the client to the opennap server */
@@ -15,8 +15,12 @@ direct the client to the opennap server */
    THIS PROGRAM. */
 
 /* where to seek() in the stream to find the metaserver address */
-#define OFFSET 0x005a79c /* nap v0.9 beta */
+#define OFFSET 0x004e598 /* nap v1.0 beta */
+#if 0
+#define OFFSET 0x004e6c5 /* nap v1.0 beta */
+/* #define OFFSET 0x005a79c */ /* nap v0.9 beta */
 /* #define OFFSET 0x00596bc */ /* nap v0.8 beta */
+#endif
 
 int
 main(int argc,char**argv)

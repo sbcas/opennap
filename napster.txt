@@ -551,6 +551,12 @@ appropriate, examples of the <data> section for each message are given.
 
 	<n> was 4 once, and 0 every other time.
 
+330	blocked ip list [CLIENT]
+
+332	block ip [CLIENT]
+
+333	unblock ip [CLIENT]
+
 400	join channel [CLIENT]
 
 	<channel-name>
@@ -643,13 +649,23 @@ appropriate, examples of the <data> section for each message are given.
 	[why didn't they put a field to indicate WHO changed the topic?  as
 	it is now you can only tell that it was changed.  -ed]
 
-420	??? [CLIENT]
+420	channel ban list [CLIENT]
 
-	permission denied.
+	<channel>
 
-422-3	??? [CLIENT]
+421	channel ban list entry [SERVER]
 
-	permission denied
+422	channel ban [CLIENT]
+
+	<channel> <user|ip> [ "<reason>" ]
+
+423	channel unban [CLIENT]
+
+	<channel> <user|ip> [ "<reason>" ]
+
+424	channel ban clear
+
+	<channel>
 
 500	alternate download request [CLIENT]
 
@@ -943,9 +959,13 @@ appropriate, examples of the <data> section for each message are given.
 
 630-649	missing
 
-650-652	??? [CLIENT]
+650-651	??? [CLIENT]
 
 	permission denied.
+
+652	cloak user [CLIENT]
+
+	sets the current user to "invisible"
 
 653-699	missing.
 
@@ -1123,9 +1143,9 @@ appropriate, examples of the <data> section for each message are given.
 	<n1> is either 0 or 1.  seems to be 1 if the channel was user
 	created, or 0 if a predefined channel???
 
-829	??? [CLIENT]
+829	kick user from channel [CLIENT]
 
-	permission denied.
+	<channel> <user> [ "<reason>" ]
 
 830	list users in channel [CLIENT, SERVER]
 
@@ -1135,7 +1155,7 @@ appropriate, examples of the <data> section for each message are given.
 	with a 825 response for each user, followed by an 830 response with
 	no data [why didn't they just use the 409 message? -ed]
 
-831	???
+831	global user list [CLIENT]
 
 	[returns permission denied.  -ed]
 

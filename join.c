@@ -249,13 +249,16 @@ HANDLER (join)
     }
 
     /* notify members of the channel that this user has joined */
-    for (list = chan->users; list; list = list->next)
+    if (!user->cloaked)
     {
-	chanUser = list->data;
-	ASSERT (chanUser != 0);
-	if (ISUSER (chanUser->con) && chanUser != user)
-	    send_cmd (chanUser->con, MSG_SERVER_JOIN, "%s %s %d %d",
-		      chan->name, user->nick, user->shared, user->speed);
+	for (list = chan->users; list; list = list->next)
+	{
+	    chanUser = list->data;
+	    ASSERT (chanUser != 0);
+	    if (ISUSER (chanUser->con) && chanUser != user)
+		send_cmd (chanUser->con, MSG_SERVER_JOIN, "%s %s %d %d",
+			chan->name, user->nick, user->shared, user->speed);
+	}
     }
 
     if (ISUSER (con))
