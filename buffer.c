@@ -149,8 +149,10 @@ buffer_validate (BUFFER * b)
 #endif
     ASSERT_RETURN_IF_FAIL (b->magic == MAGIC_BUFFER, 0);
     ASSERT_RETURN_IF_FAIL (b->datasize <= b->datamax, 0);
+#if 0
     ASSERT_RETURN_IF_FAIL (b->data == 0
 			   || VALID_LEN (b->data, b->datasize), 0);
+#endif
     ASSERT_RETURN_IF_FAIL (b->consumed == 0 || b->consumed < b->datasize, 0);
 #if 0
     ASSERT_RETURN_IF_FAIL (b->next == 0
@@ -210,14 +212,17 @@ buffer_compress (z_streamp zip, BUFFER ** b)
 
     if (r)
     {
-	ASSERT(r->next==0);
-	if(r->next!=0)
-	    log("buffer_compress(): ERROR! r->next was not NULL");
-	r->datasize -= zip->avail_out;
+	pr = &r;
+	while((*pr)->next)
+	    pr=&(*pr)->next;
+	(*pr)->datasize -= zip->avail_out;
 	/* this should only happen for the first created buffer if the
 	   input was small and there was a second buffer in the list */
-	if (r->datasize == 0)
+	if ((*pr)->datasize == 0)
 	{
+	    ASSERT(r->next==0);
+	    if(r->next!=0)
+		log("buffer_compress(): ERROR! r->next was not NULL");
 	    mp_free (BufPool, r->data);
 	    FREE (r);
 	    r = 0;
