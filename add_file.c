@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <limits.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -216,7 +217,8 @@ insert_datum (DATUM * info, char *av)
     if (!info->user->con->uopt->files)
     {
 	/* create the hash table */
-	info->user->con->uopt->files = hash_init (257, (hash_destroy) free_datum);
+	info->user->con->uopt->files =
+	    hash_init (257, (hash_destroy) free_datum);
 	if (!info->user->con->uopt->files)
 	{
 	    OUTOFMEMORY ("insert_datum");
@@ -247,7 +249,7 @@ insert_datum (DATUM * info, char *av)
     Num_Gigs += fsize;		/* this is actually kB, not gB */
     Num_Files++;
     Local_Files++;
-    info->user->sharing = 1; /* note that we began sharing */
+    info->user->sharing = 1;	/* note that we began sharing */
 }
 
 static DATUM *
@@ -336,7 +338,7 @@ HANDLER (add_file)
 }
 
 char *Content_Types[] = {
-    "mp3",		/* not a real type, but what we use for audio/mp3 */
+    "mp3",			/* not a real type, but what we use for audio/mp3 */
     "audio",
     "video",
     "application",
@@ -373,8 +375,8 @@ HANDLER (share_file)
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 4)
     {
 	log ("share_file(): wrong number of fields");
-	if(ISUSER(con))
-	    unparsable(con);
+	if (ISUSER (con))
+	    unparsable (con);
 	return;
     }
 
@@ -392,7 +394,8 @@ HANDLER (share_file)
     {
 	log ("share_file(): not a valid type: %s", av[3]);
 	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not a valid type", av[3]);
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not a valid type",
+		      av[3]);
 	return;
     }
 
@@ -416,7 +419,7 @@ HANDLER (user_sharing)
 
     (void) len;
     ASSERT (validate_connection (con));
-    CHECK_SERVER_CLASS("user_sharing");
+    CHECK_SERVER_CLASS ("user_sharing");
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 3)
     {
 	log ("user_sharing(): wrong number of arguments");
@@ -436,4 +439,77 @@ HANDLER (user_sharing)
     user->libsize += deltasize;
     pass_message_args (con, tag, "%s %d %d", user->nick, user->shared,
 		       user->libsize);
+}
+
+/* 870 "<directory>" "<basename>" <md5> <size> <bitrate> <freq> <duration> [ ... ]
+   client command to add multiple files in the same directory */
+HANDLER (add_directory)
+{
+    char *dir, *basename, *md5, *size, *bitrate, *freq, *duration;
+    char path[_POSIX_PATH_MAX];
+    int pathlen;
+    DATUM *info;
+
+    (void) tag;
+    (void) len;
+    ASSERT (validate_connection (con));
+    CHECK_USER_CLASS ("add_directory");
+    dir = next_arg (&pkt);	/* directory */
+
+    strncpy (path, dir, sizeof (path) - 1);
+    pathlen = strlen (path);
+    /* ensure filename ends with a trailing slash */
+    if (pathlen > 0 && path[pathlen - 1] != '\\' &&
+	    (unsigned)pathlen < sizeof (path))
+    {
+	strcat (path, "\\");
+	pathlen++;
+    }
+
+    while (pkt)
+    {
+	if (Max_Shared && con->user->shared > Max_Shared)
+	{
+	    log ("add_directory(): %s is sharing %d files", con->user->nick,
+		 con->user->shared);
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			  "You may only share %d files", Max_Shared);
+	    return;
+	}
+	basename = next_arg (&pkt);
+	md5 = next_arg (&pkt);
+	size = next_arg (&pkt);
+	bitrate = next_arg (&pkt);
+	freq = next_arg (&pkt);
+	duration = next_arg (&pkt);
+	if (!basename || !md5 || !size || !bitrate || !freq || !duration)
+	{
+	    unparsable (con);
+	    return;
+	}
+	/* make sure this isn't a duplicate */
+	strncpy (path + pathlen, basename, sizeof (path) - pathlen - 1);
+	if (con->uopt->files && hash_lookup (con->uopt->files, path))
+	{
+	    log ("add_directory(): duplicate for %s: %s", con->user->nick,
+		 path);
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
+	    return;
+	}
+
+	/* create the db record for this file */
+	if (!(info = new_datum (path, md5)))
+	    return;
+	info->user = con->user;
+	info->size = atoi (size);
+	info->bitrate = atoi (bitrate);
+	info->frequency = atoi (freq);
+	info->duration = atoi (duration);
+	info->type = CT_MP3;
+	info->valid = 1;
+
+	insert_datum (info, path);
+    }
 }

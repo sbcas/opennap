@@ -268,7 +268,13 @@ next_arg (char **s)
 	return 0;
     while (ISSPACE (*r))
 	r++;
-    *s = strpbrk (r, " \t\r\n");
+    if (*r == '"')
+    {
+	r++;
+	*s = strchr (r, '"');
+    }
+    else
+	*s = strpbrk (r, " \t\r\n");
     if (*s)
     {
 	*(*s)++ = 0;

@@ -163,6 +163,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_KICK, kick},			/* 829 */
     {MSG_CLIENT_NAMES_LIST, list_users},	/* 830 */
     {MSG_CLIENT_GLOBAL_USER_LIST,global_user_list},	/* 831 */
+    {MSG_CLIENT_ADD_DIRECTORY, add_directory},	/* 870 */
 
     /* non-standard messages */
     {MSG_CLIENT_QUIT, client_quit},		/* 10000 */

@@ -95,16 +95,29 @@ set_var (const char *var, const char *val)
 	    {
 		n = strtol (val, &ptr, 10);
 		if (*ptr)
+		{
+		    log("set_var(): invalid integer value: %s", val);
 		    return -1;
+		}
 		set_int_var (&Vars[i], n);
 	    }
 	    else if (Vars[i].type==VAR_TYPE_STR)
 		set_str_var (&Vars[i], val);
 	    else if (Vars[i].type == VAR_TYPE_BOOL)
 	    {
-		n = strtol (val, &ptr, 10);
-		if (*ptr)
-		    return -1;
+		if(!strcasecmp("yes",val)||!strcasecmp("on",val))
+		    n=1;
+		else if(!strcasecmp("no",val)||!strcasecmp("off",val))
+		    n=0;
+		else
+		{
+		    n = strtol (val, &ptr, 10);
+		    if (*ptr)
+		    {
+			log("set_var(): invalid boolean value: %s", val);
+			return -1;
+		    }
+		}
 		if (n)
 		    Server_Flags |= Vars[i].val;
 		else
@@ -117,6 +130,7 @@ set_var (const char *var, const char *val)
 	    return 0;
 	}
     }
+    log("set_var(): unknown variable %s", var);
     return -1;
 }
 
@@ -136,9 +150,11 @@ config (const char *path)
     log ("config(): reading %s", path);
     while (fgets (Buf, sizeof (Buf), f))
     {
-	ptr = strrchr (Buf, '\n');
-	if (ptr)
-	    *ptr = 0;
+	/* strip trailing whitespace */
+	ptr = Buf + strlen (Buf);
+	while(ptr>Buf && ISSPACE(*(ptr-1)))
+	    ptr--;
+	*ptr=0;
 	line++;
 	ptr = Buf;
 	while (ISSPACE (*ptr))

@@ -171,6 +171,7 @@ HANDLER (ignore)
 {
     LIST *list;
 
+    (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("ignore_add");
     /*ensure that this user is not already on the ignore list */
@@ -193,6 +194,7 @@ HANDLER (unignore)
 {
     LIST **list, *tmpList;
 
+    (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("ignore_add");
     for (list = &con->uopt->ignore; *list; list = &(*list)->next)
