@@ -14,3 +14,8 @@
 * channel ban
 
 * rewrite server db to use two passwords for each server
+
+* allow channels file to accept the default level as either a word or the
+  number
+
+* allow muzzle status to be saved in the user db

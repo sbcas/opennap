@@ -55,7 +55,7 @@ int
 userdb_init (void)
 {
     FILE *fp;
-    int ac, regen = 0;
+    int ac, regen = 0, level;
     char *av[6], path[_POSIX_PATH_MAX];
     USERDB *u;
 
@@ -99,7 +99,13 @@ userdb_init (void)
 		fclose (fp);
 		return -1;
 	    }
-	    u->level = get_level (av[3]);
+	    level = get_level (av[3]);
+	    if(level < 0 || level > LEVEL_ELITE)
+	    {
+		log("userdb_init(): invalid level %s for user %s", av[3], u->nick);
+		level = LEVEL_USER;
+	    }
+	    u->level = level;
 	    u->created = atol (av[4]);
 	    u->lastSeen = atol (av[5]);
 	    hash_add (User_Db, u->nick, u);
