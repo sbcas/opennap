@@ -25,10 +25,9 @@ typedef struct _block
 {
     void *val;
     int len;
-    char *file;
+    const char *file;
     int line;
     struct _block *next;
-    struct _block *prev;
 }
 BLOCK;
 
@@ -83,7 +82,7 @@ debug_exhausted (const char *file, int line)
 void *
 debug_malloc (int bytes, const char *file, int line)
 {
-    BLOCK *block;
+    BLOCK *block, **ptr;
     int offset;
 
     if (bytes == 0)
@@ -108,12 +107,12 @@ debug_malloc (int bytes, const char *file, int line)
     }
     Memory_Usage += bytes;
     block->len = bytes;
-    block->file = strdup (file);
+    block->file = file;
     if (!block->file)
     {
 	debug_exhausted (__FILE__, __LINE__);
-	free (block);
 	free (block->val);
+	free (block);
 	return 0;
     }
     block->line = line;
@@ -121,57 +120,13 @@ debug_malloc (int bytes, const char *file, int line)
     *((unsigned char *) block->val + bytes) = END_BYTE;
 
     offset = debug_hash (block->val);
-    if (!Allocation[offset])
+    for (ptr = &Allocation[offset]; *ptr; ptr = &(*ptr)->next)
     {
-	block->next = 0;
-	block->prev = 0;
-	Allocation[offset] = block;
+	if (block->val < (*ptr)->val)
+	    break;
     }
-    else
-    {
-	if (block->val > Allocation[offset]->val)
-	{
-	    while (block->val > Allocation[offset]->val)
-	    {
-		if (!Allocation[offset]->next)
-		{
-		    /* insert after the current block */
-		    Allocation[offset]->next = block;
-		    block->prev = Allocation[offset];
-		    block->next = 0;
-		    return block->val;
-		}
-		Allocation[offset] = Allocation[offset]->next;
-	    }
-	    /* insert before current block */
-	    block->next = Allocation[offset];
-	    block->prev = Allocation[offset]->prev;
-	    Allocation[offset]->prev = block;
-	    if (block->prev)
-		block->prev->next = block;
-	}
-	else			/* block->val < Allocation->val */
-	{
-	    while (block->val < Allocation[offset]->val)
-	    {
-		if (!Allocation[offset]->prev)
-		{
-		    /* insert before current block */
-		    Allocation[offset]->prev = block;
-		    block->next = Allocation[offset];
-		    block->prev = 0;
-		    return block->val;
-		}
-		Allocation[offset] = Allocation[offset]->prev;
-	    }
-	    /* insert after the current block */
-	    block->prev = Allocation[offset];
-	    block->next = Allocation[offset]->next;
-	    Allocation[offset]->next = block;
-	    if (block->next)
-		block->next->prev = block;
-	}
-    }
+    block->next = *ptr;
+    *ptr = block;
     return block->val;
 }
 
@@ -189,18 +144,10 @@ static BLOCK *
 find_block (void *ptr)
 {
     int offset = debug_hash (ptr);
+    BLOCK *block;
 
-    if (ptr > Allocation[offset]->val)
-    {
-	while (ptr > Allocation[offset]->val && Allocation[offset]->next)
-	    Allocation[offset] = Allocation[offset]->next;
-    }
-    else
-    {
-	while (ptr < Allocation[offset]->val && Allocation[offset]->prev)
-	    Allocation[offset] = Allocation[offset]->prev;
-    }
-    return (Allocation[offset]->val == ptr ? Allocation[offset] : NULL);
+    for (block = Allocation[offset]; ptr > block->val; block = block->next);
+    return ((ptr == block->val) ? block : 0);
 }
 
 void *
@@ -240,7 +187,7 @@ debug_realloc (void *ptr, int bytes, const char *file, int line)
 void
 debug_free (void *ptr, const char *file, int line)
 {
-    BLOCK *block = 0;
+    BLOCK **list, *block = 0;
     int offset;
 
     if (!ptr)
@@ -258,36 +205,26 @@ debug_free (void *ptr, const char *file, int line)
 		 file, line);
 	return;
     }
-    /* this sets Allocation[offset] to point at the block we requested */
-    find_block (ptr);
-    if (Allocation[offset]->val != ptr)
+    for (list = &Allocation[offset]; *list; list = &(*list)->next)
+    {
+	if ((*list)->val == ptr)
+	    break;
+    }
+    if (!*list)
     {
 	fprintf (stderr,
 		 "debug_free: attempt to free bogus pointer at %s:%d\n",
 		 file, line);
 	return;
     }
-    debug_overflow (Allocation[offset], "free");
-    memset (Allocation[offset]->val, FREE_BYTE, Allocation[offset]->len);
-    free (Allocation[offset]->val);
-    free (Allocation[offset]->file);
-    Memory_Usage -= Allocation[offset]->len;
+    block = *list;
+    /* remove the block from the list */
+    *list = (*list)->next;
 
-    /* remove current block from allocation list */
-    if (Allocation[offset]->next)
-    {
-	block = Allocation[offset]->next;
-	Allocation[offset]->next->prev = Allocation[offset]->prev;
-    }
-
-    if (Allocation[offset]->prev)
-    {
-	block = Allocation[offset]->prev;
-	Allocation[offset]->prev->next = Allocation[offset]->next;
-    }
-
-    free (Allocation[offset]);
-    Allocation[offset] = block;
+    debug_overflow (block, "free");
+    memset (block->val, FREE_BYTE, block->len);
+    free (block->val);
+    Memory_Usage -= block->len;
 }
 
 void
@@ -298,17 +235,11 @@ debug_cleanup (void)
 
     for (i = 0; i < SIZE; i++)
     {
-	if (Allocation[i])
+	for (block = Allocation[i]; block; block = block->next)
 	{
-	    block = Allocation[i];
-	    while (block->prev)
-		block = block->prev;
-	    for (; block; block = block->next)
-	    {
-		fprintf (stderr, "debug_cleanup: %d bytes allocated at %s:%d\n",
-			block->len, block->file, block->line);
-		debug_overflow (block, "cleanup");
-	    }
+	    fprintf (stderr, "debug_cleanup: %d bytes allocated at %s:%d\n",
+		    block->len, block->file, block->line);
+	    debug_overflow (block, "cleanup");
 	}
     }
     if (Memory_Usage)
