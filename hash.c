@@ -28,12 +28,16 @@ hash_init (int buckets, hash_destroy f)
     return h;
 }
 
-static int
+static unsigned int
 hash_string (HASH * table, const char *key)
 {
-    int sum = 0;
+    unsigned int sum = 0;
     for (;*key;key++)
+    {
+	/* shifting by 1 bit prevents abc from having the same hash as acb */
+	sum<<=1;
 	sum += tolower (*key);
+    }
     sum = sum % table->numbuckets;
     return sum;
 }
@@ -42,12 +46,11 @@ void
 hash_add (HASH * table, const char *key, void *data)
 {
     HASHENT *he = CALLOC (1, sizeof (HASHENT));
-    int sum;
+    unsigned int sum;
 
     he->key = key;
     he->data = data;
     sum = hash_string (table, key);
-    /* TODO: sort the members of the bucket */
     he->next = table->bucket[sum];
     table->bucket[sum] = he;
     table->dbsize++;
@@ -57,7 +60,7 @@ void *
 hash_lookup (HASH * table, const char *key)
 {
     HASHENT *he;
-    int sum = hash_string (table, key);
+    unsigned int sum = hash_string (table, key);
     he = table->bucket[sum];
     while (he)
     {
@@ -72,7 +75,7 @@ void
 hash_remove (HASH * table, const char *key)
 {
     HASHENT *he, *last = 0;
-    int sum = hash_string (table, key);
+    unsigned int sum = hash_string (table, key);
     he = table->bucket[sum];
     while (he)
     {

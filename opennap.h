@@ -113,6 +113,8 @@ struct _user
     time_t connected;		/* time at which the user connected */
     int muzzled;		/* non-zero if this user is muzzled */
 
+    HASH *files;		/* db entries for this user's shared files */
+
     CHANNEL **channels;		/* channels of which this user is a member */
     int numchannels;		/* number of channels */
     CONNECTION *con;		/* if locally connected */
@@ -191,6 +193,37 @@ struct _hotlist
     int numusers;	/* number of local clients requesting notification */
 };
 
+typedef struct list LIST;
+struct list
+{
+    void *data;
+    struct list *next;
+};
+
+/* list of DATUM entries, used in the global file list */
+typedef struct {
+    char *key;	/* keyword */
+    LIST *list;	/* list of files containing this keyword */
+    int count;	/* number of files in the list */
+} FLIST;
+
+/* core database entry */
+typedef struct
+{
+    USER *user;		/* user who possesses this file */
+    char *filename;	/* the filename */
+    char *hash;		/* the md5 hash of the file */
+    int size;		/* size of file in bytes */
+    LIST *tokens;	/* list of words in the filename */
+
+    /* next 5 entries make up 64 bits */
+    unsigned short bitrate;
+    unsigned short duration;
+    unsigned short frequency;
+    unsigned int refcount : 8;	/* how many references to this structure? */
+    unsigned int valid : 8;	/* is this a valid file? */
+} DATUM;
+
 typedef enum {
     BAN_IP,
     BAN_USER
@@ -203,6 +236,8 @@ typedef struct _ban {
     char *reason;
     time_t when;
 } BAN;
+
+typedef void (*list_destroy_t) (void *);
 
 extern char *Motd_Path;
 extern char *Db_Host;
@@ -248,6 +283,8 @@ extern int Ban_Size;
 extern HASH *Users;
 extern HASH *Channels;
 extern HASH *Hotlist;
+extern HASH *File_Table;
+extern HASH *MD5;
 
 extern char *Levels[LEVEL_ELITE + 1];
 
@@ -392,7 +429,7 @@ int bind_interface (int, unsigned int, int);
 BUFFER *buffer_append (BUFFER *, BUFFER *);
 BUFFER *buffer_consume (BUFFER *, int);
 void buffer_free (BUFFER *);
-void buffer_group (BUFFER *, int);
+int buffer_group (BUFFER *, int);
 int buffer_read (int, BUFFER **);
 int buffer_size (BUFFER *);
 #if HAVE_LIBZ
@@ -409,6 +446,8 @@ void finalize_compress (ZIP *);
 void free_ban (BAN *);
 void free_channel (CHANNEL *);
 void free_config (void);
+void free_datum (DATUM *);
+void free_flist (FLIST *);
 void free_hotlist (HOTLIST *);
 void free_user (USER *);
 void fudge_path (const char *, char *, int);
@@ -416,6 +455,8 @@ char *generate_nonce (void);
 void init_compress (CONNECTION *, int);
 int init_db (void);
 void init_random (void);
+LIST *list_append (LIST *, void *);
+void list_free (LIST *, list_destroy_t);
 void log (const char *fmt, ...);
 unsigned int lookup_ip (const char *host);
 int make_tcp_connection (const char *host, int port, unsigned int *ip);
@@ -445,7 +486,9 @@ int set_tcp_buffer_len (int, int);
 int split_line (char **template, int templatecount, char *pkt);
 int send_queued_data (CONNECTION *con);
 void sql_error (const char *function, const char *query);
+char *strlower (char *);
 void synch_server (CONNECTION *);
+LIST *tokenize (char *);
 int validate_user (USER *);
 int validate_channel (CHANNEL *);
 int validate_connection (CONNECTION *);

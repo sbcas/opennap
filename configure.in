@@ -10,6 +10,7 @@ AC_EGREP_HEADER(socklen_t, /usr/include/sys/socket.h,
 	AC_DEFINE(HAVE_SOCKLEN_T)],
 	[AC_MSG_RESULT(no)])
 AC_C_BIGENDIAN
+AC_CHECK_SIZEOF(long)
 
 AC_ARG_WITH(mysql, [  --with-mysql=DIR	MySQL is in DIR/lib/mysql and DIR/include/mysql],
 [MYSQLLIBDIR=$withval/lib/mysql

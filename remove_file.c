@@ -4,25 +4,15 @@
 
    $Id$ */
 
-#ifdef WIN32
-#include <windows.h>
-#endif
-#include <mysql.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include "opennap.h"
 #include "debug.h"
 
-extern MYSQL *Db;
-
-/* packet contains: [ :<user> ] <filename> */
+/* 102 [ :<user> ] <filename> */
 HANDLER (remove_file)
 {
     USER	*user;
-    MYSQL_RES	*result;
-    MYSQL_ROW	row;
+    DATUM	*info;
     int		fsize;
-    char	path[256];
 
     (void) tag;
     (void) len;
@@ -30,48 +20,39 @@ HANDLER (remove_file)
 
     if (pop_user (con, &pkt, &user) != 0)
 	return;
+    ASSERT (validate_user (user));
 
-    /* if a local user, pass this message to our peer servers */
-    if (con->class == CLASS_USER)
-	pass_message_args (con, MSG_CLIENT_REMOVE_FILE, ":%s %s",
-	    user->nick, pkt);
-
-    /* need to pull the file size from the database to update the statistics */
-    fudge_path (pkt, path, sizeof (path));
-    snprintf (Buf, sizeof (Buf),
-	    "SELECT size FROM library WHERE owner='%s' && filename='%s'",
-	    user->nick, path);
-    if (mysql_query (Db, Buf) != 0)
+    if (user->shared == 0)
     {
-	sql_error ("remove_file", Buf);
+	log ("remove_file(): user %s is not sharing any files", user->nick);
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "you aren't sharing any files");
 	return;
     }
-    result = mysql_store_result (Db);
-    if ((fsize = mysql_num_rows (result)) != 1)
+
+    /* find the file in the user's list */
+    info = hash_lookup (user->files, pkt);
+    if (!info)
     {
-	row = mysql_fetch_row (result);
-	if (!row)
-	{
-	    log ("remove_file(): mysql_fetch_row() returned NULL");
-	    mysql_free_result (result);
-	    return;
-	}
-
-	fsize = atoi (row[0]) / 1024; /* kB */
-	user->libsize -= fsize;
-	Num_Gigs -= fsize;
-	ASSERT (Num_Files > 0);
-	Num_Files--;
-	user->shared--;
-
-	snprintf (Buf, sizeof (Buf),
-		"DELETE FROM library WHERE owner='%s' && filename='%s'",
-		user->nick, path);
-	if (mysql_query (Db, Buf) != 0)
-	    sql_error ("remove_file", Buf);
+	log ("remove_file(): user %s is not sharing %s", user->nick, pkt);
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "you are not sharing that file");
+	return;
     }
-    else
-	log ("remove_file(): expected 1 row returned from query");
 
-    mysql_free_result (result);
+    /* adjust the global state information */
+    fsize = info->size / 1024; /* kB */
+    user->libsize -= fsize;
+    Num_Gigs -= fsize;
+    ASSERT (Num_Files > 0);
+    Num_Files--;
+    user->shared--;
+
+    /* this invokes free_datum() indirectly */
+    hash_remove (user->files, info->filename);
+
+    /* if a local user, pass this message to our peer servers */
+    if (Num_Servers && con->class == CLASS_USER)
+	pass_message_args (con, MSG_CLIENT_REMOVE_FILE, ":%s %s",
+	    user->nick, pkt);
 }

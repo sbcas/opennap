@@ -17,6 +17,10 @@
 
 #define MIN(a,b) ((a<b)?a:b)
 
+/* tunable parameter.  if you have a large amount of memory allocated, setting
+   this value higher will result in faster validation of pointers */
+#define SIZE 4099
+
 typedef struct _block
 {
     void *val;
@@ -28,8 +32,33 @@ typedef struct _block
 }
 BLOCK;
 
-static BLOCK *Allocation = 0;
+static BLOCK *Allocation[SIZE];
 static int Memory_Usage = 0;
+
+void
+debug_init (void)
+{
+    memset (Allocation, 0, sizeof (Allocation));
+}
+
+#if SIZEOF_LONG == 8
+#define SHIFT 3
+#else
+#define SHIFT 2
+#endif
+
+/* hash the pointer value for insertion into the table */
+static int
+debug_hash (void *ptr)
+{
+    int hash;
+
+    /* pointers are allocated on either 4 or 8 bytes boundaries, so we want
+       to ignore those values.  this will cause consecutive pointers to hash
+       to the next bin */
+    hash = ((unsigned long) ptr) >> SHIFT;
+    return ((hash & 0x7fffffff) % SIZE);
+}
 
 static int
 debug_overflow (BLOCK *block, const char *func)
@@ -44,10 +73,18 @@ debug_overflow (BLOCK *block, const char *func)
     return 0;
 }
 
+static void
+debug_exhausted (const char *file, int line)
+{
+    fprintf (stderr, "debug_malloc(): memory exhausted at %s:%d (%d bytes allocated)\n",
+	    file, line, Memory_Usage);
+}
+
 void *
 debug_malloc (int bytes, const char *file, int line)
 {
     BLOCK *block;
+    int offset;
 
     if (bytes == 0)
     {
@@ -59,72 +96,78 @@ debug_malloc (int bytes, const char *file, int line)
     block = malloc (sizeof (BLOCK));
     if (!block)
     {
-	fprintf (stderr, "debug_malloc(): memory exhausted at %s:%d\n",
-		 file, line);
+	debug_exhausted (file, line);
 	return 0;
     }
     block->val = malloc (bytes + 1);
     if (!block->val)
     {
-	fprintf (stderr, "debug_malloc(): memory exhausted at %s:%d", __FILE__,
-		__LINE__);
+	debug_exhausted (__FILE__, __LINE__);
 	free (block);
 	return 0;
     }
     Memory_Usage += bytes;
     block->len = bytes;
     block->file = strdup (file);
+    if (!block->file)
+    {
+	debug_exhausted (__FILE__, __LINE__);
+	free (block);
+	free (block->val);
+	return 0;
+    }
     block->line = line;
     memset (block->val, ALLOC_BYTE, bytes);
     *((unsigned char *) block->val + bytes) = END_BYTE;
 
-    if (!Allocation)
+    offset = debug_hash (block->val);
+    if (!Allocation[offset])
     {
-	Allocation = block;
 	block->next = 0;
 	block->prev = 0;
+	Allocation[offset] = block;
     }
     else
     {
-	if (block->val > Allocation->val)
+	if (block->val > Allocation[offset]->val)
 	{
-	    while (block->val > Allocation->val)
+	    while (block->val > Allocation[offset]->val)
 	    {
-		if (!Allocation->next)
+		if (!Allocation[offset]->next)
 		{
 		    /* insert after the current block */
-		    Allocation->next = block;
-		    block->prev = Allocation;
+		    Allocation[offset]->next = block;
+		    block->prev = Allocation[offset];
 		    block->next = 0;
 		    return block->val;
 		}
-		Allocation = Allocation->next;
+		Allocation[offset] = Allocation[offset]->next;
 	    }
 	    /* insert before current block */
-	    block->next = Allocation;
-	    block->prev = Allocation->prev;
-	    Allocation->prev = block;
+	    block->next = Allocation[offset];
+	    block->prev = Allocation[offset]->prev;
+	    Allocation[offset]->prev = block;
 	    if (block->prev)
 		block->prev->next = block;
 	}
 	else			/* block->val < Allocation->val */
 	{
-	    while (block->val < Allocation->val)
+	    while (block->val < Allocation[offset]->val)
 	    {
-		if (!Allocation->prev)
+		if (!Allocation[offset]->prev)
 		{
 		    /* insert before current block */
-		    Allocation->prev = block;
-		    block->next = Allocation;
+		    Allocation[offset]->prev = block;
+		    block->next = Allocation[offset];
 		    block->prev = 0;
 		    return block->val;
 		}
-		Allocation = Allocation->prev;
+		Allocation[offset] = Allocation[offset]->prev;
 	    }
 	    /* insert after the current block */
-	    block->prev = Allocation;
-	    block->next = Allocation->next;
-	    Allocation->next = block;
+	    block->prev = Allocation[offset];
+	    block->next = Allocation[offset]->next;
+	    Allocation[offset]->next = block;
 	    if (block->next)
 		block->next->prev = block;
 	}
@@ -136,6 +179,8 @@ void *
 debug_calloc (int count, int bytes, const char *file, int line)
 {
     void *ptr = debug_malloc (count * bytes, file, line);
+    if (!ptr)
+	return 0;
     memset (ptr, 0, count * bytes);
     return ptr;
 }
@@ -143,17 +188,19 @@ debug_calloc (int count, int bytes, const char *file, int line)
 static BLOCK *
 find_block (void *ptr)
 {
-    if (ptr > Allocation->val)
+    int offset = debug_hash (ptr);
+
+    if (ptr > Allocation[offset]->val)
     {
-	while (ptr > Allocation->val && Allocation->next)
-	    Allocation = Allocation->next;
+	while (ptr > Allocation[offset]->val && Allocation[offset]->next)
+	    Allocation[offset] = Allocation[offset]->next;
     }
     else
     {
-	while (ptr < Allocation->val && Allocation->prev)
-	    Allocation = Allocation->prev;
+	while (ptr < Allocation[offset]->val && Allocation[offset]->prev)
+	    Allocation[offset] = Allocation[offset]->prev;
     }
-    return (Allocation->val == ptr ? Allocation : NULL);
+    return (Allocation[offset]->val == ptr ? Allocation[offset] : NULL);
 }
 
 void *
@@ -180,6 +227,8 @@ debug_realloc (void *ptr, int bytes, const char *file, int line)
 	debug_overflow (block, "realloc");
     }
     newptr = debug_malloc (bytes, file, line);
+    if (!newptr)
+	return 0;
     if (ptr)
     {
 	memcpy (newptr, ptr, MIN (bytes, block->len));
@@ -192,6 +241,7 @@ void
 debug_free (void *ptr, const char *file, int line)
 {
     BLOCK *block = 0;
+    int offset;
 
     if (!ptr)
     {
@@ -200,58 +250,69 @@ debug_free (void *ptr, const char *file, int line)
 		 file, line);
 	return;
     }
-    if (!Allocation)
-    {
-	fprintf (stderr,
-		 "debug_free: free called with no memory allocated\n");
-	return;
-    }
-    find_block (ptr);
-    if (Allocation->val != ptr)
+    offset = debug_hash (ptr);
+    if (!Allocation[offset])
     {
 	fprintf (stderr,
 		 "debug_free: attempt to free bogus pointer at %s:%d\n",
 		 file, line);
 	return;
     }
-    debug_overflow (Allocation, "free");
-    memset (Allocation->val, FREE_BYTE, Allocation->len);
-    free (Allocation->val);
-    free (Allocation->file);
-    Memory_Usage -= Allocation->len;
+    /* this sets Allocation[offset] to point at the block we requested */
+    find_block (ptr);
+    if (Allocation[offset]->val != ptr)
+    {
+	fprintf (stderr,
+		 "debug_free: attempt to free bogus pointer at %s:%d\n",
+		 file, line);
+	return;
+    }
+    debug_overflow (Allocation[offset], "free");
+    memset (Allocation[offset]->val, FREE_BYTE, Allocation[offset]->len);
+    free (Allocation[offset]->val);
+    free (Allocation[offset]->file);
+    Memory_Usage -= Allocation[offset]->len;
 
     /* remove current block from allocation list */
-    if (Allocation->next)
+    if (Allocation[offset]->next)
     {
-	block = Allocation->next;
-	Allocation->next->prev = Allocation->prev;
+	block = Allocation[offset]->next;
+	Allocation[offset]->next->prev = Allocation[offset]->prev;
     }
 
-    if (Allocation->prev)
+    if (Allocation[offset]->prev)
     {
-	block = Allocation->prev;
-	Allocation->prev->next = Allocation->next;
+	block = Allocation[offset]->prev;
+	Allocation[offset]->prev->next = Allocation[offset]->next;
     }
 
-    free (Allocation);
-    Allocation = block;
+    free (Allocation[offset]);
+    Allocation[offset] = block;
 }
 
 void
 debug_cleanup (void)
 {
-    BLOCK *block = Allocation;
+    int i;
+    BLOCK *block;
 
-    if (!Allocation)
-	return;
-    while (block->prev)
-	block = block->prev;
-    for (; block; block = block->next)
+    for (i = 0; i < SIZE; i++)
     {
-	fprintf (stderr, "debug_cleanup: %d bytes allocated at %s:%d\n",
-		 block->len, block->file, block->line);
-	debug_overflow (block, "cleanup");
+	if (Allocation[i])
+	{
+	    block = Allocation[i];
+	    while (block->prev)
+		block = block->prev;
+	    for (; block; block = block->next)
+	    {
+		fprintf (stderr, "debug_cleanup: %d bytes allocated at %s:%d\n",
+			block->len, block->file, block->line);
+		debug_overflow (block, "cleanup");
+	    }
+	}
     }
+    if (Memory_Usage)
+	fprintf (stderr, "debug_cleanup: %d bytes total\n", Memory_Usage);
 }
 
 char *
@@ -260,6 +321,8 @@ debug_strdup (const char *s, const char *file, int line)
     char *r;
 
     r = debug_malloc (strlen (s) + 1, file, line);
+    if (!r)
+	return 0;
     strcpy (r, s);
     return r;
 }

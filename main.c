@@ -72,6 +72,12 @@ int Num_Clients = 0;
 /* global users list */
 HASH *Users;
 
+/* global file list */
+HASH *File_Table;
+
+/* global hash list */
+HASH *MD5;
+
 /* local server list.  NOTE that this contains pointers into the Clients
    list to speed up server-server message passing */
 CONNECTION **Servers = NULL;
@@ -263,7 +269,14 @@ handle_connection (CONNECTION * con)
 	return;
     }
     /* make sure all 4 bytes of the header are in the first block */
-    buffer_group (con->recvbuf, 4);
+    if (buffer_group (con->recvbuf, 4) == -1)
+    {
+	/* probably a memory allocation error, close this connection since
+	   we can't handle it */
+	log ("handle_connection(): could not read packet header from buffer");
+	con->destroy = 1;
+	return;
+    }
     memcpy (&len, con->recvbuf->data + con->recvbuf->consumed, 2);
     memcpy (&tag, con->recvbuf->data + con->recvbuf->consumed + 2, 2);
 
@@ -287,7 +300,14 @@ handle_connection (CONNECTION * con)
 
     /* the packet may be fragmented so make sure all of the bytes for this
        packet end up in the first buffer so its easy to handle */
-    buffer_group (con->recvbuf, 4 + len);
+    if (buffer_group (con->recvbuf, 4 + len) == -1)
+    {
+	/* probably a memory allocation error, close this connection since
+	   we can't handle it */
+	log ("handle_connection(): could not read packet body from buffer");
+	con->destroy = 1;
+	return;
+    }
 
 #ifndef HAVE_DEV_RANDOM
     add_random_bytes (con->recvbuf->data + con->recvbuf->consumed, 4 + len);
@@ -601,14 +621,16 @@ main (int argc, char **argv)
     if (init_db () != 0)
 	exit (1);
 
-    /* initialize user table */
+    /* initialize hash tables.  the size of the hash table roughly cuts
+       the max number of matches required to find any given entry by the same
+       factor.  so a 256 entry hash table with 1024 entries will take rougly
+       4 comparisons max to find any one entry.  we use prime numbers here
+       because that gives the table a little better spread */
     Users = hash_init (257, (hash_destroy) free_user);
-
-    /* initialize channel table */
     Channels = hash_init (257, (hash_destroy) free_channel);
-
-    /* initialize the hotlist lookup table */
     Hotlist = hash_init (257, (hash_destroy) free_hotlist);
+    File_Table = hash_init (2053, (hash_destroy) free_flist);
+    MD5 = hash_init (2053, (hash_destroy) free_flist);
 
     /* create the incoming connections socket */
     s = new_tcp_socket ();
@@ -840,15 +862,15 @@ main (int argc, char **argv)
 
     log ("shutting down");
 
+    /* disallow incoming connections */
+    CLOSE (s);
+
     /* close all client connections */
     for (i = 0; i < Num_Clients; i++)
     {
 	if (Clients[i])
 	    remove_connection (Clients[i]);
     }
-
-    /* disallow incoming connections */
-    CLOSE (s);
 
     close_db ();
 
@@ -864,6 +886,8 @@ main (int argc, char **argv)
     if (Servers)
 	FREE (Servers);
 
+    //free_hash (File_Table);
+    free_hash (MD5);
     free_hash (Users);
     free_hash (Channels);
     free_hash (Hotlist);

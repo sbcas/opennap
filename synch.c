@@ -4,18 +4,8 @@
 
    $Id$ */
 
-#ifndef WIN32
-#include <unistd.h>
-#else
-#include <windows.h>
-#endif
-#include <mysql.h>
-#include <string.h>
-#include <stdio.h>
 #include "opennap.h"
 #include "debug.h"
-
-extern MYSQL *Db;
 
 char *Levels[LEVEL_ELITE+1] = {
     "Leech",
@@ -26,9 +16,27 @@ char *Levels[LEVEL_ELITE+1] = {
 };
 
 static void
-synch_user (USER *user, CONNECTION *con)
+sync_file (DATUM *info, CONNECTION *con)
+{
+    ASSERT (validate_connection (con));
+
+    //if (!strcasecmp (row[IDX_TYPE], "audio/mp3"))
+    send_cmd (con, MSG_CLIENT_ADD_FILE, ":%s \"%s\" %s %d %hu %hu %hu",
+	    info->user->nick, info->filename, info->hash, info->size,
+	    info->bitrate, info->frequency, info->duration);
+#if 0
+    else
+	send_cmd (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %s %s %s",
+		row[IDX_NICK], row[IDX_FILENAME], row[IDX_SIZE],
+		row[IDX_MD5], row[IDX_TYPE]);
+#endif
+}
+
+static void
+sync_user (USER *user, CONNECTION *con)
 {
     int i;
+
     ASSERT (validate_connection (con));
     ASSERT (validate_user (user));
 
@@ -63,61 +71,20 @@ synch_user (USER *user, CONNECTION *con)
 	send_cmd (con, MSG_CLIENT_JOIN, ":%s %s",
 		user->nick, user->channels[i]->name);
     }
+
+    /* sync the files for this user */
+    hash_foreach (user->files, (hash_callback_t) sync_file, con);
 }
 
 void
 synch_server (CONNECTION *con)
 {
-    MYSQL_RES *result;
-    MYSQL_ROW row;
-    int i, n;
-    USER *user;
-
     ASSERT (validate_connection (con));
 
-    log ("synch_server(): syncing user list");
+    log ("synch_server(): syncing");
 
     /* send our peer server a list of all users we know about */
-    hash_foreach (Users, (hash_callback_t) synch_user, (void *) con);
-
-    log ("synch_server(): done");
-
-    /* now dump the contents of the library db and send in bulk */
-    log ("sync_server(): syncing db");
-
-    if (mysql_query (Db, "SELECT * FROM library") != 0)
-    {
-	sql_error ("synch_user", "SELECT * FROM library");
-	return;
-    }
-    result = mysql_store_result (Db);
-    n = mysql_num_rows (result);
-    ASSERT (n == Num_Files);
-    for (i = 0; i < n; i++)
-    {
-	row = mysql_fetch_row (result);
-#if 1
-	user = hash_lookup (Users, row[IDX_NICK]);
-	if (!user)
-	{
-	    log ("synch_server(): %s is no longer active", row[IDX_NICK]);
-	    continue;
-	}
-	/* we shouldnt be sending files for users on the server we are
-	   syncing with... */
-	ASSERT (user->serv != con);
-#endif
-	if (!strcasecmp (row[IDX_TYPE], "audio/mp3"))
-	    send_cmd (con, MSG_CLIENT_ADD_FILE, ":%s \"%s\" %s %s %s %s %s",
-		    row[IDX_NICK], row[IDX_FILENAME], row[IDX_MD5],
-		    row[IDX_SIZE], row[IDX_BITRATE], row[IDX_FREQ],
-		    row[IDX_LENGTH]);
-	else
-	    send_cmd (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %s %s %s",
-		    row[IDX_NICK], row[IDX_FILENAME], row[IDX_SIZE],
-		    row[IDX_MD5], row[IDX_TYPE]);
-    }
-    mysql_free_result (result);
+    hash_foreach (Users, (hash_callback_t) sync_user, con);
 
     log ("synch_server(): done");
 }

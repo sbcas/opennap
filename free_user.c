@@ -4,16 +4,9 @@
 
    $Id$ */
 
-#ifdef WIN32
-#include <windows.h>
-#endif /* WIN32 */
-#include <mysql.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include "opennap.h"
 #include "debug.h"
-
-extern MYSQL *Db;
 
 void
 free_user (USER * user)
@@ -30,14 +23,11 @@ free_user (USER * user)
 	pass_message_args (user->con, MSG_CLIENT_QUIT, "%s", user->nick);
     }
 
-    /* remove all files for this user from the database */
-    if (!SigCaught)
-    {
-	snprintf (Buf, sizeof (Buf), "DELETE FROM library WHERE owner='%s'",
-		user->nick);
-	if (mysql_query (Db, Buf) != 0)
-	    sql_error ("free_user", Buf);
-    }
+    /* this marks all the files this user was sharing as invalid.  they
+       get reaped in the process of searching to avoid having to remove
+       them here */
+    if (user->files)
+	free_hash (user->files);
 
     /* remove this user from any channels they were on */
     if (user->channels)

@@ -85,7 +85,7 @@ HANDLER (server_login)
 
     if (!con->nonce)
     {
-	if ((con->nonce = generate_nonce()) == NULL)
+	if ((con->nonce = generate_nonce ()) == NULL)
 	{
 	    send_cmd (con, MSG_SERVER_ERROR, "unable to generate nonce");
 	    con->destroy = 1;

@@ -8,6 +8,8 @@
 #include <string.h>
 #ifdef WIN32
 #include <windows.h>
+#else
+#include <unistd.h>
 #endif
 #include <mysql.h>
 #include <stdio.h>
@@ -30,10 +32,32 @@ try_connect (char *host, int port)
 	return;
 
     cli = new_connection ();
+    if (!cli)
+    {
+	log ("try_connect(): closing connection");
+	CLOSE (f);
+	return;
+    }
     cli->class = CLASS_UNKNOWN; /* not authenticated yet */
     cli->fd = f;
     cli->host = STRDUP (host);
+    if (!cli->host)
+    {
+	log ("try_connect(): ERROR: OUT OF MEMORY");
+	log ("try_connect(): closing connection");
+	CLOSE (f);
+	FREE (cli);
+	return;
+    }
     cli->nonce = generate_nonce ();
+    if (!cli->nonce)
+    {
+	log ("try_connect(): could not generate nonce, closing connection");
+	CLOSE (f);
+	FREE (cli->host);
+	FREE (cli);
+	return;
+    }
     cli->ip = ip;
     cli->flags |= FLAG_CONNECTING;
 

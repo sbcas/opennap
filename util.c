@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
 #ifndef WIN32
 #include <unistd.h>
 #include <sys/time.h>
@@ -265,6 +266,11 @@ generate_nonce (void)
     char *nonce;
 
     nonce = MALLOC (17);
+    if (!nonce)
+    {
+	log ("generate_nonce(): ERROR: OUT OF MEMORY");
+	return 0;
+    }
     nonce[16] = 0;
 
 #if HAVE_DEV_RANDOM
@@ -473,5 +479,14 @@ next_arg (char **s)
 	while (**s == ' ')
 	    ++*s;
     }
+    return r;
+}
+
+char *
+strlower (char *s)
+{
+    char *r = s;
+    while (*s)
+    	*s++ = tolower ((unsigned char)*s);
     return r;
 }

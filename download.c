@@ -4,28 +4,16 @@
 
    $Id$ */
 
-#ifndef WIN32
-#include <unistd.h>
-#else
-#include <windows.h>
-#endif /* !WIN32 */
-#include <stdio.h>
-#include <mysql.h>
 #include "opennap.h"
 #include "debug.h"
-
-extern MYSQL *Db;
 
 /* 203 <nick> "<filename>" */
 /* 500 <nick> "<filename>" */
 /* handle client request for download of a file */
 HANDLER (download)
 {
-    char	*fields[2];
+    char	*av[2];
     USER	*user;
-    MYSQL_RES	*result;
-    MYSQL_ROW	row;
-    char	path[256];
 
     (void) tag;
     (void) len;
@@ -33,17 +21,17 @@ HANDLER (download)
 
     CHECK_USER_CLASS ("download");
 
-    if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 2)
+    if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
     {
 	log ("download(): malformed user request");
 	return;
     }
 
     /* find the user to download from */
-    user = hash_lookup (Users, fields[0]);
+    user = hash_lookup (Users, av[0]);
     if (!user)
     {
-	nosuchuser (con, fields[0]);
+	nosuchuser (con, av[0]);
 	return;
     }
     ASSERT (validate_user (user));
@@ -62,7 +50,7 @@ HANDLER (download)
 	    /* error, both clients are firewalled */
 	    send_cmd (con, MSG_SERVER_FILE_READY /* 204 */,
 		    "%s %lu %d \"%s\" firewallerror %d", user->nick, user->host,
-		    user->port, fields[1], user->speed);
+		    user->port, av[1], user->speed);
 	    return;
 	}
     }
@@ -73,59 +61,38 @@ HANDLER (download)
 	{
 	    /* uploader is firewalled, send file info so that downloader can
 	       send the 500 request */
-	    fudge_path (fields[1], path, sizeof (path));
-	    snprintf (Buf, sizeof (Buf),
-		    "SELECT md5 FROM library WHERE owner='%s' && filename='%s'",
-		    user->nick, path);
-	    if (mysql_query (Db, Buf))
+	    DATUM *info = hash_lookup (user->files, av[1]);
+	    if (!info)
 	    {
-		sql_error ("download", Buf);
-		return;
-	    }
-	    result = mysql_store_result (Db);
-	    if (!result)
-	    {
-		log ("download(): mysql_store_result() returned NULL");
-		return;
-	    }
-	    if (mysql_num_rows (result) != 1)
-	    {
-		log ("download(): expected 1 row returned from SQL query");
-		mysql_free_result (result);
-		return;
-	    }
-	    row = mysql_fetch_row (result);
-	    if (!row)
-	    {
-		log ("download(): mysql_fetch_row() returned NULL");
-		mysql_free_result (result);
+		/* TODO: what error message to return to sender? */
+		log ("download(): user %s does not have file %s",
+			user->nick, av[1]);
 		return;
 	    }
 	    send_cmd (con, MSG_SERVER_FILE_READY /* 204 */,
 		    "%s %lu %d \"%s\" %s %d", user->nick, user->host,
-		    user->port, fields[1], row[0], user->speed);
-	    mysql_free_result (result);
+		    user->port, info->filename, info->hash, user->speed);
 	    return;
 	}
     }
 
     /* send a message to the requestee */
     log ("download(): REQUEST \"%s\" %s => %s",
-	fields[1], user->nick, con->user->nick);
+	av[1], user->nick, con->user->nick);
 
     /* if the client holding the file is a local user, send the request
        directly */
     if (user->con)
     {
 	send_cmd (user->con, MSG_SERVER_UPLOAD_REQUEST, "%s \"%s\"",
-		con->user->nick, fields[1]);
+		con->user->nick, av[1]);
     }
     /* otherwise pass it to the peer server for delivery */
     else
     {
 	log ("download(): %s is remote, relaying request", user->nick);
 	send_cmd (user->serv, MSG_SERVER_UPLOAD_REQUEST, ":%s %s \"%s\"",
-	    con->user->nick, user->nick, fields[1]);
+	    con->user->nick, user->nick, av[1]);
     }
 }
 
@@ -273,7 +240,7 @@ HANDLER (data_port_error)
 /* 607 :<sender> <recip> "<filename>" */
 HANDLER (upload_request)
 {
-    char *fields[3];
+    char *av[3];
     USER *recip;
 
     (void) tag;
@@ -281,21 +248,21 @@ HANDLER (upload_request)
 
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("upload_request");
-    if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 3)
+    if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 3)
     {
 	log ("upload_request(): wrong number of args");
 	return;
     }
-    if (*fields[0] != ':')
+    if (*av[0] != ':')
     {
 	log ("upload_request(): missing colon (:) prefix in server message");
 	return;
     }
 
-    recip = hash_lookup (Users, fields[1]);
+    recip = hash_lookup (Users, av[1]);
     if (!recip)
     {
-	log ("upload_request(): unable to find user %s", fields[1]);
+	log ("upload_request(): unable to find user %s", av[1]);
 	return;
     }
     ASSERT (validate_user (recip));
@@ -304,11 +271,11 @@ HANDLER (upload_request)
     if (recip->con)
     {
 	send_cmd (recip->con, MSG_SERVER_UPLOAD_REQUEST /* 607 */, "%s \"%s\"",
-	    fields[0] + 1, fields[2]);
+	    av[0] + 1, av[2]);
     }
 
     log ("upload_request(): REMOTE REQUEST \"%s\" %s => %s",
-	fields[2], recip->nick, fields[0] + 1);
+	av[2], recip->nick, av[0] + 1);
 }
 
 /* 619 [ :<user> ] <nick> <filename> <limit> */
@@ -316,9 +283,7 @@ HANDLER (queue_limit)
 {
     char *av[3];
     USER *sender, *recip;
-    MYSQL_RES	*result;
-    MYSQL_ROW	row;
-    char path[256];
+    DATUM *info;
 
     (void) tag;
     (void) len;
@@ -348,32 +313,22 @@ HANDLER (queue_limit)
     /* locally connected, deliver final message */
     if (recip->con)
     {
+	ASSERT (validate_connection (recip->con));
+
 	/* look up the filesize in the db */
-	fudge_path (av[1], path, sizeof (path));
-	snprintf (Buf, sizeof (Buf),
-		"SELECT size FROM library WHERE owner='%s' && filename='%s'",
-		sender->nick, path);
-	if (mysql_query (Db, Buf) != 0)
+	info = hash_lookup (sender->files, av[1]);
+	if (!info)
 	{
-	    sql_error ("queue_limit", Buf);
+	    log ("queue_limit(): user %s does not have file %s",
+		    sender->nick, av[1]);
 	    if (con->class == CLASS_USER)
 		send_cmd (con, MSG_SERVER_NOSUCH,
 			"could not locate \"%s\" in the db", av[1]);
 	    return;
 	}
-	result = mysql_store_result (Db);
-	ASSERT (result != 0);
-	row = mysql_fetch_row (result);
-	if (mysql_num_rows (result) > 0)
-	{
-	    ASSERT (validate_connection (recip->con));
-	    send_cmd (recip->con, MSG_SERVER_LIMIT, "%s \"%s\" %s %s",
-		    sender->nick, av[1], row[0], av[2]);
-	}
-	else
-	    log ("queue_limit(): mysql_num_rows returned 0");
-	mysql_free_result (result);
 
+	send_cmd (recip->con, MSG_SERVER_LIMIT, "%s \"%s\" %d %s",
+		sender->nick, info->filename, info->size, av[2]);
     }
     /* send to peer servers for delivery */
     else if (Num_Servers && con->class == CLASS_USER)

@@ -289,6 +289,10 @@ HANDLER (login)
     user->speed = speed;
     user->connected = time (0);
     user->level = LEVEL_USER;	/* default */
+
+    /* initialize the hash table to hold this user's shared files */
+    user->files = hash_init (257, (hash_destroy) free_datum);
+
     if (tag == MSG_CLIENT_LOGIN_REGISTER)
 	user->email = STRDUP (field[5]);
     else if (row)

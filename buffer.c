@@ -20,39 +20,64 @@ static BUFFER *
 buffer_new (void)
 {
     BUFFER *r = CALLOC (1, sizeof (BUFFER));
+    if (!r)
+    {
+	log ("buffer_new(): ERROR: OUT OF MEMORY");
+	return 0;
+    }
 #if DEBUG
     r->magic = MAGIC_BUFFER;
 #endif
     return r;
 }
 
-/* append bytes to the buffer */
+/* append bytes to the buffer.  `step' is the size of a buffer to create if
+   a new buffer needs to be created */
 static BUFFER *
-buffer_queue (BUFFER *b, char *d, int dsize)
+buffer_queue (BUFFER *b, char *d, int dsize, int step)
 {
     BUFFER *r = b;
 
     if (!b)
+    {
 	r = b = buffer_new ();
+	if (!b)
+	    return 0;
+	b->data = MALLOC (step);
+	if (!b->data)
+	{
+	    log ("buffer_queue(): ERROR: OUT OF MEMORY");
+	    FREE (b);
+	    return 0;
+	}
+	b->datamax = step;
+    }
     else
     {
 	ASSERT (buffer_validate (b));
 	while (b->next)
 	    b = b->next;
-	if (b->consumed)
+	/* if there is not enough allocated data, allocate a new buffer
+	   of size `step'.  we avoid using realloc() here because it is
+	   potentially a very expensive operation
+	   -or-
+	   buffer is partially written, create a new buffer */
+	if (b->datasize + dsize > b->datamax || b->consumed)
 	{
-	    /* buffer is partially written, create a new buffer */
 	    b->next = buffer_new ();
+	    if (!b->next)
+		return r;
+	    b->next->data = MALLOC (step);
+	    if (!b->next->data)
+	    {
+		log ("buffer_queue(): ERROR: OUT OF MEMORY");
+		FREE (b->next);
+		b->next = 0;
+		return r;
+	    }
 	    b = b->next;
+	    b->datamax = step;
 	}
-    }
-    /* if there is not enough allocated data, allocate another 1024bytes */
-    if (b->datasize + dsize > b->datamax)
-    {
-	ASSERT (dsize < 1024); /* not an error, but just a check to see if
-				  this is an ok value */
-	b->datamax += (dsize>1024)?dsize:1024;
-	b->data = REALLOC (b->data, b->datamax);
     }
     memcpy (b->data + b->datasize, d, dsize);
     b->datasize += dsize;
@@ -60,7 +85,7 @@ buffer_queue (BUFFER *b, char *d, int dsize)
 }
 
 /* ensure that at least 'n' bytes exist in the first buffer fragment */
-void
+int
 buffer_group (BUFFER *b, int n)
 {
     ASSERT (buffer_validate (b));
@@ -71,6 +96,15 @@ buffer_group (BUFFER *b, int n)
 	/* allocate 1 extra byte to hold a nul (\0) char */
 	b->datamax = b->datasize + l + 1;
 	b->data = REALLOC (b->data, b->datamax);
+	if (!b->data)
+	{
+	    log ("buffer_group(): ERROR: OUT OF MEMORY");
+	    /* this will probably not make some of the other routines happy
+	       because they don't expect a 0 byte buffer at the beginning
+	       of the list, but its better than dumping core here */
+	    b->datasize = b->datamax = b->consumed = 0;
+	    return -1;
+	}
 	ASSERT (b->next != 0);
 	/* steal `l' bytes from the next buffer block */
 	ASSERT (b->next->datasize >= l);
@@ -79,6 +113,7 @@ buffer_group (BUFFER *b, int n)
 	*(b->data + b->datasize) = 0;
 	b->next = buffer_consume (b->next, l);
     }
+    return 0;
 }
 
 #ifdef WIN32
@@ -102,7 +137,11 @@ buffer_read (int fd, BUFFER **b)
 	return 0;
 
     if (!*b)
+    {
 	*b = buffer_new ();
+	if (!*b)
+	    return -1;
+    }
     ASSERT (buffer_validate (*b));
     p = *b;
     while (p->next)
@@ -110,12 +149,19 @@ buffer_read (int fd, BUFFER **b)
     if (p->consumed)
     {
 	p->next = buffer_new ();
+	if (!p->next)
+	    return -1;
 	p = p->next;
     }
     /* we allocate one extra byte so that we can write a \0 in it for
        debuging */
     p->datamax = p->datasize + n + 1;
     p->data = REALLOC (p->data, p->datamax);
+    if (!p->data)
+    {
+	log ("buffer_read(): ERROR: OUT OF MEMORY");
+	return -1;
+    }
     memcpy (p->data + p->datasize, Buf, n);
     p->datasize += n;
     *(p->data + p->datasize) = 0;
@@ -224,6 +270,8 @@ buffer_compress (z_streamp zip, BUFFER **b)
     zip->avail_in = bytes;
 
     r = buffer_new ();
+    if (!r)
+	return 0;
 
     /* if flushing, loop until we get all the output from the compressor */
     do
@@ -234,6 +282,12 @@ buffer_compress (z_streamp zip, BUFFER **b)
 	{
 	    r->datamax = r->datasize + n;
 	    r->data = REALLOC (r->data, r->datamax);
+	    if (!r->data)
+	    {
+		log ("buffer_compress(): ERROR: OUT OF MEMORY");
+		FREE (r);
+		return 0;
+	    }
 	}
 	zip->next_out = (uchar *) r->data + r->datasize;
 	zip->avail_out = r->datamax - r->datasize;
@@ -289,6 +343,8 @@ buffer_uncompress (z_streamp zip, BUFFER **b)
 
     ASSERT (buffer_validate (*b));
     cur = buffer_new ();
+    if (!cur)
+	return 0;
     zip->next_in = (uchar *) (*b)->data + (*b)->consumed;
     zip->avail_in = (*b)->datasize - (*b)->consumed;
     while (zip->avail_in > 0)
@@ -298,6 +354,12 @@ buffer_uncompress (z_streamp zip, BUFFER **b)
 	n = 2 * zip->avail_in;
 	cur->datamax = cur->datasize + n + 1;
 	cur->data = REALLOC (cur->data, cur->datamax);
+	if (!cur->data)
+	{
+	    log ("buffer_uncompress(): ERROR: OUT OF MEMORY");
+	    FREE (cur);
+	    return 0;
+	}
 	zip->next_out = (uchar *) cur->data + cur->datasize;
 	zip->avail_out = n;
 	cur->datasize += n; /* we subtract leftover bytes after the inflate()
@@ -345,8 +407,26 @@ init_compress (CONNECTION *con, int level)
     ASSERT (validate_connection (con));
     ASSERT (con->class == CLASS_SERVER);
     con->zip = CALLOC (1, sizeof (ZIP));
+    if (!con->zip)
+    {
+	log ("init_compress(): ERROR: OUT OF MEMORY");
+	return;
+    }
     con->zip->zin = CALLOC (1, sizeof (z_stream));
+    if (!con->zip->zin)
+    {
+	FREE (con->zip);
+	log ("init_compress(): ERROR: OUT OF MEMORY");
+	return;
+    }
     con->zip->zout = CALLOC (1, sizeof (z_stream));
+    if (!con->zip->zout)
+    {
+	FREE (con->zip->zin);
+	FREE (con->zip);
+	log ("init_compress(): ERROR: OUT OF MEMORY");
+	return;
+    }
 
     n = inflateInit (con->zip->zin);
     if (n != Z_OK)
@@ -447,7 +527,9 @@ queue_data (CONNECTION *con, char *s, int ssize)
 {
     ASSERT (validate_connection (con));
     if (con->zip)
-	con->zip->outbuf = buffer_queue (con->zip->outbuf, s, ssize);
+	/* for a server connection, allocate chunks of 16k bytes */
+	con->zip->outbuf = buffer_queue (con->zip->outbuf, s, ssize, 16384);
     else
-	con->sendbuf = buffer_queue (con->sendbuf, s, ssize);
+	/* for a client connection, allocate chunks of 1k bytes */
+	con->sendbuf = buffer_queue (con->sendbuf, s, ssize, 1024);
 }

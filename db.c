@@ -37,31 +37,6 @@ init_db (void)
 	return -1;
     }
 
-    /* clear any existing tables */
-    snprintf (Buf, sizeof (Buf), "DROP TABLE IF EXISTS library");
-    if (mysql_query (Db, Buf) != 0)
-    {
-	sql_error ("init_db", Buf);
-	return -1;
-    }
-
-    /* create the library table */
-    snprintf (Buf, sizeof (Buf),
-	      "CREATE TABLE library (owner VARCHAR(19) NOT NULL, "
-	      /* BIG FAT WARNING!!!  DO NOT SET `filename' LONGER THAN 237
-		 BECAUSE MYSQL-3.22.32 WILL CRASH OTHERWISE */
-	      "filename VARCHAR(150) NOT NULL, size INT UNSIGNED, "
-	      "md5 CHAR(48), bitrate SMALLINT UNSIGNED, "
-	      "freq SMALLINT UNSIGNED, time SMALLINT UNSIGNED, "
-	      "linespeed TINYINT UNSIGNED, soundex VARCHAR(255), "
-	      "type VARCHAR(32), PRIMARY KEY (owner, filename))");
-
-    if (mysql_query (Db, Buf) != 0)
-    {
-	sql_error ("init_db", Buf);
-	return -1;
-    }
-
     return 0;
 }
 

@@ -20,6 +20,7 @@
 
 #include <sys/types.h>
 
+#define INIT debug_init
 #define FREE(p) debug_free(p,__FILE__,__LINE__)
 #define MALLOC(s) debug_malloc(s,__FILE__,__LINE__)
 #define REALLOC(p,s) debug_realloc(p,s,__FILE__,__LINE__)
@@ -30,6 +31,7 @@
 #define VALID_LEN debug_valid
 
 /* internal functions, DO NOT CALL DIRECTLY -- use the above macros */
+void debug_init (void);
 void debug_free (void *, const char *, int);
 void *debug_malloc (int, const char *, int);
 void *debug_calloc (int, int, const char *, int);
@@ -40,6 +42,7 @@ int debug_valid (void *, int);
 
 #else
 
+#define INIT()
 #define FREE free
 #define MALLOC malloc
 #define CALLOC calloc

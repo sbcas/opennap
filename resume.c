@@ -4,23 +4,18 @@
 
    $Id$ */
 
-#ifdef WIN32
-#include <windows.h>
-#endif
-#include <mysql.h>
-#include <stdio.h>
+#include <stdlib.h>
 #include "opennap.h"
 #include "debug.h"
-
-extern MYSQL *Db;
 
 /* packet contains: <checksum> <filesize> */
 HANDLER (resume)
 {
-    char *fields[2];
-    MYSQL_RES *result;
-    MYSQL_ROW row;
-    USER *user;
+    char *av[2];
+    FLIST *flist;
+    LIST *ptr;
+    DATUM *d;
+    int fsize;
 
     (void) tag;
     (void) len;
@@ -28,38 +23,30 @@ HANDLER (resume)
 
     CHECK_USER_CLASS ("resume");
 
-    if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 2)
+    if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
     {
-	log ("resume(): wrong number of fields");
+	log ("resume(): wrong number of av");
 	return;
     }
     
-    /* search the database for a list of all files which match this request */
-    snprintf (Buf, sizeof (Buf),
-	    "SELECT * FROM library WHERE md5='%s' && size=%s",
-	    fields[0], fields[1]);
-    if (mysql_query (Db, Buf) != 0)
-    {
-	sql_error ("resume", Buf);
-	return;
-    }
+    fsize = atoi (av[1]);
 
-    result = mysql_store_result (Db);
-    while ((row = mysql_fetch_row (result)) != NULL)
+    /* search the database for a list of all files which match this hash */
+    flist = hash_lookup (MD5, av[0]);
+    if (flist)
     {
-	user = hash_lookup (Users, row[IDX_NICK]);
-	if (!user)
+	for (ptr = flist->list; ptr; ptr = ptr->next)
 	{
-	    log ("resume(): could not find user %s, db is out of sync!",
-		    row[IDX_NICK]);
-	    continue;
+	    d = (DATUM *) ptr->data;
+	    if (d->size == fsize)
+	    {
+		send_cmd (con, MSG_SERVER_RESUME_MATCH,
+			"%s %lu %d \"%s\" %s %d %hu",
+			d->user->nick, d->user->host, d->user->port,
+			d->filename, d->hash, d->size, d->user->speed);
+	    }
 	}
-	send_cmd (con, MSG_SERVER_RESUME_MATCH, "%s %lu %d %s %s %s %hu",
-	    row[IDX_NICK], user->host, user->port, row[IDX_FILENAME],
-	    row[IDX_MD5], row[IDX_SIZE], user->speed);
     }
 
     send_cmd (con, MSG_SERVER_RESUME_MATCH_END, "");
-
-    mysql_free_result (result);
 }
