@@ -584,6 +584,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_DEOP			10205
 #define MSG_CLIENT_OP_LIST		10206
 #define MSG_CLIENT_DROP_CHANNEL		10207
+#define MSG_CLIENT_CHANNEL_WALLOP	10208
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
 
 /* utility routines */
@@ -724,6 +725,7 @@ HANDLER (channel_limit);
 HANDLER (channel_op);
 HANDLER (channel_op_list);
 HANDLER (channel_unban);
+HANDLER (channel_wallop);
 HANDLER (check_password);
 HANDLER (check_port);
 HANDLER (clear_channel);

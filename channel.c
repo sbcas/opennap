@@ -185,7 +185,7 @@ HANDLER (channel_ban)
     /* check for valid input */
     if (!is_ip (av[1]) && invalid_nick (av[1]))
     {
-	invalid_nick_msg(con);
+	invalid_nick_msg (con);
 	return;
     }
 
@@ -284,9 +284,9 @@ HANDLER (channel_unban)
 	    return;
 	}
     }
-    if(!is_ip(av[1]) && invalid_nick(av[1]))
+    if (!is_ip (av[1]) && invalid_nick (av[1]))
     {
-	invalid_nick_msg(con);
+	invalid_nick_msg (con);
 	return;
     }
     ASSERT (validate_channel (chan));
@@ -429,13 +429,13 @@ HANDLER (channel_op)
 	}
 	pkt++;
 	sender = next_arg (&pkt);
-	ASSERT(sender!=0);
-	if(!is_server(sender))
+	ASSERT (sender != 0);
+	if (!is_server (sender))
 	{
-	    senderUser=hash_lookup(Users,sender);
-	    if(!senderUser)
+	    senderUser = hash_lookup (Users, sender);
+	    if (!senderUser)
 	    {
-		log("channel_op(): could not find user %s", sender);
+		log ("channel_op(): could not find user %s", sender);
 		return;
 	    }
 	}
@@ -444,7 +444,7 @@ HANDLER (channel_op)
     {
 	ASSERT (ISUSER (con));
 	sender = con->user->nick;
-	senderUser=con->user;
+	senderUser = con->user;
     }
     /* check for permission */
     if (senderUser && senderUser->level < LEVEL_MODERATOR)
@@ -469,9 +469,9 @@ HANDLER (channel_op)
     while (pkt)
     {
 	suser = next_arg (&pkt);
-	if (invalid_nick(suser))
+	if (invalid_nick (suser))
 	{
-	    invalid_nick_msg(con);
+	    invalid_nick_msg (con);
 	    continue;
 	}
 	for (list = &chan->ops; *list; list = &(*list)->next)
@@ -594,48 +594,98 @@ HANDLER (channel_drop)
 {
     USER *sender;
     char *av[2];
-    int ac=-1;
+    int ac = -1;
     CHANNEL *chan;
 
-    ASSERT(validate_connection(con));
-    if(pop_user(con,&pkt,&sender))
+    ASSERT (validate_connection (con));
+    if (pop_user (con, &pkt, &sender))
 	return;
-    if(pkt)
-	ac=split_line(av,FIELDS(av),pkt);
-    if(ac<1)
+    if (pkt)
+	ac = split_line (av, FIELDS (av), pkt);
+    if (ac < 1)
     {
-	unparsable(con);
-	return;
-    }
-    chan=hash_lookup(Channels,av[0]);
-    if(!chan)
-    {
-	nosuchchannel(con);
+	unparsable (con);
 	return;
     }
-    if(!chan->userCreated)
+    chan = hash_lookup (Channels, av[0]);
+    if (!chan)
     {
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"channel %s is not registered",
-		     chan->name);
+	nosuchchannel (con);
+	return;
+    }
+    if (!chan->userCreated)
+    {
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "channel %s is not registered",
+		      chan->name);
 	return;
     }
     /* dont allow just anyone to drop channels */
-    if(sender->level < LEVEL_MODERATOR || sender->level < chan->level)
+    if (sender->level < LEVEL_MODERATOR || sender->level < chan->level)
     {
-	permission_denied(con);
+	permission_denied (con);
 	return;
     }
-    pass_message_args(con,tag,":%s %s \"%s\"",sender->nick,chan->name,
-		      (ac>1)?av[1]:"");
-    notify_mods(CHANGELOG_MODE,"%s dropped channel %s: %s",
-		sender->nick, chan->name, (ac>1)?av[1]:"");
-    notify_ops(chan,"%s dropped channel %s: %s",
-		sender->nick, chan->name, (ac>1)?av[1]:"");
+    pass_message_args (con, tag, ":%s %s \"%s\"", sender->nick, chan->name,
+		       (ac > 1) ? av[1] : "");
+    notify_mods (CHANGELOG_MODE, "%s dropped channel %s: %s",
+		 sender->nick, chan->name, (ac > 1) ? av[1] : "");
+    notify_ops (chan, "%s dropped channel %s: %s",
+		sender->nick, chan->name, (ac > 1) ? av[1] : "");
 
     /* if there are no users left, destroy the channel */
-    if(!chan->users)
-	hash_remove(Channels,chan->name);
+    if (!chan->users)
+	hash_remove (Channels, chan->name);
     else
 	chan->userCreated = 1;	/* otherwise just set as a normal channel */
+}
+
+/* 10208 [ :<sender> ] <channel> <text>
+   sends a message to all channel ops/mods on a given channel */
+HANDLER (channel_wallop)
+{
+    USER *sender;
+    CHANNEL *chan;
+    char *chanName;
+    LIST *list;
+    CHANUSER *chanUser;
+
+    ASSERT (validate_connection (con));
+    if (pop_user (con, &pkt, &sender))
+	return;
+    chanName = next_arg (&pkt);
+    if (!chanName || !pkt)
+    {
+	unparsable (con);
+	return;
+    }
+    chan = hash_lookup (Channels, chanName);
+    if (!chan)
+    {
+	invalid_channel_msg (con);
+	return;
+    }
+    if (sender->level < LEVEL_MODERATOR && !is_chanop (chan, sender))
+    {
+	permission_denied (con);
+	return;
+    }
+    /* NOTE: there is no check to make sure the sender is actually a member
+       of the channel.  this should be ok since channel ops have to be present
+       in the channel to issue the command (since they would not have op
+       status otherwise, and is_chanop() will fail).  mods+ are assumed to
+       be trusted enough that the check for membership is not required. */
+    pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name, pkt);
+    len = form_message (Buf, sizeof (Buf), MSG_SERVER_NOSUCH,
+			"%s [ops/%s]: %s", sender->nick, chan->name, pkt);
+    for (list = chan->users; list; list = list->next)
+    {
+	chanUser = list->data;
+	ASSERT (chanUser->magic == MAGIC_CHANUSER);
+	if (ISUSER (chanUser->user->con) &&
+	    /* send to mods+ and ops */
+	    (chanUser->user->level > LEVEL_USER ||
+	     (chanUser->flags & ON_OPERATOR)))
+	    queue_data (chanUser->user->con, Buf, len);
+    }
 }

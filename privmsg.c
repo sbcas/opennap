@@ -131,6 +131,8 @@ chanserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_OP;
     else if (!strcasecmp ("deop", cmd))
 	tag = MSG_CLIENT_DEOP;
+    else if (!strcasecmp ("wallop", cmd))
+	tag = MSG_CLIENT_CHANNEL_WALLOP;
     else if (!strcasecmp ("help", cmd))
     {
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
@@ -154,6 +156,7 @@ chanserv (CONNECTION * con, char *pkt)
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
 		  "ChanServ topic <channel> [topic]");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ unban <channel>");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ wallop <channel> <text>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ END of ChanServ HELP");
 	return;
     }
