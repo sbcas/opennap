@@ -66,6 +66,9 @@ static struct config Vars[] = {
     {"registered_only", VAR_TYPE_BOOL, ON_REGISTERED_ONLY, 0},
     {"auto_register", VAR_TYPE_BOOL, ON_AUTO_REGISTER, 0},
     {"max_channel_length", VAR_TYPE_INT, UL & Max_Channel_Length, 32},
+    {"max_ignore",VAR_TYPE_INT,UL&Max_Ignore,32},
+    {"max_hotlist",VAR_TYPE_INT,UL&Max_Hotlist,32},
+    {"max_topic",VAR_TYPE_INT,UL&Max_Topic,32},
 };
 
 static int Vars_Size = sizeof (Vars) / sizeof (struct config);

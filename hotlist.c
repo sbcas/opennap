@@ -21,6 +21,13 @@ HANDLER (add_hotlist)
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("add_hotlist");
 
+    /* check to see if this user is over the hotlist limit */
+    if(Max_Hotlist > 0 && list_count(con->uopt->hotlist) > Max_Hotlist)
+    {
+	send_cmd(con,MSG_SERVER_NOSUCH,"hotlist is limited to %d entries",
+		 Max_Hotlist);
+	return;
+    }
     /* check to see if there is an existing global hotlist entry for this
        user */
     hotlist = hash_lookup (Hotlist, pkt);

@@ -208,8 +208,7 @@ HANDLER (user_speed)
     user = hash_lookup (Users, pkt);
     if (!user)
     {
-	log ("user_speed(): no such user %s", pkt);
-	send_cmd (con, MSG_SERVER_NOSUCH, "There is no user named  %s", pkt);
+	nosuchuser(con);
 	return;
     }
     ASSERT (validate_user (user));
@@ -234,7 +233,7 @@ HANDLER (data_port_error)
     user = hash_lookup (Users, pkt);
     if (!user)
     {
-	log ("data_port_error(): no such user %s", pkt);
+	nosuchuser(con);
 	return;
     }
     ASSERT (validate_user (user));
@@ -277,7 +276,7 @@ HANDLER (upload_request)
     recip = hash_lookup (Users, av[1]);
     if (!recip)
     {
-	log ("upload_request(): unable to find user %s", av[1]);
+	nosuchuser(con);
 	return;
     }
     ASSERT (validate_user (recip));

@@ -52,6 +52,9 @@ int Channel_Limit;
 int Login_Timeout;
 int Max_Command_Length;
 int Compression_Level = 0;
+int Max_Ignore;
+int Max_Hotlist;
+int Max_Topic;
 
 #ifndef WIN32
 int Uid;

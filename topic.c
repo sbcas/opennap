@@ -47,16 +47,10 @@ HANDLER (topic)
 
     /* don't use split line because the topic could be multi-word */
     chanName = next_arg (&pkt);
-    if (invalid_channel (chanName))
-    {
-	invalid_channel_msg (con);
-	return;
-    }
     chan = hash_lookup (Channels, chanName);
     if (!chan)
     {
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "No such channel %s", chanName);
+	nosuchchannel(con);
 	return;
     }
     ASSERT (validate_channel (chan));
@@ -78,6 +72,9 @@ HANDLER (topic)
 	}
 	if (chan->topic)
 	    FREE (chan->topic);
+	/* if the topic is too long, truncate it */
+	if(Max_Topic > 0 && strlen(pkt) > Max_Topic)
+	    *(pkt+Max_Topic)=0;
 	if (!(chan->topic = STRDUP (pkt)))
 	{
 	    OUTOFMEMORY ("topic");
@@ -91,8 +88,7 @@ HANDLER (topic)
 	pass_message_args (con, tag, ":%s %s %s", nick, chan->name,
 			   chan->topic);
 
-	l =
-	    form_message (Buf, sizeof (Buf), tag, "%s %s", chan->name,
+	l = form_message (Buf, sizeof (Buf), tag, "%s %s", chan->name,
 			  chan->topic);
 	for (list = chan->users; list; list = list->next)
 	{
@@ -101,7 +97,6 @@ HANDLER (topic)
 	    if (chanUser->user->local)
 		queue_data (chanUser->user->con, Buf, l);
 	}
-
 	notify_mods (TOPICLOG_MODE, "%s set topic on %s: %s", nick,
 		     chan->name, chan->topic);
 	notify_ops (chan, "%s set topic on %s: %s", nick,
@@ -111,10 +106,5 @@ HANDLER (topic)
     {
 	/* return the current topic */
 	send_cmd (con, tag, "%s %s", chan->name, chan->topic);
-    }
-    else
-    {
-	ASSERT (ISSERVER (con));
-	log ("topic(): error, server %s requested topic", con->host);
     }
 }

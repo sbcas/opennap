@@ -273,6 +273,11 @@ HANDLER (ignore)
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("ignore_add");
+    if(invalid_nick(pkt))
+    {
+	send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+	return;
+    }
     /*ensure that this user is not already on the ignore list */
     for (list = con->uopt->ignore; list; list = list->next)
 	if (!strcasecmp (pkt, list->data))
@@ -280,6 +285,11 @@ HANDLER (ignore)
 	    send_cmd (con, MSG_SERVER_ALREADY_IGNORED, "%s", pkt);
 	    return;		/*already added */
 	}
+    if(Max_Ignore > 0 && list_count(con->uopt->ignore) > Max_Ignore)
+    {
+	send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+	return;
+    }
     list = MALLOC (sizeof (LIST));
     list->data = STRDUP (pkt);
     list->next = con->uopt->ignore;
@@ -296,6 +306,11 @@ HANDLER (unignore)
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("ignore_add");
+    if(invalid_nick(pkt))
+    {
+	send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+	return;
+    }
     for (list = &con->uopt->ignore; *list; list = &(*list)->next)
     {
 	if (!strcasecmp (pkt, (*list)->data))

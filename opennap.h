@@ -362,6 +362,9 @@ extern int Stat_Click;
 extern time_t Server_Start;
 extern int User_Db_Interval;
 extern int Max_Channel_Length;
+extern int Max_Ignore;
+extern int Max_Hotlist;
+extern int Max_Topic;
 
 #ifndef WIN32
 extern int Uid;

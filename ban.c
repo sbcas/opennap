@@ -82,6 +82,12 @@ HANDLER (ban)
 	}
     }
 
+    if(!is_ip(av[0]) && invalid_nick(av[0]))
+    {
+	if(ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+	return;
+    }
     if (ac > 1)
 	pass_message_args (con, tag, ":%s %s \"%s\"", sender, av[0], av[1]);
     else
@@ -168,7 +174,7 @@ HANDLER (unban)
 	}
     }
     if (ISUSER (con))
-	send_cmd (con, MSG_SERVER_NOSUCH, "There is no ban on %s", pkt);
+	send_cmd (con, MSG_SERVER_NOSUCH, "no such ban");
 }
 
 /* 615 */

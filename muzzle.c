@@ -80,20 +80,20 @@ HANDLER (muzzle)
 	return;
     }
 
+    /* can't register a nick without them being online */
+    /* TODO: this could be a problem if the user dbs are out of sync among
+       linked servers since in that case you really should propogate the
+       message since it could be registered elsewhere */
+    if (!db && !user)
+    {
+	nosuchuser(con);
+	return;
+    }
+
     if (tag == MSG_CLIENT_MUZZLE)
     {
 	if (!db)
 	{
-	    /* can't register a nick without them being online */
-	    if (!user)
-	    {
-		if (ISUSER (con))
-		{
-		    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not registered",
-			      av[0]);
-		}
-		return;
-	    }
 	    /* force registration */
 	    log ("muzzle(): forcing registration for %s", user->nick);
 	    db = CALLOC (1, sizeof (USERDB));
