@@ -469,6 +469,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_CHANGE_PASS		701
 #define MSG_CLIENT_CHANGE_EMAIL		702
 #define MSG_CLIENT_CHANGE_DATA_PORT	703
+#define MSG_CLIENT_PING_SERVER		750
 #define MSG_CLIENT_PING			751
 #define MSG_SERVER_PING			751
 #define MSG_CLIENT_PONG			752
@@ -510,7 +511,6 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_LINKS		10112
 #define MSG_CLIENT_USAGE_STATS		10115	/* server usage stats */
 #define MSG_SERVER_USAGE_STATS		10115
-#define MSG_CLIENT_PING_SERVER		10116
 #define MSG_CLIENT_REGISTER_USER	10200
 #define MSG_CLIENT_CHANNEL_LEVEL	10201	/* set min channel user level */
 #define MSG_CLIENT_KICK_USER		10202	/* deprecated, use 829 instead*/

@@ -145,6 +145,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_CHANGE_PASS, change_pass},	/* 701 */
     {MSG_CLIENT_CHANGE_EMAIL, change_email},	/* 702 */
     {MSG_CLIENT_CHANGE_DATA_PORT, change_data_port},	/* 703 */
+    {MSG_CLIENT_PING_SERVER, ping_server},	/* 750 */
     {MSG_CLIENT_PING, ping},			/* 751 */
     {MSG_CLIENT_PONG, ping},			/* 752 */
     {MSG_CLIENT_ALTER_PASS, alter_pass},	/* 753 */
@@ -179,7 +180,6 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_REMOVE_SERVER, remove_server},	/* 10111 */
     {MSG_CLIENT_LINKS, server_links},		/* 10112 */
     {MSG_CLIENT_USAGE_STATS, server_usage},	/* 10115 */
-    {MSG_CLIENT_PING_SERVER, ping_server},	/* 10116 */
     {MSG_CLIENT_REGISTER_USER, register_user},	/* 10200 */
     {MSG_CLIENT_CHANNEL_LEVEL, channel_level},	/* 10201 */
     {MSG_CLIENT_KICK_USER, kick},		/* 10202 */

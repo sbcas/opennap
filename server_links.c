@@ -43,7 +43,7 @@ HANDLER (server_links)
     send_cmd (con, MSG_SERVER_LINKS, "");
 }
 
-/* 10116 [ :<sender> ] <server> [ <args> ] */
+/* 750 [ :<sender> ] <server> [ <args> ] */
 HANDLER (ping_server)
 {
     USER *sender;
@@ -59,7 +59,14 @@ HANDLER (ping_server)
 	return;
     }
     server = next_arg (&pkt);
-    if (!strcasecmp (Server_Name, server))
+    /* napster.exe v2.0beta5a sends the user's nick, just ping the local
+       server in this case */
+    if(!*server || (ISUSER(con) && !strcasecmp(con->user->nick,server)))
+    {
+	/*server sends no args in this case */
+	send_cmd(con,tag,"");
+    }
+    else if (!strcasecmp (Server_Name, server))
 	send_user (sender, tag, "%s %s", Server_Name, NONULL (pkt));
     else
 	pass_message_args (con, tag, ":%s %s %s", sender->nick, server,
