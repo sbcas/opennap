@@ -134,7 +134,6 @@ typedef struct {
     z_streamp zout;	/* output stream compressor */
 #endif
     BUFFER *outbuf;	/* compressed output buffer */
-    BUFFER *inbuf;	/* uncompressed input buffer */
 } SERVER;
 
 typedef struct {
@@ -468,7 +467,7 @@ int buffer_group (BUFFER *, int);
 int buffer_read (int, BUFFER **);
 int buffer_size (BUFFER *);
 #if HAVE_LIBZ
-BUFFER *buffer_uncompress (z_streamp, BUFFER **);
+int buffer_decompress (BUFFER *, z_streamp, char *, int);
 #endif
 int buffer_validate (BUFFER *);
 void cancel_search (CONNECTION *con);

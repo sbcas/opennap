@@ -316,7 +316,7 @@ main (int argc, char **argv)
     int sp = -1;		/* stats port */
     int i;			/* generic counter */
     int n;			/* number of ready sockets */
-    int f, pending = 0, port = 0, iface = INADDR_ANY, nolisten = 0;
+    int port = 0, iface = INADDR_ANY, nolisten = 0;
 #if HAVE_POLL
     struct pollfd *ufd = 0;
     int	ufdsize;		/* number of entries in ufd */
@@ -508,14 +508,6 @@ main (int argc, char **argv)
 		if (Clients[i]->fd > maxfd)
 		    maxfd = Clients[i]->fd;
 #endif /* !HAVE_POLL */
-
-		/* note if their is unprocessed data in the input
-		   buffers so we dont block on select().  the incomplete
-		   flag is checked here to avoid busy waiting when we really
-		   do need more data from the client connection */
-		if ((!Clients[i]->incomplete && Clients[i]->recvbuf) ||
-		    (ISSERVER (Clients[i]) && Clients[i]->sopt->inbuf))
-		    pending++;
 	    }
 #if HAVE_POLL
 	    else
@@ -526,16 +518,14 @@ main (int argc, char **argv)
 #endif
 	}
 
-	/* if there is pending data in client queues, don't block on the
-	   select call */
 #if HAVE_POLL
-	if ((n = poll(ufd, ufdsize, pending ? 0 : next_timer() * 1000)) < 0)
+	if ((n = poll(ufd, ufdsize, next_timer() * 1000)) < 0)
 	{
 	    perror ("poll");
 	    continue;
 	}
 #else
-	t.tv_sec = pending ? 0 : next_timer ();
+	t.tv_sec = next_timer ();
 	t.tv_usec = 0;
 	if ((n = select (maxfd + 1, &set, &wset, NULL, &t)) < 0)
 	{
@@ -544,9 +534,7 @@ main (int argc, char **argv)
 	}
 #endif /* HAVE_POLL */
 
-	pending = 0;		/* reset */
-
-	/* read incoming data into buffers, but don't process it */
+	/* process incoming requests */
 	for (i = 0; !SigCaught && n > 0 && i < Max_Clients; i++)
 	{
 	    if (Clients[i])
@@ -554,37 +542,13 @@ main (int argc, char **argv)
 		if (WRITABLE (i) && Clients[i]->connecting)
 		{
 		    complete_connect (Clients[i]);
-		    n--;		/* keep track of how many we've handled */
+		    n--;		/* track of how many handled */
 		}
 		else if (READABLE (i))
 		{
-		    n--;		/* keep track of how many we've handled */
-		    f = buffer_read (Clients[i]->fd,
-			    (ISSERVER (Clients[i]) ? &Clients[i]->
-			     sopt->inbuf : &Clients[i]->recvbuf));
-		    if (f <= 0)
-		    {
-			if (f == 0)
-			    log ("main(): EOF from %s", Clients[i]->host);
-			Clients[i]->destroy = 1;
-		    }
-		}
-	    }
-	}
-
-	if (SigCaught)
-	    break;
-
-	/* handle client requests */
-	for (i = 0; !SigCaught && i < Max_Clients; i++)
-	{
-	    /* if the connection is going to be shut down, don't process it */
-	    if (Clients[i] && !Clients[i]->destroy)
-	    {
-		/* if there is input pending, handle it now */
-		if (Clients[i]->recvbuf ||
-		    (ISSERVER (Clients[i]) && Clients[i]->sopt->inbuf))
 		    handle_connection (Clients[i]);
+		    n--;		/* track of how many handled */
+		}
 	    }
 	}
 

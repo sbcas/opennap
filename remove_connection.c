@@ -93,7 +93,6 @@ remove_connection (CONNECTION *con)
 #if HAVE_LIBZ
 	finalize_compress (con->sopt);
 #endif
-	buffer_free (con->sopt->inbuf);
 	buffer_free (con->sopt->outbuf);
 	FREE (con->sopt);
     }

@@ -122,53 +122,6 @@ buffer_group (BUFFER *b, int n)
 #define errno h_errno
 #endif
 
-int
-buffer_read (int fd, BUFFER **b)
-{
-    int n;
-    BUFFER *p;
-
-    n = READ (fd, Buf, sizeof (Buf));
-    if (n == -1)
-    {
-	logerr ("buffer_read", "read");
-	return -1;
-    }
-    if (n == 0)
-	return 0;
-
-    if (!*b)
-    {
-	*b = buffer_new ();
-	if (!*b)
-	    return -1;
-    }
-    ASSERT (buffer_validate (*b));
-    p = *b;
-    while (p->next)
-	p = p->next;
-    if (p->consumed)
-    {
-	p->next = buffer_new ();
-	if (!p->next)
-	    return -1;
-	p = p->next;
-    }
-    /* we allocate one extra byte so that we can write a \0 in it for
-       debuging */
-    p->datamax = p->datasize + n + 1;
-    p->data = REALLOC (p->data, p->datamax);
-    if (!p->data)
-    {
-	OUTOFMEMORY ("buffer_read");
-	return -1;
-    }
-    memcpy (p->data + p->datasize, Buf, n);
-    p->datasize += n;
-    *(p->data + p->datasize) = 0;
-    return n;
-}
-
 /* consume some bytes from the buffer */
 BUFFER *
 buffer_consume (BUFFER *b, int n)
@@ -234,7 +187,6 @@ buffer_validate (BUFFER *b)
 {
     ASSERT_RETURN_IF_FAIL (VALID_LEN (b, sizeof (BUFFER)), 0);
     ASSERT_RETURN_IF_FAIL (b->magic == MAGIC_BUFFER, 0);
-    ASSERT_RETURN_IF_FAIL ((b->data == 0) ^ (b->datasize != 0), 0);
     ASSERT_RETURN_IF_FAIL (b->datasize <= b->datamax, 0);
     ASSERT_RETURN_IF_FAIL (b->data == 0 || VALID_LEN (b->data, b->datasize), 0);
     ASSERT_RETURN_IF_FAIL (b->consumed == 0 || b->consumed < b->datasize, 0);
@@ -310,68 +262,47 @@ buffer_compress (z_streamp zip, BUFFER **b)
 /* assuming that we receive relatively short blocks via the network (less
    than 16kb), we uncompress all data when we receive it and don't worry
    about blocking. */
-BUFFER *
-buffer_uncompress (z_streamp zip, BUFFER **b)
+int
+buffer_decompress (BUFFER *b, z_streamp zip, char *in, int insize)
 {
-    int n, flush;
-    BUFFER *cur = 0;
+    int n;
 
-    ASSERT (buffer_validate (*b));
-    cur = buffer_new ();
-    if (!cur)
-	return 0;
-    zip->next_in = (uchar *) (*b)->data + (*b)->consumed;
-    zip->avail_in = (*b)->datasize - (*b)->consumed;
-    while (zip->avail_in > 0)
+    ASSERT (buffer_validate (b));
+    zip->next_in = (unsigned char *) in;
+    zip->avail_in = insize;
+    zip->next_out = (unsigned char *) b->data + b->datasize;
+    zip->avail_out = b->datamax - b->datasize;
+    /* set this to the max size and subtract what is left after the inflate */
+    b->datasize += zip->avail_out;
+    while (zip->avail_in > 0 || zip->avail_out == 0)
     {
-	/* allocate 2 times the compressed data for output, plus one extra
-	   byte to terminate the string with a nul (\0) */
-	n = 2 * zip->avail_in;
-	cur->datamax = cur->datasize + n + 1;
-	cur->data = REALLOC (cur->data, cur->datamax);
-	if (!cur->data)
+	/* if there is no more output space left, create some more */
+	if (zip->avail_out == 0)
 	{
-	    OUTOFMEMORY ("buffer_uncompress");
-	    FREE (cur);
-	    return 0;
+	    /* allocate one extra byte to write a \0 char */
+	    if (safe_realloc ((void **) &b->data, b->datamax + 2049))
+	    {
+		OUTOFMEMORY("buffer_decompress");
+		return -1;
+	    }
+	    b->datamax += 2048;
+	    zip->next_out = (unsigned char *) b->data + b->datasize;
+	    zip->avail_out = b->datamax - b->datasize;
+	    /* set this to the max size and subtract what is left after the
+	       inflate */
+	    b->datasize += zip->avail_out;
 	}
-	zip->next_out = (uchar *) cur->data + cur->datasize;
-	zip->avail_out = n;
-	cur->datasize += n; /* we subtract leftover bytes after the inflate()
-			       call below */
-
-	/* if there is still more input after this, don't bother flushing */
-	flush = ((*b)->next) ? Z_NO_FLUSH : Z_SYNC_FLUSH;
-	n = inflate (zip, flush);
+	n = inflate (zip, Z_SYNC_FLUSH);
 	if (n != Z_OK)
 	{
-	    log ("buffer_uncompress: inflate: %s (error %d)",
-		NONULL (zip->msg), n);
-	    FREE (cur->data);
-	    FREE (cur);
-	    return 0;
+	    log ("buffer_decompress(): inflate: %s (error %d)",
+		    NONULL (zip->msg), n);
+	    return -1;
 	}
-	cur->datasize -= zip->avail_out;	/* subtract leftover space
-						   because this is not real
-						   data */
+	/* subtract unused bytes */
+	b->datasize -= zip->avail_out;
     }
-    ASSERT (zip->avail_in == 0);	/* should have uncompressed all data */
-    *b = buffer_consume (*b, (*b)->datasize - (*b)->consumed - zip->avail_in);
-
-    /* if nothing came out, don't return an empty structure */
-    if (cur->datasize == 0)
-    {
-	FREE (cur->data);
-	FREE (cur);
-	return 0;
-    }
-
-    /* we allocate one extra byte above for this nul char.  the
-       handle_connection() routine expects this to be here since it needs
-       to send only a portion of the string to the handler routines */
-    *(cur->data + cur->datasize) = 0;
-
-    return cur;
+    return 0;
 }
 
 void
@@ -476,12 +407,6 @@ send_queued_data (CONNECTION *con)
 	    con->host, n);
 	return -1;
     }
-
-#if 0
-    if (con->sendbuf)
-	log ("send_queued_data(): %d bytes remain in the output buffer for %s",
-	    buffer_size (con->sendbuf), con->host);
-#endif
 
     return 0;
 }
