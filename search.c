@@ -105,6 +105,10 @@ free_flist (FLIST * ptr)
     FREE (ptr);
 }
 
+/* consider the apostrophe to be part of the word since it doesn't make
+   sense on its own */
+#define WORD_CHAR(c) (isalnum(c)||c=='\'')
+
 /* return a list of word tokens from the input string */
 LIST *
 tokenize (char *s)
@@ -114,13 +118,42 @@ tokenize (char *s)
 
     while (*s)
     {
-	while (*s && !isalnum (*s))
+	while (*s && !WORD_CHAR (*s))
 	    s++;
 	ptr = s;
-	while (*ptr && isalnum (*ptr))
+	while (*ptr && WORD_CHAR (*s))
 	    ptr++;
 	if (*ptr)
 	    *ptr++ = 0;
+	strlower (s);		/* convert to lower case to save time */
+	/* don't bother with common words, if there is more than 1,000 of
+	   any of these it doesnt do any good for the search engine because
+	   it won't match on them.  its doubtful that these would narrow
+	   searches down any even after the selection of the bin to search */
+	if (!strcmp ("a", s) ||
+	    !strcmp ("i", s) ||
+	    !strcmp ("the", s) || !strcmp ("and", s) || !strcmp ("in", s) ||
+	    /* the following are common path names and don't really
+	       provide useful information */
+	    !strcmp ("mp3", s) ||
+	    !strcmp ("c", s) ||
+	    !strcmp ("d", s) ||
+	    !strcmp ("e", s) ||
+	    !strcmp ("napster", s) ||
+	    !strcmp ("music", s)
+	    !strcmp ("program", s) ||
+	    !strcmp ("files", s) ||
+	    !strcmp ("windows", s) ||
+	    !strcmp ("songs", s) ||
+	    !strcmp ("desktop", s) ||
+	    !strcmp ("my", s) ||
+	    !strcmp ("documents", s) ||
+	    !strcmp ("winamp", s) ||
+	    !strcmp ("mp3s", s))
+	{
+	    s = ptr;
+	    continue;
+	}
 	if (cur)
 	{
 	    cur->next = list_new (s);
@@ -134,7 +167,6 @@ tokenize (char *s)
 	    if (!cur)
 		return 0;
 	}
-	strlower (cur->data);	/* convert to lower case to save time */
 	s = ptr;
     }
     return r;
@@ -163,12 +195,21 @@ typedef struct
 }
 GARBAGE;
 
+#define THRESH 10000
+
 static void
 collect_garbage (FLIST * files, GARBAGE * data)
 {
     LIST *ptr, *last = 0;
     DATUM *d;
 
+    /* print some info about large bins so we can consider adding them to
+       the list of words to ignore in tokenize() */
+    if (files->count >= THRESH)
+    {
+	log ("collect garbage(): bin for \"%s\" exceeds %d entries",
+		flist->key, THRESH);
+    }
     ptr = files->list;
     while (ptr)
     {
@@ -280,7 +321,8 @@ fdb_search (HASH * table,
     }
     if (!flist)
 	return 0;		/* no matches */
-    log ("fdb_search(): bin contains %d files", flist->count);
+    log ("fdb_search(): bin \"%s\" contains %d files", flist->key,
+	 flist->count);
     /* find the list of files which contain all search tokens */
     for (ptok = flist->list; ptok; ptok = ptok->next)
     {
@@ -340,17 +382,17 @@ generate_request (char *d, int dsize, int results, LIST * tokens,
 	dsize -= l;
     }
     generate_qualifier (d, dsize, "BITRATE", parms->minbitrate,
-	    parms->maxbitrate, MAX_BITRATE);
+			parms->maxbitrate, MAX_BITRATE);
     l = strlen (d);
     d += l;
     dsize -= l;
     generate_qualifier (d, dsize, "FREQ", parms->minfreq, parms->maxfreq,
-	    MAX_FREQUENCY);
+			MAX_FREQUENCY);
     l = strlen (d);
     d += l;
     dsize -= l;
     generate_qualifier (d, dsize, "LINESPEED", parms->minspeed,
-	    parms->maxspeed, MAX_SPEED);
+			parms->maxspeed, MAX_SPEED);
 }
 
 static char *
@@ -369,7 +411,7 @@ generate_search_id (void)
 	return 0;
     }
     expand_hex (id, 4);
-    id[8]=0;
+    id[8] = 0;
     return id;
 }
 
@@ -561,7 +603,7 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    if (id)
 		dsearch->id = STRDUP (id);
 	    else
-		dsearch->id=generate_search_id ();
+		dsearch->id = generate_search_id ();
 	    dsearch->con = con;
 	    dsearch->nick = STRDUP (user->nick);
 	    dsearch->numServers = Num_Servers;
@@ -572,14 +614,14 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    /* pass this message to all servers EXCEPT the one we recieved
 	       it from (if this was a remote search */
 	    pass_message_args (con, MSG_SERVER_REMOTE_SEARCH, "%s %s %s",
-		    dsearch->nick, dsearch->id, request);
+			       dsearch->nick, dsearch->id, request);
 	    FREE (request);
 	    done = 0;		/* delay sending the end-of-search message */
 	    /* give the user some feedback on why this might take longer than
 	       usual */
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH,
-			"Relaying request to remote servers");
+			  "Relaying request to remote servers");
 	}
     }
 
