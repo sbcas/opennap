@@ -49,6 +49,8 @@ static CONFIG Vars[] = {
     { "compression_threshold", VAR_TYPE_INT, UL &Compression_Threshold, 16384 },
     { "max_shared", VAR_TYPE_INT, UL &Max_Shared, 5000 },
     { "max_connections", VAR_TYPE_INT, UL &Max_Connections, 1000 },
+    { "nick_expire", VAR_TYPE_INT, UL &Nick_Expire, 7776000 /* 90 days */ },
+    { "check_expire", VAR_TYPE_INT, UL &Check_Expire, 86400 /* 1 day */ },
 };
 
 static int Vars_Size = sizeof (Vars) / sizeof (CONFIG);

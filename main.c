@@ -49,6 +49,8 @@ int Compression_Level;
 int Compression_Threshold;
 int Max_Shared;
 int Max_Connections;
+int Nick_Expire;
+int Check_Expire;
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;
@@ -104,8 +106,9 @@ HANDLER;
 
 /* this is the table of valid commands we accept from both users and servers */
 static HANDLER Protocol[] = {
-    {MSG_CLIENT_LOGIN, login},	/* 6 */
-    {MSG_CLIENT_LOGIN_REGISTER, login},	/* 7 */
+    {MSG_CLIENT_LOGIN, login},	/* 2 */
+    {MSG_CLIENT_LOGIN_REGISTER, login},	/* 6 */
+    {MSG_CLIENT_REGISTER, register_nick}, /* 7 */
     {MSG_CLIENT_ADD_FILE, add_file},	/* 100 */
     {MSG_CLIENT_REMOVE_FILE, remove_file},	/* 102 */
     {MSG_CLIENT_SEARCH, search},	/* 200 */
@@ -162,6 +165,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_DISCONNECT, server_disconnect},	/* 10101 */
     {MSG_CLIENT_KILL_SERVER, kill_server},	/* 10110 */
     {MSG_CLIENT_REMOVE_SERVER, remove_server},	/* 10111 */
+    {MSG_SERVER_REGINFO, reginfo },		/* 10114 */
 #if 0
     {MSG_SERVER_COMPRESSED_DATA, compressed_data},	/* 10200 */
 #endif

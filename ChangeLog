@@ -19,6 +19,8 @@ search() should return a 404 error if the search failed
 modified synch_server() to first sync the users and channels, then do a bulk
 dump of the library table in hopes of improving performance.
 
+added support for account registration
+
 Changes from 0.10
 =================
 added max_connections config variable

@@ -15,13 +15,16 @@
 
 extern MYSQL *Db;
 
-/* packet contains: <nick> <pass> <port> <client-info> <speed> [ <email> ] */
+/* <nick> <pass> <port> <client-info> <speed> [ <email> ] */
 HANDLER (login)
 {
-    char *field[6];
+    char *field[7];
     USER *user;
     HOTLIST *hotlist;
-    int i, numfields, speed;
+    int i, n, numfields, speed;
+    MYSQL_RES *result;
+    MYSQL_ROW row = 0;
+    LEVEL level = LEVEL_USER;
 
     (void) tag;
     (void) len;
@@ -98,17 +101,168 @@ HANDLER (login)
 	    return;
 	}
 
+    /* see if this is a registered nick */
+    snprintf (Buf, sizeof (Buf), "SELECT * FROM accounts WHERE nick='%s'",
+	    field[0]);
+    if (mysql_query (Db, Buf) != 0)
+    {
+	if (con->class == CLASS_UNKNOWN)
+	{
+	    send_cmd (con, MSG_SERVER_ERROR, "db error");
+	    con->destroy = 1;
+	}
+	sql_error ("login", Buf);
+	return;
+    }
+    result = mysql_store_result (Db);
+    n = mysql_num_rows (result);
+    if (n > 0)
+    {
+	/* yes, it is registered, fetch info */
+	row = mysql_fetch_row (result);
+
+	if (tag == MSG_CLIENT_LOGIN_REGISTER)
+	{
+	    /* oops, its already registered */
+	    if (con->class == CLASS_UNKNOWN)
+	    {
+		/* this could happen if two clients simultaneously connect
+		   and register */
+		send_cmd (con, MSG_SERVER_ERROR,
+			"that name is already registered");
+		con->destroy = 1;
+	    }
+	    else
+	    {
+		ASSERT (con->class == CLASS_SERVER);
+		/* need to issue a kill and send the registration info
+		   we have on this server */
+		log ("login(): registration request for %s, already registered here",
+			row[0]);
+		pass_message_args (NULL, MSG_CLIENT_KILL,
+			":%s %s account is already registered",
+			Server_Name, row[0]);
+		pass_message_args (NULL, MSG_SERVER_REGINFO,
+			":%s %s %s %s %s %s %s", Server_Name,
+			row[0], row[1], row[2], row[3], row[4], row[5]);
+	    }
+	    mysql_free_result (result);
+	    return;
+	}
+
+	/* verify the password */
+	if (strcmp (field[1], row[1]) != 0)
+	{
+	    log ("login(): bad password for user %s", row[0]);
+	    if (con->class == CLASS_UNKNOWN)
+	    {
+		send_cmd (con, MSG_SERVER_ERROR, "invalid password");
+		con->destroy = 1;
+	    }
+	    else
+	    {
+		ASSERT (con->class == CLASS_SERVER);
+		/* if another server let this message pass through, that
+		   means they probably have an out of date password.  notify
+		   our peers of the registration info.  note that it could be
+		   _this_ server that is stale, but when the other servers
+		   receive this message they will check the creation date and
+		   send back any entries which are more current that this one.
+		   kind of icky, but its the best we can do */
+		log ("login(): syncing registration info");
+		pass_message_args (NULL, MSG_CLIENT_KILL,
+			":%s %s invalid password", Server_Name, row[0]);
+		pass_message_args (NULL, MSG_SERVER_REGINFO,
+			":%s %s %s %s %s %s %s", Server_Name,
+			row[0], row[1], row[2], row[3], row[4], row[5]);
+	    }
+
+	    mysql_free_result (result);
+	    return;
+	}
+
+	/* update the last seen time */
+	snprintf (Buf, sizeof (Buf),
+		"UPDATE accounts SET lastseen=%d WHERE nick='%s'",
+		(int)time (0), field[0]);
+	if (mysql_query (Db, Buf) != 0)
+	    sql_error ("login", Buf);
+
+	/* set the default userlevel */
+	if (!strcasecmp ("elite", row[2]))
+	    level = LEVEL_ELITE;
+	else if (!strcasecmp ("admin", row[2]))
+	    level = LEVEL_ADMIN;
+	else if (strcasecmp ("moderator", row[2]) == 0)
+	    level = LEVEL_MODERATOR;
+	else if (strcasecmp ("user", row[2]) != 0)
+	{
+	    log ("login(): unknown level %s for %s in accounts table",
+		    row[2], row[0]);
+	}
+
+	if (level > LEVEL_USER)
+	{
+	    /* broadcast the updated userlevel to our peer servers */
+	    if (Num_Servers)
+		pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
+			":%s %s %s", Server_Name, row[0] , row[2]);
+	    /* notify users of their change in level */
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s set your level to %s (%d).",
+		    Server_Name, Levels[level], level);
+
+	    log ("login(): set %s to level %s", row[0], Levels[level]);
+	}
+    }
+    else if (tag == MSG_CLIENT_LOGIN_REGISTER)
+    {
+	/* create the db entry now */
+	log ("login(): registering user %s", field[0]);
+
+	if (numfields < 5)
+	{
+	    log ("login(): too few fields to register nick");
+	    if (con->class == CLASS_UNKNOWN)
+	    {
+		con->destroy = 1;
+		send_cmd (con, MSG_SERVER_ERROR,
+			"too few fields in registration message");
+		return;
+	    }
+	}
+	snprintf (Buf, sizeof (Buf),
+		"INSERT INTO accounts VALUES ('%s','%s','user','%s',%d,%d)",
+		field[0], field[1], field[5], (int)time (0), (int)time (0));
+	if (mysql_query (Db, Buf) != 0)
+	{
+	    sql_error ("login", Buf);
+	    mysql_free_result (result);
+	    if (con->class == CLASS_UNKNOWN)
+		send_cmd (con, MSG_SERVER_ERROR, "error creating account");
+	    return;
+	}
+    }
+
     user = new_user ();
     user->nick = STRDUP (field[0]);
     user->port = atoi (field[2]);
     user->clientinfo = STRDUP (field[3]);
     user->speed = speed;
     user->connected = time (0);
-    user->level = LEVEL_USER;
-    if (numfields > 5)
+    user->level = level;
+    if (tag == MSG_CLIENT_LOGIN_REGISTER)
 	user->email = STRDUP (field[5]);
+    else if (row)
+	user->email = STRDUP (row[3]);
+    else
+    {
+	snprintf (Buf, sizeof (Buf), "anon@%s", Server_Name);
+	user->email = STRDUP (Buf);
+    }
 
     hash_add (Users, user->nick, user);
+
+    mysql_free_result (result);
 
     /* if this is a locally connected user, update our information */
     if (con->class == CLASS_UNKNOWN)
@@ -130,85 +284,7 @@ HANDLER (login)
 	con->class = CLASS_USER;
 	con->user = user;
 	user->con = con;
-
-	/* query our local accounts database for mod/admin privileges */
-	snprintf (Buf, sizeof (Buf),
-		  "SELECT * FROM accounts WHERE nick LIKE '%s'", user->nick);
-	if (mysql_query (Db, Buf) != 0)
-	{
-	    sql_error ("login", Buf);
-	    /* not fatal */
-	}
-	else
-	{
-	    MYSQL_RES *result = mysql_store_result (Db);
-
-	    switch (mysql_num_rows (result))
-	    {
-		case 0:
-		    break;		/* no entry, proceed normally */
-		case 1:
-		    {
-			MYSQL_ROW row = mysql_fetch_row (result);
-
-			/* verify the password */
-			if (strcmp (field[1], row[1]) != 0)
-			{
-			    log ("login(): bad password for user %s",
-				user->nick);
-			    send_cmd (con, MSG_SERVER_NOSUCH,
-				"invalid password");
-			    con->destroy = 1;
-			    mysql_free_result (result);
-			    return;
-			}
-			else
-			{
-			    if (!strcasecmp ("elite", row[2]))
-				user->level = LEVEL_ELITE;
-			    else if (!strcasecmp ("admin", row[2]))
-				user->level = LEVEL_ADMIN;
-			    else if (strcasecmp ("moderator", row[2]) == 0)
-				user->level = LEVEL_MODERATOR;
-			    else
-			    {
-				log ("login(): unknown level %s for %s in accounts table",
-				    row[2], row[0]);
-			    }
-			    if (user->level > LEVEL_USER)
-			    {
-				/* broadcast the updated userlevel to our peer
-				   servers */
-				if (Num_Servers)
-				    pass_message_args (con,
-					MSG_CLIENT_SETUSERLEVEL,
-					":%s %s %s", Server_Name,
-					user->nick, row[2]);
-				/* notify users of their change in level */
-				send_cmd (con, MSG_SERVER_NOSUCH,
-				    "server set your level to %s (%d).",
-				    Levels[user->level], user->level);
-			    }
-
-			    log ("login(): set %s to level %s", user->nick,
-				Levels[user->level]);
-			}
-		    }
-		    break;
-		default:
-		    log ("login(): query returned >1 rows!");
-		    send_cmd (con, MSG_SERVER_ERROR, "sql error");
-		    con->destroy = 1;
-		    break;
-	    }
-
-	    mysql_free_result (result);
-
-	}
-
-	/* ack the login - we don't really keep track of email addresses,
-	   so fake it the way that napster does */
-	send_cmd (con, MSG_SERVER_EMAIL, "anon@%s", Server_Name);
+	send_cmd (con, MSG_SERVER_EMAIL, user->email);
 	show_motd (con);
 	server_stats (con, 0, 0, NULL);
     }
@@ -262,4 +338,107 @@ HANDLER (user_ip)
     user->host = strtoul (field[1], 0, 10);
     user->conport = strtoul (field[2], 0, 10);
     user->server = STRDUP (field[3]);
+}
+
+/* check to see if a nick is already registered */
+/* 7 <nick> */
+HANDLER (register_nick)
+{
+    int n;
+    MYSQL_RES *result;
+
+    ASSERT (validate_connection (con));
+    snprintf (Buf, sizeof (Buf), "SELECT nick FROM accounts WHERE nick='%s'",
+	    pkt);
+    if (mysql_query (Db, Buf) != 0)
+    {
+	send_cmd (con, MSG_SERVER_ERROR, "db error");
+	sql_error ("register_nick", Buf);
+    }
+    result = mysql_store_result (Db);
+    n = mysql_num_rows (result);
+    if (n > 0)
+    {
+	ASSERT (n == 1);
+	send_cmd (con, MSG_SERVER_REGISTER_FAIL, "");
+    }
+    else
+	send_cmd (con, MSG_SERVER_REGISTER_OK, "");
+    mysql_free_result (result);
+}
+
+/* 10114 :<server> <nick> <password> <level> <email> <created> <lastseen> */
+HANDLER (reginfo)
+{
+    char *server;
+    char *fields[6];
+    int n, t;
+    MYSQL_RES *result;
+    MYSQL_ROW row;
+
+    ASSERT (validate_connection (con));
+
+    if (*pkt != ':')
+    {
+	log ("reginfo(): message does not begin with :");
+	return;
+    }
+    server = pkt;
+    pkt = strchr (pkt, ' ');
+    if (!pkt)
+	return;
+    *pkt++ = 0;
+    if (split_line (fields, sizeof (fields)/sizeof(char*), pkt) != 6)
+    {
+	log ("reginfo(): wrong number of fields");
+	return;
+    }
+    /* look up any entry we have for this user */
+    snprintf (Buf, sizeof (Buf), "SELECT * FROM accounts WHERE nick='%s'",
+	    fields[0]);
+    if (mysql_query (Db, Buf) != 0)
+    {
+	sql_error ("reginfo", Buf);
+	return;
+    }
+    result = mysql_store_result (Db);
+    n = mysql_num_rows (result);
+    if (n > 0)
+    {
+	ASSERT (n == 1);
+	row = mysql_fetch_row (result);
+	/* check the timestamp to see if this is more recent than what
+	   we have */
+	t = atol (row[4]);
+	if (atol (fields[4]) > t)
+	{
+	    /* our record was created first, notify peers */
+	    log ("reginfo(): stale reginfo received from %s", server);
+	    pass_message_args (NULL, MSG_SERVER_REGINFO,
+		    ":%s %s %s %s %s %s %s", Server_Name,
+		    row[0], row[1], row[2], row[3], row[4], row[5]);
+	    mysql_free_result (result);
+	    return;
+	}
+	mysql_free_result (result);
+	/* update our record */
+	snprintf (Buf, sizeof (Buf),
+		"UPDATE accounts SET pass='%s',level='%s',email='%s',created=%s,lastseen=%s WHERE nick='%s':",
+		fields[1], fields[2], fields[3], fields[4], fields[5],
+		fields[0]);
+	if (mysql_query (Db, Buf) != 0)
+	    sql_error ("reginfo", Buf);
+	log ("reginfo(): updated accounts table for %s", fields[0]);
+    }
+    else
+    {
+	mysql_free_result (result);
+	/* create the record */
+	snprintf (Buf, sizeof (Buf),
+		"INSERT INTO accounts VALUES ('%s','%s','%s','%s',%s,%s)",
+		fields[0], fields[1], fields[2], fields[3], fields[4],
+		fields[5]);
+	if (mysql_query (Db, Buf) != 0)
+	    sql_error ("reginfo", Buf);
+    }
 }

@@ -19,9 +19,9 @@
 
 * whowas should have the extra info for mods like whois
 
-* add support for other media types
-
 * add a list users command
 
 * server linking is still blocking for some reason, even thought the socket
   is set nonblocking before the connect() call
+
+* automatic purging of old accounts

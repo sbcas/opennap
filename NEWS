@@ -29,7 +29,6 @@ clients.
 
 Main differences from the official napster servers:
 * servers can be linked together
-* nickname registration is not supported
 * normal users can create channels
 * source code is freely available
 

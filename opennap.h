@@ -215,6 +215,8 @@ extern int Compression_Level;
 extern int Compression_Threshold;
 extern int Max_Shared;
 extern int Max_Connections;
+extern int Nick_Expire;
+extern int Check_Expire;
 
 extern unsigned int Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
@@ -341,6 +343,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_LOGIN		10010	/* server login request */
 #define MSG_SERVER_LOGIN_ACK		10011	/* server login response */
 #define MSG_SERVER_USER_IP		10013	/* ip for user */
+#define MSG_SERVER_REGINFO		10014	/* registration info */
 #define MSG_CLIENT_CONNECT		10100
 #define MSG_CLIENT_DISCONNECT		10101
 #define MSG_CLIENT_KILL_SERVER		10110
@@ -460,6 +463,8 @@ HANDLER (privmsg);
 HANDLER (part);
 HANDLER (ping);
 HANDLER (public);
+HANDLER (reginfo);
+HANDLER (register_nick);
 HANDLER (remove_file);
 HANDLER (remove_hotlist);
 HANDLER (remove_server);

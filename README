@@ -24,7 +24,7 @@ Last updated February 1, 2000
         Enter password:
 
 	mysql> use mp3;
-	mysql> insert into accounts values('nick','pass','elite');
+	mysql> insert into accounts values('nick','pass','elite','email@here.com', 0, 0);
 	mysql> quit;
 
       where 'nick' is the nick you want to use, 'pass' is the password for
@@ -59,14 +59,13 @@ Last updated February 1, 2000
 
 	The following tables are stored in the "mp3" database.
 
-	* Local accounts table
+	* Accounts table
 
 		CREATE TABLE accounts (nick VARCHAR(15), password VARCHAR(32),
-			level VARCHAR(9));
+			level VARCHAR(9), email VARCHAR(64), created INT,
+			lastseen INT);
 
-		This table is for local servers to set the default level
-		for their administrators and moderators.  User accounts
-		are not kept here.
+		Table used to keep track of user registration
 
 	* Server table
 
@@ -175,6 +174,22 @@ are implemented as additional functionality in the opennap server.
 	locally connected client to its peer servers, since that information
 	is not available in the login message.  <ip> is an unsigned long
 	integer specifying the ip address for <user>
+
+10014	registration info [SERVER]
+
+	<user> <pass> <level> <email> <created> <last-seen>
+
+	<pass>		user's password
+	<level>		user's default level
+	<email>		user's email address
+	<created>	time at which the account was created
+	<last-seen>	last time the user logged into a server
+
+	When a server detects that the user table is out of sync between
+	servers, it will send its notion of what the entry should look like
+	to all the other servers.  If a receiving server has a matching
+	user, it checks the <created> time to see which is the oldest
+	entry and updates accordingly.
 
 10100	server connect [CLIENT]
 
