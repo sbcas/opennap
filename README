@@ -135,6 +135,35 @@ are implemented as additional functionality in the opennap server.
 	is not available in the login message.  <ip> is an unsigned long
 	integer specifying the ip address for <user>
 
+10100	server connect [CLIENT]
+
+	<server> <port> [ <remote_server> ]
+
+	attempts to link the current server to <server>:<port>.  if
+	<remote_server> is given, then that server attempts to make the
+	link.  this command can be executed by admin level and higher.
+
+10101	server disconnect [CLIENT]
+
+	<server> <reason>
+
+	delink current server from <server>.
+	must be admin or high level to execute this command
+
+10110	kill server [CLIENT]
+
+	<server> <reason>
+
+	cause the server to shutdown.  must be elite level to execute
+	this command.
+
+10111	remove server [CLIENT]
+
+	<server> <reason>
+
+	reqeusts that <server> be removed from the table of allowed links.
+	must be elite to execute this command
+
 * References
 
 RFC1459, the IRC protocol was helpful in implementing many features.

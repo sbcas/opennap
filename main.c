@@ -161,10 +161,13 @@ static HANDLER Protocol[] = {
     /* non-standard messages */
     { MSG_CLIENT_QUIT, client_quit },
     { MSG_SERVER_LOGIN, server_login },
-    { MSG_CLIENT_CONNECT, server_connect },
     { MSG_SERVER_LOGIN, server_login },
     { MSG_SERVER_LOGIN_ACK, server_login_ack },
     { MSG_SERVER_USER_IP, user_ip }, /* 10013 */
+    { MSG_CLIENT_CONNECT, server_connect }, /* 10100 */
+    { MSG_CLIENT_DISCONNECT, server_disconnect }, /* 10101 */
+    { MSG_CLIENT_KILL_SERVER, kill_server }, /* 10110 */
+    { MSG_CLIENT_REMOVE_SERVER, remove_server }, /* 10111 */
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
 

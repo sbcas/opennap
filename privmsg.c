@@ -45,9 +45,11 @@ HANDLER (privmsg)
 	/*reconsitute the msg */
 	send_cmd (user->con, MSG_CLIENT_PRIVMSG, "%s %s", sender->nick, ptr);
 
+#if 0
 	/* stupid hack until we can get proper support in clients */
 	if (con->class == CLASS_USER && strncmp (".CONNECT", ptr, 8) == 0)
 	    try_connect_privmsg (ptr + 8);
+#endif
     }
     else if (con->class == CLASS_USER)
     {

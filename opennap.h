@@ -240,9 +240,11 @@ typedef struct _ban {
 #define MSG_CLIENT_QUIT			10000	/* user has quit */
 #define MSG_SERVER_LOGIN		10010	/* server login request */
 #define MSG_SERVER_LOGIN_ACK		10011	/* server login response */
-#define MSG_CLIENT_CONNECT		10012	/* user request for server
-						   connect */
 #define MSG_SERVER_USER_IP		10013	/* ip for user */
+#define MSG_CLIENT_CONNECT		10100
+#define MSG_CLIENT_DISCONNECT		10101
+#define MSG_CLIENT_KILL_SERVER		10110
+#define MSG_CLIENT_REMOVE_SERVER	10111
 
 /* offsets into the row returned for library searches */
 #define IDX_NICK	0
@@ -262,6 +264,7 @@ extern char *Db_Name;
 extern char *Server_Name;
 extern char *Server_Pass;
 extern int Server_Port;
+extern int SigCaught;	/* flag to control main loop */
 
 extern char Buf[1024];
 
@@ -325,7 +328,6 @@ void show_motd (CONNECTION * con);
 void send_queued_data (CONNECTION *con);
 void sql_error (const char *function, const char *query);
 void synch_server (CONNECTION *);
-void try_connect_privmsg (char *);
 int validate_user (USER *);
 int validate_channel (CHANNEL *);
 int validate_connection (CONNECTION *);
@@ -348,6 +350,7 @@ HANDLER (download_end);
 HANDLER (download_start);
 HANDLER (join);
 HANDLER (kill_user);
+HANDLER (kill_server);
 HANDLER (level);
 HANDLER (list_channels);
 HANDLER (list_users);
@@ -361,9 +364,11 @@ HANDLER (pong);
 HANDLER (public);
 HANDLER (remove_file);
 HANDLER (remove_hotlist);
+HANDLER (remove_server);
 HANDLER (resume);
 HANDLER (search);
 HANDLER (server_connect);
+HANDLER (server_disconnect);
 HANDLER (server_login);
 HANDLER (server_login_ack);
 HANDLER (server_stats);

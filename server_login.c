@@ -101,15 +101,14 @@ HANDLER (server_login)
     /* now we wait for the peers ACK */
 }
 
-void
-server_login_ack (CONNECTION *con, char *pkt)
+HANDLER (server_login_ack)
 {
     MYSQL_RES *result;
     MYSQL_ROW row;
     MD5_CTX md5;
     char hash[33];
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     if (con->class != CLASS_UNKNOWN)
     {
@@ -124,8 +123,8 @@ server_login_ack (CONNECTION *con, char *pkt)
     }
 
     /* look up the entry in our peer servers database */
-    snprintf (Buf, sizeof (Buf), "SELECT password FROM servers WHERE name = '%s'",
-	    con->host);
+    snprintf (Buf, sizeof (Buf),
+	"SELECT password FROM servers WHERE name = '%s'", con->host);
     if (mysql_query (Db, Buf) != 0)
     {
 	sql_error ("server_login",Buf);
@@ -173,4 +172,6 @@ server_login_ack (CONNECTION *con, char *pkt)
 
     /* synchronize our state with this server */
     synch_server (con);
+
+    notify_mods ("server %s has joined.", con->host);
 }

@@ -13,8 +13,8 @@ server_split (void *puser, void *pcon)
     USER *user = (USER *) puser;
     CONNECTION *con = (CONNECTION *) pcon;
 
-    ASSERT (VALID (user));
-    ASSERT (VALID (con));
+    ASSERT (validate_user (user));
+    ASSERT (validate_connection (con));
     if (user->serv == con)
 	hash_remove (Users, user->nick);
 }
@@ -22,8 +22,12 @@ server_split (void *puser, void *pcon)
 void
 remove_connection (CONNECTION *con)
 {
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
+    /* flush anything left in the queue */
+    send_queued_data (con);
+
+    /* close socket */
     close (con->fd);
 
     if (con->class == CLASS_USER)
@@ -59,6 +63,7 @@ remove_connection (CONNECTION *con)
 	   would avoid sending it) */
 
 	log ("remove_connection(): server split detected (%s)", con->host);
+	notify_mods ("server %s has split.", con->host);
 
 	array_remove (Servers, &Num_Servers, con);
 
