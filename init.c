@@ -4,11 +4,13 @@
 
    $Id$ */
 
+#ifndef WIN32
 #include <grp.h>
 #include <pwd.h>
 #include <unistd.h>
-#include <signal.h>
 #include <netdb.h>
+#endif /* !WIN32 */
+#include <signal.h>
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
@@ -32,6 +34,7 @@ lookup_hostname (void)
     }
 }
 
+#ifndef WIN32
 static void
 sighandler (int sig)
 {
@@ -44,6 +47,7 @@ sighandler (int sig)
 	    break;
     }
 }
+#endif
 
 int
 init_server (const char *cf)
@@ -75,6 +79,7 @@ init_server (const char *cf)
     if (set_max_connections (Connection_Hard_Limit))
 	return -1;
 
+#ifndef WIN32
     if (getuid () == 0)
     {
 	if (Uid == -1)
@@ -122,6 +127,7 @@ init_server (const char *cf)
 
     }
     log ("running as user %d, group %d", getuid (), getgid ());
+#endif /* !WIN32 */
 
     log ("my hostname is %s", Server_Name);
 

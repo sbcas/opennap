@@ -254,8 +254,8 @@ report_stats (int fd)
 #endif /* linux */
     snprintf (Buf, sizeof (Buf), "%d %d %.2f %lu 0\n", Users->dbsize, Num_Files,
 	    loadavg, (unsigned long) (Num_Gigs) * 1024);
-    write (n, Buf, strlen (Buf));
-    close (n);
+    WRITE (n, Buf, strlen (Buf));
+    CLOSE (n);
 }
 
 static void
@@ -323,7 +323,6 @@ main (int argc, char **argv)
 
     /* printf("%d\n", sizeof(DATUM)); */
 
-#ifndef WIN32
     while ((n = getopt (argc, argv, "c:hl:p:v")) != EOF)
     {
 	switch (n)
@@ -347,7 +346,6 @@ main (int argc, char **argv)
 		usage ();
 	}
     }
-#endif /* !WIN32 */
 
     if (init_server (config_file))
 	exit (1);

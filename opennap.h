@@ -617,6 +617,7 @@ typedef unsigned int socklen_t;
 #define WRITE(a,b,c) send(a,b,c,0)
 #define CLOSE closesocket
 #define EINPROGRESS WSAEINPROGRESS
+#define EWOULDBLOCK WSAEWOULDBLOCK
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"

@@ -1,6 +1,4 @@
-#ifdef WIN32
-#include <windows.h>
-#endif
+#include <string.h>
 
 #define EOF -1
 

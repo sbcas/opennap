@@ -118,6 +118,7 @@ bind_interface (int fd, unsigned int ip, int port)
 }
 
 #ifdef WIN32
+#undef errno
 #define errno h_errno
 #endif
 
