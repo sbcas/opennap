@@ -1,5 +1,5 @@
 AC_INIT(opennap.h)
-AM_INIT_AUTOMAKE(opennap,0.05)
+AM_INIT_AUTOMAKE(opennap,0.06)
 AM_PROG_CC_STDC
 LIBS="$LIBS -L/usr/lib/mysql"
 AC_CHECK_LIB(mysqlclient, mysql_init)

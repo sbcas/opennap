@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -26,26 +26,6 @@ void
 permission_denied (CONNECTION *con)
 {
     send_cmd (con, MSG_SERVER_NOSUCH, "permission denied");
-}
-
-/* read() can return less than the amount requested if the data was sent in
-   different packets.  however, we know exactly how much to read so we want
-   to read it all at once.  */
-size_t
-read_bytes (int fd, char *d, size_t bytes)
-{
-    size_t l, n = 0;
-
-    while (n < bytes)
-    {
-	l = read (fd, d + n, bytes - n);
-	if (l == (size_t) - 1)
-	    return -1;
-	if (l == 0)
-	    break;
-	n += l;
-    }
-    return n;
 }
 
 /* writes `val' as a two-byte value in little-endian format */

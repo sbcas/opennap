@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -99,7 +99,7 @@ static void
 version (void)
 {
     fprintf (stderr, "%s %s\n", PACKAGE, VERSION);
-    fprintf (stderr, "Copyright (C) 2000 drscholl@sourceforge.net\n");
+    fprintf (stderr, "Copyright (C) 2000 drscholl@users.sourceforge.net\n");
     exit (0);
 }
 
@@ -575,7 +575,7 @@ main (int argc, char **argv)
     FREE (Motd_Path);
     FREE (Server_Name);
     if (Server_Pass)
-    FREE (Server_Pass);
+	FREE (Server_Pass);
 
     /* this displays a list of leaked memory.  pay attention to this. */
     CLEANUP ();

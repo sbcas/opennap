@@ -1,6 +1,6 @@
-opennap v0.05 (ALPHA)
+opennap v0.06 (ALPHA)
 =====================
-January 11, 2000
+January 12, 2000
 
 http://opennap.sourceforge.net
 http://sourceforge.net/project/?group_id=1321
@@ -30,6 +30,7 @@ Main differences from the official napster servers:
 
 What's included?
 * opennap server
-* meta-server for directing clients to server groups
+* metaserver for directing clients to server groups
 * protocol specification
+* sample client
 * SOURCE CODE!
