@@ -85,6 +85,7 @@ HANDLER (change_pass)
 {
     USER *user;
 
+    (void) tag;
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;
@@ -104,6 +105,7 @@ HANDLER (change_email)
 {
     USER *user;
 
+    (void) tag;
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;
@@ -125,6 +127,8 @@ HANDLER (alter_port)
     char *nick, *port;
     int p;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender) != 0)
 	return;

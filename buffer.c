@@ -295,7 +295,8 @@ buffer_uncompress (z_streamp zip, BUFFER **b)
     {
 	/* allocate 2 times the compressed data for output, plus one extra
 	   byte to terminate the string with a nul (\0) */
-	cur->data = REALLOC (cur->data, cur->datasize + 2 * zip->avail_in + 1);
+	cur->datamax = cur->datasize + 2 * zip->avail_in + 1;
+	cur->data = REALLOC (cur->data, cur->datamax);
 	zip->next_out = (uchar *) cur->data + cur->datasize;
 	zip->avail_out = 2 * zip->avail_in;
 	cur->datasize += 2 * zip->avail_in;
