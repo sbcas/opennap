@@ -20,10 +20,10 @@ sync_file (DATUM *info, CONNECTION *con)
 {
     ASSERT (validate_connection (con));
 
-    if (info->type == CT_AUDIO)
-    send_cmd (con, MSG_CLIENT_ADD_FILE, ":%s \"%s\" %s %d %hu %hu %hu",
-	    info->user->nick, info->filename, info->hash, info->size,
-	    info->bitrate, info->frequency, info->duration);
+    if (info->type == CT_MP3)
+	send_cmd (con, MSG_CLIENT_ADD_FILE, ":%s \"%s\" %s %d %hu %hu %hu",
+		info->user->nick, info->filename, info->hash, info->size,
+		info->bitrate, info->frequency, info->duration);
     else
 	send_cmd (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %d %s %s",
 		info->user->nick, info->filename, info->size,

@@ -262,7 +262,7 @@ HANDLER (add_file)
     info->frequency = atoi (av[4]);
     info->duration = atoi (av[5]);
     info->valid = 1;
-    info->type = CT_AUDIO;
+    info->type = CT_MP3;
 
     insert_datum (info, av[0]);
 
@@ -282,6 +282,7 @@ HANDLER (add_file)
 }
 
 char *Content_Types[] = {
+    "mp3",	/* not a real type, but what we use for audio/mp3 */
     "audio",
     "video",
     "application",
@@ -315,7 +316,7 @@ HANDLER (share_file)
 
     /* make sure the content-type looks correct */
     type = -1;
-    for (i = 0; i < CT_UNKNOWN; i++)
+    for (i = CT_AUDIO; i < CT_UNKNOWN; i++)
     {
 	if (!strcasecmp (Content_Types[i], av[3]))
 	{

@@ -349,7 +349,7 @@ HANDLER (search)
     parms.maxspeed = 10;
     parms.maxbitrate = 0xffff;
     parms.maxfreq = 0xffff;
-    parms.type = CT_AUDIO;	/* search for audio by default */
+    parms.type = CT_MP3;	/* search for audio/mp3 by default */
 
     /* parse the request */
     for (i = 0; i < ac; i++)
@@ -387,7 +387,7 @@ HANDLER (search)
 	{
 	    i++;
 	    parms.type = -1;
-	    for (n = 0; n < CT_UNKNOWN; n++)
+	    for (n = CT_MP3; n < CT_UNKNOWN; n++)
 	    {
 		if (!strcasecmp (av[i], Content_Types[n]))
 		{

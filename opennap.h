@@ -209,7 +209,8 @@ typedef struct {
 
 /* content-type */
 enum {
-    CT_AUDIO,	/* default */
+    CT_MP3,	/* default */
+    CT_AUDIO,
     CT_VIDEO,
     CT_APPLICATION,
     CT_IMAGE,
