@@ -19,7 +19,7 @@ invalid_nick (const char *s)
 
     /* don't allow anyone to ever have this nick */
     if (!strcasecmp (s, "operserv") || !strcasecmp (s, "chanserv") ||
-	    !strcasecmp (s, "operator"))
+	!strcasecmp (s, "operator"))
 	return 1;
     while (*s)
     {
@@ -48,20 +48,56 @@ sync_reginfo (USERDB * db)
 		       Levels[db->level], db->timestamp, db->lastSeen);
 }
 
+/* generic function to generate a kill for a user */
+static void
+kill_client (const char *nick, const char *fmt, ...)
+{
+    char buf[1024];
+    va_list ap;
+
+    va_start (ap, fmt);
+    vsnprintf (buf, sizeof (buf), fmt, ap);
+    va_end (ap);
+
+    pass_message_args (NULL, MSG_CLIENT_KILL, ":%s %s \"%s\"", Server_Name,
+		       nick, buf);
+    notify_mods (KILLLOG_MODE, "%s killed %s: %s", Server_Name, nick, buf);
+}
+
+static void
+zap_local_user (CONNECTION * con, const char *reason)
+{
+    ASSERT (validate_connection (con));
+    ASSERT (ISUSER (con));
+    ASSERT (reason != NULL);
+
+    /* TODO: there is a numeric for this somewhere */
+    send_cmd (con, MSG_SERVER_NOSUCH, "You were killed by %s: %s",
+	      Server_Name, reason);
+    con->killed = 1;		/* dont generate a QUIT message */
+    remove_user (con);
+    /* avoid free'g con->user in remove_connection().  do
+       this here to avoid the ASSERT() in remove_user() */
+    con->class = CLASS_UNKNOWN;
+    con->uopt = 0;		/* just to be safe since it was free'd */
+    con->user = 0;
+    con->destroy = 1;
+}
+
 /* 2 <nick> <pass> <port> <client-info> <speed> [email] [build]
 
    servers append some additional information that they need to share in
    order to link:
 
-   2 <nick> <pass> <port> <client-info> <speed> <email> <ts> <ip> <server> <port>
+   2 <nick> <pass> <port> <client-info> <speed> <email> <ts> <ip> <server> <serverport>
 
-   <ts> is the timestamp--time at which the client logged in
-   <ip> is the clients ip address
+   <ts> is the time at which the client logged in (timestamp)
+   <ip> is the client's ip address
    <server> is the server they are connected to
-   <port> is the port on the server they are connected to */
+   <port> is the remote port on the server they are connected to */
 HANDLER (login)
 {
-    char *av[7];
+    char *av[10];
     USER *user;
     HOTLIST *hotlist;
     int ac, speed, port;
@@ -95,7 +131,7 @@ HANDLER (login)
 
     if (invalid_nick (av[0]))
     {
-	if (con->class == CLASS_UNKNOWN)
+	if (ISUNKNOWN (con))
 	{
 	    send_cmd (con, MSG_SERVER_BAD_NICK, "");
 	    con->destroy = 1;
@@ -103,15 +139,12 @@ HANDLER (login)
 	else
 	{
 	    ASSERT (ISSERVER (con));
-	    pass_message_args (NULL, MSG_CLIENT_KILL,
-			       ":%s %s \"invalid nick\"", Server_Name, av[0]);
-	    notify_mods(KILLLOG_MODE,"%s killed %s: invalid nick",
-		    Server_Name, av[0]);
+	    kill_client (av[0], "invalid nick");
 	}
 	return;
     }
 
-    /* look up this user in the table */
+    /* retrieve registration info (could be NULL) */
     db = hash_lookup (User_Db, av[0]);
 
     /* enforce maximum local users.  if the user is privileged, bypass
@@ -126,10 +159,10 @@ HANDLER (login)
 	return;
     }
 
-    /* check for user|ip ban */
+    /* check for user|ip ban.  mods+ are exempt */
     if (!db || db->level < LEVEL_MODERATOR)
     {
-	if(check_ban(con,av[0]))
+	if (check_ban (con, av[0]))
 	    return;
     }
 
@@ -140,145 +173,84 @@ HANDLER (login)
 	{
 	    send_cmd (con, MSG_SERVER_ERROR, "invalid speed");
 	    con->destroy = 1;
+	    return;
 	}
-	return;
+	ASSERT(ISSERVER(con));
+	notify_mods(ERROR_MODE,"Invalid speed %d for user %s from server %s",
+		    speed, av[0], con->host);
+	log ("login(): invalid speed %d received from server %s",
+	     speed, con->host);
+	/* set to something sane.  this is only informational so its not
+	   a big deal if we are out of synch */
+	speed = 0;
     }
 
     port = atoi (av[2]);
     if (port < 0 || port > 65535)
     {
 	if (ISUNKNOWN (con))
+	{
 	    send_cmd (con, MSG_SERVER_ERROR, "invalid port");
-	return;
-    }
-
-    if (!db && tag != MSG_CLIENT_LOGIN_REGISTER)
-    {
-	if (Server_Flags & ON_REGISTERED_ONLY)
-	{
-	    send_cmd (con, MSG_SERVER_ERROR,
-		      "only registered accounts are allowed on this server");
 	    con->destroy = 1;
 	    return;
 	}
-	if (Server_Flags & ON_AUTO_REGISTER)
-	    tag = MSG_CLIENT_LOGIN_REGISTER;
-    }
-    /* check for attempt to register a nick that is already taken */
-    else if (db && tag == MSG_CLIENT_LOGIN_REGISTER)
-    {
-	if (con->class == CLASS_UNKNOWN)
-	{
-	    /* this could happen if two clients simultaneously connect
-	       and register */
-	    send_cmd (con, MSG_SERVER_ERROR, "already registered");
-	}
-	else
-	{
-	    ASSERT (con->class == CLASS_SERVER);
-	    /* need to issue a kill and send the registration info
-	       we have on this server */
-	    log ("login(): sending KILL for %s", av[0]);
-	    pass_message_args (NULL, MSG_CLIENT_KILL,
-			       ":%s %s \"account is already registered\"",
-			       Server_Name, av[0]);
-	    sync_reginfo (db);
-	}
-	con->destroy = 1;
-	return;
-    }
-    /* check to make sure that this user isn't ready logged in.  do
-       this to prevent a user from trying to check for a password of someone
-       that is already logged in */
-    if ((user = hash_lookup (Users, av[0])))
-    {
-	ASSERT (validate_user (user));
-
-	if (ISUNKNOWN(con))
-	{
-	    /* check for ghosts.  if another client from the same ip address
-	       logs in, kill the older client and proceed normally */
-	    if (user->host == con->ip)
-	    {
-		pass_message_args(NULL,MSG_CLIENT_KILL,
-			":%s %s \"ghost (%s)\"",
-			Server_Name, user->nick, user->server);
-		notify_mods(KILLLOG_MODE,"%s killed %s: ghost (%s)",
-			Server_Name, user->nick, user->server);
-		/* remove the old entry */
-		if(ISUSER(user->con))
-		{
-		    CONNECTION *tempCon;
-
-		    /* TODO: there is a numeric for this somewhere */
-		    send_cmd(user->con,MSG_SERVER_NOSUCH,
-			    "You were killed by %s: ghost",Server_Name);
-		    /* save a pointer to the CONNECTION struct for use
-		       after the remove_user() call since `user' gets
-		       free'd */
-		    tempCon = user->con;
-		    remove_user(user->con);
-		    /* avoid free'g con->user in remove_connection().  do
-		       this here to avoid the ASSERT() in remove_user() */
-		    tempCon->class = CLASS_UNKNOWN;
-		    tempCon->uopt = 0;/* just to be safe since it was free'd*/
-		    tempCon->destroy=1;
-		    tempCon->user = 0;
-		}
-		else
-		    hash_remove(Users,user->nick);
-	    }
-	    else
-	    {
-		log ("login(): %s is already active", user->nick);
-		send_cmd (con, MSG_SERVER_ERROR, "%s is already active",
-			user->nick);
-		con->destroy = 1;
-		return;
-	    }
-	}
-	else if (ISSERVER (con))
-	{
-	    /* issue a KILL for this user if we have one of them locally
-	       connected */
-	    if (ISUSER (user->con))
-	    {
-		/* pass this message to everyone */
-		pass_message_args (NULL, MSG_CLIENT_KILL,
-				   ":%s %s \"nick collision\"", Server_Name,
-				   user->nick);
-		notify_mods(KILLLOG_MODE,"%s killed %s: nick collision",
-			Server_Name, user->nick);
-		send_cmd(user->con,MSG_SERVER_NOSUCH,
-			"You were killed by %s: nick collision",
-			Server_Name);
-		/* destroy the connection */
-		user->con->destroy = 1;
-	    }
-	    else
-	    {
-		/* otherwise just remove this nick from our list.  we
-		   don't send a KILL message because we would generate one
-		   for each server, which is overkill */
-		hash_remove (Users, user->nick);
-	    }
-	    return;
-	}
-	else
-	{
-	    /* This Should Never Happen (TM) */
-	    log ("login(): ERROR!  received collision from USER class!");
-	    con->destroy = 1;
-	    return;
-	}
+	ASSERT(ISSERVER(con));
+	notify_mods(ERROR_MODE,"Invalid port %d for user %s from server %s",
+		    port, av[0], con->host);
+	log ("login(): invalid port %d received from server %s",
+	     port, con->host);
+	port = 0;
+	/* TODO: generate a change port command */
     }
 
     if (tag == MSG_CLIENT_LOGIN)
     {
-	/* verify the password if registered */
-	if (db && check_pass (db->password, av[1]))
+	if (db == NULL)
 	{
-	    log ("login(): bad password for user %s", av[0]);
+	    if (Server_Flags & ON_REGISTERED_ONLY)
+	    {
+		send_cmd (con, MSG_SERVER_ERROR,
+			  "only registered accounts allowed on this server");
+		con->destroy = 1;
+		return;
+	    }
+	    if (Server_Flags & ON_AUTO_REGISTER)
+		tag = MSG_CLIENT_LOGIN_REGISTER;
+	}
+    }
+
+    if (tag == MSG_CLIENT_LOGIN_REGISTER)
+    {
+	/* check to see if the account is already registered */
+	if (db)
+	{
+	    if (ISUNKNOWN (con))
+	    {
+		/* this could happen if two clients simultaneously connect
+		   and register */
+		send_cmd (con, MSG_SERVER_ERROR,
+			  "account registered to another user");
+		con->destroy = 1;
+	    }
+	    else
+	    {
+		ASSERT (ISSERVER (con));
+		/* need to issue a kill and send the registration info
+		   we have on this server */
+		kill_client (av[0], "account registered to another user");
+		sync_reginfo (db);
+	    }
+	    return;
+	}
+	/* else, delay creating db until after we make sure the nick is
+	   not currently in use */
+    }
+    else if (db)
+    {
+	ASSERT (tag == MSG_CLIENT_LOGIN);
+	/* check the user's password */
+	if (check_pass (db->password, av[1]))
+	{
 	    if (db->level > LEVEL_USER)
 	    {
 		/* warn about privileged users */
@@ -290,14 +262,14 @@ HANDLER (login)
 				   db->nick, Levels[db->level],
 				   my_ntoa (con->ip));
 	    }
-	    if (con->class == CLASS_UNKNOWN)
+	    if (ISUNKNOWN (con))
 	    {
 		send_cmd (con, MSG_SERVER_ERROR, "Invalid Password");
 		con->destroy = 1;
 	    }
 	    else
 	    {
-		ASSERT (con->class == CLASS_SERVER);
+		ASSERT (ISSERVER (con));
 		/* if another server let this message pass through, that
 		   means they probably have an out of date password.  notify
 		   our peers of the registration info.  note that it could be
@@ -305,19 +277,84 @@ HANDLER (login)
 		   receive this message they will check the creation date and
 		   send back any entries which are more current that this one.
 		   kind of icky, but its the best we can do */
-		pass_message_args (NULL, MSG_CLIENT_KILL,
-				   ":%s %s \"invalid password\"", Server_Name,
-				   av[0]);
-		notify_mods(KILLLOG_MODE,"%s killed %s: invalid password",
-			Server_Name, av[0]);
+		kill_client (av[0], "invalid password");
 		sync_reginfo (db);
 	    }
 	    return;
 	}
     }
-    else			/* if (tag == MSG_CLIENT_LOGIN_REGISTER) */
+
+    /* check to make sure that this user isn't ready logged in. */
+    if ((user = hash_lookup (Users, av[0])))
     {
-	ASSERT (tag == MSG_CLIENT_LOGIN_REGISTER);
+	ASSERT (validate_user (user));
+
+	if (ISUNKNOWN (con))
+	{
+	    /* check for ghosts.  if another client from the same ip address
+	       logs in, kill the older client and proceed normally */
+	    if (user->host == con->ip)
+	    {
+		kill_client (user->nick, "ghost (%s)", user->server);
+		/* remove the old entry */
+		if (ISUSER (user->con))
+		    zap_local_user (user->con, "ghost");
+		else
+		    hash_remove (Users, user->nick);
+	    }
+	    else
+	    {
+		send_cmd (con, MSG_SERVER_ERROR, "%s is already active",
+			  user->nick);
+		con->destroy = 1;
+		return;
+	    }
+	}
+	else
+	{
+	    ASSERT (ISSERVER (con));
+	    /* check the timestamp to see which client is older.  the last
+	       one to connect gets killed. when the timestamp is not
+	       available, both clients are killed. */
+	    if (ac >= 10 && (atoi (av[6]) < user->connected))
+	    {
+		/* the user we see logged in after the same user on another
+		   server, so we want to kill the existing user.  we don't
+		   pass this back to the server that we received the login
+		   from because that will kill the legitimate user */
+		pass_message_args (con, MSG_CLIENT_KILL,
+				   ":%s %s \"nick collision\"",
+				   Server_Name, user->nick);
+		notify_mods (KILLLOG_MODE, "%s killed %s: nick collision",
+			     Server_Name, user->nick);
+
+		if (ISUSER (user->con))
+		    zap_local_user (user->con, "nick collision");
+		else
+		    hash_remove (Users, user->nick);
+		/* proceed with login normally */
+	    }
+	    else
+	    {
+		/* ignore the login, local user was connected first */
+		if (ac < 10)
+		{
+		    /* ensure the remote client gets killed */
+		    /* TODO: this will go away once everyone upgrades */
+		    send_cmd (con, MSG_CLIENT_KILL,
+			      ":%s %s \"nick collision\"", Server_Name,
+			      user->nick);
+		    notify_mods (KILLLOG_MODE, "%s killed %s: nick collision (%s)",
+				 Server_Name, user->nick, con->host);
+		}
+		return;
+	    }
+	}
+    }
+
+    if (tag == MSG_CLIENT_LOGIN_REGISTER)
+    {
+	/* create the registration entry now */
 	ASSERT (db == 0);
 	db = CALLOC (1, sizeof (USERDB));
 	if (db)
@@ -350,23 +387,19 @@ HANDLER (login)
 	db->timestamp = Current_Time;
 	if (hash_add (User_Db, db->nick, db))
 	{
-	    log ("login(): hash_add failed (fatal)");
+	    log ("login(): hash_add failed (ignored)");
 	    userdb_free (db);
-	    if (con->class == CLASS_UNKNOWN)
-		con->destroy = 1;
-	    return;
+	    db = NULL;
 	}
     }
-
-    if (db)
-	db->lastSeen = Current_Time;
 
     user = new_user ();
     if (user)
     {
 	user->nick = STRDUP (av[0]);
 	/* if the client version string is too long, truncate it */
-	if(Max_Client_String >0 && strlen(av[3])>(unsigned)Max_Client_String)
+	if (Max_Client_String > 0
+	    && strlen (av[3]) > (unsigned) Max_Client_String)
 	    *(av[3] + Max_Client_String) = 0;
 	user->clientinfo = STRDUP (av[3]);
 	user->pass = STRDUP (av[1]);
@@ -378,36 +411,31 @@ HANDLER (login)
     }
     user->port = port;
     user->speed = speed;
-    user->connected = Current_Time;
     user->con = con;
     user->level = LEVEL_USER;	/* default */
-    if (hash_add (Users, user->nick, user))
-    {
-	log ("login(): hash_add failed (fatal)");
-	goto failed;
-    }
 
     /* if this is a locally connected user, update our information */
-    if (con->class == CLASS_UNKNOWN)
+    if (ISUNKNOWN (con))
     {
 	/* save the ip address of this client */
+	user->connected = Current_Time;
 	user->local = 1;
 	user->host = con->ip;
 	user->conport = con->port;
 	if (!(user->server = STRDUP (Server_Name)))
 	{
-	    /* TODO: this is problematic.  we've already added the this
-	       user struct to the global list and when we remove it,
-	       free_user() will get called.  hopefully that will not
-	       send messages to peer servers? */
 	    OUTOFMEMORY ("login");
-	    hash_remove (Users, user->nick);
 	    goto failed;
 	}
-	con->class = CLASS_USER;
 	con->uopt = CALLOC (1, sizeof (USEROPT));
+	if (!con->uopt)
+	{
+	    OUTOFMEMORY ("login");
+	    goto failed;
+	}
 	con->uopt->usermode = LOGALL_MODE;
 	con->user = user;
+	con->class = CLASS_USER;
 	/* send the login ack */
 #if EMAIL
 	if (db)
@@ -418,21 +446,65 @@ HANDLER (login)
 	show_motd (con, 0, 0, NULL);
 	server_stats (con, 0, 0, NULL);
     }
+    else
+    {
+	ASSERT (ISSERVER (con));
+	/* newer servers (0.33+) pass the additional information in the
+	   login message, check for it here */
+	if (ac >= 10)
+	{
+	    /* data is present */
+	    user->connected = atoi (av[6]);
+	    user->host = atoi (av[7]);
+	    user->server = STRDUP (av[8]);
+	    if (!user->server)
+	    {
+		OUTOFMEMORY ("login");
+		goto failed;
+	    }
+	    user->conport = atoi (av[9]);
+	}
+    }
+
+    if (hash_add (Users, user->nick, user))
+    {
+	log ("login(): hash_add failed (fatal)");
+	goto failed;
+    }
 
     /* pass this information to our peer servers */
     if (Servers)
     {
-	pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
-			   av[0], av[1], av[2], av[3], av[4]);
+	/*  if we have full information, use the new method */
+	if ((ISSERVER (con) && ac >= 10) || ISUSER (con))
+	    pass_message_args (con, MSG_CLIENT_LOGIN,
+			       "%s %s %s \"%s\" %s %s %d %u %s %hu",
+			       av[0], av[1], av[2], av[3], av[4],
+#if EMAIL
+			       db ? db->email : "unknown",
+#else
+			       "unknown",
+#endif /* EMAIL */
+			       user->connected, user->host, user->server,
+			       user->conport);
+	else
+	    pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
+			       av[0], av[1], av[2], av[3], av[4]);
+
+	/* TODO: the following goes away once everyone is upgraded */
+#if 1
 	/* only generate this message for local users */
 	if (ISUSER (con))
 	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %u %hu %s",
 			       av[0], user->host, user->conport, Server_Name);
+#endif
     }
 
-    /* this must come after the email ack or the win client gets confused */
     if (db)
     {
+	db->lastSeen = Current_Time;
+
+	/* this must come after the email ack or the win client gets confused */
 	if (db->level != LEVEL_USER)
 	{
 	    /* do this before setting the user level so this user is not
@@ -451,9 +523,9 @@ HANDLER (login)
 	    /* ensure all servers are synched up.  use the timestamp here
 	       so that multiple servers all end up with the same value if
 	       they differ */
-	    pass_message_args(NULL,MSG_CLIENT_SETUSERLEVEL,":%s %s %s %d",
-			      Server_Name, user->nick, Levels[user->level],
-			      db->timestamp);
+	    pass_message_args (NULL, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s %d",
+			       Server_Name, user->nick, Levels[user->level],
+			       db->timestamp);
 	}
 
 	if (db->flags & ON_MUZZLED)
@@ -480,14 +552,14 @@ HANDLER (login)
 	    /* dont use the cloak() handler function since that will just
 	       toggle the value and we need to absolutely turn it on in
 	       this case in order to make sure the servers all synch up */
-	    ASSERT(user->level > LEVEL_USER);
+	    ASSERT (user->level > LEVEL_USER);
 	    user->cloaked = 1;
-	    if(ISUSER(con))
-		send_cmd(con,MSG_SERVER_NOSUCH,"You are now cloaked.");
-	    notify_mods(CHANGELOG_MODE,"%s has cloaked",user->nick);
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH, "You are now cloaked.");
+	    notify_mods (CHANGELOG_MODE, "%s has cloaked", user->nick);
 	    /* use the absolute version of the command to make sure its
 	       not toggled if servers differ */
-	    pass_message_args(NULL,MSG_CLIENT_CLOAK,":%s 1",user->nick);
+	    pass_message_args (NULL, MSG_CLIENT_CLOAK, ":%s 1", user->nick);
 	}
     }
 
@@ -513,7 +585,7 @@ HANDLER (login)
 
   failed:
     /* clean up anything we allocated here */
-    if (con->class == CLASS_UNKNOWN)
+    if (!ISSERVER (con))
 	con->destroy = 1;
     if (user)
     {
@@ -529,8 +601,9 @@ HANDLER (login)
     }
 }
 
-/* 10013 <user> <ip> <port> <server> */
-/* peer server is sending us the ip address for a locally connected client */
+/* 10013 <user> <ip> <port> <server>
+   peer server is sending us the ip address for a locally connected client
+   TODO: this message goes away once everyone is upgraded */
 HANDLER (user_ip)
 {
     char *field[4];
@@ -552,10 +625,12 @@ HANDLER (user_ip)
 	return;
     }
     ASSERT (validate_user (user));
-    if (!user->local)
+    if (!ISUSER (user->con))
     {
 	pass_message_args (con, tag, "%s %s %s %s", user->nick,
 			   field[1], field[2], field[3]);
+	if (user->server)
+	    return;		/* already have it from the new login(2) message */
 	user->host = strtoul (field[1], 0, 10);
 	user->conport = atoi (field[2]);
 	ASSERT (user->server == 0);
@@ -590,8 +665,8 @@ HANDLER (register_nick)
 	send_cmd (con, MSG_SERVER_REGISTER_FAIL, "");
 	return;
     }
-    if(invalid_nick(pkt))
-	send_cmd(con, MSG_SERVER_BAD_NICK,"");
+    if (invalid_nick (pkt))
+	send_cmd (con, MSG_SERVER_BAD_NICK, "");
     else
 	send_cmd (con, MSG_SERVER_REGISTER_OK, "");
 }
@@ -647,9 +722,9 @@ HANDLER (reginfo)
     }
     else
     {
-	if(invalid_nick(fields[0]))
+	if (invalid_nick (fields[0]))
 	{
-	    log("reginfo(): received invalid nickname");
+	    log ("reginfo(): received invalid nickname");
 	    return;
 	}
 	db = CALLOC (1, sizeof (USERDB));
@@ -713,14 +788,15 @@ HANDLER (register_user)
 	return;
     }
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
-    if(ac < 3)
+
+    if (ac < 3)
     {
-	unparsable(con);
+	unparsable (con);
 	return;
     }
-    if(invalid_nick(av[0]))
+    if (invalid_nick (av[0]))
     {
-	invalid_nick_msg(con);
+	invalid_nick_msg (con);
 	return;
     }
     /* if the user level was specified do some security checks */
@@ -782,8 +858,8 @@ HANDLER (register_user)
     db->lastSeen = Current_Time;
     hash_add (User_Db, db->nick, db);
 
-    notify_mods(CHANGELOG_MODE,"%s registered nickname %s (%s)",
-	    sender->nick, db->nick, Levels[db->level]);
+    notify_mods (CHANGELOG_MODE, "%s registered nickname %s (%s)",
+		 sender->nick, db->nick, Levels[db->level]);
 }
 
 /* 11 <user> <password>

@@ -115,9 +115,10 @@ HANDLER (kill_user)
 
     /* forcefully close the client connection if local, otherwise remove
        from global user list */
-    if (user->local)
+    if (ISUSER(user->con))
     {
 	user->con->destroy = 1;
+	user->con->killed = 1;	/* don't generate a QUIT message */
 	/* notify user they were killed */
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
 		  "You have been killed%s%s: %s",

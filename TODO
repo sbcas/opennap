@@ -6,6 +6,4 @@
 
 * add a timeout to check for blocked server connect() call
 
-* need a command to see if a nick is registered
-
-* cloak status is not synched among servers
+* rewrite search_internal() to use next_arg() rather than split_line()

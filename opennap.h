@@ -228,10 +228,12 @@ struct _connection
 				   remove it from inside a handler, so we mark
 				   it here and have it removed at a later time 
 				   when it is safe */
+    unsigned int killed:1;	/* set when the user was killed so free_user()
+				   knows not to generate a QUIT message */
     unsigned int server_login:1;
     unsigned int compress:4;	/* compression level for this connection */
     unsigned int class:2;	/* connection class (unknown, user, server) */
-    unsigned int xxx:7;		/* unused */
+    unsigned int xxx:6;		/* unused */
     time_t	timer;		/* timer to detect idle connections */
 };
 
@@ -841,7 +843,7 @@ typedef unsigned int socklen_t;
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
-#define VERSION "0.32"
+#define VERSION "0.33"
 
 #define strcasecmp stricmp
 #define strncasecmp strnicmp

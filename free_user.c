@@ -17,7 +17,7 @@ free_user (USER * user)
 
     ASSERT (validate_user (user));
 
-    if (ISUSER (user->con) && Servers)
+    if (ISUSER (user->con) && Servers && !user->con->killed)
     {
 	/* local user, notify peers of this user's departure */
 	pass_message_args (user->con, MSG_CLIENT_QUIT, "%s", user->nick);
