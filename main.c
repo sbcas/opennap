@@ -22,6 +22,7 @@
 
 /* interval at which we send server stats to our clients (in seconds) */
 #define UPDATE_CLICK 60
+
 /*
 ** Global Variables
 */
@@ -155,7 +156,7 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_CONNECT, server_connect },
     { MSG_SERVER_LOGIN, server_login },
     { MSG_SERVER_LOGIN_ACK, server_login_ack },
-    { MSG_SERVER_USER_IP, user_ip },
+    { MSG_SERVER_USER_IP, user_ip }, /* 10013 */
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
 
@@ -327,6 +328,9 @@ static void
 update_stats (void)
 {
     int i, l;
+
+    log ("update_stats(): current library size is %d kilobytes (%d gigabytes)",
+	    Num_Gigs, Num_Gigs / (1024 * 1024));
 
     /* since we send the same data to many people, optimize by forming
        the message once then writing it out */
