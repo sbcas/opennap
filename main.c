@@ -216,8 +216,8 @@ handle_connection (CONNECTION *con)
 #if 0
 		log ("handle_connection(): read %d bytes of header, waiting...",
 			con->recvbytes);
-		return;
 #endif
+		return;
 	    }
 	    log ("handle_connection(): %s (errno %d)", strerror (errno), errno);
 	    remove_connection (con);
