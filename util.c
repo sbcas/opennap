@@ -563,6 +563,7 @@ add_client (CONNECTION * cli)
 	    {
 		Clients[i] = cli;
 		cli->id = i;
+		break;
 	    }
 	}
     }
