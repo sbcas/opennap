@@ -26,6 +26,11 @@ HANDLER (add_hotlist)
     hotlist = hash_lookup (Hotlist, pkt);
     if (!hotlist)
     {
+	if(invalid_nick(pkt))
+	{
+	    send_cmd(con,MSG_SERVER_NOSUCH,"invalid nick");
+	    return;
+	}
 	/* no hotlist, create one */
 	hotlist = CALLOC (1, sizeof (HOTLIST));
 	if (hotlist)
@@ -100,8 +105,7 @@ HANDLER (remove_hotlist)
     hotlist = hash_lookup (Hotlist, pkt);
     if (!hotlist)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH,
-		  "Could not find user %s in your hotlist.", pkt);
+	send_cmd (con, MSG_SERVER_NOSUCH, "user is not in your hotlist");
 	return;
     }
     ASSERT (validate_hotlist (hotlist));
