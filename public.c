@@ -31,8 +31,7 @@ HANDLER (public)
        one item */
 
     /* extract the channel name */
-    ptr = pkt;
-    pkt = strchr (ptr, ' ');
+    ptr = next_arg (&pkt);
     if (!pkt)
     {
 	log ("public(): too few fields");

@@ -35,8 +35,9 @@ HANDLER (resume)
     }
     
     /* search the database for a list of all files which match this request */
-    snprintf (Buf, sizeof (Buf), "SELECT * FROM library WHERE md5 = %s && size = %s",
-	fields[0], fields[1]);
+    snprintf (Buf, sizeof (Buf),
+	    "SELECT * FROM library WHERE md5='%s' && size=%s",
+	    fields[0], fields[1]);
     if (mysql_query (Db, Buf) != 0)
     {
 	sql_error ("resume", Buf);

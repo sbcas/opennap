@@ -249,19 +249,6 @@ HANDLER (login)
 	    log ("login(): unknown level %s for %s in accounts table",
 		    row[2], row[0]);
 	}
-
-	if (level > LEVEL_USER)
-	{
-	    /* broadcast the updated userlevel to our peer servers */
-	    if (Num_Servers)
-		pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
-			":%s %s %s", Server_Name, row[0] , row[2]);
-	    /* notify users of their change in level */
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s set your level to %s (%d).",
-		    Server_Name, Levels[level], level);
-
-	    log ("login(): set %s to level %s", row[0], Levels[level]);
-	}
     }
     else if (tag == MSG_CLIENT_LOGIN_REGISTER)
     {
@@ -287,7 +274,10 @@ HANDLER (login)
 	    sql_error ("login", Buf);
 	    mysql_free_result (result);
 	    if (con->class == CLASS_UNKNOWN)
+	    {
 		send_cmd (con, MSG_SERVER_ERROR, "error creating account");
+		con->destroy = 1;
+	    }
 	    return;
 	}
     }
@@ -299,7 +289,7 @@ HANDLER (login)
     user->pass = STRDUP (field[1]);
     user->speed = speed;
     user->connected = time (0);
-    user->level = level;
+    user->level = LEVEL_USER;	/* default */
     if (tag == MSG_CLIENT_LOGIN_REGISTER)
 	user->email = STRDUP (field[5]);
     else if (row)
@@ -310,9 +300,9 @@ HANDLER (login)
 	user->email = STRDUP (Buf);
     }
 
-    hash_add (Users, user->nick, user);
-
     mysql_free_result (result);
+
+    hash_add (Users, user->nick, user);
 
     /* if this is a locally connected user, update our information */
     if (con->class == CLASS_UNKNOWN)
@@ -345,6 +335,23 @@ HANDLER (login)
 	   to remove this user from the global user list */
 	ASSERT (con->class == CLASS_SERVER);
 	user->serv = con;
+    }
+
+    /* we do this after sending the login/email ack (7) to avoid confusing the
+       win32 client */
+    if (level != LEVEL_USER)
+    {
+	user->level = level;
+
+	/* broadcast the updated userlevel to our peer servers */
+	if (Num_Servers)
+	    pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
+		    ":%s %s %s", Server_Name, user->nick, Levels[user->level]);
+	/* notify users of their change in level */
+	send_cmd (con, MSG_SERVER_NOSUCH, "%s set your level to %s (%d).",
+		Server_Name, Levels[user->level], user->level);
+
+	log ("login(): set %s to level %s", user->nick, Levels[user->level]);
     }
 
     /* check the global hotlist to see if there are any users waiting to be

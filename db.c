@@ -50,7 +50,7 @@ init_db (void)
 	      "CREATE TABLE library (owner VARCHAR(19) NOT NULL, "
 	      /* BIG FAT WARNING!!!  DO NOT SET `filename' LONGER THAN 237
 		 BECAUSE MYSQL-3.22.32 WILL CRASH OTHERWISE */
-	      "filename VARCHAR(237) NOT NULL, size INT UNSIGNED, "
+	      "filename VARCHAR(150) NOT NULL, size INT UNSIGNED, "
 	      "md5 CHAR(48), bitrate SMALLINT UNSIGNED, "
 	      "freq SMALLINT UNSIGNED, time SMALLINT UNSIGNED, "
 	      "linespeed TINYINT UNSIGNED, soundex VARCHAR(255), "
