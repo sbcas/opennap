@@ -42,7 +42,7 @@ static struct config Vars[] = {
     {"strict_channels", VAR_TYPE_BOOL, ON_STRICT_CHANNELS, 0},
     {"max_shared", VAR_TYPE_INT, UL & Max_Shared, 5000},
     {"max_connections", VAR_TYPE_INT, UL & Max_Connections, FD_SETSIZE},
-    {"nick_expire", VAR_TYPE_INT, UL & Nick_Expire, 7776000 /* 90 days */ },
+    {"nick_expire", VAR_TYPE_INT, UL & Nick_Expire, 2678400 /* 31 days */ },
     {"listen_addr", VAR_TYPE_STR, UL & Listen_Addr, UL "0.0.0.0"},
     {"max_browse_result", VAR_TYPE_INT, UL & Max_Browse_Result, 500},
     {"collect_interval", VAR_TYPE_INT, UL & Collect_Interval, 300},
