@@ -191,6 +191,11 @@ accept_connection (int s)
     }
 
     cli = new_connection ();
+    if (!cli)
+    {
+	close (f);
+	return;
+    }
     cli->fd = f;
     log ("accept_connection(): connection from %s, port %d",
 	    inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
@@ -426,7 +431,7 @@ main (int argc, char **argv)
 	    ufd = REALLOC (ufd, sizeof (struct pollfd) * (Num_Clients + 2));
 	    if (!ufd)
 	    {
-		log ("main(): OUT OF MEMORY");
+		OUTOFMEMORY ("main");
 		break; /* nothing to do here but shut down */
 	    }
 	    ufdsize = Num_Clients + 2;

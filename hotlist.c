@@ -33,7 +33,7 @@ HANDLER (add_hotlist)
 	hotlist->nick = STRDUP (pkt);
 	if (!hotlist->nick)
 	{
-	    log ("add_hotlist(): ERROR: OUT OF MEMORY");
+	    OUTOFMEMORY ("add_hotlist");
 	    FREE (hotlist);
 	    return;
 	}

@@ -169,13 +169,13 @@ fdb_add (HASH * table, char *key, DATUM * d)
 	files = CALLOC (1, sizeof (FLIST));
 	if (!files)
 	{
-	    log ("fdb_add(): OUT OF MEMORY");
+	    OUTOFMEMORY ("fdb_add");
 	    return;
 	}
 	files->key = STRDUP (key);
 	if (!files->key)
 	{
-	    log ("fdb_add(): OUT OF MEMORY");
+	    OUTOFMEMORY ("fdb_add");
 	    FREE (files);
 	    return;
 	}
@@ -232,20 +232,20 @@ new_datum (char *filename, char *hash)
 
     if (!info)
     {
-	log ("new_datum(): OUT OF MEMORY");
+	OUTOFMEMORY ("new_datum");
 	return 0;
     }
     info->filename = STRDUP (filename);
     if (!info->filename)
     {
-	log ("new_datum(): OUT OF MEMORY");
+	OUTOFMEMORY ("new_datum");
 	FREE (info);
 	return 0;
     }
     info->hash = STRDUP (hash);
     if (!info->hash)
     {
-	log ("new_datum(): OUT OF MEMORY");
+	OUTOFMEMORY ("new_datum");
 	FREE (info->filename);
 	FREE (info);
 	return 0;

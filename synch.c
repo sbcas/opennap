@@ -54,7 +54,7 @@ sync_user (USER *user, CONNECTION *con)
 
     /* send the user's host */
     send_cmd (con, MSG_SERVER_USER_IP, "%s %lu %hu %s", user->nick,
-	user->host, user->conport, user->server);
+	    BSWAP32 (user->host), user->conport, user->server);
 
     /* update the user's level */
     if (user->level != LEVEL_USER)

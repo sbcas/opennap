@@ -69,7 +69,7 @@ opennap_SOURCES = opennap.h main.c add_file.c search.c 	motd.c hash.h hash.c pri
 metaserver_SOURCES = metaserver.c
 EXTRA_DIST = sample.conf sample.motd napster.txt .indent.pro 	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp snprintf.c 	opennap.opt opennap.plg
 
-INCLUDES = -I@MYSQLINCDIR@ -DSHAREDIR=\"$(pkgdatadir)\"
+INCLUDES = -DSHAREDIR=\"$(pkgdatadir)\"
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 

@@ -33,13 +33,13 @@ try_connect (char *host, int port)
     cli->host = STRDUP (host);
     if (!cli->host)
     {
-	log ("try_connect(): ERROR: OUT OF MEMORY");
+	OUTOFMEMORY ("try_connect");
 	goto error;
     }
     cli->server_login = 1;
     if ((cli->opt.auth = CALLOC (1, sizeof (AUTH))) == 0)
     {
-	log ("try_connect(): OUT OF MEMORY");
+	OUTOFMEMORY ("try_connect");
 	goto error;
     }
     cli->opt.auth->nonce = generate_nonce ();

@@ -267,7 +267,7 @@ generate_nonce (void)
     nonce = MALLOC (17);
     if (!nonce)
     {
-	log ("generate_nonce(): ERROR: OUT OF MEMORY");
+	OUTOFMEMORY ("generate_nonce");
 	return 0;
     }
     nonce[16] = 0;
@@ -400,7 +400,7 @@ new_user (void)
 
     if (!u)
     {
-	log ("new_user(): ERROR: OUT OF MEMORY");
+	OUTOFMEMORY ("new_user");
 	return 0;
     }
 #ifdef DEBUG
@@ -416,7 +416,7 @@ new_channel (void)
 
     if (!c)
     {
-	log ("new_channel(): ERROR: OUT OF MEMORY");
+	OUTOFMEMORY ("new_channel");
 	return 0;
     }
 #ifdef DEBUG
@@ -432,7 +432,7 @@ new_hotlist (void)
 
     if (!h)
     {
-	log ("new_hotlist(): ERROR: OUT OF MEMORY");
+	OUTOFMEMORY ("new_hotlist");
 	return 0;
     }
 #ifdef DEBUG
@@ -448,7 +448,7 @@ new_connection (void)
 
     if (!c)
     {
-	log ("new_connection(): ERROR: OUT OF MEMORY");
+	OUTOFMEMORY ("new_connection");
 	return 0;
     }
 #ifdef DEBUG

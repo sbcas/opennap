@@ -22,7 +22,7 @@ buffer_new (void)
     BUFFER *r = CALLOC (1, sizeof (BUFFER));
     if (!r)
     {
-	log ("buffer_new(): ERROR: OUT OF MEMORY");
+	OUTOFMEMORY ("buffer_new");
 	return 0;
     }
 #if DEBUG
@@ -46,7 +46,7 @@ buffer_queue (BUFFER *b, char *d, int dsize, int step)
 	b->data = MALLOC (step);
 	if (!b->data)
 	{
-	    log ("buffer_queue(): ERROR: OUT OF MEMORY");
+	    OUTOFMEMORY ("buffer_queue");
 	    FREE (b);
 	    return 0;
 	}
@@ -70,7 +70,7 @@ buffer_queue (BUFFER *b, char *d, int dsize, int step)
 	    b->next->data = MALLOC (step);
 	    if (!b->next->data)
 	    {
-		log ("buffer_queue(): ERROR: OUT OF MEMORY");
+		OUTOFMEMORY ("buffer_queue");
 		FREE (b->next);
 		b->next = 0;
 		return r;
@@ -97,7 +97,7 @@ buffer_group (BUFFER *b, int n)
 	b->datamax = b->datasize + l + 1;
 	if (safe_realloc ((void **) &b->data, b->datamax))
 	{
-	    log ("buffer_group(): ERROR: OUT OF MEMORY");
+	    OUTOFMEMORY ("buffer_group");
 	    /* this will probably not make some of the other routines happy
 	       because they don't expect a 0 byte buffer at the beginning
 	       of the list, but its better than dumping core here */
@@ -160,7 +160,7 @@ buffer_read (int fd, BUFFER **b)
     p->data = REALLOC (p->data, p->datamax);
     if (!p->data)
     {
-	log ("buffer_read(): ERROR: OUT OF MEMORY");
+	OUTOFMEMORY ("buffer_read");
 	return -1;
     }
     memcpy (p->data + p->datasize, Buf, n);
@@ -258,7 +258,7 @@ buffer_compress (z_streamp zip, BUFFER **b)
     r->data = MALLOC (16384);
     if (!r->data)
     {
-	log ("buffer_compress(): ERROR: OUT OF MEMORY");
+	OUTOFMEMORY ("buffer_compress");
 	FREE (r);
 	return 0;
     }
@@ -331,7 +331,7 @@ buffer_uncompress (z_streamp zip, BUFFER **b)
 	cur->data = REALLOC (cur->data, cur->datamax);
 	if (!cur->data)
 	{
-	    log ("buffer_uncompress(): ERROR: OUT OF MEMORY");
+	    OUTOFMEMORY ("buffer_uncompress");
 	    FREE (cur);
 	    return 0;
 	}
@@ -384,14 +384,14 @@ init_compress (CONNECTION *con, int level)
     con->sopt->zin = CALLOC (1, sizeof (z_stream));
     if (!con->sopt->zin)
     {
-	log ("init_compress(): ERROR: OUT OF MEMORY");
+	OUTOFMEMORY ("init_compress");
 	return;
     }
     con->sopt->zout = CALLOC (1, sizeof (z_stream));
     if (!con->sopt->zout)
     {
 	FREE (con->sopt->zin);
-	log ("init_compress(): ERROR: OUT OF MEMORY");
+	OUTOFMEMORY ("init_compress");
 	return;
     }
 

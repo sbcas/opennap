@@ -64,7 +64,7 @@ HANDLER (server_login)
     con->server_login = 1;
     if ((con->opt.auth = CALLOC (1, sizeof (AUTH))) == 0)
     {
-	log ("server_login(): OUT OF MEMORY");
+	OUTOFMEMORY ("server_login");
 	con->destroy = 1;
 	return;
     }

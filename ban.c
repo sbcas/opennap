@@ -87,7 +87,7 @@ HANDLER (ban)
     while (1);
 
     /* we only get here on error */
-    log ("ban(): OUT OF MEMORY");
+    OUTOFMEMORY ("ban");
     if (b->target)
 	FREE (b->target);
     if (b->setby)

@@ -29,6 +29,19 @@ invalid_nick (const char *s)
     return (count == 0 || (Max_Nick_Length > 0 && count > Max_Nick_Length));
 }
 
+static int
+invalid_password (const char *s)
+{
+    int count = 0;
+
+    for (; *s; s++, count++)
+    {
+	if (ISSPACE (*s))
+	    return 1;
+    }
+    return ((count > 0));
+}
+
 static void
 sync_reginfo (USERDB *db)
 {
@@ -93,6 +106,19 @@ HANDLER (login)
 	    send_cmd (con, MSG_SERVER_BAD_NICK, "");
 	    con->destroy = 1;
 	}
+	return;
+    }
+
+    /* a spurious newline in the password could cause corruption of the
+       user database, so don't allow it.  if a user logged in as such:
+       user baddpass\n"user realpass none elite 0 0"
+       they could gain elite access on a server */
+    if (invalid_password (av[0]))
+    {
+	log ("login(): password for %s contains invalid characters", av[0]);
+	if (con->class == CLASS_UNKNOWN)
+	    send_cmd (con, MSG_SERVER_ERROR,
+		    "Your password contains illegal characters.");
 	return;
     }
 
@@ -162,7 +188,7 @@ HANDLER (login)
     }
     if (!user || !user->nick || !user->clientinfo || !user->pass)
     {
-	log ("login(): OUT OF MEMORY");
+	OUTOFMEMORY ("login");
 	goto failed;
     }
     user->port = atoi (av[2]);
@@ -242,7 +268,7 @@ HANDLER (login)
 	db = CALLOC (1, sizeof(USERDB));
 	if (!db)
 	{
-	    log("login(): OUT OF MEMORY");
+	    OUTOFMEMORY("login");
 	    return;
 	}
 	db->nick = STRDUP (av[0]);
@@ -250,7 +276,7 @@ HANDLER (login)
 	db->email = STRDUP (av[5]);
 	if (!db->nick || !db->password || !db->email)
 	{
-	    log ("login(): OUT OF MEMORY");
+	    OUTOFMEMORY ("login");
 	    userdb_free (db);
 	    return;
 	}
@@ -266,7 +292,7 @@ HANDLER (login)
     user->files = hash_init (257, (hash_destroy) free_datum);
     if (!user->files)
     {
-	log ("login(): OUT OF MEMORY");
+	OUTOFMEMORY ("login");
 	goto failed;
     }
 
@@ -290,7 +316,7 @@ HANDLER (login)
 	       user struct to the global list and when we remove it,
 	       free_user() will get called.  hopefully that will not
 	       send messages to peer servers? */
-	    log ("login(): OUT OF MEMORY");
+	    OUTOFMEMORY ("login");
 	    hash_remove (Users, user->nick);
 	    goto failed;
 	}
@@ -392,10 +418,11 @@ HANDLER (user_ip)
 	return;
     }
     user->host = strtoul (field[1], 0, 10);
+    user->host = BSWAP32 (user->host);
     user->conport = strtoul (field[2], 0, 10);
     user->server = STRDUP (field[3]);
     if (!user->server)
-	log ("user_ip(): OUT OF MEMORY");
+	OUTOFMEMORY ("user_ip");
 }
 
 /* check to see if a nick is already registered */
@@ -477,7 +504,7 @@ HANDLER (reginfo)
     db->email = STRDUP (fields[2]);
     if (!db->password || !db->email)
     {
-	log ("reginfo(): OUT OF MEMORY");
+	OUTOFMEMORY ("reginfo");
 	userdb_free (db);
 	return;
     }

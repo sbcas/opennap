@@ -30,13 +30,18 @@ HANDLER (public)
     /* can't use split line here because the text field is considered all
        one item */
 
-    /* extract the channel name */
-    ptr = next_arg (&pkt);
+    /* extract the channel name. NOTE: we don't use next_arg() here because
+       it will strip leading space from the text being sent */
+    ptr = pkt;
+    pkt = strchr (pkt, ' ');
     if (!pkt)
     {
 	log ("public(): too few fields");
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "too few parameters for command");
 	return;
     }
+    *pkt++ = 0;
 
     /* find the channel this message is going to */
     chan = hash_lookup (Channels, ptr);
@@ -58,12 +63,16 @@ HANDLER (public)
     if (ISSERVER (con))
     {
 	/* find the USER struct for the sender */
-	ptr = next_arg (&pkt);
+	/* extract the channel name. NOTE: we don't use next_arg() here because
+	   it will strip leading space from the text being sent */
+	ptr = pkt;
+	pkt = strchr (pkt, ' ');
 	if (!pkt)
 	{
 	    log ("public(): server message has too few fields");
 	    return;
 	}
+	*pkt++ = 0;
 	user = hash_lookup (Users, ptr);
 	if (!user)
 	{

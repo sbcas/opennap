@@ -19,6 +19,7 @@
 #include "list.h"
 
 #define OUTOFMEMORY(f) log("%s(): OUT OF MEMORY at %s:%d", f, __FILE__, __LINE__)
+#define logerr(f,s) log("%s(): %s: %s (errno %d)", f, strerror (errno), errno)
 
 #define MAGIC_USER 0xeaee402a
 #define MAGIC_CHANNEL 0xa66544cb
@@ -29,6 +30,7 @@
 /* convert the bytes of a 16-bit integer to little endian */
 #if WORDS_BIGENDIAN
 #define BSWAP16(c) (((c & 0xff) << 8) | ((c >> 8) & 0xff))
+/* swap the bytes of a 32-bit integer */
 #define BSWAP32(c) (((c >> 24) & 0xff) | ((c & 0xff0000) >> 8) | ((c & 0xff00) << 8) | (c << 24))
 #else
 #define BSWAP16(c) c

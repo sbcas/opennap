@@ -27,7 +27,7 @@ textdb_init (const char *path)
     db = CALLOC (1, sizeof (TEXTDB));
     if (!db)
     {
-	log ("textdb_init(): OUT OF MEMORY");
+	OUTOFMEMORY ("textdb_init");
 	return 0;
     }
     if ((db->stream = fopen (path, "r+")) == 0)
@@ -42,7 +42,7 @@ textdb_init (const char *path)
 	db->path = STRDUP (path);
 	if (!db->path)
 	{
-	    log ("userdb_init(): OUT OF MEMORY");
+	    OUTOFMEMORY ("textdb_init");
 	    fclose (db->stream);
 	    FREE (db);
 	    db = 0;
@@ -76,7 +76,7 @@ textdb_new_result (TEXTDB * db, LIST * columns)
 	result->columns = columns;
     }
     else
-	log ("textdb_new_result(): OUT OF MEMORY");
+	OUTOFMEMORY ("textdb_new_result");
     return result;
 }
 
@@ -125,7 +125,7 @@ textdb_fetch (TEXTDB * db, const char *key)
 		list_append (result->columns, STRDUP (next_arg (&arg)));
     }
     else
-	log ("textdb_fetch(): OUT OF MEMORY");
+	OUTOFMEMORY ("textdb_fetch");
     return result;
 }
 
@@ -134,7 +134,7 @@ textdb_store (TEXTDB_RES * result)
 {
     FILE *tmpStream;
     LIST *list;
-    int n;
+    size_t n;
     long offset, endOffset;
 
     offset = textdb_find_key (result->db, result->columns->data, &endOffset);
@@ -145,10 +145,22 @@ textdb_store (TEXTDB_RES * result)
 	for (list = result->columns; list; list = list->next)
 	{
 	    if (list != result->columns)
-		fputc (' ', result->db->stream);
-	    fputs (list->data, result->db->stream);
+		if (fputc (' ', result->db->stream) == EOF)
+		{
+		    logerr ("textdb_store", "fputc");
+		    return -1;
+		}
+	    if (fputs (list->data, result->db->stream) == EOF)
+	    {
+		logerr ("textdb_store", "fputs");
+		return -1;
+	    }
 	}
-	fputc ('\n', result->db->stream);
+	if (fputc ('\n', result->db->stream) == EOF)
+	{
+	    logerr ("textdb_store", "fputc");
+	    return -1;
+	}
     }
     else
     {
@@ -157,7 +169,7 @@ textdb_store (TEXTDB_RES * result)
 	if (!tmpStream)
 	{
 	    log ("textdb_store(): fopen: %s: %s (errno %d)", Buf,
-		 strerror (errno), errno);
+		    strerror (errno), errno);
 	    return -1;
 	}
 	unlink (Buf);		/* unlink here so the file disappears when we
@@ -165,30 +177,58 @@ textdb_store (TEXTDB_RES * result)
 	for (list = result->columns; list; list = list->next)
 	{
 	    if (list != result->columns)
-		fputc (' ', tmpStream);
-	    fputs (list->data, tmpStream);
+		if (fputc (' ', tmpStream) == EOF)
+		{
+		    logerr ("textdb_store", "fputc");
+		    fclose (tmpStream);
+		    return -1;
+		}
+	    if (fputs (list->data, tmpStream) == EOF)
+	    {
+		logerr ("textdb_store", "fputs");
+		fclose (tmpStream);
+		return -1;
+	    }
 	}
-	fputc ('\n', tmpStream);
+	if (fputc ('\n', tmpStream) == EOF)
+	{
+	    logerr ("textdb_store", "fputc");
+	    fclose (tmpStream);
+	    return -1;
+	}
 	fseek (result->db->stream, endOffset, 0);
 	while ((n = fread (Buf, 1, sizeof (Buf), result->db->stream)) > 0)
-	    fwrite (Buf, 1, n, tmpStream);
+	{
+	    if (fwrite (Buf, 1, n, tmpStream) != n)
+	    {
+		log ("textdb_store(): short write (fatal)");
+		fclose (tmpStream);
+		return -1;
+	    }
+	}
 	if (fflush (tmpStream))
 	{
-	    log ("textdb_store(): fflush: %s (errno %d)", strerror (errno),
-		 errno);
+	    logerr ("textdb_store", "fflush");
 	    fclose (tmpStream);
 	    return -1;
 	}
 	fseek (result->db->stream, offset, 0);
 	rewind (tmpStream);
 	while ((n = fread (Buf, 1, sizeof (Buf), tmpStream)) > 0)
-	    fwrite (Buf, 1, n, result->db->stream);
+	{
+	    if (fwrite (Buf, 1, n, result->db->stream) != n)
+	    {
+		/* this is bad, the user database is now likely corrupted */
+		log ("textdb_store(): FATAL ERROR: your user db is likely corrupted!!!");
+		fclose (tmpStream);
+		return -1;
+	    }
+	}
 	fclose (tmpStream);
     }
     if (fflush (result->db->stream))
     {
-	log ("textdb_store(): fflush: %s (errno %d)", strerror (errno),
-	     errno);
+	logerr ("textdb_store", "fflush");
 	fclose (result->db->stream);
 	return -1;
     }
@@ -199,11 +239,9 @@ void
 textdb_close (TEXTDB * db)
 {
     if (fflush (db->stream))
-	log ("textdb_close(): fflush: %s (errno %d)", strerror (errno),
-	     errno);
+	logerr ("textdb_close", "fflush");
     if (fclose (db->stream))
-	log ("textdb_close(): fclose: %s (errno %d)", strerror (errno),
-	     errno);
+	logerr ("textdb_close", "fclose");
     if (db->path)
 	FREE (db->path);
     FREE (db);

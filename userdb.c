@@ -76,7 +76,8 @@ userdb_fetch (const char *nick)
     user = CALLOC (1, sizeof (USERDB));
     if (!user)
     {
-	log ("userdb_fetch(): OUT OF MEMORY");
+	OUTOFMEMORY ("userdb_fetch");
+	textdb_free_result (result);
 	return 0;
     }
     list = result->columns;
@@ -95,7 +96,7 @@ userdb_fetch (const char *nick)
     user->lastSeen = atol (list->data);
     if (!user->nick || !user->password || !user->email)
     {
-	log ("userdb_fetch(): OUT OF MEMORY");
+	OUTOFMEMORY ("userdb_fetch");
 	userdb_free (user);
 	user = 0;
     }
@@ -120,6 +121,11 @@ userdb_store (USERDB * db)
     snprintf (last, sizeof (last), "%d", (int) db->lastSeen);
     list = list_append (list, last);
     result = textdb_new_result (User_Db, list);
+    if ((result = textdb_new_result (User_Db, list)) == 0)
+    {
+	log ("userdb_store(): textdb_new_result failed");
+	return -1;
+    }
     if (textdb_store (result))
     {
 	log ("userdb_store(): textdb_store failed");

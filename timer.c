@@ -64,7 +64,7 @@ add_timer (int interval, int events, timer_t func, void *arg)
     new = CALLOC (1, sizeof (TIMER));
     if (!new)
     {
-	log ("add_timer(): OUT OF MEMORY");
+	OUTOFMEMORY ("add_timer");
 	return;
     }
     new->next_time = Current_Time + interval;
