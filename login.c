@@ -85,7 +85,6 @@ HANDLER (login)
 
     if (invalid_nick (av[0]))
     {
-	log ("login(): invalid nick: %s", av[0]);
 	if (con->class == CLASS_UNKNOWN)
 	{
 	    send_cmd (con, MSG_SERVER_BAD_NICK, "");
@@ -94,9 +93,10 @@ HANDLER (login)
 	else
 	{
 	    ASSERT (ISSERVER (con));
-	    log ("login(): sending KILL for %s", av[0]);
 	    pass_message_args (NULL, MSG_CLIENT_KILL,
 			       ":%s %s \"invalid nick\"", Server_Name, av[0]);
+	    notify_mods(KILLLOG_MODE,"%s killed %s: invalid nick",
+		    Server_Name, av[0]);
 	}
 	return;
     }
@@ -114,6 +114,13 @@ HANDLER (login)
 		  "This server is full (%d connections)", Max_Connections);
 	con->destroy = 1;
 	return;
+    }
+
+    /* check for user|ip ban */
+    if (!db || db->level < LEVEL_MODERATOR)
+    {
+	if(check_ban(con,av[0]))
+	    return;
     }
 
     speed = atoi (av[4]);
@@ -255,11 +262,6 @@ HANDLER (login)
 	    return;
 	}
     }
-
-    /* check for a user ban, mods+ are exempt */
-    if ((!db || db->level < LEVEL_MODERATOR) &&
-	check_ban (con, av[0], BAN_USER))
-	return;
 
     if (tag == MSG_CLIENT_LOGIN)
     {

@@ -78,14 +78,14 @@ HANDLER (ban)
 	    return;
 	}
     }
-    if(!is_ip(av[0]) && invalid_nick(av[0]))
+    if (!is_ip (av[0]) && invalid_nick (av[0]))
     {
-	invalid_nick_msg(con);
+	invalid_nick_msg (con);
 	return;
     }
     if (ac > 1)
     {
-	truncate_reason(av[1]);
+	truncate_reason (av[1]);
 	pass_message_args (con, tag, ":%s %s \"%s\"", sender, av[0], av[1]);
     }
     else
@@ -109,8 +109,9 @@ HANDLER (ban)
 	if (!list)
 	    break;
 	list->data = b;
-	Bans = list_append (Bans, list);
-	notify_mods (BANLOG_MODE, "%s banned %s: %s", sender, av[0],
+	list->next = Bans;
+	Bans = list;
+	notify_mods (BANLOG_MODE, "%s banned %s: %s", sender, b->target,
 		     b->reason);
 	return;
     }
@@ -151,8 +152,8 @@ HANDLER (unban)
 	    permission_denied (con);
 	return;
     }
-    if(ac>1)
-	truncate_reason(av[1]);
+    if (ac > 1)
+	truncate_reason (av[1]);
     for (list = &Bans; *list; list = &(*list)->next)
     {
 	b = (*list)->data;
@@ -192,8 +193,8 @@ HANDLER (banlist)
     {
 	ban = list->data;
 	send_cmd (con, MSG_SERVER_IP_BANLIST /* 616 */ ,
-		"%s %s \"%s\" %ld 0", ban->target, ban->setby,
-		ban->reason, ban->when);
+		  "%s %s \"%s\" %ld 0", ban->target, ban->setby,
+		  ban->reason, ban->when);
     }
 #if 0
     /* the following doesnt seem to work with the windows client.  not sure
@@ -203,7 +204,7 @@ HANDLER (banlist)
 	ban = list->data;
 	if (ban->type == BAN_USER)
 	    send_cmd (con, MSG_SERVER_NICK_BANLIST /* 626 */ , "%s",
-		    ban->target);
+		      ban->target);
     }
 #endif
     /* terminate the banlist */
@@ -211,48 +212,43 @@ HANDLER (banlist)
 }
 
 int
-check_ban (CONNECTION * con, const char *target, ban_t type)
+check_ban (CONNECTION * con, const char *nick)
 {
     LIST *list;
     BAN *ban;
 
-    /* make sure this target is not banned */
     for (list = Bans; list; list = list->next)
     {
 	ban = list->data;
-	if (ban->type == type &&
-	    ((type == BAN_IP && ip_glob_match (ban->target, target)) ||
-	     (type == BAN_USER && !strcasecmp (ban->target, target))))
+	if ((ban->type == BAN_IP && ISUNKNOWN (con)
+		    && ip_glob_match (ban->target, con->host))
+		|| (ban->type == BAN_USER && !strcasecmp (ban->target, nick)))
 	{
-	    log ("check_ban(): %s is banned: %s", ban->target,
-		 NONULL (ban->reason));
-	    if (ISUNKNOWN (con))
-		send_cmd (con,
-			  (type ==
-			   BAN_IP) ? MSG_SERVER_ERROR : MSG_SERVER_NOSUCH,
-			  "You are banned from this server: %s",
-			  NONULL (ban->reason));
 	    notify_mods (BANLOG_MODE,
-			 "Connection from banned %s %s (%s): %s",
-			 (type == BAN_IP) ? "host" : "user", target,
-			 (type == BAN_IP) ? ban->target : my_ntoa (con->ip),
-			 NONULL (ban->reason));
-	    /* pass message along so all server mods+ see it */
-	    pass_message_args (NULL, MSG_SERVER_NOTIFY_MODS,
-			       ":%s %d \"Connection from banned %s %s (%s): %s\"",
-			       Server_Name, BANLOG_MODE,
-			       (type == BAN_IP) ? "host" : "user",
-			       target,
-			       (type ==
-				BAN_IP) ? ban->target : my_ntoa (con->ip),
-			       NONULL (ban->reason));
-	    if (con->class == CLASS_UNKNOWN)
+		    "Connection from %s (%s): %s banned: %s",
+		    nick, ISUNKNOWN(con) ? con->host : "remote",
+		    ban->target, NONULL (ban->reason));
+	    if (ISUNKNOWN (con))
+	    {
+		send_cmd (con, MSG_SERVER_ERROR,
+			"%s banned: %s", ban->target, NONULL (ban->reason));
 		con->destroy = 1;
-	    else if (ISSERVER (con) && type == BAN_USER)
+		/* pass message along so all server mods+ see it.  only do
+		   this for local users since the KILL message will serve
+		   as notice otherwise */
+		pass_message_args (NULL, MSG_SERVER_NOTIFY_MODS,
+			":%s %d \"Connection from %s (%s): %s banned: %s\"",
+			Server_Name, BANLOG_MODE, nick, con->host,
+			ban->target, NONULL (ban->reason));
+	    }
+	    else if (ISSERVER (con) && ban->type == BAN_USER)
 	    {
 		/* issue a kill to remove this banned user */
-		pass_message_args (con, MSG_CLIENT_BAN, ":%s %s banned user",
-				   Server_Name, target);
+		pass_message_args (con, MSG_CLIENT_KILL,
+			":%s %s %s banned: %s", Server_Name, nick,
+			ban->target, NONULL (ban->reason));
+		notify_mods(KILLLOG_MODE,"%s killed %s: %s banned: %s",
+			Server_Name, nick, ban->target, NONULL(ban->reason));
 	    }
 	    return 1;
 	}
@@ -271,17 +267,14 @@ save_bans (void)
     snprintf (path, sizeof (path), "%s/bans", Config_Dir);
     if ((fp = fopen (path, "w")) == 0)
     {
-	log ("save_bans(): %s: %s (errno %d)", path, strerror (errno), errno);
+	logerr ("save_bans", path);
 	return -1;
     }
     for (list = Bans; list; list = list->next)
     {
 	b = list->data;
-	if (b->type == BAN_IP)
-	    fprintf (fp, "%s %s %d \"%s\"", b->target, b->setby,
-		     (int) b->when, b->reason);
-	else
-	    fprintf (fp, "%s", b->target);
+	fprintf (fp, "%s %s %d \"%s\"", b->target, b->setby,
+		(int) b->when, b->reason);
 #ifdef WIN32
 	fputc ('\r', fp);
 #endif
@@ -299,7 +292,7 @@ int
 load_bans (void)
 {
     FILE *fp;
-    LIST *list;
+    LIST *list, **last = &Bans;
     BAN *b;
     int ac;
     char *av[4], path[_POSIX_PATH_MAX];
@@ -314,6 +307,8 @@ load_bans (void)
     while (fgets (Buf, sizeof (Buf) - 1, fp))
     {
 	ac = split_line (av, FIELDS (av), Buf);
+	if(ac<1)
+	    continue;
 	b = CALLOC (1, sizeof (BAN));
 	if (!b)
 	{
@@ -321,26 +316,24 @@ load_bans (void)
 	    fclose (fp);
 	    return -1;
 	}
-	b->target = STRDUP (av[0]);
-	if (is_ip (av[0]))
+	b->type = (is_ip(av[0])) ? BAN_IP : BAN_USER;
+	if(b->type==BAN_USER && invalid_nick(av[0]))
 	{
-	    if (ac >= 4)
-	    {
-		b->type = BAN_IP;
-		b->setby = STRDUP (av[1]);
-		b->when = atol (av[2]);
-		truncate_reason(av[3]);
-		b->reason = STRDUP (av[3]);
-	    }
-	    else
-	    {
-		log ("load_bans(): too few parameters for ban");
-		print_args (ac, av);
-	    }
+	    log("load_bans(): invalid nick: %s", av[0]);
+	    FREE(b);
+	    continue;
+	}
+	b->target = STRDUP (av[0]);
+	if (ac >= 4)
+	{
+	    b->setby = STRDUP (av[1]);
+	    b->when = atol (av[2]);
+	    truncate_reason (av[3]);
+	    b->reason = STRDUP (av[3]);
 	}
 	else
 	{
-	    b->type = BAN_USER;
+	    /* old user ban style */
 	    b->setby = STRDUP (Server_Name);
 	    b->reason = STRDUP ("");
 	    b->when = Current_Time;
@@ -354,8 +347,9 @@ load_bans (void)
 	    return -1;
 	}
 	list->data = b;
-	list->next = Bans;
-	Bans = list;
+	/* keep the bans in the same order (roughly reverse chronological) */
+	*last = list;
+	last = &list->next;
     }
     fclose (fp);
     return 0;

@@ -495,6 +495,8 @@ form_message (char *d, int dsize, int tag, const char *fmt, ...)
 int
 is_ip (const char *s)
 {
+    if(!*s)
+	return 0;/* empty */
     for (; *s; s++)
 	if (!isdigit ((unsigned char) *s) && *s != '.')
 	    return 0;

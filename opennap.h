@@ -593,7 +593,7 @@ int buffer_size (BUFFER *);
 int buffer_decompress (BUFFER *, z_streamp, char *, int);
 int buffer_validate (BUFFER *);
 void cancel_search (CONNECTION * con);
-int check_ban (CONNECTION *, const char *, ban_t);
+int check_ban (CONNECTION *, const char *);
 int check_connect_status (int);
 int check_pass (const char *info, const char *pass);
 void close_db (void);
