@@ -358,7 +358,7 @@ send_queued_data (CONNECTION * con)
     ASSERT (validate_connection (con));
 
 #if HAVE_LIBZ
-    if (ISSERVER (con))
+    if (ISSERVER (con) && con->compress > 0)
     {
 	BUFFER *r;
 
