@@ -16,14 +16,16 @@ HANDLER (upload_ok)
     char *av[2];
     USER *recip;
     DATUM *info = 0;
+    int ac;
 
     (void) tag;
     (void) len;
     CHECK_USER_CLASS("upload_ok");
     ASSERT (validate_connection (con));
-    if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
+    if ((ac = split_line (av, sizeof (av) / sizeof (char *), pkt)) != 2)
     {
 	log ("upload_ok(): malformed message from %s", con->user->nick);
+	print_args (ac, av);
 	send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of parameters");
 	return;
     }
