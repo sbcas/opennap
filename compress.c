@@ -19,21 +19,29 @@ HANDLER (compressed_data)
     unsigned char *data;
 
     ASSERT (validate_connection (con));
-    CHECK_SERVER_CLASS("compressed_data");
+    CHECK_SERVER_CLASS ("compressed_data");
     memcpy (&len, pkt, 2);
     len = BSWAP16(len);
-    data = MALLOC (len);
     datasize = len;
+    if (datasize == 0)
+    {
+	log ("compressed_data(): warning, 0 bytes in compressed packet");
+	return;
+    }
+    data = MALLOC (len);
+    log ("compressed_data(): packet says uncompressed data is %d bytes",
+	    datasize);
     if (uncompress (data, &datasize, (unsigned char *) pkt + 2,
 	    con->recvbytes - 6) != Z_OK)
     {
 	log ("compressed_data(): unable to uncompress data");
-	return;
+	goto error;
     }
+
     if (datasize != len)
     {
 	log ("compressed_data(): decompressed size did not match packet label");
-	return;
+	goto error;
     }
 
     log ("compressed_data(): uncompressed %d bytes into %d bytes",
@@ -56,7 +64,7 @@ HANDLER (compressed_data)
 	if (offset + len > datasize)
 	{
 	    log ("compressed_data(): not enough bytes left for packet body");
-	    break; /* error */
+	    goto error;
 	}
 	if (len)
 	{
@@ -76,4 +84,6 @@ HANDLER (compressed_data)
 
 	offset += len;
     }
+error:
+    FREE (data);
 }
