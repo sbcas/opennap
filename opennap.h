@@ -363,6 +363,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_REMOVE_SERVER	10111
 #define MSG_SERVER_COMPRESSED_DATA	10200	/* deprecated */
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
+#define MSG_SERVER_REMOTE_ERROR		10404	/* send 404 to a remote user */
 
 /* offsets into the row returned for library searches */
 #define IDX_NICK	0
@@ -476,9 +477,10 @@ HANDLER (list_users);
 HANDLER (login);
 HANDLER (muzzle);
 HANDLER (nuke_user);
-HANDLER (privmsg);
 HANDLER (part);
 HANDLER (ping);
+HANDLER (privmsg);
+HANDLER (priv_errmsg);
 HANDLER (public);
 HANDLER (queue_limit);
 HANDLER (reginfo);

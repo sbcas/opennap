@@ -93,4 +93,22 @@ HANDLER (whois)
 		user->email ? user->email : "unknown");
     }
     FREE (chanlist);
+
+    /* notify privileged users when someone requests their info */
+    if (user->level >= LEVEL_MODERATOR)
+    {
+	if (user->con)
+	{
+	    ASSERT (validate_connection (user->con));
+	    send_cmd (user->con, MSG_SERVER_NOSUCH,
+		    "%s has requested your info", con->user->nick);
+	}
+	else
+	{
+	    ASSERT (validate_connection (user->serv));
+	    send_cmd (user->serv, MSG_SERVER_REMOTE_ERROR,
+		    "%s %s has requested your info",
+		    user->nick, con->user->nick);
+	}
+    }
 }

@@ -183,6 +183,7 @@ static HANDLER Protocol[] = {
     {MSG_SERVER_COMPRESSED_DATA, compressed_data},	/* 10200 */
 #endif
     {MSG_CLIENT_SHARE_FILE, share_file},
+    {MSG_SERVER_REMOTE_ERROR, priv_errmsg},	/* 10404 */
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
 
