@@ -191,17 +191,16 @@ HANDLER (login)
 		    /* TODO: there is a numeric for this somewhere */
 		    send_cmd(user->con,MSG_SERVER_NOSUCH,
 			    "You were killed by %s: ghost",Server_Name);
-		    user->con->uopt = 0;
-		    user->con->destroy=1;
 		    /* save a pointer to the CONNECTION struct for use
 		       after the remove_user() call since `user' gets
 		       free'd */
 		    tempCon = user->con;
-		    /* this MUST come last because it free's user */
 		    remove_user(user->con);
 		    /* avoid free'g con->user in remove_connection().  do
 		       this here to avoid the ASSERT() in remove_user() */
 		    tempCon->class = CLASS_UNKNOWN;
+		    tempCon->uopt = 0;/* just to be safe since it was free'd*/
+		    tempCon->destroy=1;
 		}
 		else
 		    hash_remove(Users,user->nick);
@@ -613,6 +612,11 @@ HANDLER (reginfo)
     }
     else
     {
+	if(invalid_nick(fields[0]))
+	{
+	    log("reginfo(): received invalid nickname");
+	    return;
+	}
 	db = CALLOC (1, sizeof (USERDB));
 	if (db)
 	    db->nick = STRDUP (fields[0]);
