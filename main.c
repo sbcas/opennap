@@ -57,7 +57,6 @@ int Max_Hotlist;
 int Max_Topic;
 int Max_Client_String;
 int Max_Reason;
-int Max_Path;
 
 #ifndef WIN32
 int Uid;
@@ -564,6 +563,8 @@ main (int argc, char **argv)
     /* only clean up memory if we are in debug mode, its kind of pointless
        otherwise */
 #if DEBUG
+    motd_close();
+
     if (sockfd)
 	FREE (sockfd);
 

@@ -372,7 +372,6 @@ extern int Max_Hotlist;
 extern int Max_Topic;
 extern int Max_Client_String;
 extern int Max_Reason;
-extern int Max_Path;
 
 extern const int BitRate[];
 extern const int SampleRate[];
@@ -643,6 +642,8 @@ void load_channels (void);
 void log (const char *fmt, ...);
 unsigned int lookup_ip (const char *host);
 int make_tcp_connection (const char *host, int port, unsigned int *ip);
+void motd_init(void);
+void motd_close(void);
 char *my_ntoa (unsigned int);
 USER *new_user (void);
 CHANNEL *new_channel (void);

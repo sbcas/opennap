@@ -236,5 +236,7 @@ init_server (const char *cf)
 
     init_random ();
 
+    motd_init ();
+
     return 0;
 }

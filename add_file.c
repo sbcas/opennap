@@ -347,20 +347,21 @@ HANDLER (add_file)
 
     if (Max_Shared && con->user->shared > Max_Shared)
     {
-	log ("add_file(): %s is sharing %d files", con->user->nick,
-	     con->user->shared);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "You may only share %d files", Max_Shared);
+	send_cmd (con, MSG_SERVER_NOSUCH,
+		"You may only share %d files", Max_Shared);
 	return;
     }
 
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 6)
     {
-	log ("add_file: wrong number of fields in message");
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "invalid parameter data to add a file");
+	send_cmd (con, MSG_SERVER_NOSUCH,
+		"invalid parameter data to add a file");
+	return;
+    }
+
+    if (strlen (av[0]) > _POSIX_PATH_MAX)
+    {
+	send_cmd(con,MSG_SERVER_NOSUCH,"filename too long");
 	return;
     }
 
@@ -375,9 +376,7 @@ HANDLER (add_file)
     /* make sure this isn't a duplicate */
     if (con->uopt->files && hash_lookup (con->uopt->files, av[0]))
     {
-	log ("add_file(): duplicate for %s: %s", con->user->nick, av[0]);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
+	send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
 	return;
     }
 
@@ -451,7 +450,7 @@ HANDLER (share_file)
 	return;
     }
 
-    if (Max_Path > 0 && strlen (av[0]) > (unsigned)Max_Path)
+    if (strlen (av[0]) > _POSIX_PATH_MAX)
     {
 	send_cmd(con,MSG_SERVER_NOSUCH,"filename too long");
 	return;
