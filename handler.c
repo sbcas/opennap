@@ -62,7 +62,7 @@ HANDLER (encapsulated)
 	*ptr = ch;
 	/* avoid copying the data twice by peeking into the send buffer to
 	   grab the message header and body together */
-	pass_message (con, con->sendbuf->data + con->sendbuf->consumed, 4 + len);
+	pass_message (con, con->recvbuf->data + con->recvbuf->consumed, 4 + len);
     }
 }
 
