@@ -194,7 +194,7 @@ void
 handle_connection (CONNECTION * con)
 {
     int n;
-    short tag, len;
+    unsigned short tag, len;
 
     ASSERT (validate_connection (con));
 
