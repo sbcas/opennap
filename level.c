@@ -16,41 +16,18 @@ HANDLER (level)
 {
     char *sender, *av[3];
     USER *user, *senderUser=0;
-    int level, ac;
+    int level, ac = -1;
     USERDB *db;
 
     (void) len;
     ASSERT (validate_connection (con));
 
-    if (ISSERVER (con))
-    {
-	/* skip over who set the user level */
-	if (*pkt != ':')
-	{
-	    log ("level(): server message was missing colon prefix");
-	    return;
-	}
-	pkt++;
-	sender = next_arg (&pkt);
-	if (!pkt)
-	{
-	    log ("level(): request contained too few fields");
-	    return;
-	}
-	if (!is_server(sender))
-	{
-	    senderUser=hash_lookup(Users,sender);
-	    if(!senderUser)
-		log("level(): could not find user %s", sender);
-	}
-    }
-    else
-    {
-	sender = con->user->nick;
-	senderUser = con->user;
-    }
+    if(pop_user_server(con,tag,&pkt,&sender,&senderUser))
+	return;
 
-    if ((ac = split_line (av, FIELDS (av), pkt)) < 2)
+    if(pkt)
+	ac = split_line (av, FIELDS (av), pkt);
+    if(ac<2)
     {
 	log ("level(): malformed request");
 	print_args (ac, av);
@@ -79,12 +56,7 @@ HANDLER (level)
 
     /* if the level is already correct, just ignore it */
     if (db && db->level == level)
-    {
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"user %s is already level %s",
-		     db->nick, Levels[db->level]);
 	return;
-    }
 
     /* check to see if the user is logged in */
     user = hash_lookup (Users, av[0]);
@@ -93,9 +65,6 @@ HANDLER (level)
     if (user && user->level == level)
     {
 	ASSERT(level==LEVEL_USER);
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"user %s is already level %s",
-		     user->nick, Levels[user->level]);
 	return;
     }
 
@@ -126,6 +95,11 @@ HANDLER (level)
 	if(ts>db->timestamp)
 	{
 	    log("level(): TS for %s is newer", db->nick);
+	    /* force an update by sending back what we believe the level
+	     * to be
+	     */
+	    send_cmd(con,MSG_CLIENT_SETUSERLEVEL,":%s %s %s %u",
+		    Server_Name, db->nick, Levels[db->level], db->timestamp);
 	    return;
 	}
 	else if(ts==db->timestamp)
