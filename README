@@ -14,6 +14,7 @@ platforms.  So far this server has only been tested on:
 	* BSDI
 	* FreeBSD
 	* Solaris
+	* IRIX
 	* OS/2
 	* Windows 2000 (MS VC++)
 	* Windows NT 4.0 (MS VC++)

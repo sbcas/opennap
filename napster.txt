@@ -4,7 +4,7 @@ napster messages
 by drscholl@users.sourceforge.net
 May 8, 2000
 
-0.  Forward
+0.  Foreward
 
 This is meant to be an open specification.  If you find errors or know of
 additional functionality not described hereafter, please send me email.  It

@@ -5,6 +5,7 @@
    $Id$ */
 
 #include <stdio.h>
+#include <time.h>
 #ifndef WIN32
 #include <unistd.h>
 #endif
@@ -53,6 +54,7 @@ main (int argc, char **argv)
     }
     else
     {
+	Current_Time = time (0);
 	init_random ();
 	s = generate_pass (argv[optind]);
 	puts (s);
