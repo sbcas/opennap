@@ -27,6 +27,13 @@ HANDLER (join)
 
     if (pop_user (con, &pkt, &user) != 0)
 	return;
+    if (!pkt || !*pkt)
+    {
+	log ("join(): missing channel name");
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Missing channel name.");
+	return;
+    }
     ASSERT (validate_user (user));
 
     /* enforce a maximum channels per user */
