@@ -26,7 +26,7 @@ typedef struct {
 static int
 search_callback (DATUM *match, SEARCH *parms)
 {
-#if 0
+#if 1
     /* don't return matches for a user's own files */
     if (match->user == parms->con->user)
         return 0;
@@ -352,8 +352,14 @@ HANDLER (search)
 		parms.minspeed = n;
 	    else if (!strcasecmp ("at most", av[i]))
 		parms.maxspeed = n;
-	    else if (!strcasecmp ("equals", av[i]))
+	    else if (!strcasecmp ("equal to", av[i]))
 		parms.minspeed = parms.maxspeed = n;
+	    else
+	    {
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			"\"%s\" is an unknown comparison", av[i]);
+		goto done;
+	    }
 	    i++;
 	}
 	else if (!strcasecmp ("bitrate", av[i]))
@@ -369,8 +375,14 @@ HANDLER (search)
 		parms.minbitrate = n;
 	    else if (!strcasecmp ("at most", av[i]))
 		parms.maxbitrate = n;
-	    else if (!strcasecmp ("equals", av[i]))
+	    else if (!strcasecmp ("equal to", av[i]))
 		parms.minbitrate = parms.maxbitrate = n;
+	    else
+	    {
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			"\"%s\" is an unknown comparison", av[i]);
+		goto done;
+	    }
 	    i++;
 	}
 	else if (!strcasecmp ("freq", av[i]))
@@ -386,8 +398,14 @@ HANDLER (search)
 		parms.minfreq = n;
 	    else if (!strcasecmp ("at most", av[i]))
 		parms.maxfreq = n;
-	    else if (!strcasecmp ("equals", av[i]))
+	    else if (!strcasecmp ("equal to", av[i]))
 		parms.minfreq = parms.maxfreq = n;
+	    else
+	    {
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			"\"%s\" is an unknown comparison", av[i]);
+		goto done;
+	    }
 	    i++;
 	}
 	else
