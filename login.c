@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <time.h>
 #include <string.h>
@@ -110,6 +112,7 @@ HANDLER (login)
 	/* save the ip address of this client */
 	user->host = con->ip;
 	/* user->conport = con->port; */
+	user->server = STRDUP (Server_Name);
 
 	/* pass this information to our peer servers */
 	if (Num_Servers)

@@ -258,7 +258,7 @@ send_queued_data (CONNECTION *con)
 	{
 	    /* make sure there is enough room to hold the compressed
 	       packet */
-	    if (con->sendbuflen - l + datasize + 6 < con->sendbufmax)
+	    if (con->sendbufcompressed + datasize + 6 < con->sendbufmax)
 	    {
 		con->sendbuflen -= l; /* pop the uncompressed packet */
 

@@ -36,7 +36,8 @@ synch_user (void *data, void *funcdata)
 	    user->nick, user->port, user->clientinfo, user->speed);
 
     /* send the user's host */
-    send_cmd (con, MSG_SERVER_USER_IP, "%s %lu", user->nick, user->host);
+    send_cmd (con, MSG_SERVER_USER_IP, "%s %lu %hu %s", user->nick,
+	user->host, user->conport, user->server);
 
     /* update the user's level */
     if (user->level != LEVEL_USER)
