@@ -17,16 +17,11 @@ free_user (USER * user)
 
     ASSERT (validate_user (user));
 
-    if (user->local && Servers)
+    if (ISUSER (user->con) && Servers)
     {
 	/* local user, notify peers of this user's departure */
 	pass_message_args (user->con, MSG_CLIENT_QUIT, "%s", user->nick);
     }
-
-    /* this marks all the files this user was sharing as invalid.  they
-       get reaped in the process of garbage collection in the main loop. */
-    if (user->files)
-	free_hash (user->files);
 
     /* remove this user from any channels they were on */
     if (user->channels)
@@ -43,7 +38,7 @@ free_user (USER * user)
     ASSERT (Num_Files >= user->shared);
     Num_Files -= user->shared;
     Num_Gigs -= user->libsize;	/* this is in kB */
-    if (user->local)
+    if (ISUSER (user->con))
 	Local_Files -= user->shared;
 
     /* check the global hotlist for this user to see if anyone wants notice
@@ -65,7 +60,5 @@ free_user (USER * user)
     FREE (user->pass);
     FREE (user->clientinfo);
     FREE (user->server);
-    if (user->email)
-	FREE (user->email);
     FREE (user);
 }

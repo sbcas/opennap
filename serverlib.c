@@ -129,9 +129,10 @@ add_client (CONNECTION * cli)
 void
 nosuchuser (CONNECTION * con, char *nick)
 {
-    ASSERT (VALID (con));
-    send_cmd (con, MSG_SERVER_NOSUCH, "User %s is not currently online.",
-	      nick);
+    ASSERT (validate_connection (con));
+    if (ISUSER (con))
+	send_cmd (con, MSG_SERVER_NOSUCH, "User %s is not currently online.",
+		  nick);
 }
 
 void
@@ -202,7 +203,6 @@ validate_user (USER * user)
     ASSERT_RETURN_IF_FAIL (VALID_STR (user->clientinfo), 0);
     ASSERT_RETURN_IF_FAIL (user->con == 0
 			   || VALID_LEN (user->con, sizeof (CONNECTION)), 0);
-    ASSERT_RETURN_IF_FAIL (user->email == 0 || VALID_STR (user->email), 0);
     ASSERT_RETURN_IF_FAIL (list_validate (user->channels), 0);
     return 1;
 }

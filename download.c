@@ -40,9 +40,9 @@ HANDLER (download)
 	{
 	    /* uploader is firewalled, send file info so that downloader can
 	       send the 500 request */
-	    if (user->local)
+	    if (ISUSER (user->con))
 	    {
-		DATUM *info = hash_lookup (user->files, av[1]);
+		DATUM *info = hash_lookup (user->con->uopt->files, av[1]);
 
 		if (!info)
 		{
@@ -299,7 +299,7 @@ HANDLER (queue_limit)
     {
 	log ("queue_limit(): wrong number of parameters");
 	print_args (ac, av);
-	send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of parameters");
+	unparsable(con);
 	return;
     }
     recip = hash_lookup (Users, av[0]);
@@ -313,13 +313,11 @@ HANDLER (queue_limit)
     ASSERT (validate_connection (recip->con));
 
     /* look up the filesize in the db */
-    info = hash_lookup (con->user->files, av[1]);
+    info = hash_lookup (con->uopt->files, av[1]);
     if (!info)
     {
-	log ("queue_limit(): user %s does not have file %s",
-	     con->user->nick, av[1]);
-	send_cmd (con, MSG_SERVER_NOSUCH,
-		  "could not locate \"%s\" in the db", av[1]);
+	log ("queue_limit(): %s is not sharing %s", con->user->nick, av[1]);
+	send_cmd (con, MSG_SERVER_NOSUCH, "you aren't sharing that file", av[1]);
 	return;
     }
 

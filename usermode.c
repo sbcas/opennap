@@ -14,7 +14,7 @@
 #include "debug.h"
 
 static char *User_Levels[] = { "ERROR", "BAN", "CHANGE", "CHANNEL",
-    "KILL", "LEVEL", "SERVER", "MUZZLE", "PORT", ""
+    "KILL", "LEVEL", "SERVER", "MUZZLE", "PORT", "TOPIC", ""
 };
 
 

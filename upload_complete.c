@@ -37,7 +37,7 @@ HANDLER (upload_ok)
 	return;
     }
     /* pull the hash from the data base */
-    info = hash_lookup (con->user->files, av[1]);
+    info = hash_lookup (con->uopt->files, av[1]);
     if (!info)
     {
 	log ("upload_ok(): user %s does not have file %s",

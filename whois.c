@@ -69,27 +69,20 @@ HANDLER (whois)
 		online, chanlist, user->shared, user->downloads, user->uploads,
 		user->speed, user->clientinfo);
     }
-    else if (sender->level > LEVEL_MODERATOR)
-    {
-	/* we show admins the server which a user is connected to */
-	send_user (sender, MSG_SERVER_WHOIS_RESPONSE,
-		"%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %s %d %d %s %s",
-		user->nick, Levels[user->level], online, chanlist, user->shared,
-		user->downloads, user->uploads, user->speed, user->clientinfo,
-		user->totaldown, user->totalup, my_ntoa (user->host),
-		user->conport, user->port,
-		user->email ? user->email : "unknown",
-		user->server ? user->server : Server_Name);
-    }
     else
     {
+	db=hash_lookup(User_Db, user->nick);
+
+	/* we show admins the server which a user is connected to */
 	send_user (sender, MSG_SERVER_WHOIS_RESPONSE,
-		"%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %s %d %d %s",
-		user->nick, Levels[user->level], online, chanlist, user->shared,
-		user->downloads, user->uploads, user->speed, user->clientinfo,
-		user->totaldown, user->totalup, my_ntoa (user->host),
-		user->conport, user->port,
-		user->email ? user->email : "unknown");
+		   "%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %s %d %d %s %s%s%s",
+		   user->nick, Levels[user->level], online, chanlist,
+		   user->shared, user->downloads, user->uploads,
+		   user->speed, user->clientinfo, user->totaldown,
+		   user->totalup, my_ntoa (user->host),
+		   user->conport, user->port, db ? db->email : "unknown",
+		   sender->level > LEVEL_MODERATOR ? " " : "",
+		   sender->level > LEVEL_MODERATOR ? (user->server ? user->server : Server_Name) : "");
     }
     FREE (chanlist);
 

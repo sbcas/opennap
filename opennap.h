@@ -94,7 +94,6 @@ struct _user
     char *nick;
     char *pass;			/* password for this user, needed for sync */
     char *clientinfo;
-    char *email;		/* user's email address */
     char *server;		/* which server the user is connected to */
 
     unsigned short uploads;	/* no. of uploads in progress */
@@ -118,7 +117,6 @@ struct _user
     unsigned short port;	/* data port client is listening on */
     unsigned short conport;	/* remote port for connection to server */
     time_t connected;		/* time at which the user connected */
-    HASH *files;		/* db entries for this user's shared files */
     LIST *channels;		/* channels of which this user is a member */
     CONNECTION *con;		/* local connection, or server which this
 				   user is behind */
@@ -133,6 +131,7 @@ enum
 
 #define ISSERVER(c)	((c)->class==CLASS_SERVER)
 #define ISUSER(c)	((c)->class == CLASS_USER)
+#define ISUNKNOWN(c)	((c)->class==CLASS_UNKNOWN)
 
 typedef struct
 {
@@ -163,6 +162,7 @@ typedef struct
        hash table.  the actual HOTLIST* pointer should only be freed
        when hotlist->numusers is zero.  */
     LIST *hotlist;
+    HASH *files;		/* db entries for this user's shared files */
 }
 USEROPT;
 
@@ -195,7 +195,6 @@ struct _connection
     opt;
 
     unsigned int connecting:1;
-    unsigned int incomplete:1;	/* unused */
     unsigned int destroy:1;	/* connection should be destoyed in
 				   handle_connection().  because h_c() caches
 				   a copy of the CONNECTION pointer, we can't
@@ -205,7 +204,7 @@ struct _connection
     unsigned int server_login:1;	/* server login in progress */
     unsigned int compress:4;	/* compression level for this connection */
     unsigned int class:2;	/* connection class (unknown, user, server) */
-    unsigned int xxx:6;		/* unused */
+    unsigned int xxx:7;		/* unused */
     time_t	timer;		/* timer to detect idle connections */
 };
 
@@ -781,8 +780,10 @@ extern int optind;
 #define SERVERLOG_MODE	0x0040
 #define MUZZLELOG_MODE	0x0080
 #define PORTLOG_MODE	0x0100
+#define TOPICLOG_MODE	0x0200
 
 #define LOGALL_MODE (ERROR_MODE|BANLOG_MODE|CHANGELOG_MODE|CHANNELLOG_MODE|\
-	KILLLOG_MODE|LEVELLOG_MODE|SERVERLOG_MODE|MUZZLELOG_MODE|PORTLOG_MODE)
+	KILLLOG_MODE|LEVELLOG_MODE|SERVERLOG_MODE|MUZZLELOG_MODE|PORTLOG_MODE|\
+	TOPICLOG_MODE)
 
 #endif /* opennap_h */

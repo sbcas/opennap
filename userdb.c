@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <limits.h>
+#ifndef WIN32
+#include <unistd.h>
+#endif
 #include "opennap.h"
 #include "debug.h"
 
@@ -162,6 +165,8 @@ userdb_dump (void)
 	logerr ("userdb_dump", "fclose");
 	return -1;
     }
+    if (unlink (User_Db_Path))
+	logerr ("userdb_dump", "unlink");	/* not fatal, may not exist */
     if (rename (path, User_Db_Path))
     {
 	logerr ("userdb_dump", "rename");

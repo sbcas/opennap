@@ -213,11 +213,11 @@ insert_datum (DATUM * info, char *av)
     ASSERT (info != 0);
     ASSERT (av != 0);
 
-    if (!info->user->files)
+    if (!info->user->con->uopt->files)
     {
 	/* create the hash table */
-	info->user->files = hash_init (257, (hash_destroy) free_datum);
-	if (!info->user->files)
+	info->user->con->uopt->files = hash_init (257, (hash_destroy) free_datum);
+	if (!info->user->con->uopt->files)
 	{
 	    OUTOFMEMORY ("insert_datum");
 	    return;
@@ -229,7 +229,7 @@ insert_datum (DATUM * info, char *av)
     ASSERT (tokens != 0);
 
     /* add this entry to the hash table for this user's files */
-    hash_add (info->user->files, info->filename, info);
+    hash_add (info->user->con->uopt->files, info->filename, info);
     info->refcount++;
 
     /* add this entry to the global file list */
@@ -247,19 +247,7 @@ insert_datum (DATUM * info, char *av)
     Num_Gigs += fsize;		/* this is actually kB, not gB */
     Num_Files++;
     Local_Files++;
-
-#if 0
-    /* notify peer servers that this user's file count has increased */
-    /* TODO: this should be changed so that the servers will periodically
-       exchnage user info rather than for each message.  if a user adds
-       5000 files it will send 5000 of these.. */
-    pass_message_args (info->user->con, MSG_SERVER_USER_SHARING,
-		       "%s %d %d", info->user->nick, info->user->shared,
-		       info->user->libsize);
-#else
-    /* note that we began sharing */
-    info->user->sharing = 1;
-#endif
+    info->user->sharing = 1; /* note that we began sharing */
 }
 
 static DATUM *
@@ -290,28 +278,26 @@ new_datum (char *filename, char *hash)
     return info;
 }
 
-/* 100 [ :<nick> ] "<filename>" <md5sum> <size> <bitrate> <frequency> <time>
+/* 100 "<filename>" <md5sum> <size> <bitrate> <frequency> <time>
    client adding file to the shared database */
 HANDLER (add_file)
 {
     char *av[6];
-    USER *user;
     DATUM *info;
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
 
-    if (pop_user (con, &pkt, &user) != 0)
-	return;
+    CHECK_USER_CLASS ("add_file");
 
-    ASSERT (validate_user (user));
+    ASSERT (validate_user (con->user));
 
-    if (Max_Shared && user->shared > Max_Shared)
+    if (Max_Shared && con->user->shared > Max_Shared)
     {
-	log ("add_file(): %s is sharing %d files", user->nick,
-	     user->shared);
-	if (con->class == CLASS_USER)
+	log ("add_file(): %s is sharing %d files", con->user->nick,
+	     con->user->shared);
+	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
 		      "You may only share %d files", Max_Shared);
 	return;
@@ -327,10 +313,10 @@ HANDLER (add_file)
     }
 
     /* make sure this isn't a duplicate */
-    if (user->files && hash_lookup (user->files, av[0]))
+    if (con->uopt->files && hash_lookup (con->uopt->files, av[0]))
     {
-	log ("add_file(): duplicate for %s: %s", user->nick, av[0]);
-	if (con->class == CLASS_USER)
+	log ("add_file(): duplicate for %s: %s", con->user->nick, av[0]);
+	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
 	return;
     }
@@ -338,7 +324,7 @@ HANDLER (add_file)
     /* create the db record for this file */
     if (!(info = new_datum (av[0], av[1])))
 	return;
-    info->user = user;
+    info->user = con->user;
     info->size = atoi (av[2]);
     info->bitrate = atoi (av[3]);
     info->frequency = atoi (av[4]);

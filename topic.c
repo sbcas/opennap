@@ -87,6 +87,9 @@ HANDLER (topic)
 	    if (chanUser->local)
 		queue_data (chanUser->con, Buf, l);
 	}
+
+	notify_mods (TOPICLOG_MODE, "%s set topic on %s: %s", nick,
+		     chan->name, chan->topic);
     }
     else if (ISUSER (con))
     {

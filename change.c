@@ -209,7 +209,6 @@ HANDLER (alter_pass)
 	return;
     }
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
-
     if (ac != 3)
     {
 	log ("alter_pass(): wrong number of arguments");
@@ -217,26 +216,25 @@ HANDLER (alter_pass)
 	unparsable(con);
 	return;
     }
-    db = hash_lookup (User_Db, av[0]);
-    if (!db)
-    {
-	log ("alter_pass(): %s is not registered", av[0]);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not a registered nick.",
-		      av[0]);
-	return;
-    }
-    FREE (db->password);
-    db->password = generate_pass (av[1]);
-    if (!db->password)
-    {
-	OUTOFMEMORY ("alter_pass");
-	return;
-    }
-    pass_message_args (con, tag, ":%s %s %s \"%s\"", sender->nick, db->nick,
+    /* send this now since the account might not be locally registered */
+    pass_message_args (con, tag, ":%s %s %s \"%s\"", sender->nick, av[0],
 		       av[1], av[2]);
+    db = hash_lookup (User_Db, av[0]);
+    if (db)
+    {
+	char *newpass;
+
+	newpass = generate_pass (av[1]);
+	if (!newpass)
+	{
+	    OUTOFMEMORY ("alter_pass");
+	    return;
+	}
+	FREE (db->password);
+	db->password=newpass;
+    }
     notify_mods (CHANGELOG_MODE, "%s changed %s's password: %s", 
-	    	sender->nick, db->nick, av[2]);
+		 sender->nick, av[0], av[2]);
 }
 
 /* 625 [ :<sender> ] <nick> <speed>
@@ -308,34 +306,30 @@ HANDLER (nuke)
 	    permission_denied (con);
 	return;
     }
-    if (!pkt)
-    {
-	log ("nuke(): missing user name");
-	ASSERT (ISSERVER (con));
-	return;
-    }
     nick=next_arg(&pkt);
+    if (!nick || !pkt)
+    {
+	log ("nuke(): too few parameters");
+	unparsable(con);
+	return;
+    }
+    /* pass the message in case its not locally registered */
+    pass_message_args (con, tag, ":%s %s %s", sender->nick, nick, NONULL(pkt));
     db = hash_lookup (User_Db, nick);
-    if (!db)
+    if (db)
     {
-	log ("nuke(): %s is not registered", nick);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not registered", nick);
-	return;
+	if (sender->level < LEVEL_ELITE && sender->level <= db->level)
+	{
+	    log ("nuke(): %s has no privilege to revoke %s's account",
+		 sender->nick, db->nick);
+	    if (ISUSER (con))
+		permission_denied (con);
+	    return;
+	}
+	hash_remove(User_Db, db->nick);
     }
-    if (sender->level < LEVEL_ELITE && sender->level <= db->level)
-    {
-	log ("nuke(): %s has no privilege to revoke %s's account",
-	     sender->nick, db->nick);
-	if (ISUSER (con))
-	    permission_denied (con);
-	return;
-    }
-    pass_message_args (con, tag, ":%s %s %s", sender->nick, db->nick,
-		       NONULL(pkt));
     notify_mods (CHANGELOG_MODE, "%s nuked %s's account: %s", 
-    		sender->nick, db->nick, NONULL (pkt));
-    hash_remove(User_Db, db->nick);
+		 sender->nick, nick, NONULL (pkt));
 }
 
 #if 0

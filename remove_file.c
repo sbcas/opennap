@@ -27,7 +27,7 @@ HANDLER (remove_file)
     }
 
     /* find the file in the user's list */
-    info = hash_lookup (user->files, pkt);
+    info = hash_lookup (con->uopt->files, pkt);
     if (!info)
     {
 	log ("remove_file(): %s is not sharing %s", user->nick, pkt);
@@ -44,15 +44,8 @@ HANDLER (remove_file)
     ASSERT (Local_Files > 0);
     Local_Files--;
     user->shared--;
+    user->unsharing = 1; /* note that we are unsharing */
 
     /* this invokes free_datum() indirectly */
-    hash_remove (user->files, info->filename);
-
-#if 1
-    /* note that we are unsharing */
-    user->unsharing = 1;
-#else
-    pass_message_args (con, MSG_SERVER_USER_SHARING, "%s %d %d",
-		       user->nick, user->shared, user->libsize);
-#endif
+    hash_remove (con->uopt->files, info->filename);
 }

@@ -52,15 +52,14 @@ HANDLER (browse)
     user = hash_lookup (Users, nick);
     if (!user)
     {
-	if (ISUSER (con))
-	    nosuchuser (con, nick);
+	nosuchuser (con, nick);
 	return;
     }
     ASSERT (validate_user (user));
 
-    if (user->local)
+    if (ISUSER (user->con))
     {
-	if (user->files)
+	if (user->con->uopt->files)
 	{
 	    data.count = 0;
 	    data.user = user;
@@ -68,8 +67,8 @@ HANDLER (browse)
 	    data.max = pkt ? atoi (pkt) : 0;
 	    if (Max_Browse_Result > 0 && data.max > Max_Browse_Result)
 		data.max = Max_Browse_Result;
-	    hash_foreach (user->files, (hash_callback_t) browse_callback,
-		    &data);
+	    hash_foreach (user->con->uopt->files,
+			  (hash_callback_t) browse_callback, &data);
 	}
 
 	/* send end of browse list message */

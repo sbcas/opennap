@@ -276,16 +276,8 @@ HANDLER (login)
 	user->nick = STRDUP (av[0]);
 	user->clientinfo = STRDUP (av[3]);
 	user->pass = STRDUP (av[1]);
-	if (db)
-	    user->email = STRDUP (db->email);
-	else
-	{
-	    snprintf (Buf, sizeof (Buf), "anon@%s", Server_Name);
-	    user->email = STRDUP (Buf);
-	}
     }
-    if (!user || !user->nick || !user->clientinfo || !user->pass
-	|| !user->email)
+    if (!user || !user->nick || !user->clientinfo || !user->pass)
     {
 	OUTOFMEMORY ("login");
 	goto failed;
@@ -323,7 +315,10 @@ HANDLER (login)
 	con->uopt->usermode = LOGALL_MODE;
 	con->user = user;
 	/* send the login ack */
-	send_cmd (con, MSG_SERVER_EMAIL, "%s", user->email);
+	if (db)
+	    send_cmd (con, MSG_SERVER_EMAIL, "%s", db->email);
+	else
+	    send_cmd (con, MSG_SERVER_EMAIL, "anon@%s", Server_Name);
 	show_motd (con, 0, 0, NULL);
 	server_stats (con, 0, 0, NULL);
     }
@@ -387,16 +382,12 @@ HANDLER (login)
     {
 	if (user->nick)
 	    FREE (user->nick);
-	if (user->email)
-	    FREE (user->email);
 	if (user->clientinfo)
 	    FREE (user->clientinfo);
 	if (user->pass)
 	    FREE (user->pass);
 	if (user->server)
 	    FREE (user->server);
-	if (user->files)
-	    free_hash (user->files);
 	FREE (user);
     }
 }

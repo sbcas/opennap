@@ -142,13 +142,8 @@ HANDLER (level)
 	db->nick = STRDUP (user->nick);
 	db->password = generate_pass (user->pass);
 	db->level = user->level;
-	if (user->email)
-	    db->email = STRDUP (user->email);
-	else
-	{
-	    snprintf (email, sizeof (email), "anon@%s", Server_Name);
-	    db->email = STRDUP (email);
-	}
+	snprintf (email, sizeof (email), "anon@%s", Server_Name);
+	db->email = STRDUP (email);
 	/* we use the current time.  this should be ok since if we ever try
 	   to propogate this entry the server(s) with older entries will
 	   override this one and update our entry */
