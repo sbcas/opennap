@@ -1,22 +1,3 @@
-# $Id$
-#
-# sample channel configuration file
-#
-# This file contains a list of persistent channels that should be maintained
-# even when no users are present in them
-#
-# <channel> <limit> <level> "<topic>" [ nick ... ]
-#
-# <channel> is the channel name
-# <limit> is the maximum number of people allowed on the channel
-# <level> is the minimum user level required for a user to enter (leech,
-#	user, moderator, admin, elite)
-# <topic> is the initial topic for the channel (MUST BE QUOTED)
-#
-# optionally, there may be a list of nicknames separated by a space.  these
-# nicknames are the channel operators which will be given privilege to
-# execute commands relating to the channel (kick, ban, topic, limit, level)
-
-Help 200 Leech "Get your OpenNap questions answered here!"
-Admins 200 Moderator "OpenNap administration channel"
-Lobby 200 User "General chat channel"
+#Help 200 Leech "Get your OpenNap questions answered here!"
+#Admins 200 Moderator "OpenNap administration channel"
+#Lobby 200 User "General chat channel"
