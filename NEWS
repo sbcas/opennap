@@ -49,7 +49,9 @@ If more than `flood_commands' message from a client are received in
 `flood_time' seconds, the server will throttle the rate at which it reads
 commands from the client, and notify the mods+ of the flooding (controlled
 by usermode FLOOD).  Setting `flood_commands' to 0 [default] turns off flood
-control.
+control.  NOTE: `flood_time' should be an integral multiple of
+`flood_commands' or else it will not do what you expect.  _DO_ _NOT_ set
+`flood_time' to 0!!! or risk 100% cpu usage.  You've been warned.
 
 [opennap 0.35]
 
