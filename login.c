@@ -267,8 +267,8 @@ HANDLER (login)
 	{
 	    log ("login(): set %s to level %s", user->nick,
 		 Levels[user->level]);
-	    notify_mods ("%s set user %s to level %s", Server_Name,
-		user->nick, Levels[user->level]);
+	    notify_mods ("%s set %s's user level to %s (%d)", Server_Name,
+		user->nick, Levels[user->level], level);
 	}
     }
     else if (tag == MSG_CLIENT_LOGIN_REGISTER)
@@ -336,7 +336,7 @@ HANDLER (login)
 	if (user->level != LEVEL_USER)
 	{
 	    /* notify users of their change in level */
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s set your level to %s (%d).",
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s set your user level to %s (%d).",
 		      Server_Name, Levels[user->level], user->level);
 	}
     }

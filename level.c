@@ -111,11 +111,11 @@ HANDLER (level)
     {
 	/* notify the user of their change in status */
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-		  "%s changed your level to %s (%d).",
+		  "%s changed your user level to %s (%d).",
 		  sender, Levels[user->level], user->level);
     }
 
-    log ("level(): %s set %s's level to %s", sender, user->nick,
+    log ("level(): %s set %s's user level to %s", sender, user->nick,
 	 Levels[user->level]);
 
     /* if this is a registered nick, update our db so this change is
