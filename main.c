@@ -499,7 +499,11 @@ main (int argc, char **argv)
 		if (Clients[i])
 		{
 		    if (i != j)
+		    {
 			Clients[j] = Clients[i];
+			Clients[j]->id = j;
+			Clients[i] = 0;
+		    }
 		    j++;
 		}
 	    }
