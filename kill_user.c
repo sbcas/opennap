@@ -109,9 +109,6 @@ HANDLER (kill_user)
     pass_message_args (con, MSG_CLIENT_KILL, ":%s %s \"%s\"",
 		       killernick, user->nick, REASON);
 
-    /* log this action */
-    log ("kill_user(): %s killed %s: %s", killernick, user->nick, REASON);
-
     /* notify mods+ that this user was killed */
     notify_mods (KILLLOG_MODE, "%s killed %s: %s", killernick, user->nick,
 		 REASON);
