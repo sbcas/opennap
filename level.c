@@ -121,11 +121,24 @@ HANDLER (level)
 	    return;
 	}
 	db->level = level;
+	/* user can't decloak if they become unprivileged, so ensure we
+	   are in a sane state */
+	if (level < LEVEL_MODERATOR && (db->flags & ON_CLOAKED))
+	{
+	    db->flags &= ~ON_CLOAKED;
+	    if(user)
+	    {
+		ASSERT(user->cloaked!=0);/* should always be in sync */
+		user->cloaked=0;
+		notify_mods(CHANGELOG_MODE,"%s has decloaked",user->nick);
+	    }
+	}
     }
     else if (user)
     {
 	/* create a db entry for it now.  we already checked for permission
 	   above so don't do it here */
+	ASSERT (user->level == LEVEL_USER);
 	db = CALLOC (1, sizeof (USERDB));
 	if (db)
 	{

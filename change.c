@@ -385,6 +385,7 @@ HANDLER (unnuke)
 HANDLER (cloak)
 {
     USER *sender;
+    USERDB *db;
 
     (void) len;
     ASSERT (validate_connection (con));
@@ -396,10 +397,21 @@ HANDLER (cloak)
 	return;
     }
     sender->cloaked = !sender->cloaked;	/* toggle cloak state */
+    /* save cloak state in the user db */
+    db = hash_lookup (User_Db, sender->nick);
+    if (!db)
+    {
+	log ("cloak(): FATAL ERROR, moderator not registered???");
+	return;
+    }
+    if (sender->cloaked)
+	db->flags |= ON_CLOAKED;
+    else
+	db->flags &= ~ON_CLOAKED;
     pass_message_args (con, tag, ":%s", sender->nick);
-    notify_mods(CHANGELOG_MODE,"%s has %scloaked", sender->nick,
-		sender->cloaked ? "" : "de");
+    notify_mods (CHANGELOG_MODE, "%s has %scloaked", sender->nick,
+		 sender->cloaked ? "" : "de");
     if (ISUSER (con))
-	send_cmd(con,MSG_SERVER_NOSUCH,"You are %s cloaked",
-		 sender->cloaked ? "now" : "no longer");
+	send_cmd (con, MSG_SERVER_NOSUCH, "You are %s cloaked",
+		  sender->cloaked ? "now" : "no longer");
 }

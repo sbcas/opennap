@@ -59,7 +59,7 @@ HANDLER (unmuzzle)
     db=hash_lookup(User_Db,user->nick);
     ASSERT (db != 0);	/* should have been created when muzzled */
     if(db)
-	db->muzzled = 0;
+	db->flags &= ~ON_MUZZLED;
 
     /* relay to peer servers */
     pass_message_args (con, tag, ":%s %s \"%s\"",

@@ -109,7 +109,7 @@ userdb_init (void)
 	    u->created = atol (av[4]);
 	    u->lastSeen = atol (av[5]);
 	    if (ac > 6)
-		u->muzzled = atoi (av[6]);
+		u->flags = atoi (av[6]);
 	    hash_add (User_Db, u->nick, u);
 	}
 	else
@@ -152,7 +152,7 @@ dump_userdb (USERDB * db, FILE * fp)
     fputc (' ', fp);
     fputs (Levels[db->level], fp);
     fputc (' ', fp);
-    fprintf (fp, "%d %d %d", (int) db->created, (int) db->lastSeen, db->muzzled);
+    fprintf (fp, "%d %d %d", (int) db->created, (int) db->lastSeen, db->flags);
 #ifdef WIN32
     fputs ("\r\n", fp);
 #else

@@ -120,7 +120,7 @@ HANDLER (muzzle)
 	    OUTOFMEMORY ("muzzle");
     }
     if (db)			/* could be NULL if we ran out of memory */
-	db->muzzled = 1;
+	db->flags |= ON_MUZZLED;
 
     /* notify the user they have been muzzled */
     if (user->local)

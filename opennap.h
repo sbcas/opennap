@@ -275,13 +275,17 @@ typedef struct _ban
 }
 BAN;
 
+/* bitmask for use in USERDB .flags member */
+#define ON_MUZZLED 0x0001
+#define ON_CLOAKED 0x0002
+
 typedef struct
 {
     char *nick;
     char *password;
     char *email;
     unsigned short level;
-    short muzzled;		/* set if user was muzzled when they quit */
+    unsigned short flags;
     time_t created;
     time_t lastSeen;
 }

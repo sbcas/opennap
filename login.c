@@ -355,7 +355,7 @@ HANDLER (login)
 	    }
 	}
 
-	if (db->muzzled)
+	if (db->flags & ON_MUZZLED)
 	{
 	    /* user was muzzled when they quit, remuzzle */
 	    log("login(): user %s was muzzled upon quit", user->nick);
@@ -372,6 +372,14 @@ HANDLER (login)
 			Server_Name);
 	    notify_mods(MUZZLELOG_MODE,"%s has muzzled %s: quit while muzzled",
 		    Server_Name, user->nick);
+	}
+
+	if (ISUSER (con) && (db->flags & ON_CLOAKED))
+	{
+	    char tmp = 0;
+
+	    /* restore cloak state by faking a cloak() call */
+	    cloak (con, MSG_CLIENT_CLOAK, 0, &tmp);
 	}
     }
 
