@@ -434,9 +434,11 @@ handle_connection (CONNECTION * con)
 	/* check if the entire packet body has arrived */
 	if (con->recvbuf->consumed + 4 + len > con->recvbuf->datasize)
 	    break;
+#if 0
 	/* add this data to the random pool */
 	add_random_bytes (con->recvbuf->data + con->recvbuf->consumed,
 	    4 + len);
+#endif
 	/* require that the client register before doing anything else */
 	if (con->class == CLASS_UNKNOWN &&
 	    (tag != MSG_CLIENT_LOGIN && tag != MSG_CLIENT_LOGIN_REGISTER &&

@@ -60,7 +60,7 @@ int Connection_Hard_Limit;
 int Max_Data_Size;
 int Max_Rss_Size;
 #endif
-time_t Current_Time;
+time_t Current_Time = 0;
 int Max_Nick_Length;
 char *Config_Dir;
 
@@ -396,9 +396,6 @@ main (int argc, char **argv)
 	    exit (1);
 	}
     }
-
-    /* initialize the random number generator */
-    init_random ();
 
     /* schedule periodic events */
     add_timer (Collect_Interval, -1, (timer_cb_t) fdb_garbage_collect,

@@ -12,6 +12,9 @@
 #include "opennap.h"
 #include "debug.h"
 
+/* needed for the random number generation */
+time_t Current_Time = 0;
+
 static void
 usage (void)
 {

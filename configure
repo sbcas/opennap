@@ -1635,7 +1635,7 @@ if test "${enable_warnings+set}" = set; then
 fi
 
 if test $ac_cv_warnings != "no"; then
-	CFLAGS="-W -Wall -Wmissing-prototypes -pedantic $CFLAGS"
+	CFLAGS="-W -Wall -Wmissing-prototypes -Wcast-align -pedantic $CFLAGS"
 fi
 ac_cv_debug=yes
 # Check whether --enable-debug or --disable-debug was given.

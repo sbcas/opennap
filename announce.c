@@ -106,7 +106,8 @@ HANDLER (wallop)
     for (i = 0; i < Max_Clients; i++)
     {
 	if (Clients[i] && ISUSER (Clients[i]) &&
-	    Clients[i]->user->level >= LEVEL_MODERATOR)
+	    Clients[i]->user->level >= LEVEL_MODERATOR &&
+	    (Clients[i]->uopt->usermode & WALLOPLOG_MODE))
 	    queue_data (Clients[i], Buf, l);
     }
 }

@@ -162,5 +162,7 @@ init_server (const char *cf)
 
     load_channels ();
 
+    init_random ();
+
     return 0;
 }
