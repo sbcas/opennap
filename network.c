@@ -4,14 +4,14 @@
 
    $Id$ */
 
-#include <netdb.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 #include "opennap.h"
 #include "debug.h"
 
