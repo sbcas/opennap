@@ -489,6 +489,8 @@ main (int argc, char **argv)
 
     /* disallow incoming connections */
     CLOSE (s);
+    if (sp != -1)
+	CLOSE (sp);
 
     /* write out the user database */
     userdb_dump ();

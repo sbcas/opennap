@@ -65,12 +65,11 @@ HANDLER (browse)
 	    data.count = 0;
 	    data.user = user;
 	    data.sender = sender;
-	    if (pkt)
-		data.max = atoi (pkt);
+	    data.max = pkt ? atoi (pkt) : 0;
 	    if (Max_Browse_Result > 0 && data.max > Max_Browse_Result)
 		data.max = Max_Browse_Result;
 	    hash_foreach (user->files, (hash_callback_t) browse_callback,
-			  &data);
+		    &data);
 	}
 
 	/* send end of browse list message */
