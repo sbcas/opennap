@@ -75,7 +75,11 @@ remove_connection (CONNECTION * con)
 #if HAVE_LIBADNS
     /* if we were in the process of resolving the ip, abort lookup */
     if(!con->resolved)
+    {
+	ASSERT(con->dns!=0);
+	if(con->dns)
 	adns_cancel(con->dns);
+    }
 #endif
 
     /* if this connection had any pending searches, cancel them */
