@@ -307,7 +307,7 @@ HANDLER (nuke)
 	return;
     }
     nick=next_arg(&pkt);
-    if (!nick || !pkt)
+    if (!nick)
     {
 	log ("nuke(): too few parameters");
 	unparsable(con);

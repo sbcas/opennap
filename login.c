@@ -590,6 +590,7 @@ HANDLER (register_user)
 		   Server_Name, av[0]);
 	return;
     }
+    /* pass the plain text password here */
     pass_message_args (con, tag, ":%s %s %s %s %s",
 		       sender->nick, av[0], av[1], av[2],
 		       ac > 3 ? av[3] : "");
