@@ -1,4 +1,4 @@
-bin_PROGRAMS=opennap metaserver mkpass
+bin_PROGRAMS=opennap metaserver mkpass setup
 opennap_SOURCES=opennap.h main.c add_file.c search.c \
 	motd.c hash.h hash.c privmsg.c browse.c \
 	debug.c debug.h login.c whois.c free_user.c \
@@ -12,6 +12,7 @@ opennap_SOURCES=opennap.h main.c add_file.c search.c \
 	list.h userdb.c serverlib.c kick.c usermode.c channel.c
 mkpass_SOURCES=mkpass.c md5.c debug.c util.c
 metaserver_SOURCES=metaserver.c
+setup_SOURCES=setup.c
 EXTRA_DIST=sample.conf sample.motd napster.txt .indent.pro \
 	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp \
 	opennap.opt sample.users sample.servers opennap.spec \
