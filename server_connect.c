@@ -19,9 +19,6 @@ try_connect (char *host, int port)
     CONNECTION *cli;
     unsigned long ip;
 
-    log ("try_connect(): attempting to establish server connection to %s:%d",
-	    host, port);
-
     /* attempt a connection.  we do this nonblocking so that the server
        doesn't halt if it takes a long time to connect */
     f = make_tcp_connection (host, port, &ip);
@@ -52,7 +49,8 @@ complete_connect (CONNECTION *con)
 
     /* send the login request */
     ASSERT (Server_Name != 0);
-    send_cmd (con, MSG_SERVER_LOGIN, "%s %s", Server_Name, con->nonce);
+    send_cmd (con, MSG_SERVER_LOGIN, "%s %s %d", Server_Name, con->nonce,
+	Compression_Level);
 
     /* we handle the response to the login request in the main event loop so
        that we don't block while waiting for th reply.  if the server does
@@ -70,6 +68,8 @@ HANDLER (server_connect)
     char *fields[3];
     int argc;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
 	return;
@@ -77,7 +77,6 @@ HANDLER (server_connect)
 
     if (user->level < LEVEL_ADMIN)
     {
-	log ("server_connect(): user %s tried to connect to %s", pkt);
 	if (con->class == CLASS_USER)
 	    permission_denied (con);
 	return; /* no privilege */
@@ -114,6 +113,8 @@ HANDLER (server_disconnect)
     int i;
     CONNECTION *serv;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
 	return;
@@ -150,6 +151,8 @@ HANDLER (kill_server)
     USER *user;
     char *reason;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
 	return;
@@ -179,6 +182,8 @@ HANDLER (remove_server)
 {
     char *reason;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     /* TODO: should we be able to remove any server, or just from the local
        server? */
@@ -212,6 +217,8 @@ HANDLER (server_version)
 {
     USER *user;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
 	return;
@@ -241,6 +248,8 @@ HANDLER (server_version)
 /* 404 <message> */
 HANDLER (server_error)
 {
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("server_error");
     notify_mods ("server %s sent error message: %s", con->host, pkt);

@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <string.h>
 #include <unistd.h>
@@ -15,6 +17,8 @@ HANDLER (part)
     CHANNEL *chan = 0;
     USER *user;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &user) != 0)
@@ -36,6 +40,9 @@ HANDLER (part)
     {
 	/* user is not on this channel */
 	log ("part(): user %s is not on channel %s", user->nick, pkt);
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		    "you are not a member of channel %s", pkt);
 	return;
     }
 

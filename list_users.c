@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include "opennap.h"
 #include "debug.h"
@@ -11,7 +13,9 @@ HANDLER (list_users)
     CHANNEL *chan;
     int i;
 
-    ASSERT (VALID (con));
+    (void) tag;
+    (void) len;
+    ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("list_users");
     chan = hash_lookup (Channels, pkt);
     if (!chan)

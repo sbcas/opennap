@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License */
+   GNU Public License.  See the file COPYING for details.
+ 
+   $Id$ */
 
 #include <stdio.h>
 #include <time.h>
@@ -19,6 +21,8 @@ HANDLER (whois)
     char *chanlist;
     time_t online;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("whois");
     user = hash_lookup (Users, pkt);

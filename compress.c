@@ -4,6 +4,8 @@
 
    $Id$ */
 
+/* NOTE: this file is deprecated and left for historical purposes */
+
 #include <zlib.h>
 #include "opennap.h"
 #include "debug.h"

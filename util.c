@@ -14,9 +14,6 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/time.h>
-#ifdef HAVE_LIBZ
-#include <zlib.h>
-#endif
 #include "global.h"
 #include "md5.h"
 #include "opennap.h"
@@ -213,19 +210,6 @@ pop_user (CONNECTION *con, char **pkt, USER **user)
 
 }
 
-void
-queue_data (CONNECTION *con, char *s, int ssize)
-{
-    ASSERT (validate_connection (con));
-    if (con->sendbuflen + ssize > con->sendbufmax)
-    {
-	con->sendbufmax = con->sendbuflen + ssize;
-	con->sendbuf = REALLOC (con->sendbuf, con->sendbufmax);
-    }
-    memcpy (con->sendbuf + con->sendbuflen, s, ssize);
-    con->sendbuflen += ssize;
-}
-
 /* how much uncompressed data we can fit in one packet */
 #if 1
 #define MAX_UNCOMPRESSED_SIZE	131070
@@ -235,6 +219,7 @@ queue_data (CONNECTION *con, char *s, int ssize)
 #define MAX_UNCOMPRESSED_SIZE	2000
 #endif
 
+#if 0
 static int
 calculate_chunk_length (CONNECTION *con)
 {
@@ -395,7 +380,7 @@ send_queued_data (CONNECTION *con)
     l = select (con->fd + 1, 0, &wfd, 0, &t);
     if (l == -1)
     {
-	log ("send_queued_data(): select: %s (errno %d).", strerror (errno),
+	log ("send_queued_data: select: %s (errno %d).", strerror (errno),
 	    errno);
 	con->sendbuflen = 0;
 	remove_connection (con);
@@ -407,7 +392,7 @@ send_queued_data (CONNECTION *con)
 	l = write (con->fd, con->sendbuf, con->sendbuflen);
 	if (l == -1)
 	{
-	    log ("flush_queued_data(): write: %s (errno %d).", strerror (errno), errno);
+	    log ("send_queued_data: write: %s (errno %d).", strerror (errno), errno);
 	    con->sendbuflen = 0; /* avoid an infinite loop */
 	    remove_connection (con);
 	    return;
@@ -424,7 +409,11 @@ send_queued_data (CONNECTION *con)
 	/* TODO: this should probably be implemented as a circular buffer to
 	   avoid having to move the memory after every write call */
 	if (con->sendbuflen)
+	{
+	    log ("send_queued_data: %d bytes remain in the queue for %s",
+		    con->sendbuflen, con->host);
 	    memmove (con->sendbuf, con->sendbuf + l, con->sendbuflen);
+	}
     }
 
     /* if there is more than 2kbytes left to send, close the connection
@@ -438,6 +427,7 @@ send_queued_data (CONNECTION *con)
 	remove_connection (con);
     }
 }
+#endif /* 0 */
 
 static char hex[] = "0123456789ABCDEF";
 
@@ -593,12 +583,10 @@ validate_connection (CONNECTION *con)
     ASSERT_RETURN_IF_FAIL (con->magic == MAGIC_CONNECTION, 0);
     ASSERT_RETURN_IF_FAIL ((con->class == CLASS_USER) ^ (con->user == 0), 0);
     ASSERT_RETURN_IF_FAIL (VALID (con->host), 0);
-    ASSERT_RETURN_IF_FAIL ((con->recvdata != 0) ^ (con->recvdatamax == 0), 0);
-    ASSERT_RETURN_IF_FAIL (con->recvdatamax == 0 || VALID_LEN (con->recvdata, con->recvdatamax), 0);
-    ASSERT_RETURN_IF_FAIL (con->recvbytes <= con->recvdatamax + 4, 0);
-    ASSERT_RETURN_IF_FAIL ((con->sendbuf != 0) ^ (con->sendbufmax == 0), 0);
-    ASSERT_RETURN_IF_FAIL (con->sendbufmax == 0 || VALID_LEN (con->sendbuf, con->sendbufmax), 0);
-    ASSERT_RETURN_IF_FAIL (con->sendbuflen <= con->sendbufmax, 0);
+    if (con->sendbuf)
+	ASSERT_RETURN_IF_FAIL (buffer_validate (con->sendbuf), 0);
+    if (con->recvbuf)
+	ASSERT_RETURN_IF_FAIL (buffer_validate (con->recvbuf), 0);
     ASSERT_RETURN_IF_FAIL (con->hotlistsize == 0 || VALID_LEN (con->hotlist, sizeof (HOTLIST *) * con->hotlistsize), 0);
     return 1;
 }
@@ -681,4 +669,16 @@ new_connection (void)
     c->magic = MAGIC_CONNECTION;
 #endif
     return c;
+}
+
+void
+log (const char *fmt, ...)
+{
+    va_list ap;
+
+    printf ("%s: ", PACKAGE);
+    va_start (ap, fmt);
+    vprintf (fmt, ap);
+    va_end (ap);
+    fputc ('\n', stdout);
 }

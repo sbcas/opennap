@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include "opennap.h"
 #include "debug.h"
@@ -19,9 +21,11 @@ channel_info (void *elem, void *data)
 /* send a list of channels we know about to the user */
 HANDLER (list_channels)
 {
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     (void) pkt; /* unused */
+    (void) tag;
+    (void) len;
 
     CHECK_USER_CLASS ("list_channels");
     hash_foreach (Channels, channel_info, con);

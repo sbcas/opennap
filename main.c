@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <stdio.h>
-#include <stdarg.h>
 #include <errno.h>
 #include <ctype.h>
 #include <netdb.h>
@@ -42,7 +41,6 @@ int Client_Queue_Length;
 int Max_Search_Results;
 int Compression_Level;
 int Compression_Threshold;
-int Max_Compress;
 int Max_Shared;
 
 /* bans on ip addresses / users */
@@ -81,21 +79,11 @@ sighandler (int sig)
     SigCaught = 1;
 }
 
-void
-log (const char *fmt, ...)
-{
-    va_list ap;
-
-    printf ("%s: ", PACKAGE);
-    va_start (ap, fmt);
-    vprintf (fmt, ap);
-    va_end (ap);
-    fputc ('\n', stdout);
-}
-
 HANDLER (server_stats)
 {
     (void) pkt;
+    (void) tag;
+    (void) len;
     send_cmd (con, MSG_SERVER_STATS, "%d %d %d", Users->dbsize, Num_Files,
 	      Num_Gigs / (1024 * 1024));
 }
@@ -103,7 +91,7 @@ HANDLER (server_stats)
 typedef struct
 {
     unsigned long message;
-    void (*handler) (CONNECTION *, char *);
+    HANDLER ((*handler));
 }
 HANDLER;
 
@@ -149,7 +137,7 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_ANNOUNCE, announce }, /* 628 */
     { MSG_CLIENT_SETUSERLEVEL, level },
     { MSG_CLIENT_PING, ping }, /* 751 */
-    { MSG_CLIENT_PONG, pong }, /* 752 */
+    { MSG_CLIENT_PONG, ping }, /* 752 */
     { MSG_CLIENT_SERVER_RECONFIG, server_reconfig }, /* 800 */
     { MSG_CLIENT_SERVER_VERSION, server_version }, /* 801 */
     { MSG_CLIENT_SERVER_CONFIG, server_config }, /* 810 */
@@ -165,18 +153,30 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_DISCONNECT, server_disconnect }, /* 10101 */
     { MSG_CLIENT_KILL_SERVER, kill_server }, /* 10110 */
     { MSG_CLIENT_REMOVE_SERVER, remove_server }, /* 10111 */
-#if HAVE_LIBZ
+#if 0
     { MSG_SERVER_COMPRESSED_DATA, compressed_data }, /* 10200 */
-#endif /* HAVE_LIBZ */
+#endif
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
 
-void
-dispatch_command (CONNECTION *con, unsigned short tag, unsigned short len)
+/* this is not a real handler, but takes the same arguments as one */
+HANDLER (dispatch_command)
 {
     int l;
+    unsigned char byte;
 
     ASSERT (validate_connection (con));
+
+    /* HACK ALERT
+       the handler routines all assume that the `pkt' argument is nul (\0)
+       terminated, so we have to replace the byte after the last byte in
+       this packet with a \0 to make sure we dont read overflow in the
+       handlers.  the buffer_read() function should always allocate 1 byte
+       more than necessary for this purpose */
+    byte = *(pkt + len);
+    ASSERT (byte != END_BYTE); /* make sure we didn't run off the end of the
+				  buffer */
+    *(pkt + len) = 0;
 
     for (l = 0; l < Protocol_Size; l++)
     {
@@ -184,130 +184,89 @@ dispatch_command (CONNECTION *con, unsigned short tag, unsigned short len)
 	{
 	    ASSERT (Protocol[l].handler != 0);
 	    /* note that we pass only the data part of the packet */
-	    Protocol[l].handler (con, con->recvdata);
-	    return;
+	    Protocol[l].handler (con, tag, len, pkt);
+	    break;
 	}
     }
 
-    log ("dispatch_command(): unknown message: tag=%hu, length=%hu, data=%s",
-	tag, len, len ? con->recvdata : "(empty)");
+    if (l == Protocol_Size)
+    {
+	log ("dispatch_command(): unknown message: tag=%hu, length=%hu, data=%s",
+	    tag, len,
+	    len ? (char *) con->recvbuf->data + con->recvbuf->consumed : "(empty)");
 
-    send_cmd (con, MSG_SERVER_NOSUCH, "unknown command code %hu", tag);
+	send_cmd (con, MSG_SERVER_NOSUCH, "unknown command code %hu", tag);
+    }
+
+    /* restore the byte we overwrite at the beginning of this function */
+    *(pkt + len) = byte;
 }
 
 static void
 handle_connection (CONNECTION *con)
 {
-    int l;
     unsigned short len, tag;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
-    /* read the packet header */
-    /* we loop here because read() will return less than we ask for if the
-       data arrives in separate packets */
-    while (con->recvbytes < 4)
+#if HAVE_LIBZ
+    /* decompress server input stream */
+    if (con->class == CLASS_SERVER)
     {
-	l = read (con->fd, con->recvhdr + con->recvbytes, 4 - con->recvbytes);
-	if (l == -1)
-	{
-	    if (errno == EAGAIN)
-	    {
-		/* no data waiting, wail until next call to try and read
-		   the rest of the packet header */
-#if 0
-		log ("handle_connection(): read %d bytes of header, waiting...",
-			con->recvbytes);
-#endif
-		return;
-	    }
-	    log ("handle_connection(): %s (errno %d)", strerror (errno), errno);
-	    remove_connection (con);
-	    return;
-	}
-	else if (l == 0)
-	{
-	    /* the only circumstance under which we get returned
-	       less than we asked for is EOF from the client */
-	    log ("main(): EOF from %s", con->host);
-	    remove_connection (con);
-	    return;
-	}
-	con->recvbytes += l;
+	BUFFER *b;
+	
+	ASSERT (con->zip != 0);
+	if (con->zip->inbuf && (b = buffer_uncompress (con->zip->zin, &con->zip->inbuf)))
+	    con->recvbuf = buffer_append (con->recvbuf, b);
     }
+#endif /* HAVE_LIBZ */
 
-    /* read the length and tag shorts from the packet */
-    memcpy (&len, con->recvhdr, 2);
-    memcpy (&tag, con->recvhdr + 2, 2);
+    /* check if there is enough data in the buffer to read the packet header */
+    if (buffer_size (con->recvbuf) < 4)
+    {
+	/* we set this flag here to avoid busy waiting in the main select()
+	   loop.  we can't process any more input until we get some more
+	   data */
+	con->incomplete = 1;
+	return;
+    }
+    /* make sure all 4 bytes of the header are in the first block */
+    buffer_group (con->recvbuf, 4);
+    memcpy (&len, con->recvbuf->data + con->recvbuf->consumed, 2);
+    memcpy (&tag, con->recvbuf->data + con->recvbuf->consumed + 2, 2);
 
-#ifndef HAVE_DEV_RANDOM
-    add_random_bytes (con->recvhdr, 4);
-#endif /* !HAVE_DEV_RANDOM */
-
-#if WORDS_BIGENDIAN
-    /* need to convert to big endian */
+    /* need to convert to little endian */
     len = BSWAP16 (len);
     tag = BSWAP16 (tag);
-#endif /* WORDS BIGENDIAN */
 
-    /* make sure we don't buffer overflow */
-    if (len > con->recvdatamax)
+    /* see if all of the packet body is present */
+    if (buffer_size (con->recvbuf) < 4 + len)
     {
-	con->recvdatamax = len;
-	con->recvdata = REALLOC (con->recvdata, con->recvdatamax + 1);
+	/* nope, wait until more data arrives */
+	con->incomplete = 1;
+	return;
     }
 
-    /* read the data portion of the message */
-    /* we loop here because read() will return less than we ask for if the
-       data arrives in separate packets */
-    while (con->recvbytes - 4 < len)
-    {
-	l = read (con->fd, con->recvdata + con->recvbytes - 4,
-		len - con->recvbytes + 4);
-	if (l == -1)
-	{
-	    if (errno == EAGAIN)
-	    {
-		/* no data pending, wait until next round for more data to
-		   come in */
-#if 0
-		log ("handle_connection(): read %d of %d bytes from packet, waiting...",
-			con->recvbytes - 4, len);
-#endif
-		return;
-	    }
-	    log ("handle_connection(): read error %d (%s) from %s", errno,
-		 strerror (errno), con->host);
-	    remove_connection (con);
-	    return;
-	}
-	else if (l == 0)
-	{
-	    /* the only circumstance under which we get returned less
-	       than we asked for is EOF from the client */
-	    log ("handle_connection(): EOF from %s", con->host);
-	    remove_connection (con);
-	    return;
-	}
+    con->incomplete = 0; /* found all the data we wanted */
+
+    /* the packet may be fragmented so make sure all of the bytes for this
+       packet end up in the first buffer so its easy to handle */
+    buffer_group (con->recvbuf, 4 + len);
 
 #ifndef HAVE_DEV_RANDOM
-	add_random_bytes (con->recvdata + con->recvbytes - 4, l);
+    add_random_bytes (recvbuf->data + recvbuf->consumed, 4 + len);
 #endif /* !HAVE_DEV_RANDOM */
-
-	con->recvbytes += l;
-    }
-    ASSERT (con->recvbytes == len + 4);
 
     /* require that the client register before doing anything else */
     if (con->class == CLASS_UNKNOWN &&
 	(tag != MSG_CLIENT_LOGIN && tag != MSG_CLIENT_LOGIN_REGISTER &&
 	 tag != MSG_CLIENT_REGISTER && tag != MSG_SERVER_LOGIN &&
-	 tag != MSG_SERVER_LOGIN_ACK))
+	 tag != MSG_SERVER_LOGIN_ACK && tag != MSG_SERVER_ERROR))
     {
 	log ("handle_connection(): %s is not registered, closing connection",
 	     con->host);
 	remove_connection (con);
-	goto done;
+	return;
     }
 
     /* if we received this message from a peer server, pass it
@@ -316,17 +275,13 @@ handle_connection (CONNECTION *con)
        with, and an error message from a peer server */
     if (con->class == CLASS_SERVER && tag != MSG_SERVER_LOGIN_ACK &&
 	    tag != MSG_SERVER_NOSUCH && Num_Servers)
-	pass_message (con, con->recvdata, len);
+	pass_message (con, con->recvbuf->data + con->recvbuf->consumed, 4 + len);
 
-    ASSERT (con->recvdata != 0);
-    con->recvdata[len] = 0;		/* terminate the string */
+    dispatch_command (con, tag, len,
+	con->recvbuf->data + con->recvbuf->consumed + 4);
 
-    dispatch_command (con, tag, len);
-
-done:
-
-    /* reset to 0 since we got all of the data we desired */
-    con->recvbytes = 0;
+    /* mark that we read this data and it is ok to free it */
+    con->recvbuf = buffer_consume (con->recvbuf, len + 4);
 }
 
 static void
@@ -352,8 +307,10 @@ update_stats (void)
 {
     int i, l;
 
-    log ("update_stats(): current library size is %d kilobytes (%d gigabytes)",
-	    Num_Gigs, Num_Gigs / (1024 * 1024));
+    log ("update_stats(): library is %d kilobytes (%d gigabytes), %d files, %d users",
+	    Num_Gigs, Num_Gigs / (1024 * 1024), Num_Files, Users->dbsize);
+    log ("update_stats: %d local clients, %d linked servers",
+	Num_Clients - Num_Servers, Num_Servers);
 
     /* since we send the same data to many people, optimize by forming
        the message once then writing it out */
@@ -416,6 +373,7 @@ main (int argc, char **argv)
     int i;			/* generic counter */
     int n;			/* number of ready sockets */
     int f;			/* new socket for incoming connection */
+    int pending = 0;
     int port = 0, maxfd;
     fd_set set, wset;
     struct sigaction sa;
@@ -540,23 +498,36 @@ main (int argc, char **argv)
 		}
 		n++;
 
-		if (Clients[i]->flags & FLAG_CONNECTING)
-		{
+		/* check sockets for writing */
+		if ((Clients[i]->flags & FLAG_CONNECTING) ||
+		    (Clients[i]->sendbuf ||
+		     (Clients[i]->zip && Clients[i]->zip->outbuf)))
 		    FD_SET (Clients[i]->fd, &wset);
-		}
-		else
-		{
-		    FD_SET (Clients[i]->fd, &set);
-		}
+
+		/* always check for incoming data */
+		FD_SET (Clients[i]->fd, &set);
+
 		if (Clients[i]->fd > maxfd)
 		    maxfd = Clients[i]->fd;
+
+		/* note if their is unprocessed data in the input
+		   buffers so we dont block on select().  the incomplete
+		   flag is checked here to avoid busy waiting when we really
+		   do need more data from the client connection */
+		if ((Clients[i]->incomplete == 0 && Clients[i]->recvbuf) ||
+			(Clients[i]->zip && Clients[i]->zip->inbuf))
+		    pending++;
 	    }
 	}
 
 	Num_Clients = n; /* actual number of clients */
 
-	t.tv_sec = Stat_Click;
+	/* if there is pending data in client queues, don't block on the
+	   select call */
+	t.tv_sec = pending ? 0 : Stat_Click;
 	t.tv_usec = 0;
+
+	pending = 0; /* reset */
 
 	n = select (maxfd + 1, &set, &wset, NULL, &t);
 
@@ -612,7 +583,7 @@ main (int argc, char **argv)
 	    n--;
 	}
 
-	/* handle client requests */
+	/* read incoming data into buffers, but don't process it */
 	for (i = 0; !SigCaught && n > 0 && i < Num_Clients; i++)
 	{
 	    /* client connections may disappear during this loop, so make
@@ -630,8 +601,27 @@ main (int argc, char **argv)
 		else if (FD_ISSET (Clients[i]->fd, &set))
 		{
 		    n--;	/* keep track of how many we've handled */
-		    handle_connection (Clients[i]);
+		    f = buffer_read (Clients[i]->fd,
+			(Clients[i]->zip != 0) ? &Clients[i]->zip->inbuf : &Clients[i]->recvbuf);
+		    if (f <= 0)
+		    {
+			if (f == 0)
+			    log ("main: EOF from %s", Clients[i]->host);
+			remove_connection (Clients[i]);
+		    }
 		}
+	    }
+	}
+
+	/* handle client requests */
+	for (i = 0; !SigCaught && i < Num_Clients; i++)
+	{
+	    if (Clients[i])
+	    {
+		/* if there is input pending, handle it now */
+		if (Clients[i]->recvbuf ||
+		    (Clients[i]->zip && Clients[i]->zip->inbuf))
+		    handle_connection (Clients[i]);
 	    }
 	}
 
@@ -643,12 +633,26 @@ main (int argc, char **argv)
 	}
 
 	/* write out data for our clients now */
-	for (i = 0; i < Num_Clients; i++)
+	for (i = 0; !SigCaught && i < Num_Clients; i++)
 	{
-	    if (Clients[i] && Clients[i]->sendbuflen)
+	    if (Clients[i])
 	    {
-		/* we have data to send */
-		send_queued_data (Clients[i]);
+		if (Clients[i]->zip)
+		{
+		    /* server - strategy is call send_queued_data() if there
+		       there is no compressed data and some queued data
+		       exists, or if the socket is writable and there is some
+		       compressed output */
+		    if ((Clients[i]->sendbuf && Clients[i]->zip->outbuf == 0) ||
+			(Clients[i]->zip->outbuf && FD_ISSET (Clients[i]->fd, &wset)))
+			send_queued_data (Clients[i]);
+		}
+		else
+		{
+		    /* client */
+		    if (Clients[i]->sendbuf && FD_ISSET (Clients[i]->fd, &wset))
+			send_queued_data (Clients[i]);
+		}
 	    }
 	}
     }

@@ -1,11 +1,18 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #ifndef debug_h
 #define debug_h
 
 #if DEBUG
+
+#define ALLOC_BYTE 0xAA		/* allocated memory is filled with this value */
+#define END_BYTE 0xEE		/* written at the end of each block to detect
+				   buffer overrun */
+#define FREE_BYTE 0xFF		/* memory is filled with this prior to free */
 
 #include <stdio.h>
 #define ASSERT(x) {if(!(x)){printf("assertion failed in %s, line %d: %s\n",__FILE__,__LINE__,#x);}}

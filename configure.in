@@ -1,6 +1,6 @@
 dnl $Id$
 AC_INIT(opennap.h)
-AM_INIT_AUTOMAKE(opennap,0.10)
+AM_INIT_AUTOMAKE(opennap,0.11)
 AM_PROG_CC_STDC
 AC_C_BIGENDIAN
 
@@ -21,7 +21,7 @@ AC_CHECK_FILE(/dev/random, [AC_DEFINE(HAVE_DEV_RANDOM)])
 AC_CHECK_LIB(z, compress2, [AC_DEFINE(HAVE_LIBZ)
 	LIBS="$LIBS -lz"
 	COMPRESSDOTO='compress.o'], [COMPRESSDOTO=''])
-AC_SUBST(COMPRESSDOTO)
+dnl AC_SUBST(COMPRESSDOTO)
 
 ac_cv_warnings=yes
 AC_ARG_ENABLE(warnings, [  --disable-warnings	Turn of GCC compiler warnings ],

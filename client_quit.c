@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include "opennap.h"
 #include "debug.h"
@@ -11,7 +13,9 @@ HANDLER (client_quit)
 {
     USER *user;
 
-    ASSERT (VALID (con));
+    (void) tag;
+    (void) len;
+    ASSERT (validate_connection (con));
     if (con->class != CLASS_SERVER)
     {
 	/* we should only get this message from other servers */
@@ -24,7 +28,7 @@ HANDLER (client_quit)
 	log ("client_quit(): can't find user %s", pkt);
 	return;
     }
-    ASSERT (VALID (user));
+    ASSERT (validate_user (user));
     ASSERT (user->con == 0);	/* we should never get this message for a
 				   local user */
     hash_remove (Users, user->nick);

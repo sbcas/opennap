@@ -21,14 +21,16 @@ lookup_ip (const char *host)
     struct hostent *he;
     unsigned long ip;
 
+    log ("lookup_ip: resolving %s", host);
     he = gethostbyname(host);
     if (!he)
     {
-	log ("lookup_ip(): can't find ip for host %s", host);
+	log ("lookup_ip: can't find ip for host %s", host);
 	return 0;
     }
     memcpy (&ip, &he->h_addr[0], he->h_length);
     endhostent ();
+    log ("lookup_ip: %s is %s", host, my_ntoa (ip));
     return ip;
 }
 
@@ -90,17 +92,20 @@ make_tcp_connection (const char *host, int port, unsigned long *ip)
 	return -1;
     /* turn on TCP/IP keepalive messages */
     set_keepalive (f, 1);
-    log ("make_tcp_connection(): connecting to %s:%hu...",
+    log ("make_tcp_connection: connecting to %s:%hu",
 	    inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
     if (connect (f, (struct sockaddr*) &sin, sizeof (sin)) < 0)
     {
 	if (errno != EINPROGRESS)
 	{
-	    log("make_tcp_connection(): connect: %s", strerror (errno));
+	    log("make_tcp_connection: connect: %s", strerror (errno));
 	    close (f);
 	    return -1;
 	}
+	log ("make_tcp_connection: connection to %s in progress", host);
     }
+    else
+	log ("make_tcp_connection: connection established to %s", host);
     return f;
 }
 
@@ -114,13 +119,13 @@ check_connect_status (int f)
 
     if (getsockopt (f, SOL_SOCKET, SO_ERROR, &err, &len) != 0)
     {
-	log ("check_connect_status(): getsockopt: %s (errno %d).",
+	log ("check_connect_status: getsockopt: %s (errno %d).",
 		strerror (errno), errno);
 	return -1;
     }
     if (err != 0)
     {
-	log ("check_connect_status(): connect: %s (errno %d).",
+	log ("check_connect_status: connect: %s (errno %d).",
 		strerror (err), err);
 	return -1;
     }

@@ -62,6 +62,8 @@ HANDLER (search)
     USER *user;
     char quoted[128];
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     CHECK_USER_CLASS ("search");

@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <stdio.h>
 #include <unistd.h>
@@ -15,6 +17,8 @@ HANDLER (privmsg)
     char *ptr;
     USER *sender, *user /* recip */;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &sender) != 0)

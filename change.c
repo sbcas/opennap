@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <stdlib.h>
 #include "opennap.h"
@@ -13,6 +15,8 @@ HANDLER (change_data_port)
     int port;
     USER *user;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
 	return;
@@ -41,7 +45,9 @@ HANDLER (change_speed)
     USER *user;
     int spd;
 
-    ASSERT (VALID (con));
+    (void) tag;
+    (void) len;
+    ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
 	return;
     spd = atoi (pkt);

@@ -22,6 +22,8 @@ HANDLER (login)
     HOTLIST *hotlist;
     int i, numfields, speed;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     numfields = split_line (field, sizeof (field) / sizeof (char *), pkt);
@@ -205,7 +207,7 @@ HANDLER (login)
 	   so fake it the way that napster does */
 	send_cmd (con, MSG_SERVER_EMAIL, "anon@%s", Server_Name);
 	show_motd (con);
-	server_stats (con, NULL);
+	server_stats (con, 0, 0, NULL);
     }
     else
     {
@@ -237,6 +239,9 @@ HANDLER (user_ip)
 {
     char *field[4];
     USER *user;
+
+    (void) tag;
+    (void) len;
 
     ASSERT (VALID (con));
     CHECK_SERVER_CLASS ("user_ip");

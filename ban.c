@@ -37,6 +37,9 @@ HANDLER (ban)
     char *ban;
     BAN *b;
 
+    (void) tag;
+    (void) len;
+
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender) != 0)
 	return;
@@ -83,6 +86,9 @@ HANDLER (unban)
     USER *user;
     int i;
 
+    (void) tag;
+    (void) len;
+
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
 	return;
@@ -116,6 +122,9 @@ HANDLER (unban)
 HANDLER (banlist)
 {
     int i;
+
+    (void) tag;
+    (void) len;
 
     (void) pkt;
     ASSERT (validate_connection (con));

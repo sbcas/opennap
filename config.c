@@ -45,11 +45,8 @@ static CONFIG Vars[] = {
     { "server_queue_length", VAR_TYPE_INT, UL &Server_Queue_Length, 1048576 },
     { "client_queue_length", VAR_TYPE_INT, UL &Client_Queue_Length, 10240 },
     { "max_results", VAR_TYPE_INT, UL &Max_Search_Results, 100 },
-#if HAVE_LIBZ
     { "compression_level", VAR_TYPE_INT, UL &Compression_Level, 1 },
-    { "compression_threshold", VAR_TYPE_INT, UL &Compression_Threshold, 8192 },
-    { "max_compress", VAR_TYPE_INT, UL &Max_Compress, 5 },
-#endif
+    { "compression_threshold", VAR_TYPE_INT, UL &Compression_Threshold, 16384 },
     { "max_shared", VAR_TYPE_INT, UL &Max_Shared, 5000 },
 };
 
@@ -157,6 +154,8 @@ HANDLER (server_config)
     char *field[2];
     int i;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     ASSERT (validate_user (con->user));
     CHECK_USER_CLASS ("server_config");
@@ -238,6 +237,8 @@ HANDLER (server_reconfig)
 {
     int i;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("server_reconfig");
     ASSERT (validate_user (con->user));

@@ -68,6 +68,8 @@ HANDLER (add_file)
     char path[256];
     int fsize;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &user) != 0)

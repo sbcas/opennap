@@ -1,18 +1,24 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #ifndef opennap_h
 #define opennap_h
 
 #include <stdarg.h>
 #include <sys/types.h>
+#if HAVE_LIBZ
+#include <zlib.h>
+#endif /* HAVE LIBZ */
 #include "hash.h"
 
 #define MAGIC_USER 0xeaee402a
 #define MAGIC_CHANNEL 0xa66544cb
 #define MAGIC_HOTLIST 0xb0f8ad23
 #define MAGIC_CONNECTION 0x3c4474a3
+#define MAGIC_BUFFER 0xe5a7a3be
 
 /* convert the bytes of a 16-bit integer to little endian */
 #if WORDS_BIGENDIAN
@@ -24,6 +30,32 @@
 #endif
 
 typedef unsigned char uchar;
+
+typedef struct _buffer BUFFER;
+
+/* to avoid copying a lot of data around with memmove() we use the following
+   structure for output buffers */
+struct _buffer
+{
+#if DEBUG
+    unsigned long magic;
+#endif
+    char *data;		/* allocated data */
+    int datasize;	/* total bytes allocated in data */
+    int consumed;	/* how many bytes of data consumed from this buffer */
+    BUFFER *next;
+};
+
+/* this is not used when compiling without compression, but it makes the
+   main event loop simpiler to code if we still define this here */
+typedef struct {
+#if HAVE_LIBZ
+    z_streamp zin;	/* input stream decompressor */
+    z_streamp zout;	/* output stream compressor */
+#endif
+    BUFFER *outbuf;	/* compressed output buffer */
+    BUFFER *inbuf;	/* uncompressed input buffer */
+} ZIP;
 
 typedef struct _connection CONNECTION;
 typedef struct _user USER;
@@ -107,17 +139,14 @@ struct _connection
     CLASS class;		/* type of connection, server or client */
     USER *user;			/* pointer to the user associated with this
 				   connection, if CLASS_USER */
-    char *sendbuf;		/* queued data to send */
-    int sendbuflen;		/* length of queued data */
-    int sendbufmax;		/* memory allocated for queue */
-    int sendbufcompressed;	/* how many bytes in the queue have been
-				   compressed already */
 
-    /* input buffer */
-    char recvhdr[4];		/* packet header */
-    char *recvdata;		/* packet body (data) */
-    int recvbytes; /* bytes read, INCLUDING packet header */
-    int recvdatamax; /* actual length of .recvdata buffer */
+    BUFFER *sendbuf;		/* output buffer */
+    short compress;		/* compression level for this connection */
+    short incomplete;		/* not enough data present to form a complete
+				   packet */
+    ZIP *zip;			/* compression stream state */
+
+    BUFFER *recvbuf;		/* input buffer */
 
     /* server authentication */
     char *nonce;
@@ -155,6 +184,51 @@ typedef struct _ban {
     char *reason;
     time_t when;
 } BAN;
+
+extern char *Motd_Path;
+extern char *Db_Host;
+extern char *Db_User;
+extern char *Db_Pass;
+extern char *Db_Name;
+extern char *Server_Name;
+extern char *Server_Pass;
+extern int Server_Port;
+extern int SigCaught;	/* flag to control main loop */
+extern int Max_User_Channels;	/* # of channels is a user allowed to join */
+extern int Stat_Click;
+extern int Server_Queue_Length;
+extern int Client_Queue_Length;
+extern int Max_Search_Results;
+extern int Compression_Level;
+extern int Compression_Threshold;
+extern int Max_Shared;
+
+extern unsigned long Server_Flags;
+#define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
+
+extern char Buf[1024];
+
+extern CONNECTION **Clients;	/* locally connected clients */
+extern int Num_Clients;
+
+extern int Num_Files;		/* total number of available files */
+extern int Num_Gigs;		/* total size of files available (in kB) */
+
+extern CONNECTION **Servers;	/* peer servers */
+extern int Num_Servers;
+
+extern BAN **Ban;
+extern int Ban_Size;
+
+extern HASH *Users;
+extern HASH *Channels;
+extern HASH *Hotlist;
+
+extern char *Levels[LEVEL_ELITE + 1];
+
+#define set_tag(b,n) set_val(b+2,n)
+#define set_len set_val
+void set_val (char *d, unsigned short val);
 
 /* message types */
 /* MSG_CLIENT_* are messages sent by the client to the server
@@ -270,66 +344,30 @@ typedef struct _ban {
 #define IDX_LENGTH	6
 #define IDX_SPEED	7
 
-extern char *Motd_Path;
-extern char *Db_Host;
-extern char *Db_User;
-extern char *Db_Pass;
-extern char *Db_Name;
-extern char *Server_Name;
-extern char *Server_Pass;
-extern int Server_Port;
-extern int SigCaught;	/* flag to control main loop */
-extern int Max_User_Channels;	/* # of channels is a user allowed to join */
-extern int Stat_Click;
-extern int Server_Queue_Length;
-extern int Client_Queue_Length;
-extern int Max_Search_Results;
-extern int Compression_Level;
-extern int Compression_Threshold;
-extern int Max_Compress;	/* maximum number of compressed packets to
-				   generate in a single cycle */
-extern int Max_Shared;
-
-extern unsigned long Server_Flags;
-#define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
-
-extern char Buf[1024];
-
-extern CONNECTION **Clients;	/* locally connected clients */
-extern int Num_Clients;
-
-extern int Num_Files;		/* total number of available files */
-extern int Num_Gigs;		/* total size of files available (in kB) */
-
-extern CONNECTION **Servers;	/* peer servers */
-extern int Num_Servers;
-
-extern BAN **Ban;
-extern int Ban_Size;
-
-extern HASH *Users;
-extern HASH *Channels;
-extern HASH *Hotlist;
-
-extern char *Levels[LEVEL_ELITE + 1];
-
-#define set_tag(b,n) set_val(b+2,n)
-#define set_len set_val
-void set_val (char *d, unsigned short val);
-
 /* utility routines */
 void add_client (CONNECTION *);
 void add_random_bytes (char *, int);
 void add_server (CONNECTION *);
 void *array_add (void *, int *, void *);
 void *array_remove (void *, int *, void *);
+BUFFER *buffer_append (BUFFER *, BUFFER *);
+BUFFER *buffer_consume (BUFFER *, int);
+void buffer_free (BUFFER *);
+void buffer_group (BUFFER *, int);
+BUFFER *buffer_queue (BUFFER *, char *, int);
+int buffer_read (int, BUFFER **);
+int buffer_size (BUFFER *);
+#if HAVE_LIBZ
+BUFFER *buffer_uncompress (z_streamp, BUFFER **);
+#endif
+int buffer_validate (BUFFER *);
 int check_connect_status (int);
 void close_db (void);
 void complete_connect (CONNECTION *con);
 void config (const char *);
 void config_defaults (void);
-void dispatch_command (CONNECTION *con, unsigned short tag, unsigned short len);
 void expand_hex (char *, int);
+void finalize_compress (ZIP *);
 void free_ban (BAN *);
 void free_channel (CHANNEL *);
 void free_config (void);
@@ -337,6 +375,7 @@ void free_hotlist (HOTLIST *);
 void free_user (USER *);
 void fudge_path (const char *, char *, int);
 char *generate_nonce (void);
+void init_compress (CONNECTION *, int);
 int init_db (void);
 void init_random (void);
 void log (const char *fmt, ...);
@@ -373,8 +412,11 @@ int validate_channel (CHANNEL *);
 int validate_connection (CONNECTION *);
 int validate_hotlist (HOTLIST *);
 
+#define HANDLER(f) void f (CONNECTION *con, unsigned short tag, unsigned short len, char *pkt)
+/* this is not a real handler, but has the same arguments as one */
+HANDLER (dispatch_command);
+
 /* protocol handlers */
-#define HANDLER(f) void f (CONNECTION *con, char *pkt)
 HANDLER (add_file);
 HANDLER (add_hotlist);
 HANDLER (announce);
@@ -401,7 +443,6 @@ HANDLER (nuke_user);
 HANDLER (privmsg);
 HANDLER (part);
 HANDLER (ping);
-HANDLER (pong);
 HANDLER (public);
 HANDLER (remove_file);
 HANDLER (remove_hotlist);
@@ -431,5 +472,7 @@ HANDLER (whois);
 
 #define CHECK_USER_CLASS(f) if (con->class != CLASS_USER) { log ("%s: not USER class", f); return; }
 #define CHECK_SERVER_CLASS(f) if(con->class != CLASS_SERVER) { log ("%s: not SERVER class", f); return; }
+
+#define NONULL(p) (p!=0?p:"")
 
 #endif /* opennap_h */

@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <mysql.h>
 #include <stdlib.h>
@@ -17,7 +19,9 @@ HANDLER (remove_file)
     MYSQL_ROW	row;
     int fsize;
 
-    ASSERT (VALID (con));
+    (void) tag;
+    (void) len;
+    ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &user) != 0)
 	return;

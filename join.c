@@ -19,6 +19,8 @@ HANDLER (join)
     CHANNEL *chan;
     int i;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &user) != 0)
@@ -98,9 +100,7 @@ HANDLER (join)
     }
 
     /* add this user to the members list */
-    chan->users = REALLOC (chan->users, sizeof (USER *) * (chan->numusers + 1));
-    chan->users[chan->numusers] = user;
-    chan->numusers++;
+    chan->users = array_add (chan->users, &chan->numusers, user);
 
     /* notify other members of the channel that this user has joined */
     for (i = 0; i < chan->numusers; i++)

@@ -1,6 +1,8 @@
 /* Copyright (C) drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <stdio.h>
 #include <unistd.h>

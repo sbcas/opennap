@@ -18,6 +18,8 @@ HANDLER (topic)
     int i, l;
     char *topic;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     /* don't use pop_user() because the server can set a channel topic */

@@ -8,11 +8,11 @@
 #include "debug.h"
 
 /* [ :<user> ] <user> */
-static void
-ping_wrapper (CONNECTION *con, char *pkt, int msg)
+HANDLER (ping)
 {
     USER *orig, *user;
 
+    (void) len;
     ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &orig) != 0)
@@ -31,19 +31,7 @@ ping_wrapper (CONNECTION *con, char *pkt, int msg)
     ASSERT (validate_user (user));
 
     if (user->con) /* local user */
-	send_cmd (user->con, msg, "%s", orig->nick);
+	send_cmd (user->con, tag, "%s", orig->nick);
     else if (con->class == CLASS_USER) /* remote user */
-	send_cmd (user->serv, msg, ":%s %s", orig->nick, user->nick);
-}
-
-HANDLER (ping)
-{
-    ASSERT (validate_connection (con));
-    ping_wrapper (con, pkt, MSG_SERVER_PING);
-}
-
-HANDLER (pong)
-{
-    ASSERT (validate_connection (con));
-    ping_wrapper (con, pkt, MSG_SERVER_PONG);
+	send_cmd (user->serv, tag, ":%s %s", orig->nick, user->nick);
 }

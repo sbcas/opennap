@@ -695,7 +695,7 @@ fi
 
 PACKAGE=opennap
 
-VERSION=0.10
+VERSION=0.11
 
 if test "`cd $srcdir && pwd`" != "`pwd`" && test -f $srcdir/config.status; then
   { echo "configure: error: source directory already configured; run "make distclean" there first" 1>&2; exit 1; }
@@ -1258,7 +1258,6 @@ COMPRESSDOTO=''
 fi
 
 
-
 ac_cv_warnings=yes
 # Check whether --enable-warnings or --disable-warnings was given.
 if test "${enable_warnings+set}" = set; then
@@ -1438,7 +1437,6 @@ s%@SET_MAKE@%$SET_MAKE%g
 s%@CC@%$CC%g
 s%@MYSQLINCDIR@%$MYSQLINCDIR%g
 s%@MYSQLLIBDIR@%$MYSQLLIBDIR%g
-s%@COMPRESSDOTO@%$COMPRESSDOTO%g
 
 CEOF
 EOF

@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <mysql.h>
 #include <unistd.h>
@@ -23,6 +25,10 @@ HANDLER (upload_ok)
     char *hash = 0;
     char path[256];
 
+    (void) tag;
+    (void) len;
+    ASSERT (validate_connection (con));
+
     if (pop_user (con, &pkt, &sender) != 0)
 	return;
 
@@ -42,54 +48,56 @@ HANDLER (upload_ok)
     if (con->class == CLASS_USER || recip->con)
     {
 	/* pull the has from the data base */
-	fudge_path(field[1],path, sizeof (path));
-	snprintf (Buf, sizeof (Buf), "SELECT md5 FROM library WHERE owner = '%s' && filename = '%s'",
-		sender->nick, path);
-	if(mysql_query(Db,Buf)!=0)
+	fudge_path (field[1], path, sizeof (path));
+	snprintf (Buf, sizeof (Buf),
+		  "SELECT md5 FROM library WHERE owner = '%s' && filename = '%s'",
+		  sender->nick, path);
+	if (mysql_query (Db, Buf) != 0)
 	{
-	    sql_error("upload_ok", Buf);
+	    sql_error ("upload_ok", Buf);
 	    return;
 	}
-	result=mysql_store_result(Db);
-	if(mysql_num_rows(result)!=1)
+	result = mysql_store_result (Db);
+	if (mysql_num_rows (result) != 1)
 	{
-	    log("upload_ok(): query did not return 1 row!");
-	    mysql_free_result(result);
+	    log ("upload_ok(): query did not return 1 row!");
+	    mysql_free_result (result);
 
 	    /* notify the client that there was an error */
-	    if(con->class==CLASS_USER)
-		send_cmd(con,MSG_SERVER_SEND_ERROR,"%s \"%s\"", recip->nick, field[1]);
+	    if (con->class == CLASS_USER)
+		send_cmd (con, MSG_SERVER_SEND_ERROR, "%s \"%s\"",
+			  recip->nick, field[1]);
 	    return;
 	}
-	row=mysql_fetch_row(result);
+	row = mysql_fetch_row (result);
 	hash = row[0];
     }
 
     log ("upload_ok(): %s notified server that %s may download \"%s\"",
-	    sender->nick, recip->nick, field[1]);
+	 sender->nick, recip->nick, field[1]);
 
     if (sender->port == 0)
     {
 	/* firewalled user */
 	ASSERT (con->class == CLASS_USER);
-	send_cmd (con, MSG_SERVER_UPLOAD_FIREWALL /* 501 */,
-		"%s %lu %d \"%s\" %s %d",
-		recip->nick, recip->host, recip->port, field[1], hash,
-		recip->speed);
+	send_cmd (con, MSG_SERVER_UPLOAD_FIREWALL /* 501 */ ,
+		  "%s %lu %d \"%s\" %s %d",
+		  recip->nick, recip->host, recip->port, field[1], hash,
+		  recip->speed);
     }
     else if (recip->con)
     {
 	/* local connection */
-	send_cmd (recip->con, MSG_SERVER_FILE_READY /* 204 */,
-		"%s %lu %d \"%s\" %s %d", sender->nick, sender->host,
-		sender->port, field[1], hash, sender->speed);
+	send_cmd (recip->con, MSG_SERVER_FILE_READY /* 204 */ ,
+		  "%s %lu %d \"%s\" %s %d", sender->nick, sender->host,
+		  sender->port, field[1], hash, sender->speed);
     }
     else if (con->class == CLASS_USER)
     {
 	/* send this message to the server the recip is on */
 	send_cmd (recip->serv, MSG_CLIENT_UPLOAD_OK, ":%s %s \"%s\"",
-		sender->nick, recip->nick, field[1]);
+		  sender->nick, recip->nick, field[1]);
     }
-    if(result)
-	mysql_free_result(result);
+    if (result)
+	mysql_free_result (result);
 }

@@ -1,12 +1,15 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License. */
+   GNU Public License.
+
+   $Id$ */
 
 #include <unistd.h>
 #include <mysql.h>
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 #include "opennap.h"
 #include "debug.h"
 #include "global.h"
@@ -15,15 +18,17 @@
 extern MYSQL *Db;
 
 /* process a request to establish a peer server connection */
-/* <name> <nonce> */
+/* <name> <nonce> <compression> */
 HANDLER (server_login)
 {
-    char *fields[2];
+    char *fields[3];
     unsigned long ip;
     MD5_CTX md5;
     char hash[33];
 
-    ASSERT (VALID (con));
+    (void) tag;
+    (void) len;
+    ASSERT (validate_connection (con));
     if (con->class != CLASS_UNKNOWN)
     {
 	log ("server_login(): %s tried to login, but is already registered",
@@ -35,10 +40,10 @@ HANDLER (server_login)
 
     /* TODO: ensure that this server is not already connected */
 
-    if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 2)
+    if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 3)
     {
 	log ("server_login(): wrong number of fields");
-	send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of fields");
+	send_cmd (con, MSG_SERVER_ERROR, "wrong number of fields");
 	remove_connection (con);
 	return;
     }
@@ -59,8 +64,21 @@ HANDLER (server_login)
 
     FREE (con->host);
     con->host = STRDUP (fields[0]);
-
     con->sendernonce = STRDUP (fields[1]);
+    con->compress = atoi (fields[2]);
+    if (con->compress < 0 || con->compress > 9)
+    {
+	log ("server_login: invalid compression level (%d) from %s",
+	    con->compress, con->host);
+	send_cmd (con, MSG_SERVER_NOSUCH, "invalid compression level %d",
+	    con->compress);
+	con->compress = 0;
+	remove_connection (con);
+	return;
+    }
+    /* take the minimum of the two values */
+    if (con->compress > Compression_Level)
+	con->compress = Compression_Level;
 
     if (!con->nonce)
     {
@@ -71,7 +89,8 @@ HANDLER (server_login)
 	}
 
 	/* respond with our own login request */
-	send_cmd (con, MSG_SERVER_LOGIN, "%s %s", Server_Name, con->nonce);
+	send_cmd (con, MSG_SERVER_LOGIN, "%s %s %d", Server_Name, con->nonce,
+	    con->compress);
     }
 
     /* send our challenge response */
@@ -88,6 +107,7 @@ HANDLER (server_login)
     send_cmd (con, MSG_SERVER_LOGIN_ACK, hash);
 
     /* now we wait for the peers ACK */
+    log ("server_login: sent login ACK");
 }
 
 HANDLER (server_login_ack)
@@ -97,6 +117,8 @@ HANDLER (server_login_ack)
     MD5_CTX md5;
     char hash[33];
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     if (con->class != CLASS_UNKNOWN)
@@ -107,7 +129,7 @@ HANDLER (server_login_ack)
     }
     if (!con->nonce || !con->sendernonce)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "you must login first");
+	send_cmd (con, MSG_SERVER_ERROR, "you must login first");
 	log ("server_login_ack(): received ACK with no LOGIN?");
 	remove_connection (con); /* FATAL */
 	return;
@@ -159,13 +181,17 @@ HANDLER (server_login_ack)
 		
     log ("server_login(): server %s has joined", con->host);
 
+    notify_mods ("server %s has joined.", con->host);
+
     con->class = CLASS_SERVER;
+#if HAVE_LIBZ
+    /* set up the compression handlers for this connection */
+    init_compress (con, con->compress);
+#endif
 
     /* put this connection in the shortcut list to the server conections */
     add_server (con);
 
     /* synchronize our state with this server */
     synch_server (con);
-
-    notify_mods ("server %s has joined.", con->host);
 }

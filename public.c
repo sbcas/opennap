@@ -21,6 +21,8 @@ HANDLER (public)
     int i, l, remote = 0;
     char *ptr;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     /* can't use split line here because the text field is considered all

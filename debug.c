@@ -1,18 +1,17 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 /* This is a very simple memory management debugger.  It's useful for detecting
-   memory leaks, references to uninitialzed memory, bad pointers and
-   getting an idea of how much memory is used by a program. */
+   memory leaks, references to uninitialzed memory, bad pointers, buffer
+   overflow and getting an idea of how much memory is used by a program. */
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "debug.h"
-
-#define ALLOC_BYTE 0xA3		/* allocated memory is filled with this value */
-#define FREE_BYTE 0xF3		/* memory is filled with this value prior to free */
 
 #define MIN(a,b) ((a<b)?a:b)
 
@@ -29,6 +28,17 @@ BLOCK;
 
 static BLOCK *Allocation = 0;
 static size_t Memory_Usage = 0;
+
+static void
+debug_overflow (BLOCK *block, const char *func)
+{
+    if (*((unsigned char *) block->val + block->len) != END_BYTE)
+    {
+	fprintf (stderr,
+		"debug_%s: buffer overflow detected in data allocated at %s:%d\n",
+		func, block->file, block->line);
+    }
+}
 
 void *
 debug_malloc (size_t bytes, const char *file, int line)
@@ -50,11 +60,12 @@ debug_malloc (size_t bytes, const char *file, int line)
 	return 0;
     }
     Memory_Usage += bytes;
-    block->val = malloc (bytes);
+    block->val = malloc (bytes + 1);
     block->len = bytes;
     block->file = strdup (file);
     block->line = line;
     memset (block->val, ALLOC_BYTE, bytes);
+    *((unsigned char *) block->val + bytes) = END_BYTE;
 
     if (!Allocation)
     {
@@ -155,6 +166,7 @@ debug_realloc (void *ptr, size_t bytes, const char *file, int line)
 		     line);
 	    return 0;
 	}
+	debug_overflow (block, "realloc");
     }
     newptr = debug_malloc (bytes, file, line);
     if (ptr)
@@ -173,24 +185,25 @@ debug_free (void *ptr, const char *file, int line)
     if (!ptr)
     {
 	fprintf (stderr,
-		 "debug_free(): attempt to free NULL pointer at %s:%d\n",
+		 "debug_free: attempt to free NULL pointer at %s:%d\n",
 		 file, line);
 	return;
     }
     if (!Allocation)
     {
 	fprintf (stderr,
-		 "debug_free(): free called with no memory allocated\n");
+		 "debug_free: free called with no memory allocated\n");
 	return;
     }
     find_block (ptr);
     if (Allocation->val != ptr)
     {
 	fprintf (stderr,
-		 "debug_free(): attempt to free bogus pointer at %s:%d\n",
+		 "debug_free: attempt to free bogus pointer at %s:%d\n",
 		 file, line);
 	return;
     }
+    debug_overflow (Allocation, "free");
     memset (Allocation->val, FREE_BYTE, Allocation->len);
     free (Allocation->val);
     free (Allocation->file);
@@ -224,8 +237,9 @@ debug_cleanup (void)
 	block = block->prev;
     for (; block; block = block->next)
     {
-	fprintf (stderr, "debug_cleanup(): %d bytes allocated at %s:%d\n",
+	fprintf (stderr, "debug_cleanup: %d bytes allocated at %s:%d\n",
 		 block->len, block->file, block->line);
+	debug_overflow (block, "cleanup");
     }
 }
 
@@ -246,7 +260,11 @@ debug_valid (void *ptr, size_t len)
     BLOCK * block = find_block (ptr);
 
     if (!block)
+    {
+	fprintf (stderr, "debug_valid: invalid pointer\n");
 	return 0; /* not found */
+    }
+    debug_overflow (block, "valid");
     /* ensure that there are at least `len' bytes available */
     return ((len <= block->len));
 }

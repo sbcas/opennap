@@ -16,8 +16,9 @@ HANDLER (download)
 {
     char *fields[2];
     USER *user;
-    short msg;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     CHECK_USER_CLASS ("download");
@@ -35,19 +36,13 @@ HANDLER (download)
     }
     ASSERT (VALID (user));
 
-    /* peek at the message type since we use this for both 203 and 500 */
-    memcpy (&msg, con->recvhdr + 2, 2);
-#if WORDS_BIGENDIAN
-    msg = BSWAP16 (msg);
-#endif
-
     /* make sure both parties are not firewalled
        -and-
        client is not making a 203 request to a firewalled user (this isn't
        really necessary it seems, but to maintain compatibility with the
        official server, we'll return an error */
     if (user->port == 0 &&
-	    (con->user->port == 0 || msg == MSG_CLIENT_DOWNLOAD))
+	    (con->user->port == 0 || tag == MSG_CLIENT_DOWNLOAD))
     {
 	send_cmd (con, MSG_SERVER_FILE_READY,
 		"%s %lu %d \"%s\" firewallerror 0", user->nick, user->host,
@@ -97,6 +92,8 @@ HANDLER(upload_start)
 {
     USER *user;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     user = transfer_count_wrapper (con, pkt, MSG_CLIENT_UPLOAD_START);
     ASSERT (validate_user (user));
@@ -109,6 +106,8 @@ HANDLER(upload_end)
 {
     USER *user;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     user = transfer_count_wrapper (con, pkt, MSG_CLIENT_UPLOAD_END);
     ASSERT (validate_user (user));
@@ -120,6 +119,8 @@ HANDLER(download_start)
 {
     USER *user;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     user = transfer_count_wrapper (con, pkt, MSG_CLIENT_DOWNLOAD_START);
     ASSERT (validate_user (user));
@@ -132,6 +133,8 @@ HANDLER(download_end)
 {
     USER *user;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     user = transfer_count_wrapper (con, pkt, MSG_CLIENT_DOWNLOAD_END);
     ASSERT (validate_user (user));
@@ -143,6 +146,8 @@ HANDLER(download_end)
 HANDLER(user_speed)
 {
     USER *user;
+    (void) tag;
+    (void) len;
     CHECK_USER_CLASS("user_speed");
     user=hash_lookup(Users,pkt);
     if(!user)
@@ -161,6 +166,8 @@ HANDLER(user_speed)
 HANDLER (data_port_error)
 {
     USER *sender, *user;
+    (void) tag;
+    (void) len;
 
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender) != 0)
@@ -194,6 +201,8 @@ HANDLER (upload_request)
 {
     char *fields[3];
     USER *recip;
+    (void) tag;
+    (void) len;
 
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("upload_request");

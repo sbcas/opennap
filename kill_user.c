@@ -35,6 +35,8 @@ HANDLER (kill_user)
     USER *killer = 0, *user;
     char *killernick, *reason;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     if (con->class == CLASS_USER)

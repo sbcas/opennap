@@ -91,10 +91,13 @@ remove_connection (CONNECTION *con)
     /* common data */
     if (con->host)
 	FREE (con->host);
-    if (con->sendbufmax)
-	FREE (con->sendbuf);
-    if (con->recvdata)
-	FREE (con->recvdata);
+    buffer_free (con->sendbuf);
+    buffer_free (con->recvbuf);
+#if HAVE_LIBZ
+    if (con->zip)
+	finalize_compress (con->zip);
+#endif
+
     /* just create a hole where this client was for now.  the main() event
        loop will fill in the holes when appropriate.  we don't do this
        here because there are many places, such as kill_user() where a

@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <unistd.h>
 #include <stdio.h>
@@ -15,6 +17,8 @@ HANDLER (announce)
     int i, l;
     USER *user;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     if (con->class == CLASS_USER)
@@ -74,6 +78,8 @@ HANDLER (wallop)
     char *ptr;
     int i;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     if (con->class == CLASS_USER)
     {

@@ -18,6 +18,8 @@ HANDLER (resume)
     MYSQL_ROW row;
     USER *user;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     CHECK_USER_CLASS ("resume");

@@ -14,6 +14,8 @@ HANDLER (muzzle)
     USER *sender, *user;
     char *reason;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &sender) != 0)

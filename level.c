@@ -16,6 +16,8 @@ HANDLER (level)
     USER *user;
     LEVEL level;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     /* NOTE: we implicity trust that messages we receive from other servers
@@ -47,8 +49,7 @@ HANDLER (level)
     {
 	if (con->class == CLASS_USER)
 	    nosuchuser (con, fields[0]);
-	else
-	    log ("level(): user synch error, can't locate user %s", fields[0]);
+	log ("level(): user synch error, can't locate user %s", fields[0]);
 	return;
     }
 
@@ -68,6 +69,8 @@ HANDLER (level)
     {
 	log ("level(): tried to set %s to unknown level %s",
 	    user->nick, fields[1]);
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "no such level as %s", fields[1]);
 	return;
     }
 
@@ -86,8 +89,6 @@ HANDLER (level)
 	sender = con->user->nick;
     }
 
-    user->level = level;
-
     /* pass the message to our peer servers if this came from a local user */
     if (con->class == CLASS_USER && Num_Servers)
     {
@@ -96,7 +97,11 @@ HANDLER (level)
     }
 
     notify_mods ("%s set %s's user level to %s (%d).", sender, user->nick,
-	    Levels[user->level], user->level);
+	    Levels[level], level);
+
+    /* we set this after the notify_mods so that the user being changed
+       doesnt get notified twice */
+    user->level = level;
 
     /* if local, notify the user of their change in status */
     if (user->con)
@@ -105,4 +110,7 @@ HANDLER (level)
 		"%s changed your level to %s (%d).",
 		sender, Levels[user->level], user->level);
     }
+
+    log ("level: %s set %s's level to %s", sender, user->nick,
+	    Levels[user->level]);
 }

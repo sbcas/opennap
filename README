@@ -120,10 +120,11 @@ are implemented as additional functionality in the opennap server.
 
 10010	server login [SERVER]
 
-	<server-name> <nonce>
+	<server-name> <nonce> <compression>
 
 	<server-name>	the dns name of the server wishing to connect
 	<nonce>		a random string to use for authentication
+	<compression>	the maximum zip (LZ77) compression level
 
 	this message is sent when a connection wishes to identify itself as
 	a peer server.  when a server receives this message, it will send its
@@ -137,14 +138,6 @@ are implemented as additional functionality in the opennap server.
 		<peer-nonce><nonce><server-pass>
 	using the MD5 algorithm.  this allows the servers to mutually
 	authenticate without the plaintext passwords traversing the network
-
-
-10012	client request to connect to server [CLIENT]
-
-	<server-name> <port> [ <remote-server> ]
-
-	client is requesting that local server establish a connection with
-	the server running at <server-name>:<port>
 
 10013	user ip [SERVER]
 

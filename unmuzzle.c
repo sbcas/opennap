@@ -12,6 +12,8 @@ HANDLER (unmuzzle)
 {
     USER *sender, *user;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &sender) != 0)

@@ -1,9 +1,11 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the GNU Public
-   License.  See the file COPYING for details. */
+   License.  See the file COPYING for details.
+
+   $Id$ */
 
 #define PACKAGE "spynap"
-#define VERSION "0.08"
+#define VERSION "0.10"
 
 #include <stdio.h>
 #include <readline/readline.h>
@@ -145,7 +147,44 @@ clear_search ()
     }
 }
 
-void user_input (char *s)
+void
+help (void)
+{
+    do_output ("%s %s commands:", PACKAGE, VERSION);
+    do_output ("/addhotlist <user>	add a user to your hotlist");
+    do_output ("/browse <user>	browse a user's library");
+    do_output ("/get <n>	get selection <n> from last /search or /browse");
+    do_output ("/help");
+    do_output ("/join <channel>	join a channel");
+    do_output ("/list		list channels on server");
+    do_output ("/msg <user>	send a private message");
+    do_output ("/names <channel>	list users on a channel");
+    do_output ("/part <channel>	part a channel");
+    do_output ("/ping <user>");
+    do_output ("/quit		exit %s", PACKAGE);
+    do_output ("/search <string>	search for <string> in the library");
+    do_output ("/setdataport <port>");
+    do_output ("/speed <n>	set your link speed to <n>");
+    do_output ("/topic <channel> <topic>	set the topic on a channel");
+    do_output ("/whois <user>	get information on a user");
+    do_output ("");
+    do_output ("Admin commands:");
+    do_output ("/connect <server> <port> [ <remote server> ]");
+    do_output ("/ban <user|ip> <reason>");
+    do_output ("/banlist	show bans for this server");
+    do_output ("/disconnect <server> [ <reason> ]");
+    do_output ("/kill <user> [ <reason> ]");
+    do_output ("/killserver <server> <reason>");
+    do_output ("/muzzle <user> [ <reason> ]");
+    do_output ("/notice <message>	send all users a message");
+    do_output ("/setuserlevel <user> <level>");
+    do_output ("/unban <user|ip>");
+    do_output ("/unmuzzle <user>");
+    do_output ("/wallop <message>	send a message to all admins");
+}
+
+void
+user_input (char *s)
 {
     short len, type;
     char *p;
@@ -263,6 +302,68 @@ void user_input (char *s)
 	    s += 5;
 	    type = 700;
 	}
+	else if (!strncmp("help", s, 4))
+	{
+	    help ();
+	    return;
+	}
+	/* admin commands */
+	else if (!strncmp("kill", s, 4))
+	{
+	    s += 4;
+	    type = 610;
+	}
+	else if (!strncmp("muzzle", s, 6))
+	{
+	    s += 6;
+	    type = 622;
+	}
+	else if (!strncmp("unmuzzle", s, 8))
+	{
+	    s += 6;
+	    type = 623;
+	}
+	else if (!strncmp("ban", s, 3))
+	{
+	    s += 3;
+	    type = 612;
+	}
+	else if (!strncmp("unban", s, 5))
+	{
+	    s += 5;
+	    type = 612;
+	}
+	else if (!strncmp("banlist", s, 7))
+	{
+	    s += 7;
+	    type = 615;
+	}
+	else if (!strncmp("wallop", s, 6))
+	{
+	    s += 6;
+	    type = 627;
+	}
+	else if (!strncmp("notice", s, 6))
+	{
+	    s += 6;
+	    type = 628;
+	}
+	/* opennap support */
+	else if (!strncmp("connect", s, 7))
+	{
+	    s += 7;
+	    type = 10100;
+	}
+	else if (!strncmp("disconnect", s, 9))
+	{
+	    s += 9;
+	    type = 10101;
+	}
+	else if (!strncmp("killserver", s, 10))
+	{
+	    s += 10;
+	    type = 10110;
+	}
 	else
 	{
 	    do_output("unknown command");
@@ -343,6 +444,11 @@ server_output (void)
 	write (Fd, &msg, 2);
 	write (Fd, Buf, len);
 	do_output("PING from %s", Buf);
+    }
+    /* login ack */
+    else if (msg == 3)
+    {
+	do_output ("[3] email address is %s", Buf);
     }
     /*search*/
     else if (msg == 201)
@@ -447,6 +553,18 @@ server_output (void)
 	Search_Size++;
 	do_output("[212] %d) %s %s %s %s %s", Search_Size,
 		argv[0],argv[1],argv[3],argv[4],argv[6]);
+    }
+    /* stats */
+    else if (msg == 214)
+    {
+	argc=split_line(argv,sizeof(argv)/sizeof(char*),Buf);
+	do_output ("[214] %d users, %d files, %d gigs.",
+		atoi (argv[0]), atoi(argv[1]), atoi(argv[2]));
+    }
+    /* error message */
+    else if (msg == 404)
+    {
+	do_output ("[404] %s", Buf);
     }
     /*motd*/
     else if(msg == 621)

@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <mysql.h>
 #include <stdio.h>
@@ -18,7 +20,9 @@ HANDLER (browse)
     int i, numrows;
     USER *user;
 
-    ASSERT (VALID (con));
+    (void) tag;
+    (void) len;
+    ASSERT (validate_connection (con));
     CHECK_USER_CLASS("browse");
     user = hash_lookup (Users, pkt);
     if (!user)
@@ -26,6 +30,7 @@ HANDLER (browse)
 	nosuchuser (con, pkt);
 	return;
     }
+    ASSERT (validate_user (user));
 
     snprintf (Buf, sizeof (Buf), "SELECT * FROM library WHERE owner = '%s'",
 	      user->nick);

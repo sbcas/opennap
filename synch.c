@@ -80,6 +80,10 @@ synch_server (CONNECTION *con)
 {
     ASSERT (validate_connection (con));
 
+    log ("synch_server: syncing user list...");
+
     /* send our peer server a list of all users we know about */
     hash_foreach (Users, synch_user, (void *) con);
+
+    log ("synch_server: done");
 }

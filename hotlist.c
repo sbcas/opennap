@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include "opennap.h"
 #include "debug.h"
@@ -12,6 +14,8 @@ HANDLER (add_hotlist)
     USER *user;
     int i;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("add_hotlist");
 
@@ -59,6 +63,8 @@ HANDLER (remove_hotlist)
     int i;
     HOTLIST *h = 0;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("remove_hotlist");
 
