@@ -370,7 +370,7 @@ HANDLER (login)
 		send_cmd(con,MSG_SERVER_NOSUCH,
 			"You have been muzzled by %s: quit while muzzled",
 			Server_Name);
-	    notify_mods(MUZZLELOG_MODE,"%s muzzled %s: quit while muzzled",
+	    notify_mods(MUZZLELOG_MODE,"%s has muzzled %s: quit while muzzled",
 		    Server_Name, user->nick);
 	}
     }
