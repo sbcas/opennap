@@ -188,22 +188,6 @@ generate_nonce (void)
     return nonce;
 }
 
-USER *
-new_user (void)
-{
-    USER *u = CALLOC (1, sizeof (USER));
-
-    if (!u)
-    {
-	OUTOFMEMORY ("new_user");
-	return 0;
-    }
-#ifdef DEBUG
-    u->magic = MAGIC_USER;
-#endif
-    return u;
-}
-
 CHANNEL *
 new_channel (void)
 {
@@ -216,22 +200,6 @@ new_channel (void)
     }
 #ifdef DEBUG
     c->magic = MAGIC_CHANNEL;
-#endif
-    return c;
-}
-
-CONNECTION *
-new_connection (void)
-{
-    CONNECTION *c = CALLOC (1, sizeof (CONNECTION));
-
-    if (!c)
-    {
-	OUTOFMEMORY ("new_connection");
-	return 0;
-    }
-#ifdef DEBUG
-    c->magic = MAGIC_CONNECTION;
 #endif
     return c;
 }

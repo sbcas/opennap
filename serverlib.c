@@ -176,7 +176,10 @@ free_channel (CHANNEL * chan)
 int
 validate_connection (CONNECTION * con)
 {
+#if 0
+    /* does not work with mempool */
     ASSERT_RETURN_IF_FAIL (VALID_LEN (con, sizeof (CONNECTION)), 0);
+#endif
     ASSERT_RETURN_IF_FAIL (con->magic == MAGIC_CONNECTION, 0);
     ASSERT_RETURN_IF_FAIL ((con->class == CLASS_USER) ^ (con->user == 0), 0);
     ASSERT_RETURN_IF_FAIL (VALID_STR (con->host), 0);
@@ -199,7 +202,11 @@ validate_connection (CONNECTION * con)
 int
 validate_user (USER * user)
 {
+#if 0
+    /* this doesn't work with the mempool since it is an offset into
+       a preallocated chunk */
     ASSERT_RETURN_IF_FAIL (VALID_LEN (user, sizeof (USER)), 0);
+#endif
     ASSERT_RETURN_IF_FAIL (user->magic == MAGIC_USER, 0);
     ASSERT_RETURN_IF_FAIL (VALID_STR (user->nick), 0);
     ASSERT_RETURN_IF_FAIL (VALID_STR (user->clientinfo), 0);
@@ -343,4 +350,36 @@ invalid_nick_msg(CONNECTION *con)
 {
     if(ISUSER(con))
 	send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+}
+
+USER *
+new_user (void)
+{
+    USER *u = mp_alloc (UserPool, 1);
+
+    if (!u)
+    {
+	OUTOFMEMORY ("new_user");
+	return 0;
+    }
+#ifdef DEBUG
+    u->magic = MAGIC_USER;
+#endif
+    return u;
+}
+
+CONNECTION *
+new_connection (void)
+{
+    CONNECTION *c = mp_alloc (ConPool, 1);
+
+    if (!c)
+    {
+	OUTOFMEMORY ("new_connection");
+	return 0;
+    }
+#ifdef DEBUG
+    c->magic = MAGIC_CONNECTION;
+#endif
+    return c;
 }

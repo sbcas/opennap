@@ -415,7 +415,7 @@ HANDLER (login)
 	}
     }
 
-    user = new_user ();
+    user = new_user();
     if (user)
     {
 	user->nick = STRDUP (av[0]);
@@ -620,7 +620,7 @@ HANDLER (login)
 	    FREE (user->pass);
 	if (user->server)
 	    FREE (user->server);
-	FREE (user);
+	mp_free (UserPool, user);
     }
 }
 

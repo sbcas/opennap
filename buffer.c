@@ -29,31 +29,28 @@ buffer_new (void)
 #if DEBUG
     r->magic = MAGIC_BUFFER;
 #endif
+    r->data = mp_alloc(BufPool, 0);
+    if(!r->data)
+    {
+	OUTOFMEMORY("buffer_new");
+	FREE(r);
+	return 0;
+    }
+    r->datamax = BUFFER_SIZE;
     return r;
 }
 
-/* append bytes to the buffer.  `step' is the size of a buffer to create if
-   a new buffer needs to be created */
+/* append bytes to the buffer */
 static BUFFER *
-buffer_queue (BUFFER * b, char *d, int dsize, int step)
+buffer_queue (BUFFER * b, char *d, int dsize)
 {
     BUFFER *r = b;
 
-    if (step < dsize)
-	step = dsize;
     if (!b)
     {
 	r = b = buffer_new ();
 	if (!b)
 	    return 0;
-	b->data = MALLOC (step);
-	if (!b->data)
-	{
-	    OUTOFMEMORY ("buffer_queue");
-	    FREE (b);
-	    return 0;
-	}
-	b->datamax = step;
     }
     else
     {
@@ -61,7 +58,7 @@ buffer_queue (BUFFER * b, char *d, int dsize, int step)
 	while (b->next)
 	    b = b->next;
 	/* if there is not enough allocated data, allocate a new buffer
-	   of size `step'.  we avoid using realloc() here because it is
+	   we avoid using realloc() here because it is
 	   potentially a very expensive operation
 	   -or-
 	   buffer is partially written, create a new buffer */
@@ -70,16 +67,7 @@ buffer_queue (BUFFER * b, char *d, int dsize, int step)
 	    b->next = buffer_new ();
 	    if (!b->next)
 		return r;
-	    b->next->data = MALLOC (step);
-	    if (!b->next->data)
-	    {
-		OUTOFMEMORY ("buffer_queue");
-		FREE (b->next);
-		b->next = 0;
-		return r;
-	    }
 	    b = b->next;
-	    b->datamax = step;
 	}
     }
     memcpy (b->data + b->datasize, d, dsize);
@@ -104,7 +92,7 @@ buffer_consume (BUFFER * b, int n)
 	BUFFER *p = b;
 
 	b = b->next;
-	FREE (p->data);
+	mp_free (BufPool, p->data);
 	FREE (p);
     }
     return b;
@@ -146,7 +134,7 @@ buffer_free (BUFFER * b)
     {
 	p = b;
 	b = b->next;
-	FREE (p->data);
+	mp_free (BufPool, p->data);
 	FREE (p);
     }
 }
@@ -155,24 +143,27 @@ buffer_free (BUFFER * b)
 int
 buffer_validate (BUFFER * b)
 {
+#if 0
+    /* does not work with mempool */
     ASSERT_RETURN_IF_FAIL (VALID_LEN (b, sizeof (BUFFER)), 0);
+#endif
     ASSERT_RETURN_IF_FAIL (b->magic == MAGIC_BUFFER, 0);
     ASSERT_RETURN_IF_FAIL (b->datasize <= b->datamax, 0);
     ASSERT_RETURN_IF_FAIL (b->data == 0
 			   || VALID_LEN (b->data, b->datasize), 0);
     ASSERT_RETURN_IF_FAIL (b->consumed == 0 || b->consumed < b->datasize, 0);
+#if 0
     ASSERT_RETURN_IF_FAIL (b->next == 0
 			   || VALID_LEN (b->next, sizeof (BUFFER *)), 0);
+#endif
     return 1;
 }
 #endif /* DEBUG */
 
-#define BUFFER_SIZE 16384
-
 static BUFFER *
 buffer_compress (z_streamp zip, BUFFER ** b)
 {
-    BUFFER *r = 0, *cur = 0;
+    BUFFER *r = 0, **pr;
     int n, bytes, flush;
 
     ASSERT (buffer_validate (*b));
@@ -186,40 +177,22 @@ buffer_compress (z_streamp zip, BUFFER ** b)
     /* set to 0 so we allocate in the loop */
     zip->avail_out = 0;
 
+    pr = &r;
+
     do
     {
 	if (zip->avail_out == 0)
 	{
 	    /* allocate a new buffer to hold the rest of the compressed data */
-	    if (cur)
-	    {
-		/* we should only get here if there was not enough room to
-		   store the compressed output in the first buffer created */
-		ASSERT (flush == Z_SYNC_FLUSH);
-		log ("buffer_compress(): allocating additional buffer");
-		cur->next = buffer_new ();
-		if (!cur->next)
-		    break;
-		cur = cur->next;
-	    }
-	    else
-	    {
-		r = cur = buffer_new ();
-		if (!r)
-		    return 0;
-	    }
-	    cur->data = MALLOC (BUFFER_SIZE);
-	    if (!cur->data)
-	    {
-		OUTOFMEMORY ("buffer_compress");
+	    *pr = buffer_new ();
+	    if (!*pr)
 		break;
-	    }
-	    cur->datamax = BUFFER_SIZE;
-	    cur->datasize = BUFFER_SIZE;
-	    zip->next_out = (unsigned char *) cur->data;
+	    /* mark the buffer as completely full then remove unused data
+	       when we exit this loop */
+	    (*pr)->datasize = BUFFER_SIZE;
+	    zip->next_out = (unsigned char *) (*pr)->data;
 	    zip->avail_out = BUFFER_SIZE;
 	}
-
 	n = deflate (zip, flush);
 	if (n != Z_OK)
 	{
@@ -227,6 +200,7 @@ buffer_compress (z_streamp zip, BUFFER ** b)
 		 NONULL (zip->msg), n);
 	    break;
 	}
+	pr=&(*pr)->next;
     }
     while (zip->avail_out == 0 && flush == Z_SYNC_FLUSH);
 
@@ -234,15 +208,17 @@ buffer_compress (z_streamp zip, BUFFER ** b)
     bytes -= zip->avail_in;
     *b = buffer_consume (*b, bytes);
 
-    if (cur)
+    if (r)
     {
-	cur->datasize -= zip->avail_out;
-	if (cur->datasize == 0)
+	ASSERT(r->next==0);
+	if(r->next!=0)
+	    log("buffer_compress(): ERROR! r->next was not NULL");
+	r->datasize -= zip->avail_out;
+	/* this should only happen for the first created buffer if the
+	   input was small and there was a second buffer in the list */
+	if (r->datasize == 0)
 	{
-	    /* this should only happen for the first created buffer if the
-	       input was small and there was a second buffer in the list */
-	    ASSERT (cur == r);
-	    FREE (r->data);
+	    mp_free (BufPool, r->data);
 	    FREE (r);
 	    r = 0;
 	}
@@ -253,7 +229,10 @@ buffer_compress (z_streamp zip, BUFFER ** b)
 
 /* assuming that we receive relatively short blocks via the network (less
    than 16kb), we uncompress all data when we receive it and don't worry
-   about blocking. */
+   about blocking.
+
+   NOTE: this is the only buffer_*() function that does not use the memory
+   pool.  each server gets its own real input buffer */
 int
 buffer_decompress (BUFFER * b, z_streamp zip, char *in, int insize)
 {
@@ -411,11 +390,7 @@ queue_data (CONNECTION * con, char *s, int ssize)
 {
     ASSERT (validate_connection (con));
     if (ISSERVER (con))
-    {
-	/* for a server connection, allocate chunks of 16k bytes */
-	con->sopt->outbuf = buffer_queue (con->sopt->outbuf, s, ssize, 16384);
-    }
+	con->sopt->outbuf = buffer_queue (con->sopt->outbuf, s, ssize);
     else
-	/* for a client connection, allocate chunks of 1k bytes */
-	con->sendbuf = buffer_queue (con->sendbuf, s, ssize, 1024);
+	con->sendbuf = buffer_queue (con->sendbuf, s, ssize);
 }

@@ -89,6 +89,7 @@ mp_cleanup (MEMPOOL * mem)
 	for (n = 0; n < mem->count; n++)
 	    FREE (mem->data[n]);
 	FREE (mem->mask);
+	FREE (mem->data);
     }
     FREE (mem);
 }

@@ -234,6 +234,7 @@ init_server (const char *cf)
     FilePool = mp_init(sizeof(DATUM));
     UserPool = mp_init(sizeof(USER));
     ConPool = mp_init(sizeof(CONNECTION));
+    BufPool = mp_init(BUFFER_SIZE);
 
     load_channels ();
 

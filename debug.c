@@ -278,21 +278,34 @@ debug_strdup (const char *s, const char *file, int line)
     return r;
 }
 
-/* check to see if a pointer is valid */
+/* check to see if a pointer is valid.  ptr can be an offset into an
+ allocation block, so don't use find_block() */
 int
 debug_valid (void *ptr, int len)
 {
-    BLOCK *block = find_block (ptr);
+    BLOCK *block;
+    int offset;
 
+    offset = debug_hash (ptr);
+    for(block=Allocation[offset];
+	    block && (char*)ptr > (char*)block->val + block->len;
+	    block=block->next)
+	;
     if (!block)
     {
 	fprintf (stderr, "debug_valid: invalid pointer\n");
 	return 0;		/* not found */
     }
+    /* ensure the pointer is within this block */
+    if(ptr<block->val)
+    {
+	fprintf(stderr,"debug_valid: invalid pointer\n");
+	return 0;
+    }
     if (debug_overflow (block, "valid"))
 	return 0;
     /* ensure that there are at least `len' bytes available */
-    return ((len <= block->len));
+    return (((char*)ptr + len <= (char*)block->val + block->len));
 }
 
 int

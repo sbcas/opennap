@@ -93,7 +93,7 @@ remove_connection (CONNECTION * con)
 	   would avoid sending it) */
 
 	log ("remove_connection(): server split detected (%s)", con->host);
-	notify_mods (SERVERLOG_MODE, "Server %s has quit.", con->host);
+	notify_mods (SERVERLOG_MODE, "Server %s has quit", con->host);
 	/* notify our peers this server has quit */
 	pass_message_args (con, MSG_SERVER_QUIT, ":%s %s", Server_Name,
 			   con->host);
@@ -136,5 +136,5 @@ remove_connection (CONNECTION * con)
     buffer_free (con->recvbuf);
     Clients[con->id] = 0;
     Num_Clients--;
-    FREE (con);
+    mp_free (ConPool, con);
 }

@@ -86,6 +86,7 @@ HASH *Hotlist;			/* global hotlist */
 MEMPOOL *FilePool;		/* memory pool for DATUM structs */
 MEMPOOL *UserPool;		/* memory pool for USER structs */
 MEMPOOL *ConPool;		/* memory pool for CONNECTION structs */
+MEMPOOL *BufPool;		/* memory pool for in/out buffer queues */
 
 #if RESUME
 HASH *MD5;			/* global hash list */
@@ -211,7 +212,7 @@ accept_connection (int s)
     CLOSE (f);
     if (cli->host)
 	FREE (cli->host);
-    FREE (cli);
+    mp_free (ConPool, cli);
 }
 
 static void
@@ -606,6 +607,7 @@ main (int argc, char **argv)
     mp_cleanup(FilePool);
     mp_cleanup(ConPool);
     mp_cleanup(UserPool);
+    mp_cleanup(BufPool);
 
     /* this displays a list of leaked memory.  pay attention to this. */
     CLEANUP ();

@@ -66,6 +66,8 @@ struct _buffer
     BUFFER *next;
 };
 
+#define BUFFER_SIZE 2048	/* default buffer length for output queues */
+
 typedef struct _connection CONNECTION;
 typedef struct _user USER;
 typedef struct _channel CHANNEL;
@@ -419,6 +421,7 @@ extern HASH *User_Db;
 extern MEMPOOL *FilePool;
 extern MEMPOOL *UserPool;
 extern MEMPOOL *ConPool;
+extern MEMPOOL *BufPool;
 
 extern char *Levels[LEVEL_ELITE + 1];
 extern char *Content_Types[CT_UNKNOWN];
