@@ -52,7 +52,7 @@ HANDLER (kill_user)
     }
     else
     {
-	ASSERT (con->class == CLASS_SERVER);
+	ASSERT (ISSERVER (con));
 
 	/* skip over who did the kill */
 	if (*pkt != ':')
@@ -69,7 +69,7 @@ HANDLER (kill_user)
 	}
     }
 
-    ac = split_line (av, sizeof (av) / sizeof (char), pkt);
+    ac = split_line (av, FIELDS (av), pkt);
     if (ac < 1)
     {
 	log ("kill_user(): missing target user");
