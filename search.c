@@ -22,8 +22,9 @@ typedef struct
     short count;		/* how many ACKS have been recieved? */
     short numServers;		/* how many servers were connected at the time
 				   this search was issued? */
-    int valid;			/* is the user that issued this search still
+    short valid;		/* is the user that issued this search still
 				   logged in? */
+    short local;		/* did this search originate on this server? */
 }
 DSEARCH;
 
@@ -640,6 +641,8 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 		FREE(dsearch);
 		goto done;
 	    }
+	    else
+		dsearch->local = 1;
 	    dsearch->con = con;
 	    dsearch->nick = STRDUP (user->nick);
 	    dsearch->numServers = Num_Servers;
@@ -662,11 +665,6 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 		    dsearch->nick, dsearch->id, request);
 	    FREE (request);
 	    done = 0;		/* delay sending the end-of-search message */
-	    /* give the user some feedback on why this might take longer than
-	       usual */
-	    if (ISUSER (con))
-		send_cmd (con, MSG_SERVER_NOSUCH,
-			"Relaying request to remote servers");
 	}
     }
 
@@ -812,15 +810,23 @@ HANDLER (remote_search_end)
 	   end of search to user */
 	log ("remote_end_match(): sending final ACK for search %s",
 	     search->id);
-	if (ISUSER (search->con))
+	/* can't use ISUSER(search->con) here because if the user was local
+	   and logged out, search->con will be an invalid pointer */
+	if (search->local)
 	{
 	    /* only send if the user is still logged in */
 	    if (search->valid)
+	    {
+		ASSERT (validate_connection (search->con));
 		send_cmd (search->con, MSG_SERVER_SEARCH_END, "");
+	    }
 	}
 	else
+	{
+	    ASSERT (validate_connection (search->con));
 	    send_cmd (search->con, MSG_SERVER_REMOTE_SEARCH_END, "%s",
 		    search->id);
+	}
 	Remote_Search = list_delete (Remote_Search, search);
 	free_dsearch (search);
     }
