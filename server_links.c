@@ -10,36 +10,33 @@
 #include "opennap.h"
 #include "debug.h"
 
+/* 10112 */
 /* process client request for server links */
-/* 10112 [ :<user> ] [ <server> ] */
 HANDLER (server_links)
 {
-    USER *user;
     LIST *list;
+    LINK *slink;
     CONNECTION *serv;
 
     (void) tag;
     (void) len;
+    (void) pkt;
+    CHECK_USER_CLASS ("server_links");
     ASSERT (validate_connection (con));
-    if (pop_user (con, &pkt, &user) != 0)
-	return;
-    ASSERT (validate_user (user));
 
-    if (!*pkt || !strcasecmp (Server_Name, pkt))
+    /* first dump directly connected servers */
+    for (list = Servers; list; list = list->next)
     {
-	for (list = Servers; list; list = list->next)
-	{
-	    serv = list->data;
-	    if (serv->recvbuf)
-		send_user (user, MSG_SERVER_LINKS, "%s %d %d %d %d",
-			   serv->host, serv->port, serv->recvbuf->datamax,
-			   serv->recvbuf->datasize, serv->recvbuf->consumed);
-	    else
-		send_user (user, MSG_SERVER_LINKS, "%s %d 0 0 0",
-			   serv->host, serv->port);
-	    send_user (user, MSG_SERVER_LINKS, "");
-	}
+	serv = list->data;
+	send_cmd (con, MSG_SERVER_LINKS, "%s %s 0", Server_Name, serv->host);
     }
-    else
-	pass_message_args (con, tag, ":%s %s", user->nick, pkt);
+    /* dump remote servers */
+    for (list = Server_Links; list; list = list->next)
+    {
+	slink = list->data;
+	send_cmd (con, MSG_SERVER_LINKS, "%s %s %d", slink->server,
+		slink->peer, slink->hops);
+    }
+    /* terminate the list */
+    send_cmd (con, MSG_SERVER_LINKS, "");
 }

@@ -80,7 +80,10 @@ remove_connection (CONNECTION * con)
 	   would avoid sending it) */
 
 	log ("remove_connection(): server split detected (%s)", con->host);
-	notify_mods ("server %s has split.", con->host);
+	notify_mods ("Server %s has quit.", con->host);
+	/* notify our peers this server has quit */
+	pass_message_args (con, MSG_SERVER_QUIT, ":%s %s", Server_Name,
+		con->host);
 
 	Servers = list_delete (Servers, con);
 

@@ -244,17 +244,6 @@ HANDLER (server_login_ack)
     /* set the recv/send buffer length to 16k for server links */
     set_tcp_buffer_len (con->fd, 16384);
 
-    log ("server_login(): server %s has joined", con->host);
-
-    notify_mods ("server %s has joined.", con->host);
-
-    con->class = CLASS_SERVER;
-    con->opt.server = CALLOC (1, sizeof (SERVER));
-#if HAVE_LIBZ
-    /* set up the compression handlers for this connection */
-    init_compress (con, con->compress);
-#endif
-
     /* put this connection in the shortcut list to the server conections */
     list = CALLOC (1, sizeof (LIST));
     if (!list)
@@ -267,6 +256,101 @@ HANDLER (server_login_ack)
     list->data = con;
     Servers = list_append (Servers, list);
 
+    con->class = CLASS_SERVER;
+    con->opt.server = CALLOC (1, sizeof (SERVER));
+#if HAVE_LIBZ
+    /* set up the compression handlers for this connection */
+    init_compress (con, con->compress);
+#endif
+
+    log ("server_login(): server %s has joined", con->host);
+
+    notify_mods ("Server %s has joined.", con->host);
+
+    /* notify peer servers this server has joined the cluster */
+    pass_message_args (con, MSG_SERVER_LINK_INFO, ":%s %s 1", Server_Name,
+		       con->host);
+
     /* synchronize our state with this server */
     synch_server (con);
+}
+
+/* 10019 <server> <peer> <hops> */
+HANDLER (link_info)
+{
+    int ac, hops;
+    char *av[3];
+    LIST *list;
+    LINK *slink;
+
+    ASSERT (validate_connection (con));
+    (void) len;
+    ac = split_line (av, FIELDS (av), pkt);
+    if (ac != 3)
+    {
+	log ("link_info(): wrong number of parameters");
+	send_cmd (con, MSG_SERVER_NOSUCH, "Wrong number of parameters [%d]",
+		  tag);
+	return;
+    }
+    hops = atoi (av[2]);
+    if (hops < 0)
+    {
+	log ("link_info(): invalid hop count");
+	send_cmd (con, MSG_SERVER_NOSUCH, "Invalid hop count");
+	return;
+    }
+    pass_message_args (con, tag, ":%s %s %d", av[0], av[1], hops + 1);
+
+    slink = CALLOC (1, sizeof (LINK));
+    slink->server = STRDUP (av[0]);
+    slink->peer = STRDUP (av[1]);
+    slink->hops = hops;
+    list = CALLOC (1, sizeof (LIST));
+    list->data = slink;
+    Server_Links = list_append (Server_Links, list);
+    notify_mods ("Server %s has joined.", av[1]);
+}
+
+/* 10020 :<server> <server> "<reason>" */
+HANDLER (server_quit)
+{
+    LIST **list, *tmpList;
+    LINK *slink;
+    int ac;
+    char *av[3];
+
+    ASSERT (validate_connection (con));
+    (void) len;
+    if (*pkt != ':')
+    {
+	log ("server_quit(): malformed message");
+	send_cmd (con, MSG_SERVER_NOSUCH, "Invalid server quit message");
+	return;
+    }
+    ac = split_line (av, FIELDS (av), pkt + 1);
+    if (ac != 3)
+    {
+	log ("server_quit(): wrong number of parameters");
+	send_cmd (con, MSG_SERVER_NOSUCH,
+		  "Invalid number of parameters for server quit");
+	return;
+    }
+    for (list = &Server_Links; *list; list = &(*list)->next)
+    {
+	slink = (*list)->data;
+	if (!strcasecmp (av[0], slink->server) &&
+	    !strcasecmp (av[1], slink->peer))
+	{
+	    tmpList = *list;
+	    *list = (*list)->next;
+	    FREE (tmpList);
+	    FREE (slink->server);
+	    FREE (slink->peer);
+	    FREE (slink);
+	    break;
+	}
+    }
+    notify_mods ("Server %s has quit: %s", av[1], av[2]);
+    pass_message_args (con, tag, ":%s %s \"%s\"", av[0], av[1], av[2]);
 }

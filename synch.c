@@ -71,6 +71,20 @@ sync_chan (CHANNEL *chan, CONNECTION *con)
 		Server_Name, chan->name, Levels[chan->level]);
 }
 
+static void
+sync_server_list (CONNECTION *con)
+{
+    LIST *list;
+    LINK *slink;
+
+    for (list = Server_Links; list; list = list->next)
+    {
+	slink = list->data;
+	send_cmd (con, MSG_SERVER_LINK_INFO, "%s %s %d",
+		slink->server, slink->peer, slink->hops + 1);
+    }
+}
+
 void
 synch_server (CONNECTION * con)
 {
@@ -82,6 +96,8 @@ synch_server (CONNECTION * con)
     hash_foreach (Users, (hash_callback_t) sync_user, con);
     /* sync the channel level */
     hash_foreach (Channels, (hash_callback_t) sync_chan, con);
+    /* sync the list of known servers */
+    sync_server_list (con);
 
     log ("synch_server(): done");
 }

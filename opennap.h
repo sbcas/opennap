@@ -37,6 +37,8 @@
 #define ISSPACE(c) isspace((unsigned char)c)
 #define ISPRINT(c) isprint((unsigned char)c)
 
+#define FIELDS(p) sizeof(p)/sizeof(char*)
+
 typedef unsigned char uchar;
 
 typedef struct _buffer BUFFER;
@@ -267,6 +269,13 @@ typedef struct
 }
 USERDB;
 
+typedef struct link
+{
+    char *server;
+    char *peer;
+    int hops;
+} LINK;
+
 typedef void (*timer_cb_t) (void *);
 
 extern char *Motd_Path;
@@ -317,7 +326,9 @@ extern int Max_Clients;
 extern int Num_Files;		/* total number of available files */
 extern int Num_Gigs;		/* total size of files available (in kB) */
 
-LIST *Servers;			/* peer servers */
+extern LIST *Servers;		/* peer servers */
+extern LIST *Server_Links;
+
 
 extern BAN **Ban;
 extern int Ban_Size;
@@ -449,6 +460,8 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_REMOTE_SEARCH_RESULT	10016
 #define MSG_SERVER_REMOTE_SEARCH_END	10017
 #define MSG_SERVER_ENCAPSULATED		10018
+#define MSG_SERVER_LINK_INFO		10019
+#define MSG_SERVER_QUIT			10020
 #define MSG_CLIENT_CONNECT		10100
 #define MSG_CLIENT_DISCONNECT		10101
 #define MSG_CLIENT_KILL_SERVER		10110
@@ -597,6 +610,7 @@ HANDLER (join);
 HANDLER (kill_user);
 HANDLER (kill_server);
 HANDLER (level);
+HANDLER (link_info);
 HANDLER (list_channels);
 HANDLER (list_users);
 HANDLER (login);
@@ -625,6 +639,7 @@ HANDLER (server_error);
 HANDLER (server_links);
 HANDLER (server_login);
 HANDLER (server_login_ack);
+HANDLER (server_quit);
 HANDLER (server_reconfig);
 HANDLER (server_stats);
 HANDLER (server_usage);

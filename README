@@ -182,6 +182,24 @@ are implemented as additional functionality in the opennap server.
 	user, it checks the <created> time to see which is the oldest
 	entry and updates accordingly.
 
+10019	server link info [SERVER]
+
+	:<server> <server> <hops>
+
+	This message is used by servers to share information about the
+	topology of the linked servers.  when a server joins, a message is
+	sent to all other nodes in the cluster.  <hops> is incremented each
+	time the message is relayed so that each server knows how far away
+	the others are.
+
+10020	server quit [SERVER]
+
+	:<server> <server> "<reason>"
+
+	This message is used to notify other servers in the group that a
+	server has delinked.  The server with the peer connection to the
+	server that has quit should send this message.
+
 10100	server connect [CLIENT]
 
 	<server> <port> [ <remote_server> ]
@@ -213,11 +231,12 @@ are implemented as additional functionality in the opennap server.
 
 10112	show server links [CLIENT, SERVER]
 
-	server: <host> <port> <max buffer size> <buffer size> <consumed bytes>
+	client: no data
+	server: <host> <host> <hops>
 
 	This command is used to show information about the links a
 	server has to other servers.  The list is terminated by a 10112
-	message with no data.
+	message with no data (0 length).
 
 10115	show server stats [CLIENT, SERVER]
 

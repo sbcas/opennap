@@ -90,6 +90,9 @@ HASH *MD5;
    list to speed up server-server message passing */
 LIST *Servers = 0;
 
+/* list of all servers in the cluster */
+LIST *Server_Links = 0;
+
 int Num_Files = 0;
 int Num_Gigs = 0;		/* in kB */
 int SigCaught = 0;
