@@ -111,6 +111,7 @@ HANDLER (join)
 	{
 	    USER *chanUser = list->data;
 
+	    ASSERT (chanUser != 0);
 	    send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST, "%s %s %d %d",
 		      chan->name, chanUser->nick,
 		      chanUser->shared, chanUser->speed);

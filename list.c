@@ -27,9 +27,9 @@ list_remove (LIST **l)
     LIST *ptr;
 
     ASSERT (*l != 0);
-    ptr = (*l)->next;
-    FREE (*l);
-    *l = ptr;
+    ptr = *l;
+    *l = (*l)->next;
+    FREE (ptr);
 }
 
 /* remove the element matching `data' from the list */

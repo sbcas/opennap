@@ -73,19 +73,19 @@ HANDLER (change_pass)
     if (pop_user (con, &pkt, &user) != 0)
 	return;
     if (Num_Servers)
-	pass_message_args(con,tag,"%s",pkt);
-    db=userdb_fetch(user->nick);
-    if(!db)
+	pass_message_args (con, tag, "%s", pkt);
+    db = userdb_fetch (user->nick);
+    if (!db)
     {
-	log("change_pass(): could not find user %s in the database",
-	    user->nick);
+	log ("change_pass(): could not find user %s in the database",
+	     user->nick);
 	return;
     }
-    FREE(db->password);
-    db->password=STRDUP(pkt);
-    if(userdb_store(db))
-	log("change_pass(): userdb_store failed");
-    userdb_free(db);
+    FREE (db->password);
+    db->password = STRDUP (pkt);
+    if (userdb_store (db))
+	log ("change_pass(): userdb_store failed");
+    userdb_free (db);
 }
 
 /* 702 [ :<user> ] <email>
@@ -100,19 +100,19 @@ HANDLER (change_email)
     if (pop_user (con, &pkt, &user) != 0)
 	return;
     if (Num_Servers)
-	pass_message_args(con,tag,"%s",pkt);
-    db=userdb_fetch(user->nick);
-    if(!db)
+	pass_message_args (con, tag, "%s", pkt);
+    db = userdb_fetch (user->nick);
+    if (!db)
     {
-	log("change_email(): could not find user %s in the database",
-	    user->nick);
+	log ("change_email(): could not find user %s in the database",
+	     user->nick);
 	return;
     }
-    FREE(db->email);
-    db->email=STRDUP(pkt);
-    if(userdb_store(db))
-	log("change_email(): userdb_store failed");
-    userdb_free(db);
+    FREE (db->email);
+    db->email = STRDUP (pkt);
+    if (userdb_store (db))
+	log ("change_email(): userdb_store failed");
+    userdb_free (db);
 }
 
 /* 613 [ :<sender> ] <user> <port> [ <reason> ]
@@ -132,7 +132,7 @@ HANDLER (alter_port)
     if (sender->level < LEVEL_MODERATOR)
     {
 	log ("alter_port(): %s has no privilege to change ports",
-		sender->nick);
+	     sender->nick);
 	if (con->class == CLASS_USER)
 	    permission_denied (con);
 	return;
@@ -170,8 +170,9 @@ HANDLER (alter_port)
 	send_cmd (user->con, MSG_CLIENT_ALTER_PORT, "%d", p);
 
     if (Num_Servers)
-	pass_message_args (con, tag, ":%s %s %d", sender->nick, user->nick, p);
+	pass_message_args (con, tag, ":%s %s %d", sender->nick, user->nick,
+			   p);
 
     notify_mods ("%s changed %s's data port to %d: %s", sender->nick,
-	    user->nick, p, NONULL(pkt));
+		 user->nick, p, NONULL (pkt));
 }

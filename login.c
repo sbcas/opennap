@@ -273,7 +273,7 @@ HANDLER (login)
 	if (!db)
 	{
 	    OUTOFMEMORY ("login");
-	    return;
+	    goto failed;
 	}
 	db->nick = STRDUP (av[0]);
 	db->password = STRDUP (av[1]);
@@ -281,8 +281,7 @@ HANDLER (login)
 	if (!db->nick || !db->password || !db->email)
 	{
 	    OUTOFMEMORY ("login");
-	    userdb_free (db);
-	    return;
+	    goto failed;
 	}
 	db->level = LEVEL_USER;
 	db->created = Current_Time;
@@ -337,7 +336,8 @@ HANDLER (login)
 	}
     }
 
-    userdb_free (db);
+    if (db)
+	userdb_free (db);
 
     /* pass this information to our peer servers */
     if (Num_Servers)
@@ -376,7 +376,8 @@ HANDLER (login)
     /* clean up anything we allocated here */
     if (con->class == CLASS_UNKNOWN)
 	con->destroy = 1;
-    userdb_free (db);
+    if (db)
+	userdb_free (db);
     if (user)
     {
 	if (user->nick)
@@ -437,19 +438,16 @@ HANDLER (register_nick)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
+    CHECK_USER_CLASS ("register_nick");
     log ("register_nick(): attempting to register %s", pkt);
-    db = userdb_fetch (pkt);
-    if (db)
+    if ((db = userdb_fetch (pkt)))
     {
+	userdb_free (db);
 	log ("register_nick(): %s is already registered", pkt);
 	send_cmd (con, MSG_SERVER_REGISTER_FAIL, "");
     }
     else
-    {
-	log ("register_nick(): %s is not yet registered", pkt);
 	send_cmd (con, MSG_SERVER_REGISTER_OK, "");
-    }
-    userdb_free (db);
 }
 
 /* 10114 :<server> <nick> <password> <level> <email> <created> <lastseen> */
@@ -532,4 +530,5 @@ HANDLER (reginfo)
 	log ("reginfo(): userdb_store failed (ignored)");
     else
 	log ("reginfo(): updated accounts table for %s", fields[0]);
+    userdb_free (db);
 }

@@ -28,6 +28,7 @@ HANDLER (part)
     for (list = user->channels; list; list = list->next)
     {
 	chan = list->data;
+	ASSERT (chan != 0);
 	if (!strcmp (pkt, chan->name))
 	    break;
     }

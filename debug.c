@@ -218,8 +218,8 @@ debug_free (void *ptr, const char *file, int line)
     debug_overflow (block, "free");
     memset (block->val, FREE_BYTE, block->len);
     free (block->val);
-    free (block);
     Memory_Usage -= block->len;
+    free (block);
 }
 
 #if 0

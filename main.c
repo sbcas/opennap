@@ -313,7 +313,7 @@ int
 main (int argc, char **argv)
 {
     int s;			/* server socket */
-    int sp;			/* stats port */
+    int sp = -1;		/* stats port */
     int i;			/* generic counter */
     int n;			/* number of ready sockets */
     int f, pending = 0, port = 0, iface = INADDR_ANY, nolisten = 0;
@@ -436,6 +436,7 @@ main (int argc, char **argv)
     add_timer (Stat_Click, -1, (timer_cb_t) update_stats, 0);
 
 #if HAVE_POLL
+    /* these only need to be set once */
     ufdsize = 2;
     ufd = CALLOC (ufdsize, sizeof (struct pollfd));
     ufd[0].fd = s;
@@ -477,9 +478,12 @@ main (int argc, char **argv)
 	FD_ZERO (&wset);
 	maxfd = s;
 	FD_SET (s, &set);
-	FD_SET (sp, &set);
-	if (sp > maxfd)
-	    maxfd = sp;
+	if (!nolisten)
+	{
+	    FD_SET (sp, &set);
+	    if (sp > maxfd)
+		maxfd = sp;
+	}
 #endif /* HAVE_POLL */
 
 	for (i = 0; i < Max_Clients; i++)
