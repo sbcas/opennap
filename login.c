@@ -23,8 +23,7 @@ invalid_nick (const char *s)
 	return 1;
     while (*s)
     {
-	if (!ISPRINT (*s) || ISSPACE (*s) || *s == ':' || *s == '%'
-	    || *s == '$')
+	if(*s<'!' || *s>'~' || strchr(":%$*?.!\"'", *s))
 	    return 1;
 	count++;
 	s++;
@@ -120,6 +119,8 @@ HANDLER (login)
     HOTLIST *hotlist;
     int ac, speed, port;
     USERDB *db = 0;
+    unsigned int ip;
+    char *host, realhost[256];
 
     (void) len;
     ASSERT (validate_connection (con));
@@ -135,16 +136,36 @@ HANDLER (login)
     /* check for the correct number of fields for this message type.  some
        clients send extra fields, so we just check to make sure we have
        enough for what is required in this implementation. */
-    if (ac < 5)
+    if(ISUNKNOWN(con))
     {
-	log ("login(): too few parameters (tag=%d)", tag);
-	print_args (ac, av);
-	if (ISUNKNOWN (con))
+	if (ac < 5)
 	{
-	    unparsable (con);
-	    con->destroy = 1;
+	    log ("login(): too few parameters (tag=%d)", tag);
+	    print_args (ac, av);
+	    if (ISUNKNOWN (con))
+	    {
+		unparsable (con);
+		con->destroy = 1;
+	    }
+	    return;
 	}
-	return;
+	host=con->host;
+	ip=con->ip;
+    }
+    else
+    {
+	ASSERT(ISSERVER(con));
+	if(ac < 10)
+	{
+	    log("login(): too few parameters from server %s", con->host);
+	    if(ac>0)
+		kill_client(av[0],"bad login message from server");
+	    return;
+	}
+	ip=strtoul(av[7],0,10);
+	strncpy(realhost,my_ntoa(ip),sizeof(realhost));
+	realhost[sizeof(realhost)-1]=0;
+	host=realhost;
     }
 
     if (invalid_nick (av[0]))
@@ -190,8 +211,8 @@ HANDLER (login)
 	    }
 	}
 
-	/* check for user|ip ban.  */
-	if (check_ban (con, av[0]))
+	/* check for user!ip ban.  */
+	if (check_ban (con, av[0], host))
 	    return;
 
     }
@@ -285,12 +306,11 @@ HANDLER (login)
 	    {
 		/* warn about privileged users */
 		notify_mods (ERROR_MODE, "Bad password for %s (%s) from %s",
-			     db->nick, Levels[db->level], my_ntoa (con->ip));
+			     db->nick, Levels[db->level], host);
 		pass_message_args (NULL, MSG_SERVER_NOTIFY_MODS,
 				   ":%s %d \"Bad password for %s (%s) from %s\"",
 				   Server_Name, ERROR_MODE,
-				   db->nick, Levels[db->level],
-				   my_ntoa (con->ip));
+				   db->nick, Levels[db->level], host);
 	    }
 	    if (ISUNKNOWN (con))
 	    {
@@ -323,7 +343,7 @@ HANDLER (login)
 	{
 	    /* check for ghosts.  if another client from the same ip address
 	       logs in, kill the older client and proceed normally */
-	    if (user->host == con->ip)
+	    if (user->ip == con->ip)
 	    {
 		kill_client (user->nick, "ghost (%s)", user->server);
 		/* remove the old entry */
@@ -343,63 +363,37 @@ HANDLER (login)
 	else
 	{
 	    ASSERT (ISSERVER (con));
-	    if(ac>=10)
+	    /* check the timestamp to see which client is older.  the last
+	       one to connect gets killed. when the timestamp is not
+	       available, both clients are killed. */
+	    if (atoi (av[6]) < user->connected)
 	    {
-		/* check the timestamp to see which client is older.  the last
-		   one to connect gets killed. when the timestamp is not
-		   available, both clients are killed. */
-		if (atoi (av[6]) < user->connected)
-		{
-		    /* reject the client that was already logged in since has
-		     an older timestamp */
+		/* reject the client that was already logged in since has
+		   an older timestamp */
 
-		    /* the user we see logged in after the same user on another
-		       server, so we want to kill the existing user.  we don't
-		       pass this back to the server that we received the login
-		       from because that will kill the legitimate user */
-		    pass_message_args (con, MSG_CLIENT_KILL,
-			    ":%s %s \"nick collision (%s %s)\"",
-			    Server_Name, user->nick, av[8], user->server);
-		    notify_mods (KILLLOG_MODE,
-			    "%s killed %s: nick collision (%s %s)",
-			    Server_Name, user->nick, av[8], user->server);
+		/* the user we see logged in after the same user on another
+		   server, so we want to kill the existing user.  we don't
+		   pass this back to the server that we received the login
+		   from because that will kill the legitimate user */
+		pass_message_args (con, MSG_CLIENT_KILL,
+			":%s %s \"nick collision (%s %s)\"",
+			Server_Name, user->nick, av[8], user->server);
+		notify_mods (KILLLOG_MODE,
+			"%s killed %s: nick collision (%s %s)",
+			Server_Name, user->nick, av[8], user->server);
 
-		    if (ISUSER (user->con))
-			zap_local_user (user->con, "nick collision");
-		    else
-			hash_remove (Users, user->nick);
-		    /* proceed with login normally */
-		}
+		if (ISUSER (user->con))
+		    zap_local_user (user->con, "nick collision");
 		else
-		{
-		    /* the client we already know about is older, reject
-		       this login */
-		    log("login(): nick collision for user %s, rejected login from server %s",
-			    user->nick, con->host);
-		    return;
-		}
+		    hash_remove (Users, user->nick);
+		/* proceed with login normally */
 	    }
 	    else
 	    {
-		/* no timestamp available, reject both clients */
-		notify_mods (KILLLOG_MODE,
-			"%s killed %s: nick collision (no TS from %s)",
-			Server_Name, user->nick, con->host);
-		/* notify other servers of the kill. we don't send the kill
-		   to the server we received the login request from */
-		pass_message_args(con,MSG_CLIENT_KILL,
-			":%s %s \"nick collision (no TS from %s)\"",
-			Server_Name,user->nick,con->host);
-		if(ISUSER(user->con))
-		{
-		    user->con->killed = 1;
-		    user->con->destroy = 1;
-		    send_cmd(user->con, MSG_SERVER_NOSUCH,
-			    "You were killed by %s: nick collision",
-			    Server_Name);
-		}
-		else
-		    hash_remove(Users,user->nick);
+		/* the client we already know about is older, reject
+		   this login */
+		log("login(): nick collision for user %s, rejected login from server %s",
+			user->nick, con->host);
 		return;
 	    }
 	}
@@ -466,6 +460,7 @@ HANDLER (login)
     user->speed = speed;
     user->con = con;
     user->level = LEVEL_USER;	/* default */
+    user->ip = ip;
 
     /* if this is a locally connected user, update our information */
     if (ISUNKNOWN (con))
@@ -473,7 +468,6 @@ HANDLER (login)
 	/* save the ip address of this client */
 	user->connected = Current_Time;
 	user->local = 1;
-	user->host = con->ip;
 	user->conport = con->port;
 	if (!(user->server = STRDUP (Server_Name)))
 	{
@@ -502,23 +496,14 @@ HANDLER (login)
     else
     {
 	ASSERT (ISSERVER (con));
-	/* newer servers (0.33+) pass the additional information in the
-	   login message, check for it here */
-	if (ac >= 10)
+	user->connected = atoi (av[6]);
+	user->server = STRDUP (av[8]);
+	if (!user->server)
 	{
-	    /* data is present */
-	    user->connected = atoi (av[6]);
-	    user->host = strtoul (av[7], 0, 10);
-	    user->server = STRDUP (av[8]);
-	    if (!user->server)
-	    {
-		OUTOFMEMORY ("login");
-		goto failed;
-	    }
-	    user->conport = atoi (av[9]);
+	    OUTOFMEMORY ("login");
+	    goto failed;
 	}
-	else
-	    user->connected = Current_Time; /* TS not present */
+	user->conport = atoi (av[9]);
     }
 
     if (hash_add (Users, user->nick, user))
@@ -528,33 +513,15 @@ HANDLER (login)
     }
 
     /* pass this information to our peer servers */
-    if (Servers)
-    {
-	/*  if we have full information, use the new method */
-	if ((ISSERVER (con) && ac >= 10) || ISUSER (con))
-	    pass_message_args (con, MSG_CLIENT_LOGIN,
-			       "%s %s %s \"%s\" %s %s %d %u %s %hu",
-			       av[0], av[1], av[2], av[3], av[4],
+    pass_message_args (con, MSG_CLIENT_LOGIN,
+	    "%s %s %s \"%s\" %s %s %d %u %s %hu",
+	    user->nick, av[1], av[2], av[3], av[4],
 #if EMAIL
-			       db ? db->email : "unknown",
+	    db ? db->email : "unknown",
 #else
-			       "unknown",
+	    "unknown",
 #endif /* EMAIL */
-			       user->connected, user->host, user->server,
-			       user->conport);
-	else
-	    pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
-			       av[0], av[1], av[2], av[3], av[4]);
-
-	/* TODO: the following goes away once everyone is upgraded */
-#if 1
-	/* only generate this message for local users */
-	if (ISUSER (con))
-	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %u %hu %s",
-			       user->nick, user->host, user->conport,
-			       Server_Name);
-#endif
-    }
+	    user->connected, user->ip, user->server, user->conport);
 
     if (db)
     {
@@ -662,43 +629,11 @@ HANDLER (login)
    TODO: this message goes away once everyone is upgraded */
 HANDLER (user_ip)
 {
-    char *field[4];
-    USER *user;
-
-    (void) tag;
-    (void) len;
-    ASSERT (validate_connection (con));
-    CHECK_SERVER_CLASS ("user_ip");
-    if (split_line (field, sizeof (field) / sizeof (char *), pkt) != 4)
-    {
-	log ("user_ip(): wrong number of arguments");
-	return;
-    }
-    user = hash_lookup (Users, field[0]);
-    if (!user)
-    {
-	log ("user_ip(): could not find %s", field[0]);
-	return;
-    }
-    ASSERT (validate_user (user));
-    if (!ISUSER (user->con))
-    {
-	pass_message_args (con, tag, "%s %s %s %s", user->nick,
-			   field[1], field[2], field[3]);
-	if (user->server)
-	    return;		/* already have it from the new login(2) message */
-	user->host = strtoul (field[1], 0, 10);
-	user->conport = atoi (field[2]);
-	ASSERT (user->server == 0);
-	if (!(user->server = STRDUP (field[3])))
-	    OUTOFMEMORY ("user_ip");
-    }
-    else
-    {
-	/* nick collsion should have happened */
-	ASSERT (con->destroy == 1);
-	log ("user_ip(): ignoring info for local user (nick collision)");
-    }
+    (void)tag;
+    (void)pkt;
+    (void)len;
+    (void)con;
+    /* deprecated */
 }
 
 /* check to see if a nick is already registered */

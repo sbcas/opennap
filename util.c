@@ -87,69 +87,18 @@ expand_hex (char *v, int vsize)
     }
 }
 
-#if 0
-static int Stale_Random = 1;
-static struct md5_ctx Random_Context;
-#endif
-
 void
 init_random (void)
 {
-#if 0
-#ifdef HAVE_DEV_RANDOM
-    int f, n;
-    char seed[8];
-#endif /* HAVE_DEV_RANDOM */
-
-    md5_init_ctx (&Random_Context);
-    Stale_Random = 1;
-#ifdef HAVE_DEV_RANDOM
-    /* seed the random number generate with a better random value */
-    if ((f = open ("/dev/random", O_RDONLY)) > 0)
-    {
-	n = read (f, seed, sizeof (seed));
-	if (n > 0)
-	{
-	    if ((unsigned int) n < sizeof (seed))
-		log ("init_random(): only got %d of %d random bytes", n,
-		     sizeof (seed));
-	    md5_process_bytes (seed, n, &Random_Context);
-	    Stale_Random = 0;
-	}
-	close (f);
-    }
-    else
-	log ("generate_nonce(): /dev/random: %s", strerror (errno));
-#endif /* HAVE_DEV_RANDOM */
-#else
     ASSERT (Current_Time != 0);
     /* force generation of a different seed if respawning quickly by adding
        the pid of the current process */
     srand (Current_Time + getuid () + getpid ());
-#endif
 }
-
-#if 0
-void
-add_random_bytes (char *s, int ssize)
-{
-    md5_process_bytes (s, ssize, &Random_Context);
-    Stale_Random = 0;
-}
-#endif
 
 void
 get_random_bytes (char *d, int dsize)
 {
-#if 0
-    char buf[16];
-
-    ASSERT (Stale_Random == 0);
-    ASSERT (dsize <= 16);
-    md5_finish_ctx (&Random_Context, buf);
-    memcpy (d, buf, dsize);
-    md5_process_bytes (buf, 16, &Random_Context);	/* feedback */
-#else
     int i = 0, v;
 
     while (i < dsize)
@@ -163,7 +112,6 @@ get_random_bytes (char *d, int dsize)
 	if (i < dsize)
 	    d[i++] = (v >> 24) & 0xff;
     }
-#endif
 }
 
     /* generate our own nonce value */

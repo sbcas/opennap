@@ -1,3 +1,15 @@
+[opennap 0.36]
+
+`*', `?', `.' and `!' are no longer valid chars in nicks.  This is needed to
+support the new expanded ban syntax
+
+Bans are now of the form <nick!ip>.  `*' matches 0 or more chars, `?'
+matches any single char.
+
+Removed the USER_IP server numeric.  This version of opennap will not
+interoperate with other opennap servers < 0.33, but will use less
+bandwidth for server->server links
+
 [opennap 0.35]
 
 added `max_clones' configuration variable to control how many clients may

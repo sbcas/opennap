@@ -135,7 +135,7 @@ dump_channels (void)
 	logerr ("dump_channels", "fclose");
 }
 
-/* 422 [ :<sender> ] <channel> <user|ip> [ "<reason>" ] */
+/* 422 [ :<sender> ] <channel> <user!ip> [ "<reason>" ] */
 HANDLER (channel_ban)
 {
     CHANNEL *chan;
@@ -143,6 +143,7 @@ HANDLER (channel_ban)
     int ac = -1;
     LIST *list;
     BAN *b;
+    char *banptr, realban[256];
 
     (void) len;
     ASSERT (validate_connection (con));
@@ -182,33 +183,21 @@ HANDLER (channel_ban)
 	}
     }
 
-    /* check for valid input */
-    if (!is_ip (av[1]) && invalid_nick (av[1]))
-    {
-	invalid_nick_msg (con);
-	return;
-    }
+    banptr=normalize_ban(av[1],realban,sizeof(realban));
 
     /* ensure this user/ip is not already banned */
     for (list = chan->bans; list; list = list->next)
     {
 	b = list->data;
-	if (!strcasecmp (b->target, av[1]))
-	{
-	    if (ISUSER (con))
-		send_cmd (con, MSG_SERVER_NOSUCH,
-			  "%s is already banned from channel %s", b->target,
-			  chan->name);
-	    return;
-	}
+	if (!strcasecmp (b->target, banptr))
+	    return;	/* ignore, already banned */
     }
 
     b = CALLOC (1, sizeof (BAN));
     if (b)
     {
 	b->setby = STRDUP (sender);
-	b->target = STRDUP (av[1]);
-	b->type = is_ip (av[1]) ? BAN_IP : BAN_USER;
+	b->target = STRDUP (banptr);
 	b->when = Current_Time;
 	if (ac > 2)
 	    b->reason = STRDUP (av[2]);
@@ -236,7 +225,7 @@ HANDLER (channel_ban)
 		chan->name, NONULL (b->reason));
 }
 
-/* 423 [ :<sender> ] <channel> <user|ip> [ "<reason>" ] */
+/* 423 [ :<sender> ] <channel> <user!ip> [ "<reason>" ] */
 HANDLER (channel_unban)
 {
     char *sender, *av[3];
@@ -244,6 +233,7 @@ HANDLER (channel_unban)
     LIST **list, *tmpList;
     BAN *b;
     CHANNEL *chan;
+    char *banptr, realban[256];
 
     (void) len;
     ASSERT (validate_connection (con));
@@ -282,16 +272,12 @@ HANDLER (channel_unban)
 	    return;
 	}
     }
-    if (!is_ip (av[1]) && invalid_nick (av[1]))
-    {
-	invalid_nick_msg (con);
-	return;
-    }
+    banptr=normalize_ban(av[1],realban,sizeof(realban));
     ASSERT (validate_channel (chan));
     for (list = &chan->bans; *list; list = &(*list)->next)
     {
 	b = (*list)->data;
-	if (!strcasecmp (av[1], b->target))
+	if (!strcasecmp (banptr, b->target))
 	{
 	    pass_message_args (con, tag, ":%s %s %s%s%s%s",
 			       sender, chan->name, b->target,
@@ -581,7 +567,7 @@ HANDLER (channel_drop)
 	nosuchchannel (con);
 	return;
     }
-    if ((chan->flags & ON_CHANNEL_USER) == 0)
+    if (chan->flags & ON_CHANNEL_USER)
     {
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "channel %s is not registered",

@@ -51,7 +51,7 @@ HANDLER (upload_ok)
 	/* firewalled user, give the info back to the uploader */
 	send_cmd (con, MSG_SERVER_UPLOAD_FIREWALL /* 501 */ ,
 		  "%s %u %d \"%s\" %s %d",
-		  recip->nick, recip->host, recip->port, av[1],
+		  recip->nick, recip->ip, recip->port, av[1],
 #if RESUME
 		  info->hash,
 #else
@@ -63,7 +63,7 @@ HANDLER (upload_ok)
 	/* recipient of this message may be on a remote server, use
 	   send_user() here */
 	send_user (recip, MSG_SERVER_FILE_READY, "%s %u %d \"%s\" %s %d",
-		   con->user->nick, con->user->host, con->user->port, av[1],
+		   con->user->nick, con->user->ip, con->user->port, av[1],
 #if RESUME
 		   info->hash,
 #else

@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -22,8 +21,7 @@ invalid_channel (const char *s)
 
     while (*s)
     {
-	if (ISSPACE (*s) || !ISPRINT (*s) || *s == ':' || *s == '%'
-	    || *s == '$')
+	if (*s < '!' || *s > '~' || strchr (":%$*?\"'", *s))
 	    return 1;
 	count++;
 	s++;
@@ -32,29 +30,16 @@ invalid_channel (const char *s)
 	    || (Max_Channel_Length > 0 && count > Max_Channel_Length));
 }
 
-static int
-banned_from_channel (CHANNEL * chan, USER * user)
+static BAN *
+is_banned (LIST * bans, const char *nick, const char *host)
 {
-    LIST *list;
-    BAN *b;
+    char mask[256];
 
-    strncpy (Buf, my_ntoa (user->host), sizeof (Buf));
-    for (list = chan->bans; list; list = list->next)
+    snprintf (mask, sizeof (mask), "%s!%s", nick, host);
+    for (; bans; bans = bans->next)
     {
-	b = list->data;
-	if ((b->type == BAN_USER && !strcasecmp (user->nick, b->target)) ||
-	    (b->type == BAN_IP && ip_glob_match (b->target, Buf)))
-	{
-	    log ("banned_from_channel(): %s is banned from %s: %s (%s)",
-		 user->nick, chan->name, NONULL (b->reason), b->setby);
-	    if (ISUSER (user->con))
-	    {
-		send_cmd (user->con, MSG_SERVER_NOSUCH,
-			  "You are banned from %s: %s (%s)",
-			  chan->name, NONULL (b->reason), b->setby);
-	    }
-	    return 1;
-	}
+	if (glob_match (((BAN *) bans->data)->target, mask))
+	    return bans->data;
     }
     return 0;
 }
@@ -68,7 +53,7 @@ HANDLER (join)
     LIST *list;
     CHANUSER *chanUser, *cu;
     int chanop = 0;
-    char chanbuf[256];	/* needed when creating a rollover channel */
+    char chanbuf[256];		/* needed when creating a rollover channel */
 
     (void) tag;
     (void) len;
@@ -106,9 +91,9 @@ HANDLER (join)
 
     /* this loop is here in case the channel has a limit so we can create
        the rollover channels */
-    ASSERT(sizeof(chanbuf)<Max_Channel_Length);
-    chanbuf[sizeof(chanbuf)-1]=0;
-    for(;;)
+    ASSERT (sizeof (chanbuf) >= (unsigned int) Max_Channel_Length);
+    chanbuf[sizeof (chanbuf) - 1] = 0;
+    for (;;)
     {
 	chan = hash_lookup (Channels, pkt);
 	if (!chan)
@@ -137,7 +122,7 @@ HANDLER (join)
 	    }
 	    /* set the default topic */
 	    snprintf (Buf, sizeof (Buf), "Welcome to the %s channel.",
-		    chan->name);
+		      chan->name);
 	    chan->topic = STRDUP (Buf);
 	    if (!chan->topic)
 	    {
@@ -157,16 +142,16 @@ HANDLER (join)
 	{
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH,
-			"channel join failed: already joined channel");
+			  "channel join failed: already joined channel");
 	    return;
 	}
 	/* check to make sure the user has privilege to join */
 	else if (user->level < chan->level)
 	{
-	    if(ISUSER(con))
-		send_cmd(con,MSG_SERVER_NOSUCH,
-			"channel join failed: requires level %s",
-			Levels[chan->level]);
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			  "channel join failed: requires level %s",
+			  Levels[chan->level]);
 	    return;
 	}
 	else
@@ -184,30 +169,40 @@ HANDLER (join)
 	    /* if not chanop or mod+, check extra permissions */
 	    if (!chanop && user->level < LEVEL_MODERATOR)
 	    {
+		BAN *ban;
+
 		/* check to make sure this user is not banned from the channel */
-		if (chan->bans && banned_from_channel (chan, user))
+		if (
+		    (ban =
+		     is_banned (chan->bans, user->nick, my_ntoa (user->ip))))
 		{
-		    /* log message is printed inside banned_from_channel() */
+		    if (ISUSER (user->con))
+		    {
+			send_cmd (user->con, MSG_SERVER_NOSUCH,
+				  "channel join failed: banned: %s",
+				  NONULL (ban->reason));
+		    }
 		    return;
 		}
 
 		/* check for invitation */
 		if ((chan->flags & ON_CHANNEL_INVITE) &&
-			!list_find (user->invited, chan))
+		    !list_find (user->invited, chan))
 		{
 		    if (ISUSER (con))
 			send_cmd (con, MSG_SERVER_NOSUCH,
-				"channel join failed: invite only");
+				  "channel join failed: invite only");
 		    return;
 		}
 
-		if (chan->limit > 0 && list_count (chan->users) >= chan->limit)
+		if (chan->limit > 0
+		    && list_count (chan->users) >= chan->limit)
 		{
 		    if (chan->flags & ON_CHANNEL_USER)
 		    {
 			if (ISUSER (con))
 			    send_cmd (con, MSG_SERVER_NOSUCH,
-				    "channel join failed: channel full");
+				      "channel join failed: channel full");
 			return;
 		    }
 		    /* for predefined channels, automatically create a rollover
@@ -215,23 +210,24 @@ HANDLER (join)
 		    else
 		    {
 			char *p;
-			int n;
+			int n = 2;
 
-			if(pkt!=chanbuf)
+			if (pkt != chanbuf)
 			{
-			    strncpy(chanbuf,pkt,sizeof(chanbuf)-1);
-			    pkt=chanbuf;
+			    strncpy (chanbuf, pkt, sizeof (chanbuf) - 1);
+			    pkt = chanbuf;
 			}
 			p = chanbuf + strlen (chanbuf);
-			while (p > chanbuf && isdigit (*(p - 1)))
+#define ISDIGIT(c) ((c)>=0 && (c)<='9')
+			while (p > chanbuf && ISDIGIT (*(p - 1)))
 			    p--;
-			if (isdigit (*p))
+			if (ISDIGIT (*p))
 			{
 			    n = atoi (p);
 			    *p = 0;
 			}
 			snprintf (chanbuf + strlen (chanbuf),
-				sizeof (chanbuf) - strlen (Buf), "%d", n);
+				  sizeof (chanbuf) - strlen (Buf), "%d", n);
 			log ("join(): trying channel %s", chanbuf);
 			continue;
 		    }

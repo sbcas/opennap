@@ -148,7 +148,7 @@ struct _user
     unsigned short totaldown;	/* total number of downloads */
 
     unsigned int libsize;	/* approximate size of shared files in kB */
-    unsigned int host;		/* ip of user in network byte order */
+    unsigned int ip;		/* ip of user in network byte order */
 
     unsigned short port;	/* data port client is listening on */
     unsigned short conport;	/* remote port for connection to server */
@@ -233,6 +233,8 @@ struct _connection
     }
     opt;
 
+    time_t	timer;		/* timer to detect idle connections */
+
     unsigned int connecting:1;
     unsigned int destroy:1;	/* connection should be destoyed in
 				   handle_connection().  because h_c() caches
@@ -247,7 +249,8 @@ struct _connection
     unsigned int class:2;	/* connection class (unknown, user, server) */
     unsigned int numerics:1;	/* use real numerics for opennap extensions */
     unsigned int xxx:5;		/* unused */
-    time_t	timer;		/* timer to detect idle connections */
+
+    short yyy; /* unused - remaining 16 bits of above bitmasks */
 };
 
 /* hotlist entry */
@@ -300,16 +303,8 @@ typedef struct
 }
 DATUM;
 
-typedef enum
-{
-    BAN_IP,
-    BAN_USER
-}
-ban_t;
-
 typedef struct _ban
 {
-    ban_t type;
     char *target;
     char *setby;
     char *reason;
@@ -620,7 +615,7 @@ int buffer_size (BUFFER *);
 int buffer_decompress (BUFFER *, z_streamp, char *, int);
 int buffer_validate (BUFFER *);
 void cancel_search (CONNECTION * con);
-int check_ban (CONNECTION *, const char *);
+int check_ban (CONNECTION *, const char *, const char *);
 int check_connect_status (int);
 int check_pass (const char *info, const char *pass);
 void close_db (void);
@@ -664,6 +659,7 @@ int is_ignoring (LIST *, const char *);
 int is_ip (const char *);
 int is_linked (CONNECTION *, const char *);
 int is_server (const char *);
+int glob_match(const char *, const char *);
 int load_bans (void);
 void load_channels (void);
 void log (const char *fmt, ...);
@@ -679,6 +675,7 @@ int new_tcp_socket (int);
 char *next_arg (char **);
 char *next_arg_noskip (char **);
 time_t next_timer (void);
+char *normalize_ban(char *, char *, int);
 void nosuchuser (CONNECTION *);
 void nosuchchannel (CONNECTION*);
 void notify_mods (unsigned int, const char *, ...);
@@ -877,7 +874,7 @@ typedef unsigned int socklen_t;
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
-#define VERSION "0.35"
+#define VERSION "0.36"
 
 #define strcasecmp stricmp
 #define strncasecmp strnicmp

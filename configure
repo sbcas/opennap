@@ -705,7 +705,7 @@ fi
 
 PACKAGE=opennap
 
-VERSION=0.35
+VERSION=0.36
 
 if test "`cd $srcdir && pwd`" != "`pwd`" && test -f $srcdir/config.status; then
   { echo "configure: error: source directory already configured; run "make distclean" there first" 1>&2; exit 1; }
@@ -1737,7 +1737,6 @@ EOF
 
 fi
 fi
-
 
 
 trap '' 1 2 15
