@@ -403,6 +403,8 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_DISCONNECT		10101
 #define MSG_CLIENT_KILL_SERVER		10110
 #define MSG_CLIENT_REMOVE_SERVER	10111
+#define MSG_CLIENT_LINKS		10112
+#define MSG_SERVER_LINKS		10112
 #define MSG_CLIENT_USAGE_STATS		10115	/* server usage stats */
 #define MSG_SERVER_USAGE_STATS		10115
 #define MSG_SERVER_COMPRESSED_DATA	10200	/* deprecated */
@@ -545,6 +547,7 @@ HANDLER (server_config);
 HANDLER (server_connect);
 HANDLER (server_disconnect);
 HANDLER (server_error);
+HANDLER (server_links);
 HANDLER (server_login);
 HANDLER (server_login_ack);
 HANDLER (server_reconfig);

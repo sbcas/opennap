@@ -181,12 +181,13 @@ static HANDLER Protocol[] = {
     {MSG_SERVER_LOGIN, server_login},
     {MSG_SERVER_LOGIN, server_login},
     {MSG_SERVER_LOGIN_ACK, server_login_ack},
-    {MSG_SERVER_USER_IP, user_ip},	/* 10013 */
+    {MSG_SERVER_USER_IP, user_ip},		/* 10013 */
+    {MSG_SERVER_REGINFO, reginfo },		/* 10014 */
     {MSG_CLIENT_CONNECT, server_connect},	/* 10100 */
     {MSG_CLIENT_DISCONNECT, server_disconnect},	/* 10101 */
     {MSG_CLIENT_KILL_SERVER, kill_server},	/* 10110 */
     {MSG_CLIENT_REMOVE_SERVER, remove_server},	/* 10111 */
-    {MSG_SERVER_REGINFO, reginfo },		/* 10114 */
+    {MSG_CLIENT_LINKS, server_links },		/* 10112 */
     {MSG_CLIENT_USAGE_STATS, server_usage },	/* 10115 */
 #if 0
     {MSG_SERVER_COMPRESSED_DATA, compressed_data},	/* 10200 */

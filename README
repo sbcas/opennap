@@ -1,6 +1,6 @@
 opennap - the open source napster server
 ========================================
-Last updated February 1, 2000
+Last updated February 25, 2000
 
 * For a description of the napster protocol, please see the file 'napster.txt'
   included with this distribution.
@@ -76,26 +76,6 @@ Last updated February 1, 2000
 		password to expect.  In addition, the dns lookup for
 		'name' MUST match the ip address for the connection to
 		prevent others from using a sniffed password.
-
-	* Library table
-
-		CREATE TABLE library (owner VARCHAR(15) NOT NULL,
-			filename VARCHAR(240) NOT NULL,
-			size INT UNSIGNED, md5 CHAR(48),
-			bitrate SMALLINT UNSIGNED,
-			freq SMALLINT UNSIGNED,
-			duration SMALLINT UNSIGNED,
-			linespeed TINYINT UNSIGNED, soundex VARCHAR(255),
-			type VARCHAR(32), PRIMARY KEY (owner, filename));
-
-		'owner' is the nick contributing the file
-		'filename' is the name of the contributed file
-		'md5' is the md5 checksum of the file
-		'size' is the file size in bytes
-		'bitrate' is the mp3 bit rate in kbps
-		'freq' is the sampling frequence of the file in hz
-		'duration' is the play time of the mp3 in seconds
-		'linespeed' is the contributor's link type
 
 * Server to Server messages
 
@@ -221,6 +201,21 @@ are implemented as additional functionality in the opennap server.
 
 	reqeusts that <server> be removed from the table of allowed links.
 	must be elite to execute this command
+
+10112	show server links [CLIENT, SERVER]
+
+	server: <host> <port> <max buffer size> <buffer size> <consumed bytes>
+
+	This command is used to show information about the links a
+	server has to other servers.  The list is terminated by a 10112
+	message with no data.
+
+10115	show server stats [CLIENT, SERVER]
+
+	server: <clients> <servers> <files> <gigs> <channels> <memory>
+
+	This command is used by administrators to get information about the
+	state of the server.
 
 10200	compressed packet [SERVER]
 
