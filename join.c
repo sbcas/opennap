@@ -85,10 +85,19 @@ HANDLER (join)
     /* ensure that this user isn't already on this channel */
     else if (list_find (user->channels, chan))
     {
-	log ("user %s is already on channel %s", user->nick, chan->name);
+	log ("join(): user %s is already on channel %s", user->nick, chan->name);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
 		      "You are already a member of channel %s", chan->name);
+	return;
+    }
+	/* check to make sure the user has privilege to join */
+    else if (user->level < chan->level)
+    {
+	log ("join(): channel %s is set to level %s", chan->name,
+		Levels[chan->level]);
+	if (ISUSER (con))
+	    permission_denied (con);
 	return;
     }
 
@@ -172,4 +181,78 @@ HANDLER (join)
 	log ("join(): destroying channel %s", chan->name);
 	hash_remove (Channels, chan->name);
     }
+}
+
+/* ??? [ :<sender> ] <channel> <level>
+   sets the minimum user level required to enter a channel */
+HANDLER (channel_level)
+{
+    int level;
+    char *sender;
+    int ac;
+    char *av[2];
+    CHANNEL *chan;
+
+    ASSERT (validate_connection (con));
+    if (ISSERVER (con))
+    {
+	if (*pkt != ':')
+	{
+	    log ("channel_level(): missing sender name");
+	    return;
+	}
+	pkt++;
+	sender = next_arg (&pkt);
+    }
+    else
+	sender = con->user->nick;
+    ac = split_line (av, sizeof (av) / sizeof (char), pkt);
+    if (ac != 2)
+    {
+	log ("channel_level(): wrong number of paramenters");
+	print_args (ac, av);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid number of parameters");
+	return;
+    }
+    level = get_level (av[1]);
+    if (level == -1)
+    {
+	log ("channel_level(): unknown level %s", av[1]);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid level %s", av[1]);
+	return;
+    }
+    if (ISUSER (con) && level > con->user->level)
+    {
+	log ("channel_level(): %s no privilege for channel %s to level %s",
+		con->user->nick, Levels[level]);
+	permission_denied (con);
+	return;
+    }
+    chan = hash_lookup (Channels, av[0]);
+    if (!chan)
+    {
+	log ("channel_level(): unable to find channel %s", av[0]);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "No such channel %s", av[0]);
+	return;
+    }
+	/* ensure the user is a member of this channel */
+    if (ISUSER (con) && list_find (con->user->channels, chan) == 0)
+    {
+	log ("channel_level(): %s is not a member of channel %s",
+		sender, chan->name);
+	send_cmd (con, MSG_SERVER_NOSUCH,
+		"You are not a member of channel %s", chan->name);
+	return;
+    }
+
+    pass_message_args (con, tag, ":%s %s %s", sender, chan->name,
+	    Levels[level]);
+
+    chan->level = level;
+
+    notify_mods ("%s set channel %s to level %s.", sender, chan->name,
+	    Levels[level]);
 }

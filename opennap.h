@@ -68,6 +68,7 @@ struct _channel
     char *name;
     char *topic;
     LIST *users;
+    int level;			/* minimum level required to enter channel */
 };
 
 /* user level */
@@ -453,8 +454,8 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_USAGE_STATS		10115	/* server usage stats */
 #define MSG_SERVER_USAGE_STATS		10115
 #define MSG_CLIENT_REGISTER_USER	10200
+#define MSG_CLIENT_CHANNEL_LEVEL	10201	/* set min channel user level */
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
-#define MSG_SERVER_REMOTE_ERROR		10404	/* send 404 to a remote user */
 
 /* offsets into the row returned for library searches */
 #define IDX_NICK	0
@@ -577,6 +578,7 @@ HANDLER (change_data_port);
 HANDLER (change_email);
 HANDLER (change_speed);
 HANDLER (change_pass);
+HANDLER (channel_level);
 HANDLER (client_quit);
 HANDLER (data_port_error);
 HANDLER (download);

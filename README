@@ -245,23 +245,18 @@ are implemented as additional functionality in the opennap server.
 	a remote server.  <message> should be a well-formed Napster message,
 	complete with tag and length header.
 
-10200	compressed packet [SERVER]
+10201	set channel level [CLIENT]
 
-	[note: this packet is deprecated as of opennap 0.11]
+	<channel> <level>
 
-	<len><data>
+	sets the minimum user level required to enter <channel> to <level>.
 
-	<len>	is the size of the uncompressed packet(s), specified as a 4
-		byte value in little-endian format
-	<data> is the compressed packet
+	Example:
 
-	note: there is no whitespace between <len> and <data>, since the
-	body of this message does not contain text
+	Operators Moderator
 
-	this packet is used to transmit one or more packets together in
-	compressed form.  since most of the messages are text, they should
-	compress very well.  once uncompressed, the data should contain 1
-	or more valid packets
+	sets channel "Operators" such that only users with level moderator
+	or above may join the channel.
 
 10300	share generic media file [CLIENT]
 
