@@ -17,4 +17,3 @@ A:  It is next to impossible to keep a group of distributed servers which
     may connect/disconnect at will in sync with eachother.  Nick registration
     needs to be handled as a centralized service ala NickServ on many
     IRC networks.
-

@@ -2,11 +2,15 @@
    This is free software disributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
+#include <string.h>
+#include <ctype.h>
 #include "hash.h"
 #include "debug.h"
 
-/* a simple hash table */
+/* a simple hash table.  keys are case insensitive for this application */
 
+/* initialize a hash table.  `buckets' should be a prime number for maximum
+   dispersion of entries into buckets */
 HASH *
 hash_init (int buckets, hash_destroy f)
 {
@@ -21,8 +25,8 @@ static int
 hash_string (HASH * table, const char *key)
 {
     int sum = 0;
-    while (*key)
-	sum += *key++;
+    for (;*key;key++)
+	sum += tolower (*key);
     sum = sum % table->numbuckets;
     return sum;
 }
@@ -50,7 +54,7 @@ hash_lookup (HASH * table, const char *key)
     he = table->bucket[sum];
     while (he)
     {
-	if (strcmp (key, he->key) == 0)
+	if (strcasecmp (key, he->key) == 0)
 	    return he->data;
 	he = he->next;
     }
@@ -65,7 +69,7 @@ hash_remove (HASH * table, const char *key)
     he = table->bucket[sum];
     while (he)
     {
-	if (strcmp (key, he->key) == 0)
+	if (strcasecmp (key, he->key) == 0)
 	{
 	    if (last)
 		last->next = he->next;

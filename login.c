@@ -194,15 +194,15 @@ HANDLER (user_ip)
 
     ASSERT (VALID (con));
     CHECK_SERVER_CLASS ("user_ip");
-    if(split_line(field,sizeof(field)/sizeof(char*),pkt)!=2)
+    if (split_line (field, sizeof (field) / sizeof (char* ), pkt) != 2)
     {
-	log("user_ip(): wrong number of arguments");
+	log ("user_ip(): wrong number of arguments");
 	return;
     }
-    user=hash_lookup(Users,field[0]);
-    if(!user)
+    user = hash_lookup (Users, field[0]);
+    if (!user)
     {
-	log("user_ip(): could not find struct for %s", field[0]);
+	log ("user_ip(): could not find struct for %s", field[0]);
 	return;
     }
     user->host = strtoul (field[1], 0, 10);

@@ -13,6 +13,8 @@ fixed server crash when a user had a hotlist
 
 added addition debugging support for various structures
 
+user and channel names are now case insensitive
+
 Changes from 0.07
 =================
 
