@@ -94,7 +94,8 @@ HANDLER (public)
 
     /* format the message */
     l = form_message (Buf, sizeof (Buf), MSG_SERVER_PUBLIC, "%s %s %s",
-	    chan->name, sender->cloaked ? "Operator" : sender->nick, pkt);
+	    chan->name,
+	    (chan->level < LEVEL_MODERATOR && sender->cloaked) ? "Operator" : sender->nick, pkt);
 
     /* send this message to everyone in the channel */
     for (list = chan->users; list; list = list->next)
@@ -148,8 +149,7 @@ HANDLER (emote)
     chan = hash_lookup (Channels, av[0]);
     if (!chan)
     {
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "No such channel %s", av[0]);
+	nosuchchannel(con);
 	return;
     }
     if (list_find (chan->users, user) == 0)
@@ -161,13 +161,14 @@ HANDLER (emote)
     }
 
     /* relay to peer servers */
-    pass_message_args (con, tag, ":%s %s \"%s\"", user->nick, chan->name,
-		       av[1]);
+    pass_message_args (con, tag, ":%s %s \"%s\"", user->nick, chan->name, av[1]);
 
     /* since we send the same data to multiple clients, format the data once
        and queue it up directly */
     buflen = form_message (Buf, sizeof (Buf), MSG_CLIENT_EMOTE,
-	    "%s %s \"%s\"", chan->name, user->nick, av[1]);
+	    "%s %s \"%s\"", chan->name,
+	    (chan->level < LEVEL_MODERATOR && user->cloaked) ? "Operator" : user->nick,
+	    av[1]);
 
     /* send this message to all channel members */
     for (list = chan->users; list; list = list->next)

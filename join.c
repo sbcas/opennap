@@ -163,20 +163,20 @@ HANDLER (join)
 	}
 	/* check to make sure this user is not banned from the channel */
 	else if (user->level < LEVEL_MODERATOR &&
-		 banned_from_channel (chan, user))
+		chan->bans && banned_from_channel (chan, user))
 	{
 	    /* log message is printed inside banned_from_channel() */
 	    return;
 	}
 	else if (user->level < LEVEL_MODERATOR && chan->limit > 0 &&
-		 list_count (chan->users) >= chan->limit)
+		list_count (chan->users) >= chan->limit)
 	{
 	    log ("join(): channel %s is full (%d)", chan->name, chan->limit);
 	    if (chan->userCreated)
 	    {
 		if (ISUSER (con))
 		    send_cmd (con, MSG_SERVER_NOSUCH,
-			      "channel join failed: channel is full");
+			    "channel join failed: channel is full");
 		return;
 	    }
 	    /* for predefined channels, automatically create a rollover

@@ -11,8 +11,6 @@
 #include "opennap.h"
 #include "debug.h"
 
-#define WHOIS_FMT "%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\""
-
 /* 604 <user> */
 HANDLER (whois)
 {
@@ -22,7 +20,7 @@ HANDLER (whois)
     time_t online;
     LIST *chan;
     USERDB *db;
-    char cmd[256];
+    char cmd[256], *cap;
 
     (void) tag;
     (void) len;
@@ -46,11 +44,15 @@ HANDLER (whois)
 
     /* build the channel list this user belongs to */
     Buf[0] = 0;
-    for (chan = user->channels; chan; chan = chan->next)
+    /* always show channel membership to privileged users */
+    if (!user->cloaked || sender->level > LEVEL_USER)
     {
-	l = strlen (Buf);
-	snprintf (Buf + l, sizeof (Buf) - l, " %s",
-		  ((CHANNEL *) chan->data)->name);
+	for (chan = user->channels; chan; chan = chan->next)
+	{
+	    l = strlen (Buf);
+	    snprintf (Buf + l, sizeof (Buf) - l, " %s",
+		    ((CHANNEL *) chan->data)->name);
+	}
     }
     if (!Buf[0])
     {
@@ -64,11 +66,17 @@ HANDLER (whois)
 
     online = (int) (Current_Time - user->connected);
 
+    if(user->muzzled)
+	cap="Muzzled";
+    else if(user->cloaked && sender->level > LEVEL_USER)
+	cap="Cloaked";	/* show cloaked state to privileged users */
+    else
+	cap="Active";
+
     snprintf (cmd, sizeof (cmd),
 	      "%s \"%s\" %d \"%s\" \"%s\" %d %d %d %d \"%s\"",
 	      user->nick, Levels[user->level],
-	      (int) online, chanlist,
-	      user->muzzled ? "Muzzled" : "Active",
+	      (int) online, chanlist, cap,
 	      user->shared, user->downloads,
 	      user->uploads, user->speed, user->clientinfo);
     /* moderators and above see some additional information */
