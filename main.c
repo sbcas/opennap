@@ -121,6 +121,7 @@ update_stats (void)
     log ("update_stats(): %d local files", Local_Files);
     log ("update_stats(): File_Table contains %d entries",
 	 File_Table->dbsize);
+    log ("update_stats(): User_Db contains %d entries", User_Db->dbsize);
     delta = Current_Time - Last_Click;
     log ("update_stats(): %.2f kbytes/sec in, %.2f kbytes/sec out",
 	 (float) Bytes_In / 1024. / delta, (float) Bytes_Out / 1024. / delta);

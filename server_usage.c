@@ -29,11 +29,11 @@ HANDLER (server_usage)
 	mem_used = MEMORY_USED;
 
 	numServers = list_count (Servers);
-	send_cmd (user->con, MSG_SERVER_USAGE_STATS,
-		  "%d %d %d %d %d %d %d %d %d",
+	send_user (user, MSG_SERVER_USAGE_STATS,
+		  "%d %d %d %d %d %d %d %d %d %d",
 		  Num_Clients - numServers, numServers, Users->dbsize,
 		  Num_Files, Num_Gigs, Channels->dbsize, Server_Start,
-		  time (0) - Server_Start, mem_used);
+		  time (0) - Server_Start, mem_used, User_Db->dbsize);
     }
     else
 	pass_message_args (con, tag, ":%s %s", user->nick, pkt);
