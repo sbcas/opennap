@@ -69,6 +69,7 @@ search_callback (DATUM * match, SEARCH * parms)
     if (parms->id)
     {
 	ASSERT (ISSERVER (parms->con));
+	ASSERT (validate_user (match->user));
 	/* 10016 <id> <user> "<filename>" <md5> <size> <bitrate> <frequency> <duration> */
 	send_cmd (parms->con, MSG_SERVER_REMOTE_SEARCH_RESULT,
 		  "%s %s \"%s\" %s %d %d %d %d",
@@ -339,6 +340,7 @@ fdb_search (HASH * table,
     for (ptok = flist->list; ptok; ptok = ptok->next)
     {
 	d = (DATUM *) ptok->data;
+	ASSERT (VALID_LEN (d, sizeof (DATUM)));
 	if (d->valid && match (tokens, d->filename) && cb (d, cbdata))
 	{
 	    /* callback accepted match */
