@@ -463,7 +463,7 @@ set_compare(CONNECTION *con, const char *op, int val, int *min, int *max)
     ASSERT(validate_connection(con));
     ASSERT(min!=NULL);
     ASSERT(max!=NULL);
-    if(!strcasecmp(op,"equals"))
+    if(!strcasecmp(op,"equal to"))
 	*min = *max = val;
     else if(!strcasecmp(op,"at least"))
 	*min = val;

@@ -30,7 +30,7 @@ HANDLER (server_usage)
 
 	numServers = list_count (Servers);
 	send_user (user, MSG_SERVER_USAGE_STATS,
-		  "%d %d %d %d %d %d %d %d %d %d",
+		  "%d %d %d %d %u %d %d %d %d %d",
 		  Num_Clients - numServers, numServers, Users->dbsize,
 		  Num_Files, Num_Gigs, Channels->dbsize, Server_Start,
 		  time (0) - Server_Start, mem_used, User_Db->dbsize);
