@@ -207,7 +207,7 @@ pop_user (CONNECTION *con, char **pkt, USER **user)
 void
 queue_data (CONNECTION *con, char *s, int ssize)
 {
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
     if (con->sendbuflen + ssize > con->sendbufmax)
     {
 	con->sendbufmax = con->sendbuflen + ssize;

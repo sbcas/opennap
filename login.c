@@ -142,8 +142,12 @@ HANDLER (login)
 			/* verify the password */
 			if (strcmp (field[1], row[1]) != 0)
 			{
-			    log ("login(): bad password for user %s", user->nick);
+			    log ("login(): bad password for user %s",
+				user->nick);
+			    send_cmd (con, MSG_SERVER_NOSUCH, "invalid password");
 			    remove_connection (con);
+			    mysql_free_result (result);
+			    return;
 			}
 			else
 			{
