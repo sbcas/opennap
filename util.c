@@ -289,8 +289,24 @@ send_queued_data (CONNECTION *con)
 			(unsigned char *) con->sendbuf + con->sendbufcompressed,
 			l, Compression_Level) == Z_OK)
 	    {
-		int delta = l - datasize - 8;	/* net change */
+		/* save some information about the current state of the
+		   buffer */
+
+		/* end of uncompressed region */
+		int u_end = con->sendbufcompressed + l;
+		/* end of compressed region */
+		int c_end = con->sendbufcompressed + datasize + 8;
+		/* change in size */
+		int delta = u_end - c_end;
+
 		unsigned int len;
+
+		if (datasize > 65535)
+		{
+		    log ("send_queued_data(): compressed data is too large (%lu bytes)",
+			    datasize);
+		    break;
+		}
 
 		/* make sure there is enough room to hold the compressed
 		   packet */
@@ -317,19 +333,22 @@ send_queued_data (CONNECTION *con)
 		memcpy (con->sendbuf + con->sendbufcompressed, data, datasize);
 		con->sendbufcompressed += datasize;
 
-		log ("send_queued_data(): compressed %d bytes into %d (%d%%).",
-			l, datasize, (100 * delta) / l);
+		ASSERT (con->sendbufcompressed == c_end);
+
+		log ("send_queued_data(): compressed %d bytes to %d (%d%%).",
+			l, datasize + 8, (100 * delta) / l);
 
 		/* if there were leftovers, we need to shift them down
 		   to the end of the compressed packet we just wrote */
-		if (l < con->sendbuflen)
+		if (c_end < con->sendbuflen)
 		{
-		    memmove (con->sendbuf + con->sendbufcompressed,
-			    con->sendbuf + con->sendbufcompressed + delta,
-			    con->sendbuflen - l);
+		    memmove (con->sendbuf + c_end,
+			    con->sendbuf + u_end,
+			    con->sendbuflen - u_end);
 		    log ("send_queued_data(): %d uncompressed bytes remain in the queue",
-			    con->sendbuflen - l);
+			    con->sendbuflen - u_end);
 		}
+
 		con->sendbuflen -= delta;
 	    }
 	    else

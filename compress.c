@@ -10,14 +10,14 @@
 
 /* 10200 <len><data>
 
-   <len> is the uncompressed size
+   <len> is the uncompressed size (4 bytes)
    <data> is the compressed data.  Contains 1 or more packets inside of it */
 HANDLER (compressed_data)
 {
     unsigned short len, tag;
     unsigned long offset = 0, datasize;
     unsigned char *data;
-    unsigned int usize;
+    unsigned int usize; /* uncompressed size */
 
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("compressed_data");
@@ -25,24 +25,13 @@ HANDLER (compressed_data)
     memcpy (&usize, pkt, 4);
     usize = BSWAP32 (usize);
     datasize = usize;
-    if (datasize == 0)
-    {
-	log ("compressed_data(): warning, 0 bytes in compressed packet");
-	return;
-    }
+    if (usize == 0)
+	return; /* empty packet */
     data = MALLOC (usize);
-    log ("compressed_data(): packet says uncompressed data is %d bytes",
-	    datasize);
     if (uncompress (data, &datasize, (unsigned char *) pkt + 4,
 	    con->recvbytes - 8) != Z_OK)
     {
 	log ("compressed_data(): unable to uncompress data");
-	goto error;
-    }
-
-    if (datasize != usize)
-    {
-	log ("compressed_data(): decompressed size did not match packet label");
 	goto error;
     }
 
@@ -59,13 +48,14 @@ HANDLER (compressed_data)
 	}
 	memcpy (con->recvhdr, data + offset, 4);
 	memcpy (&len, con->recvhdr, 2);
-	len = BSWAP16(len);
+	len = BSWAP16 (len);
 	memcpy (&tag, con->recvhdr + 2, 2);
-	tag = BSWAP16(tag);
+	tag = BSWAP16 (tag);
 	offset += 4;
 	if (offset + len > datasize)
 	{
-	    log ("compressed_data(): not enough bytes left for packet body");
+	    log ("compressed_data(): packet length %hu with only %lu bytes left, tag=%hu",
+		    len, datasize - offset, tag);
 	    goto error;
 	}
 	if (len)

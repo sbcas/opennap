@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <mysql.h>
 #include <stdio.h>
@@ -14,18 +16,18 @@ init_db (void)
     Db = mysql_init (Db);
     if (Db == NULL)
     {
-	log ("unable to initialize sql api");
+	log ("init_db(): mysql_init: %s", mysql_error (Db));
 	return -1;
     }
     Db = mysql_connect (Db, Db_Host, Db_User, Db_Pass);
     if (Db == NULL)
     {
-	log ("init_db(): unable to connect to mysqld");
+	log ("init_db(): mysql_connect: %s", mysql_error (Db));
 	return -1;
     }
     if (mysql_select_db (Db, Db_Name))
     {
-	log ("init_db(): %s", mysql_error (Db));
+	log ("init_db(): mysql_select_db: %s", mysql_error (Db));
 	return -1;
     }
 
