@@ -37,7 +37,6 @@ HANDLER (public)
 	log ("public(): too few fields");
 	return;
     }
-    *pkt++ = 0;
 
     /* find the channel this message is going to */
     chan = hash_lookup (Channels, ptr);
