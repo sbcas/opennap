@@ -536,7 +536,7 @@ HANDLER (add_directory)
 		 path);
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
-	    return;
+	    continue;	/* get next file */
 	}
 
 	/* create the db record for this file */
