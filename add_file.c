@@ -440,6 +440,12 @@ HANDLER (share_file)
 	return;
     }
 
+    if (Max_Path > 0 && strlen (av[0]) > (unsigned)Max_Path)
+    {
+	send_cmd(con,MSG_SERVER_NOSUCH,"filename too long");
+	return;
+    }
+
     if (!(info = new_datum (av[0], av[2])))
 	return;
     info->user = con->user;
