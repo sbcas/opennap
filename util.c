@@ -320,7 +320,10 @@ array_add (void *list, int *listsize, void *ptr)
 {
     char **plist;
 
-    ASSERT (VALID (list));
+#ifdef DEBUG
+    if (list)
+	ASSERT (VALID (list));
+#endif /* DEBUG */
     ASSERT (VALID (ptr));
     list = REALLOC (list, sizeof (char *) * (*listsize + 1));
     plist = (char **) list;

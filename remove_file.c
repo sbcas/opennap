@@ -42,8 +42,8 @@ remove_file (CONNECTION *con, char *pkt)
 
 	/* avoid rounding errors by first subtracting the old value */
 	Num_Gigs -= user->libsize / 1024;
-	user->libsize -= atoi (row[0]) / 1024;
-	Num_Gigs += user->libsize / 1024;
+	user->libsize -= atoi (row[0]) / 1024 / 1024; /* MB */
+	Num_Gigs += user->libsize / 1024; /* GB */
     }
     else
 	log ("remove_file(): expected 1 row returned from query");

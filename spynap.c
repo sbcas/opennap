@@ -58,6 +58,11 @@ void user_input (char *s)
 	    s += 3;
 	    type = 203;
 	}
+	else if (!strncmp("msg", s, 3))
+	{
+	    s += 3;
+	    type = 205;
+	}
 	else
 	{
 	    puts("\runknown command[K");

@@ -98,7 +98,7 @@ add_file (CONNECTION * con, char *pkt)
        subtract what we know this client has contributed, then recalculate
        the size in gigabytes */
     Num_Gigs -= user->libsize / 1024;
-    user->libsize += atoi (field[2]) / 1024; /* MB */
+    user->libsize += atoi (field[2]) / 1024 / 1024; /* MB */
     Num_Gigs += user->libsize / 1024;	/* GB */
 
     Num_Files++;

@@ -24,6 +24,17 @@ convert_to_lower_case (char *s)
 	*s = tolower (*s);
 }
 
+/* convert spaces to % for SQL query */
+static void
+format_request (char *s)
+{
+    for (;*s;s++)
+    {
+	if (*s == ' ')
+	    *s = '%';
+    }
+}
+
 void
 search (CONNECTION * con, char *pkt)
 {
@@ -69,6 +80,9 @@ search (CONNECTION * con, char *pkt)
 		    break;
 		p--;
 	    }
+
+	    /* convert spaces to % for SQL query */
+	    format_request (fields[i]);
 
 	    l = strlen (Buf);
 	    snprintf (Buf + l, sizeof (Buf) - l, " %sfilename LIKE '%%%s%%'",

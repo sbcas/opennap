@@ -1,3 +1,13 @@
+Changes from 0.05
+=================
+
+fixed assertion in add_array() when adding to an empty array
+
+search strings now convert spaces to % for SQL queries to allow searching
+for multiple words.
+
+server was reporting total library size in MB, not GB
+
 Changes from 0.04
 =================
 

@@ -7,3 +7,6 @@
   need some way to prevent the user from flooding the server.  this is a
   problem since when the user first connects they will likely send a large
   amount of valid information about the contents of their mp3 library
+
+* need to work on nonblocking reads again.  read_bytes() sould handle EAGAIN
+  errors if the socket is set to nonblocking.
