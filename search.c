@@ -160,6 +160,7 @@ tokenize (char *s)
 	    !strcmp ("scour", s) || !strcmp ("media", s) ||
 	    !strcmp ("agent", s) || !strcmp ("stuff", s) ||
 	    !strcmp ("download", s) || !strcmp ("home", s) ||
+	    !strcmp ("downloads", s) ||
 	    !strcmp ("mp3s", s) || !strcmp ("2", s))
 	{
 	    s = ptr;
