@@ -300,11 +300,11 @@ handle_connection (CONNECTION * con)
 	 tag != MSG_SERVER_LOGIN_ACK && tag != MSG_SERVER_ERROR &&
 	 tag != 4)) /* unknown: v2.0 beta 5a sends this? */
     {
-	log ("handle_connection: %s is not registered, closing connection",
+	log ("handle_connection(): %s is not registered, closing connection",
 	     con->host);
-	log ("handle_connection: tag=%hu, len=%hu, data=%s",
+	log ("handle_connection(): tag=%hu, len=%hu, data=%s",
 		tag, len, con->recvbuf->data + con->recvbuf->consumed + 4);
-	remove_connection (con);
+	con->destroy = 1;
 	return;
     }
 
@@ -320,14 +320,8 @@ handle_connection (CONNECTION * con)
     dispatch_command (con, tag, len,
 		      con->recvbuf->data + con->recvbuf->consumed + 4);
 
-    if (con->destroy)
-    {
-	log ("handle_connection(): closing connection to %s", con->host);
-	remove_connection (con);
-    }
-    else
-	/* mark that we read this data and it is ok to free it */
-	con->recvbuf = buffer_consume (con->recvbuf, len + 4);
+    /* mark that we read this data and it is ok to free it */
+    con->recvbuf = buffer_consume (con->recvbuf, len + 4);
 }
 
 static void
@@ -472,7 +466,7 @@ accept_connection (int s)
     set_keepalive (f, 1);	/* enable tcp keepalive messages */
 
     if (!check_accept (cli))
-	remove_connection (cli);
+	cli->destroy = 1;
 }
 
 #ifndef WIN32
@@ -769,19 +763,18 @@ main (int argc, char **argv)
 		    {
 			if (f == 0)
 			    log ("main(): EOF from %s", Clients[i]->host);
-			remove_connection (Clients[i]);
+			Clients[i]->destroy = 1;
 		    }
 		}
 #if HAVE_POLL
-		/* when does this occur?  i would have though POLLHUP
+		/* when does this occur?  i would have thought POLLHUP
 		   would be when the connection hangs up, but it still
 		   sets POLLIN and read() returns 0 */
 		else if ((ufd[i].revents & (POLLHUP | POLLERR)) != 0)
 		{
 		    ASSERT ((ufd[i].revents & POLLHUP) == 0);
 		    ASSERT ((ufd[i].revents & POLLERR) == 0);
-		    log ("main(): closing connection for %s", Clients[i]->host);
-		    remove_connection (Clients[i]);
+		    Clients[i]->destroy = 1;
 		}
 #endif /* HAVE_POLL */
 	    }
@@ -793,7 +786,7 @@ main (int argc, char **argv)
 	/* handle client requests */
 	for (i = 0; !SigCaught && i < Num_Clients; i++)
 	{
-	    if (Clients[i])
+	    if (Clients[i] && !Clients[i]->destroy)
 	    {
 		/* if there is input pending, handle it now */
 		if (Clients[i]->recvbuf ||
@@ -812,7 +805,7 @@ main (int argc, char **argv)
 	    next_update = time (0) + Stat_Click;
 	}
 
-	/* write out data for our clients now */
+	/* write out data and reap dead client connections */
 	for (i = 0; !SigCaught && i < Num_Clients; i++)
 	{
 	    /* test for existence since it may have disappeared in the
@@ -826,11 +819,24 @@ main (int argc, char **argv)
 		       writable and there is some compressed output */
 		    if (Clients[i]->sendbuf
 			|| (Clients[i]->zip->outbuf && WRITABLE (i)))
-			send_queued_data (Clients[i]);
+		    {
+			if (send_queued_data (Clients[i]) == -1)
+			    Clients[i]->destroy = 1;
+		    }
 		}
 		/* client */
 		else if (Clients[i]->sendbuf && WRITABLE (i))
-		    send_queued_data (Clients[i]);
+		{
+		    if (send_queued_data (Clients[i]) == -1)
+			Clients[i]->destroy = 1;
+		}
+
+		/* check to see if this connection should be shut down */
+		if (Clients[i]->destroy)
+		{
+		    log ("main(): closing connection for %s", Clients[i]->host);
+		    remove_connection (Clients[i]);
+		}
 	    }
 	}
     }

@@ -35,9 +35,6 @@ remove_connection (CONNECTION *con)
 {
     ASSERT (validate_connection (con));
 
-    /* flush anything left in the queue */
-    send_queued_data (con);
-
     /* close socket */
     CLOSE (con->fd);
 

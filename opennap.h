@@ -443,7 +443,7 @@ int set_keepalive (int, int);
 int set_nonblocking (int);
 int set_tcp_buffer_len (int, int);
 int split_line (char **template, int templatecount, char *pkt);
-void send_queued_data (CONNECTION *con);
+int send_queued_data (CONNECTION *con);
 void sql_error (const char *function, const char *query);
 void synch_server (CONNECTION *);
 int validate_user (USER *);

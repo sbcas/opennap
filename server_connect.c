@@ -45,7 +45,7 @@ complete_connect (CONNECTION *con)
 {
     if (check_connect_status (con->fd) != 0)
     {
-	remove_connection (con);
+	con->destroy = 1;
 	return;
     }
 
@@ -159,14 +159,8 @@ HANDLER (server_disconnect)
 	reason ? reason : "");
     serv = Servers[i];
     Servers = array_remove (Servers, &Num_Servers, Servers[i]);
-    /* if we are shutting down the connection this message came from, we
-       have to set the destroy flag and have it removed in
-       handle_connection() to avoid a segfault, since it has a cached copy
-       of this pointer */
-    if (con == serv)
-	con->destroy = 1;
-    else
-	remove_connection (serv);
+    /*  notify the main loop to shut down this connection */
+    con->destroy = 1;
 }
 
 /* 10110 [ :<user> ] <server> <reason> */

@@ -384,7 +384,7 @@ finalize_compress (ZIP *zip)
 }
 #endif
 
-void
+int
 send_queued_data (CONNECTION *con)
 {
     int n;
@@ -405,7 +405,7 @@ send_queued_data (CONNECTION *con)
 
     /* is there data to write? */
     if (!con->sendbuf)
-	return;	/* nothing to do */
+	return 0; /* nothing to do */
 
     n = WRITE (con->fd, con->sendbuf->data + con->sendbuf->consumed,
 	con->sendbuf->datasize - con->sendbuf->consumed);
@@ -415,37 +415,31 @@ send_queued_data (CONNECTION *con)
 	{
 	    log ("send_queued_data(): write: %s (errno %d)",
 		    strerror (errno), errno);
-	    log ("send_queued_data(): closing connection for %s", con->host);
-	    /* remove_connection() calls this routine, so zero the send
-	       buffer out so we don't infinite loop */
-	    buffer_free (con->sendbuf);
-	    con->sendbuf = 0;
-	    remove_connection (con);
+	    return -1;
 	}
-	return;
+	return 0;
+    }
+    else if (n > 0)
+    {
+	/* mark data as written */
+	con->sendbuf = buffer_consume (con->sendbuf, n);
     }
 
-    if (n > 0)
-	con->sendbuf = buffer_consume (con->sendbuf, n);
-
+    /* check to make sure the queue hasn't gotten too big */
     n = (con->class == CLASS_SERVER) ? Server_Queue_Length : Client_Queue_Length;
 
     if (buffer_size (con->sendbuf) > n)
     {
 	log ("send_queued_data(): output buffer for %s exceeded %d bytes", 
-		con->host, n);
-	log ("send_queued_data(): closing connection for %s", con->host);
-	/* remove_connection() calls this routine, so zero the send
-	   buffer out so we don't infinite loop */
-	buffer_free (con->sendbuf);
-	con->sendbuf = 0;
-	remove_connection (con);
-	return;
+	    con->host, n);
+	return -1;
     }
 
     if (con->sendbuf)
 	log ("send_queued_data(): %d bytes remain in the output buffer for %s",
-		buffer_size (con->sendbuf), con->host);
+	    buffer_size (con->sendbuf), con->host);
+
+    return 0;
 }
 
 void

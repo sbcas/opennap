@@ -117,9 +117,8 @@ HANDLER (login)
 		/* pass this message to everyone */
 		pass_message_args (NULL, MSG_CLIENT_KILL,
 		    ":%s %s nick collision", Server_Name, user->nick);
-		/* destroy the connection - ok to remove it here since
-		   con != user->con in this case */
-		remove_connection (user->con);
+		/* destroy the connection */
+		user->con->destroy = 1;
 	    }
 	    else
 	    {

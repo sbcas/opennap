@@ -105,19 +105,10 @@ HANDLER (kill_user)
        from global user list */
     if (user->con)
     {
+	con->destroy = 1;
 	/* notify user they were killed */
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
 	    "you have been killed by %s: %s", killernick, NONULL (pkt));
-
-	if (user->con == con)
-	    con->destroy = 1; /* elite killed themself? */
-	else
-	{
-	    /* this is an exception to the rule where we don't want to set
-	       user->con->destroy=1 and wait.  since the handler doesn't have
-	       a copy of this pointer we can safely destroy this here */
-	    remove_connection (user->con);
-	}
     }
     /* remote user, just remove from the global list */
     else
