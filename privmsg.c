@@ -39,7 +39,7 @@ HANDLER (privmsg)
     user = hash_lookup (Users, ptr);
     if (!user)
     {
-	if (con->class == CLASS_USER)
+	if (ISUSER (con))
 	    nosuchuser (con, ptr);
 	return;
     }
@@ -63,34 +63,3 @@ HANDLER (privmsg)
 		sender->nick, user->nick, pkt);
     }
 }
-
-/* this is not needed, use send_user() instead */
-#if 0
-/* 10404 <user> <message>
-   This message is used by servers to send a 404 message to a user on a remote
-   server. */
-HANDLER (priv_errmsg)
-{
-    char *nick;
-    USER *user;
-
-    ASSERT (validate_connection (con));
-    CHECK_SERVER_CLASS ("priv_errmsg");
-    (void) tag;
-    (void) len;
-    nick = next_arg (&pkt);
-    user = hash_lookup (Users, nick);
-    if (!user)
-    {
-	log ("priv_errmsg(): unable to locate user %s", nick);
-	return;
-    }
-    ASSERT (validate_user (user));
-    if (user->local)
-    {
-	/* local user, deliver message */
-	ASSERT (validate_connection (user->con));
-	send_cmd (user->con, MSG_SERVER_NOSUCH, "%s", pkt);
-    }
-}
-#endif

@@ -114,8 +114,16 @@ HANDLER (join)
     list->data = user;
     chan->users = list_append (chan->users, list);
 
+    /* if there are linked servers, send this message along */
+    if (Num_Servers)
+	pass_message_args (con, tag, ":%s %s", user->nick, chan->name);
+
+    /* if local user send an ack for the join */
     if (ISUSER (con))
     {
+	/* notify client of success */
+	send_cmd (con, MSG_SERVER_JOIN_ACK, "%s", chan->name);
+
 	/* send the client the list of current users in the channel */
 	for (list = chan->users; list; list = list->next)
 	{
@@ -131,28 +139,14 @@ HANDLER (join)
 	}
     }
 
-    if (Num_Servers)
-	pass_message_args (con, tag, ":%s %s", user->nick, chan->name);
-
-    /* if local user */
-    if (ISUSER (con))
-    {
-	/* notify client of success */
-	send_cmd (con, MSG_SERVER_JOIN_ACK, "%s", chan->name);
-    }
-
-    /* notify other members of the channel that this user has joined */
+    /* notify members of the channel that this user has joined.  note that
+       we explicity send a 406 command to the user that just joined */
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
 	ASSERT (chanUser != 0);
-	/* we only send to our locally connected clients, but don't send to
-	   the user that just joined. */
-	if (chanUser->local && chanUser != user)
-	{
-	    send_cmd (chanUser->con, MSG_SERVER_JOIN, "%s %s %d %d",
+	send_cmd (chanUser->con, MSG_SERVER_JOIN, "%s %s %d %d",
 		chan->name, user->nick, user->shared, user->speed);
-	}
     }
 
     if (ISUSER (con))
