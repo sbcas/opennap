@@ -1,3 +1,27 @@
+2000-05-31  drscholl  <drscholl@users.sourceforge.net>
+
+	* Makefile.in, buffer.c:
+	fixed buffer overflow when output to the client is larger than 1024 bytes in
+	one command
+
+	* ChangeLog, NEWS, main.c:
+	updated ChangeLog and NEWS for 0.28 release
+
+	schedule dump_channels() to happen at the user_db_interval
+
+2000-05-30  drscholl  <drscholl@users.sourceforge.net>
+
+	* opennap.dsp, opennap.h, opennap.opt, remove_connection.c, sample.channels, server_login.c, topic.c, Makefile.in, README, buffer.c, config.c, configure, configure.in, handler.c, main.c:
+	zlib is now a requirement to compile.  removed all HAVE_LIBZ conditional
+	code.
+
+	fixed bug in topic() which caused a buffer overrun in the new code to change
+	\r and \n to space
+
+	* topic.c:
+	convert \r and \n in channel topics to space chars to avoid problems when
+	writing out the channels file
+
 2000-05-30  drscholl  <drscholl@users.sourceforge.net>
 
 	* opennap.dsp, opennap.h, opennap.opt, remove_connection.c, sample.channels, server_login.c, topic.c, Makefile.in, README, buffer.c, config.c, configure, configure.in, handler.c, main.c:

@@ -53,6 +53,11 @@ HANDLER (public)
 	unparsable(con);
 	return;
     }
+    if(invalid_channel(pkt))
+    {
+	invalid_channel_msg(con);
+	return;
+    }
 
     /* find the channel this message is going to. look the user's joined
      channels since this should be faster than lookup in the hash table */
@@ -114,6 +119,11 @@ HANDLER (emote)
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) < 2)
     {
 	unparsable(con);
+	return;
+    }
+    if(invalid_channel(av[0]))
+    {
+	invalid_channel_msg(con);
 	return;
     }
 

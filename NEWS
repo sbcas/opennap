@@ -1,3 +1,7 @@
+[opennap 0.29]
+
+fixes buffer overflow in server output to clients
+
 [opennap 0.28]
 
 zlib is now required to compile opennap.  previous versions will not

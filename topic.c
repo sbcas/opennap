@@ -28,7 +28,7 @@ HANDLER (topic)
     ASSERT (validate_connection (con));
 
     /* don't use pop_user() because the server can set a channel topic */
-    if (con->class == CLASS_SERVER)
+    if (ISSERVER(con))
     {
 	pkt++;
 	nick = next_arg (&pkt);
@@ -47,6 +47,11 @@ HANDLER (topic)
 
     /* don't use split line because the topic could be multi-word */
     chanName = next_arg (&pkt);
+    if(invalid_channel(chanName))
+    {
+	invalid_channel_msg(con);
+	return;
+    }
     chan = hash_lookup (Channels, chanName);
     if (!chan)
     {

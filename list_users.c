@@ -19,6 +19,11 @@ HANDLER (list_users)
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("list_users");
+    if(invalid_channel(pkt))
+    {
+	invalid_channel_msg(con);
+	return;
+    }
     chan = hash_lookup (Channels, pkt);
     if (!chan)
     {

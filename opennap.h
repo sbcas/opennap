@@ -361,6 +361,7 @@ extern int SigCaught;		/* flag to control main loop */
 extern int Stat_Click;
 extern time_t Server_Start;
 extern int User_Db_Interval;
+extern int Max_Channel_Length;
 
 #ifndef WIN32
 extern int Uid;
@@ -612,6 +613,7 @@ int init_db (void);
 void init_random (void);
 int init_server (const char *);
 int invalid_channel (const char *);
+void invalid_channel_msg (CONNECTION *);
 int ip_glob_match (const char *pattern, const char *ip);
 int is_chanop(CHANNEL*,USER*);
 int is_ignoring (LIST *, const char *);
@@ -818,7 +820,7 @@ typedef unsigned int socklen_t;
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
-#define VERSION "0.28"
+#define VERSION "0.29"
 
 #define USE_CRLF 1
 

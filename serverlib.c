@@ -322,3 +322,11 @@ is_ignoring (LIST *ignore, const char *nick)
 	    return 1;
     return 0;
 }
+
+void
+invalid_channel_msg(CONNECTION *con)
+{
+    ASSERT(validate_connection(con));
+    if(ISUSER(con))
+	send_cmd(con,MSG_SERVER_NOSUCH,"invalid channel");
+}

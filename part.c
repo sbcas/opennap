@@ -30,7 +30,11 @@ HANDLER (part)
 	log ("part(): server message is missing channel name");
 	return;
     }
-
+    if(invalid_channel(pkt))
+    {
+	invalid_channel_msg(con);
+	return;
+    }
     /* find the requested channel in the user's  list */
     if(!(chan=find_channel(user->channels,pkt)))
     {

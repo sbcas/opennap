@@ -47,18 +47,23 @@ load_channels (void)
 	    log ("load_channels(): %s:%d: too few parameters", path, line);
 	    continue;
 	}
+	if(invalid_channel(name))
+	{
+	    log("load_channels(): %s:%d: %s: invalid channel name", name);
+	    continue;
+	}
 	level = get_level (slevel);
 	if (level == -1)
 	{
 	    log ("load_channels(): %s:%d: %s: invalid level",
-		 path, line, slevel);
+		    path, line, slevel);
 	    continue;
 	}
 	limit = atoi (slimit);
 	if (limit < 0 || limit > 65535)
 	{
 	    log ("load_channels(): %s:%d: %d: invalid limit",
-		 path, line, limit);
+		    path, line, limit);
 	    continue;
 	}
 	chan = CALLOC (1, sizeof (CHANNEL));
@@ -154,6 +159,11 @@ HANDLER (channel_ban)
     if (ac < 2)
     {
 	unparsable (con);
+	return;
+    }
+    if(invalid_channel(av[0]))
+    {
+	invalid_channel_msg(con);
 	return;
     }
     chan = hash_lookup (Channels, av[0]);
@@ -253,6 +263,11 @@ HANDLER (channel_unban)
 	unparsable (con);
 	return;
     }
+    if(invalid_channel(av[0]))
+    {
+	invalid_channel_msg(con);
+	return;
+    }
     chan = hash_lookup (Channels, av[0]);
     if (!chan)
     {
@@ -305,6 +320,11 @@ HANDLER (channel_banlist)
 
     (void) len;
     CHECK_USER_CLASS ("channel_banlist");
+    if(invalid_channel(pkt))
+    {
+	invalid_channel_msg(con);
+	return;
+    }
     chan = hash_lookup (Channels, pkt);
     if (!chan)
     {
@@ -335,6 +355,16 @@ HANDLER (channel_clear_bans)
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender))
 	return;
+    if(!pkt)
+    {
+	unparsable(con);
+	return;
+    }
+    if(invalid_channel(pkt))
+    {
+	invalid_channel_msg(con);
+	return;
+    }
     chan = hash_lookup (Channels, pkt);
     if (!chan)
     {
@@ -417,6 +447,11 @@ HANDLER (channel_op)
     if (!schan)
     {
 	unparsable (con);
+	return;
+    }
+    if(invalid_channel(schan))
+    {
+	invalid_channel_msg(con);
 	return;
     }
     chan = hash_lookup (Channels, schan);
@@ -525,6 +560,11 @@ HANDLER (channel_op_list)
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("channel_op_list");
+    if(invalid_channel(pkt))
+    {
+	invalid_channel_msg(con);
+	return;
+    }
     chan = hash_lookup (Channels, pkt);
     if (!chan)
     {

@@ -55,6 +55,11 @@ HANDLER (kick)
 	    unparsable (con);
 	return;
     }
+    if(invalid_channel(av[0]))
+    {
+	invalid_channel_msg(con);
+	return;
+    }
     chan = hash_lookup (Channels, av[0]);
     if (!chan)
     {
@@ -139,6 +144,11 @@ HANDLER (clear_channel)
     if (!chanName)
     {
 	unparsable (con);
+	return;
+    }
+    if(invalid_channel(chanName))
+    {
+	invalid_channel_msg(con);
 	return;
     }
     chan = hash_lookup (Channels, chanName);

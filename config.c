@@ -65,6 +65,7 @@ static struct config Vars[] = {
     {"config_dir", VAR_TYPE_STR, UL & Config_Dir, UL SHAREDIR},
     {"registered_only", VAR_TYPE_BOOL, ON_REGISTERED_ONLY, 0},
     {"auto_register", VAR_TYPE_BOOL, ON_AUTO_REGISTER, 0},
+    {"max_channel_length",VAR_TYPE_INT,UL &Max_Channel_Length, 32},
 };
 
 static int Vars_Size = sizeof (Vars) / sizeof (struct config);

@@ -27,7 +27,7 @@ invalid_channel (const char *s)
 	count++;
 	s++;
     }
-    return ((count == 0));
+    return ((count == 0) || (Max_Channel_Length > 0 && count > Max_Channel_Length));
 }
 
 #if 0
@@ -126,8 +126,7 @@ HANDLER (join)
 	    }
 	    if (invalid_channel (pkt))
 	    {
-		if (ISUSER (con))
-		    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid channel name");
+		invalid_channel_msg(con);
 		return;
 	    }
 	    chan = new_channel ();

@@ -62,6 +62,7 @@ int Max_Rss_Size;
 #endif
 time_t Current_Time = 0;
 int Max_Nick_Length;
+int Max_Channel_Length = 0;
 char *Config_Dir;
 
 /* bans on ip addresses / users */
