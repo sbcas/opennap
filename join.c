@@ -244,9 +244,6 @@ HANDLER (join)
 	if (!strcasecmp (user->nick, list->data))
 	{
 	    notifyUser = 1;
-	    notify_mods (CHANGELOG_MODE,
-			 "%s set %s as operator on channel %s",
-			 Server_Name, user->nick, chan->name);
 	    notify_ops (chan, "%s set %s as operator on channel %s",
 			Server_Name, user->nick, chan->name);
 	    chanUser->flags |= ON_OPERATOR;
@@ -403,8 +400,6 @@ HANDLER (channel_level)
 	pass_message_args (con, tag, ":%s %s %s", sender, chan->name,
 			   Levels[level]);
 	chan->level = level;
-	notify_mods (CHANNELLOG_MODE, "%s set channel %s to level %s",
-		     sender, chan->name, Levels[level]);
 	notify_ops (chan, "%s set channel %s to level %s",
 		    sender, chan->name, Levels[level]);
     }
@@ -500,8 +495,6 @@ HANDLER (channel_limit)
     chan->limit = limit;
     chan->timestamp = Current_Time;
     pass_message_args (con, tag, ":%s %s %d", sender, chan->name, limit);
-    notify_mods (CHANNELLOG_MODE, "%s set limit on channel %s to %d",
-		 sender, chan->name, limit);
     notify_ops (chan, "%s set limit on channel %s to %d",
 		sender, chan->name, limit);
 }

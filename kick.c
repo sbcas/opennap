@@ -108,8 +108,6 @@ HANDLER (kick)
 
     user->channels = list_delete (user->channels, chan);
 
-    notify_mods (CHANNELLOG_MODE, "%s kicked %s out of channel %s: %s",
-		 sender->nick, user->nick, chan->name, ac == 3 ? av[2] : "");
     notify_ops (chan, "%s kicked %s out of channel %s: %s",
 		sender->nick, user->nick, chan->name, ac == 3 ? av[2] : "");
 
@@ -153,8 +151,6 @@ HANDLER (clear_channel)
 	truncate_reason(pkt);
     pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name,
 	    NONULL (pkt));
-    notify_mods (CHANNELLOG_MODE, "%s cleared channel %s: %s", sender->nick,
-	    chan->name, NONULL (pkt));
     notify_ops (chan, "%s cleared channel %s: %s", sender->nick,
 	    chan->name, NONULL (pkt));
     list = chan->users;

@@ -232,8 +232,6 @@ HANDLER (channel_ban)
     pass_message_args (con, tag, ":%s %s %s%s%s%s", sender, chan->name,
 		       b->target, ac > 2 ? " \"" : "", ac > 2 ? av[2] : "",
 		       ac > 2 ? "\"" : "");
-    notify_mods (BANLOG_MODE, "%s banned %s from %s: %s", sender, b->target,
-		 chan->name, NONULL (b->reason));
     notify_ops (chan, "%s banned %s from %s: %s", sender, b->target,
 		chan->name, NONULL (b->reason));
 }
@@ -299,9 +297,6 @@ HANDLER (channel_unban)
 			       sender, chan->name, b->target,
 			       ac > 2 ? " \"" : "",
 			       ac > 2 ? av[2] : "", ac > 2 ? "\"" : "");
-	    notify_mods (BANLOG_MODE, "%s unbanned %s from %s: %s",
-			 sender, b->target, chan->name,
-			 (ac > 2) ? av[2] : "");
 	    notify_ops (chan, "%s unbanned %s from %s: %s",
 			sender, b->target, chan->name, (ac > 2) ? av[2] : "");
 	    free_ban (b);
@@ -387,8 +382,6 @@ HANDLER (channel_clear_bans)
     }
     list_free (chan->bans, (list_destroy_t) free_ban);
     chan->bans = 0;
-    notify_mods (BANLOG_MODE, "%s cleared the ban list on %s", sender->nick,
-		 chan->name);
     notify_ops (chan, "%s cleared the ban list on %s", sender->nick,
 		chan->name);
 }
@@ -494,9 +487,6 @@ HANDLER (channel_op)
 			    send_cmd (user->con, MSG_SERVER_NOSUCH,
 				      "%s removed you as operator on channel %s",
 				      sender, chan->name);
-			notify_mods (CHANGELOG_MODE,
-				     "%s removed %s as operator on channel %s",
-				     sender, user->nick, chan->name);
 			notify_ops (chan,
 				    "%s removed %s as operator on channel %s",
 				    sender, user->nick, chan->name);
@@ -517,9 +507,6 @@ HANDLER (channel_op)
 		    send_cmd (user->con, MSG_SERVER_NOSUCH,
 			      "%s set you as operator on channel %s",
 			      sender, chan->name);
-		notify_mods (CHANGELOG_MODE,
-			     "%s set %s as operator on channel %s",
-			     sender, user->nick, chan->name);
 		notify_ops (chan, "%s set %s as operator on channel %s",
 			    sender, user->nick, chan->name);
 		/* only do the following if the user is in the channel */
@@ -553,7 +540,9 @@ notify_ops (CHANNEL * chan, const char *fmt, ...)
     {
 	chanUser = list->data;
 	ASSERT (chanUser->magic == MAGIC_CHANUSER);
-	if (ISUSER (chanUser->user->con) && (chanUser->flags & ON_OPERATOR))
+	if (ISUSER (chanUser->user->con) &&
+		((chanUser->flags & ON_OPERATOR) ||
+		 chanUser->user->level > LEVEL_USER))
 	    queue_data (chanUser->user->con, buf, 4 + len);
     }
 }
@@ -628,8 +617,6 @@ HANDLER (channel_drop)
     }
     pass_message_args (con, tag, ":%s %s \"%s\"", sender->nick, chan->name,
 		       (ac > 1) ? av[1] : "");
-    notify_mods (CHANGELOG_MODE, "%s dropped channel %s: %s",
-		 sender->nick, chan->name, (ac > 1) ? av[1] : "");
     notify_ops (chan, "%s dropped channel %s: %s",
 		sender->nick, chan->name, (ac > 1) ? av[1] : "");
 
@@ -650,8 +637,6 @@ HANDLER (channel_wallop)
     USER *sender;
     CHANNEL *chan;
     char *chanName;
-    LIST *list;
-    CHANUSER *chanUser;
 
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender))
@@ -679,28 +664,18 @@ HANDLER (channel_wallop)
        status otherwise, and is_chanop() will fail).  mods+ are assumed to
        be trusted enough that the check for membership is not required. */
     pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name, pkt);
-    len = form_message (Buf, sizeof (Buf), MSG_SERVER_NOSUCH,
-			"%s [ops/%s]: %s", sender->nick, chan->name, pkt);
-    for (list = chan->users; list; list = list->next)
-    {
-	chanUser = list->data;
-	ASSERT (chanUser->magic == MAGIC_CHANUSER);
-	if (ISUSER (chanUser->user->con) &&
-	    /* send to mods+ and ops */
-	    (chanUser->user->level > LEVEL_USER ||
-	     (chanUser->flags & ON_OPERATOR)))
-	    queue_data (chanUser->user->con, Buf, len);
-    }
+    notify_ops(chan, "%s [ops/%s]: %s", sender->nick, chan->name, pkt);
 }
 
 static void
-add_flag(char *d, int dsize, char *flag, int bit, int onmask, int offmask)
+add_flag (char *d, int dsize, char *flag, int bit, int onmask, int offmask)
 {
-    if((onmask & bit)||(offmask&bit))
+    if ((onmask & bit) || (offmask & bit))
     {
-	int len=strlen(d);
-	snprintf(d+len,dsize-len,"%s%c%s", dsize>0?" ":"",
-		(onmask&bit)?'+':'-', flag);
+	int len = strlen (d);
+
+	snprintf (d + len, dsize - len, "%s%c%s", dsize > 0 ? " " : "",
+		  (onmask & bit) ? '+' : '-', flag);
     }
 }
 
@@ -764,11 +739,13 @@ HANDLER (channel_mode)
     {
 	if (ISUSER (con))
 	    send_cmd_pre (con, tag, "mode for channel ", "%s%s%s%s",
-		    chan->name,
-		    (chan->flags & ON_CHANNEL_PRIVATE) ? " +PRIVATE" : "",
-		    (chan->flags & ON_CHANNEL_MODERATED) ? " +MODERATED" : "",
-		    (chan->flags & ON_CHANNEL_INVITE) ? " +INVITE" : "",
-		    (chan->flags & ON_CHANNEL_TOPIC) ? " +TOPIC" : "");
+			  chan->name,
+			  (chan->
+			   flags & ON_CHANNEL_PRIVATE) ? " +PRIVATE" : "",
+			  (chan->
+			   flags & ON_CHANNEL_MODERATED) ? " +MODERATED" : "",
+			  (chan->flags & ON_CHANNEL_INVITE) ? " +INVITE" : "",
+			  (chan->flags & ON_CHANNEL_TOPIC) ? " +TOPIC" : "");
 	return;
     }
     while (pkt)
@@ -826,30 +803,32 @@ HANDLER (channel_mode)
 
 	chan->timestamp = Current_Time;
 	msg[0] = 0;
-	add_flag(msg,sizeof(msg),"PRIVATE",ON_CHANNEL_PRIVATE,onmask,offmask);
-	add_flag(msg,sizeof(msg),"MODERATED",ON_CHANNEL_MODERATED,onmask,offmask);
-	add_flag(msg,sizeof(msg),"INVITE",ON_CHANNEL_INVITE,onmask,offmask);
-	add_flag(msg,sizeof(msg),"TOPIC",ON_CHANNEL_TOPIC,onmask,offmask);
+	add_flag (msg, sizeof (msg), "PRIVATE", ON_CHANNEL_PRIVATE, onmask,
+		  offmask);
+	add_flag (msg, sizeof (msg), "MODERATED", ON_CHANNEL_MODERATED,
+		  onmask, offmask);
+	add_flag (msg, sizeof (msg), "INVITE", ON_CHANNEL_INVITE, onmask,
+		  offmask);
+	add_flag (msg, sizeof (msg), "TOPIC", ON_CHANNEL_TOPIC, onmask,
+		  offmask);
 
 	notify_ops (chan, "%s changed mode on channel %s:%s",
 		    senderName, chan->name, msg);
-	notify_mods (CHANGELOG_MODE,
-		     "%s changed mode on channel %s:%s", senderName,
-		     chan->name, msg);
 	pass_message_args (con, tag, ":%s %s %s", senderName,
 			   chan->name, msg);
     }
 }
 
 static int
-is_member(CHANNEL *chan, USER *user)
+is_member (CHANNEL * chan, USER * user)
 {
     LIST *list;
     CHANUSER *chanUser;
-    for(list=chan->users;list;list=list->next)
+
+    for (list = chan->users; list; list = list->next)
     {
-	chanUser=list->data;
-	if(chanUser->user==user)
+	chanUser = list->data;
+	if (chanUser->user == user)
 	    return 1;
     }
     return 0;
@@ -860,83 +839,84 @@ is_member(CHANNEL *chan, USER *user)
 HANDLER (channel_invite)
 {
     USER *sender, *user;
-    int ac=-1;
+    int ac = -1;
     char *av[2];
     LIST *list;
     CHANNEL *chan;
 
-    ASSERT(validate_connection(con));
-    if(pop_user(con,&pkt,&sender))
+    ASSERT (validate_connection (con));
+    if (pop_user (con, &pkt, &sender))
 	return;
-    if(pkt)
-	ac=split_line(av,FIELDS(av),pkt);
-    if(ac<2)
+    if (pkt)
+	ac = split_line (av, FIELDS (av), pkt);
+    if (ac < 2)
     {
-	unparsable(con);
-	return;
-    }
-    chan=hash_lookup(Channels,av[0]);
-    if(!chan)
-    {
-	nosuchchannel(con);
+	unparsable (con);
 	return;
     }
-    if(!(chan->flags&ON_CHANNEL_INVITE))
+    chan = hash_lookup (Channels, av[0]);
+    if (!chan)
     {
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"channel is not invite only");
+	nosuchchannel (con);
+	return;
+    }
+    if (!(chan->flags & ON_CHANNEL_INVITE))
+    {
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "channel is not invite only");
 	return;
     }
     /* ensure this user meets the minimum level requirements */
-    if(sender->level<chan->level)
+    if (sender->level < chan->level)
     {
-	permission_denied(con);
+	permission_denied (con);
 	return;
     }
     /*ensure the user is on this channel */
-    if(!is_member(chan,sender))
+    if (!is_member (chan, sender))
     {
-	permission_denied(con);
+	permission_denied (con);
 	return;
     }
-    user=hash_lookup(Users,av[1]);
-    if(!user)
+    user = hash_lookup (Users, av[1]);
+    if (!user)
     {
-	nosuchuser(con);
+	nosuchuser (con);
 	return;
     }
-    if(is_member(chan,user))
+    if (is_member (chan, user))
     {
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"user is already in channel");
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "user is already in channel");
 	return;
     }
-    /*ensure the user is not already invited*/
-    if(list_find(user->invited,chan))
+    /*ensure the user is not already invited */
+    if (list_find (user->invited, chan))
+	return;			/* already invited */
+
+    list = CALLOC (1, sizeof (LIST));
+    list->data = chan;
+    list->next = user->invited;
+    user->invited = list;
+
+    list = CALLOC (1, sizeof (LIST));
+    list->data = user;
+    list->next = chan->invited;
+    chan->invited = list;
+
+    pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name,
+		       user->nick);
+
+    if (ISUSER (user->con))
     {
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"user is already invited");
-	return;
-    }
-
-    list=CALLOC(1,sizeof(LIST));
-    list->data=chan;
-    list->next=user->invited;
-    user->invited=list;
-
-    list=CALLOC(1,sizeof(LIST));
-    list->data=user;
-    list->next=chan->invited;
-    chan->invited=list;
-
-    pass_message_args(con,tag,":%s %s %s",sender->nick,chan->name,user->nick);
-
-    if(ISUSER(user->con))
-    {
-	if(user->con->numerics)
-	    send_cmd(user->con,tag,"%s %s",chan->name,sender->nick);
+	if (user->con->numerics)
+	    send_cmd (user->con, tag, "%s %s", chan->name, sender->nick);
 	else
-	    send_cmd(user->con,MSG_SERVER_NOSUCH,"%s invited you to channel %s",
-		    sender->nick, chan->name);
+	    send_cmd (user->con, MSG_SERVER_NOSUCH,
+		      "%s invited you to channel %s", sender->nick,
+		      chan->name);
     }
+
+    notify_ops(chan,"%s invited %s to channel %s",sender->nick,user->nick,
+	    chan->name);
 }

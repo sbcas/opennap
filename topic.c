@@ -110,8 +110,6 @@ HANDLER (topic)
 	    if (chanUser->user->local)
 		queue_data (chanUser->user->con, Buf, l);
 	}
-	notify_mods (TOPICLOG_MODE, "%s set topic on %s: %s", nick,
-		     chan->name, chan->topic);
 	notify_ops (chan, "%s set topic on %s: %s", nick,
 		    chan->name, chan->topic);
     }
