@@ -84,7 +84,6 @@ HASH *Users;			/* global users list */
 HASH *File_Table;		/* global file list */
 HASH *Channels;			/* global channel list */
 HASH *Hotlist;			/* global hotlist */
-HASH *Paths;			/* global paths list */
 
 #if RESUME
 HASH *MD5;			/* global hash list */
@@ -117,6 +116,8 @@ update_stats (void)
     int numServers = list_count (Servers);
     time_t delta;
 
+    delta = Current_Time - Last_Click;
+
     strcpy (Buf, ctime (&Current_Time));
     Buf[strlen (Buf) - 1] = 0;
     log ("update_stats(): current time is %s", Buf);
@@ -127,13 +128,16 @@ update_stats (void)
     log ("update_stats(): %d local files", Local_Files);
     log ("update_stats(): File_Table contains %d entries",
 	 File_Table->dbsize);
+    log ("update_stats(): %.0f searches/sec", (float)Search_Count / (float)delta);
     log ("update_stats(): User_Db contains %d entries", User_Db->dbsize);
     log ("update_stats(): %d channels", Channels->dbsize);
-    delta = Current_Time - Last_Click;
     log ("update_stats(): %.2f kbytes/sec in, %.2f kbytes/sec out",
 	 (float) Bytes_In / 1024. / delta, (float) Bytes_Out / 1024. / delta);
+
+    /* reset counters */
     Bytes_In = 0;
     Bytes_Out = 0;
+    Search_Count = 0;
     Last_Click = Current_Time;
 
     /* since we send the same data to many people, optimize by forming
@@ -599,7 +603,6 @@ main (int argc, char **argv)
     free_hash (Channels);
     free_hash (Hotlist);
     free_hash (User_Db);
-    free_hash (Paths);
     free_timers ();
 
     list_free (Bans, (list_destroy_t) free_ban);

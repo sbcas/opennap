@@ -20,14 +20,6 @@ const int BitRate[18] =
 /* allowed sample rates for MPEG V2/3 */
 const int SampleRate[6] = { 16000, 24000, 22050, 32000, 44100, 48000 };
 
-void
-path_free (PATH * p)
-{
-    ASSERT (p->refs == 0);
-    FREE (p->path);
-    FREE (p);
-}
-
 static void
 fdb_add (HASH * table, char *key, DATUM * d)
 {
@@ -97,33 +89,33 @@ insert_datum (DATUM * info, char *av)
 	}
     }
 
-    /* add this entry to the hash table for this user's files
-     * NOTE: only hash by the basename part of the file, not including the
-     * directory component.  I've assumed for the sake of simplicity that
-     * there will not be a file named the same in a different directory.
-     * I don't believe that would display well on any of the clients
-     */
     hash_add (info->user->con->uopt->files, info->filename, info);
     info->refcount++;
 
     /* split the filename into words */
     tokens = tokenize (av);
-    ASSERT (tokens != 0);
 
-    /* add this entry to the global file list.  the data entry currently
-       can't be referenced more than 32 times so if there are excess tokens,
-       discard the first several so that the refcount is not overflowed */
-    fsize = list_count (tokens);
-    ptr = tokens;
-    while (fsize > 30)
+    /* the filename may not consist of any searchable words, in which
+     * case its not entered into the index.  this file will only be seen
+     * when browsing the user possessing it
+     */
+    if(tokens)
     {
-	ptr = ptr->next;
-	fsize--;
-    }
-    for (; ptr; ptr = ptr->next)
-	fdb_add (File_Table, ptr->data, info);
+	/* add this entry to the global file list.  the data entry currently
+	   can't be referenced more than 32 times so if there are excess tokens,
+	   discard the first several so that the refcount is not overflowed */
+	fsize = list_count (tokens);
+	ptr = tokens;
+	while (fsize > 30)
+	{
+	    ptr = ptr->next;
+	    fsize--;
+	}
+	for (; ptr; ptr = ptr->next)
+	    fdb_add (File_Table, ptr->data, info);
 
-    list_free (tokens, 0);
+	list_free (tokens, 0);
+    }
 
 #if RESUME
     /* index by md5 hash */
@@ -139,20 +131,10 @@ insert_datum (DATUM * info, char *av)
     info->user->sharing = 1;	/* note that we began sharing */
 }
 
-/* new_datum
- *
- * path
- * 	directory component of the shared file
- * filename
- * 	basename component of the shared file
- * hash
- * 	md5 checksum
- */
 static DATUM *
-new_datum (char *path, char *filename, char *hash)
+new_datum (char *filename, char *hash)
 {
     DATUM *info = CALLOC (1, sizeof (DATUM));
-    PATH *pathref;
 
     (void) hash;
     if (!info)
@@ -160,25 +142,6 @@ new_datum (char *path, char *filename, char *hash)
 	OUTOFMEMORY ("new_datum");
 	return 0;
     }
-    /* in order to conserve memory, we store the directory name in a hash
-     * table which can be referenced by all the files in that directory
-     */
-    pathref = hash_lookup (Paths, path);
-    if (!pathref)
-    {
-	/* create it now */
-	pathref = CALLOC (1, sizeof (PATH));
-	if (!pathref)
-	{
-	    OUTOFMEMORY ("new_datum");
-	    FREE (info);
-	    return 0;
-	}
-	pathref->path = STRDUP (path);
-	hash_add (Paths, pathref->path, pathref);
-    }
-    pathref->refs++;
-    info->path = pathref;
     info->filename = STRDUP (filename);
     if (!info->filename)
     {
@@ -237,7 +200,6 @@ HANDLER (add_file)
     char *av[6];
     DATUM *info;
     int fsize;
-    char path[_POSIX_PATH_MAX], fname[_POSIX_PATH_MAX], *ptr;
 
     (void) tag;
     (void) len;
@@ -256,8 +218,7 @@ HANDLER (add_file)
 
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 6)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH,
-		  "invalid parameter data to add a file");
+	unparsable(con);
 	return;
     }
 
@@ -275,26 +236,17 @@ HANDLER (add_file)
 	return;
     }
 
-    /* split the filename into its directory and base name
-     * NOTE: the trailing / MUST be left in the path.  the search code
-     * depends on it.
-     */
-    strncpy (path, av[0], sizeof (path) - 1);
-    ptr=my_basename(path);
-    strncpy (fname, ptr, sizeof (fname) - 1);
-    *ptr = 0;
-
     /* make sure this isn't a duplicate - only compare the basename, not
      * including the directory component
      */
-    if (con->uopt->files && hash_lookup (con->uopt->files, fname))
+    if (con->uopt->files && hash_lookup (con->uopt->files, av[0]))
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
 	return;
     }
 
     /* create the db record for this file */
-    if (!(info = new_datum (path, fname, av[1])))
+    if (!(info = new_datum (av[0], av[1])))
 	return;
     info->user = con->user;
     info->size = fsize;
@@ -321,7 +273,6 @@ HANDLER (share_file)
     char *av[4];
     DATUM *info;
     int i, type;
-    char path[_POSIX_PATH_MAX], fname[_POSIX_PATH_MAX], *ptr;
 
     (void) len;
     (void) tag;
@@ -370,25 +321,13 @@ HANDLER (share_file)
 	return;
     }
 
-    /* split the filename into its directory and base name
-     * NOTE: the trailing / MUST be left in the path.  the search code
-     * depends on it.
-     */
-    strncpy (path, av[0], sizeof (path) - 1);
-    ptr = my_basename(path);
-    strncpy (fname, ptr, sizeof (fname) - 1);
-    *ptr = 0;
-
-    /* make sure this isn't a duplicate - only compare the basename, not
-     * including the directory component
-     */
-    if (con->uopt->files && hash_lookup (con->uopt->files, fname))
+    if (con->uopt->files && hash_lookup (con->uopt->files, av[0]))
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file: %s", fname);
+	send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
 	return;
     }
 
-    if (!(info = new_datum (path, fname, av[2])))
+    if (!(info = new_datum (av[0], av[2])))
 	return;
     info->user = con->user;
     info->size = atoi (av[1]);
@@ -490,17 +429,18 @@ HANDLER (add_directory)
 	    unparsable (con);
 	    return;
 	}
-	/* make sure this isn't a duplicate - only compare the basename,
-	 * not including the directory component
-	 */
-	if (con->uopt->files && hash_lookup (con->uopt->files, basename))
+
+	strncpy(path,dirbuf,sizeof(path)-1);
+	strncpy(path+pathlen,basename,sizeof(path)-1-pathlen);
+
+	if (con->uopt->files && hash_lookup (con->uopt->files, path))
 	{
-	    send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file: %s", basename);
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Duplicate file");
 	    continue;		/* get next file */
 	}
 
 	/* create the db record for this file */
-	if (!(info = new_datum (dirbuf, basename, md5)))
+	if (!(info = new_datum (path, md5)))
 	    return;
 	info->user = con->user;
 	info->size = atoi (size);

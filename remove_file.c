@@ -22,16 +22,15 @@ HANDLER (remove_file)
     user = con->user;
     if (!user->shared)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "You are not sharing any files");
+	send_cmd (con, MSG_SERVER_NOSUCH, "Not sharing any files");
 	return;
     }
 
     /* find the file in the user's list */
-    info = hash_lookup (con->uopt->files, my_basename(pkt));
-    if (!info||
-	    strncasecmp(pkt,info->path->path,strlen(info->path->path))!=0)
+    info = hash_lookup (con->uopt->files, pkt);
+    if (!info)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "You are not sharing %s", pkt);
+	send_cmd (con, MSG_SERVER_NOSUCH, "Not sharing that file");
 	return;
     }
 

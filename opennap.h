@@ -274,17 +274,6 @@ typedef struct
 }
 FLIST;
 
-/* to avoid duplicating the directory part of filenames, we create a hash
- * table indexed by the directory name and keep track of how many files
- * reference this structure.  this way only one copy of the directory name
- * needs to be stored in memory for all files in that directory
- */
-typedef struct
-{
-    char *path;
-    int refs;
-} PATH;
-
 /* content-type */
 enum
 {
@@ -297,12 +286,10 @@ enum
     CT_UNKNOWN
 };
 
-/* core database entry (20 (+4) bytes) */
 typedef struct
 {
     USER *user;			/* user who possesses this file */
-    PATH *path;			/* directory portion of the name */
-    char *filename;		/* the filename (excluding path) */
+    char *filename;
 #if RESUME
     char *hash;			/* the md5 hash of the file */
 #endif
@@ -382,6 +369,7 @@ extern int Max_Search_Results;
 extern int Max_Shared;
 extern int Max_User_Channels;	/* # of channels is a user allowed to join */
 extern int Nick_Expire;
+extern unsigned int Search_Count;	/* # of searches in the last click */
 extern int Search_Timeout;
 extern unsigned int Server_Flags;
 extern char *Server_Name;
@@ -440,7 +428,6 @@ extern HASH *File_Table;
 extern HASH *MD5;
 #endif
 extern HASH *User_Db;
-extern HASH *Paths;
 
 extern char *Levels[LEVEL_ELITE + 1];
 extern char *Content_Types[CT_UNKNOWN];
@@ -683,7 +670,6 @@ unsigned int lookup_ip (const char *host);
 int make_tcp_connection (const char *host, int port, unsigned int *ip);
 void motd_init(void);
 void motd_close(void);
-char *my_basename (char *);
 char *my_ntoa (unsigned int);
 USER *new_user (void);
 CHANNEL *new_channel (void);
@@ -701,7 +687,6 @@ void part_channel (CHANNEL *, USER *);
 void pass_message (CONNECTION *, char *, size_t);
 void pass_message_args (CONNECTION * con, unsigned int msgtype,
 			const char *fmt, ...);
-void path_free (PATH *);
 void permission_denied (CONNECTION * con);
 int pop_user (CONNECTION * con, char **pkt, USER ** user);
 int pop_user_server (CONNECTION * con, int tag, char **pkt, char **nick, USER ** user);

@@ -37,11 +37,10 @@ HANDLER (upload_ok)
 	return;
     }
     /* pull the hash from the data base */
-    info = hash_lookup (con->uopt->files, my_basename(av[1]));
-    if (!info ||
-	    strncasecmp(av[1],info->path->path,strlen(info->path->path))!=0)
+    info = hash_lookup (con->uopt->files, av[1]);
+    if (!info)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "You are not sharing %s", av[1]);
+	send_cmd (con, MSG_SERVER_NOSUCH, "Not sharing that file");
 	return;
     }
     if (con->user->port == 0)

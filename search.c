@@ -12,6 +12,9 @@
 #include "opennap.h"
 #include "debug.h"
 
+/* number of searches performed */
+unsigned int Search_Count = 0;
+
 /* structure used when handing a search for a remote user */
 typedef struct
 {
@@ -77,9 +80,8 @@ search_callback (DATUM * match, SEARCH * parms)
 	ASSERT (validate_user (match->user));
 	/* 10016 <id> <user> "<filename>" <md5> <size> <bitrate> <frequency> <duration> */
 	send_cmd (parms->con, MSG_SERVER_REMOTE_SEARCH_RESULT,
-		  "%s %s \"%s%s\" %s %d %d %d %d",
-		  parms->id, match->user->nick, match->path->path,
-		  match->filename,
+		  "%s %s \"%s\" %s %d %d %d %d",
+		  parms->id, match->user->nick, match->filename,
 #if RESUME
 		  match->hash,
 #else
@@ -92,8 +94,8 @@ search_callback (DATUM * match, SEARCH * parms)
     else
     {
 	send_cmd (parms->con, MSG_SERVER_SEARCH_RESULT,
-		  "\"%s%s\" %s %d %d %d %d %s %u %d",
-		  match->path->path, match->filename,
+		  "\"%s\" %s %d %d %d %d %s %u %d",
+		  match->filename,
 #if RESUME
 		  match->hash,
 #else
@@ -225,14 +227,9 @@ free_datum (DATUM * d)
     d->size = -1;		/* mark as invalid */
     d->user = 0;
     d->refcount--;
-    ASSERT (d->path != 0);
     if (d->refcount == 0)
     {
 	/* no more references, we can free this memory */
-
-	/* remove the path pointer for this file */
-	if (--d->path->refs == 0)
-	    hash_remove (Paths, d->path->path);
 	FREE (d->filename);
 #if RESUME
 	FREE (d->hash);
@@ -347,8 +344,8 @@ fdb_search (HASH * table,
     FLIST *flist = 0, *tmp;
     DATUM *d;
     int hits = 0;
-    int len;
-    char path[_POSIX_PATH_MAX];
+
+    Search_Count++;
 
     /* find the file list with the fewest files in it */
     for (ptok = tokens; ptok; ptok = ptok->next)
@@ -365,29 +362,18 @@ fdb_search (HASH * table,
     }
     if (!flist)
 	return 0;		/* no matches */
-    path[sizeof (path) - 1] = 0;
     /* find the list of files which contain all search tokens */
     for (ptok = flist->list; ptok; ptok = ptok->next)
     {
 	d = (DATUM *) ptok->data;
 	ASSERT (VALID_LEN (d, sizeof (DATUM)));
-	if (d->size != (unsigned) -1)
+	if (d->size != (unsigned) -1 && match (tokens, d->filename) &&
+		cb (d, cbdata))
 	{
-	    /* reconstruct the full filename */
-	    ASSERT (d->path != 0);
-	    len = strlen (d->path->path);
-	    if (len > (int) sizeof (path) - 1)
-		len = sizeof (path) - 1;
-	    strncpy (path, d->path->path, sizeof (path) - 1);
-	    strncpy (path + len, d->filename, sizeof (path) - 1 - len);
-
-	    if (match (tokens, path) && cb (d, cbdata))
-	    {
-		/* callback accepted match */
-		hits++;
-		if (hits == maxhits)
-		    break;	/* finished */
-	    }
+	    /* callback accepted match */
+	    hits++;
+	    if (hits == maxhits)
+		break;	/* finished */
 	}
     }
     return hits;
@@ -454,14 +440,15 @@ static char *
 generate_search_id (void)
 {
     char *id = MALLOC (9);
+    int i;
 
     if (!id)
     {
 	OUTOFMEMORY ("generate_search_id");
 	return 0;
     }
-    get_random_bytes (id, 4);
-    expand_hex (id, 4);
+    for(i=0;i<8;i++)
+	id[i]='A' + (rand() % 26);
     id[8] = 0;
     return id;
 }
