@@ -16,6 +16,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/time.h>
+#ifdef HAVE_LIBZ
+#include <zlib.h>
+#endif
 #include "global.h"
 #include "md5.h"
 #include "opennap.h"
@@ -236,6 +239,56 @@ send_queued_data (CONNECTION *con)
     if (con->sendbuflen == 0)
 	return; /* nothing to do */
 
+#if HAVE_LIBZ
+    if (con->class == CLASS_SERVER)
+    {
+	/* see if there is any data we can compress */
+	if (con->sendbufcompressed < con->sendbuflen)
+	{
+	    long datasize;
+	    unsigned char *data;
+
+	    l = con->sendbuflen - con->sendbufcompressed;
+	    datasize = l;
+	    data = MALLOC (datasize);
+	    if (compress2 (data, (unsigned long *) &datasize,
+		    (unsigned char *) con->sendbuf + con->sendbufcompressed, l,
+		    Compression_Level) == Z_OK)
+	    {
+		/* make sure there is enough room to hold the compressed
+		   packet */
+		if (con->sendbuflen - l + datasize + 6 < con->sendbufmax)
+		{
+		    con->sendbuflen -= l; /* pop the uncompressed packet */
+
+		    set_val (con->sendbuf + con->sendbuflen, datasize + 2);
+		    con->sendbuflen += 2;
+		    set_val (con->sendbuf + con->sendbuflen,
+			MSG_SERVER_COMPRESSED_DATA);
+		    con->sendbuflen += 2;
+		    set_val (con->sendbuf, l); /* uncompressed size */
+		    con->sendbuflen += 2;
+
+		    memcpy (con->sendbuf + con->sendbuflen, data, datasize);
+		    con->sendbufcompressed = con->sendbuflen;
+
+		    log ("send_queued_data(): compressed %d bytes into %d (%d%%).",
+			l, datasize, (100 * (l - datasize)) / l);
+		}
+		else
+		{
+		    log ("send_queued_data(): compressed packet is larger, not compressing");
+		}
+	    }
+	    else
+	    {
+		log ("send_queued_data(): error compressing data");
+	    }
+	    FREE (data);
+	}
+    }
+#endif /* HAVE_LIBZ */
+
     /* see if we are ready for writing, with no wait */
     t.tv_sec = 0;
     t.tv_usec = 0;
@@ -262,6 +315,7 @@ send_queued_data (CONNECTION *con)
 	    return;
 	}
 	con->sendbuflen -= l;
+	con->sendbufcompressed -= l;
 
 	/* shift any data that was left down to the begin of the buf */
 	/* TODO: this should probably be implemented as a circular buffer to
@@ -332,7 +386,7 @@ get_random_bytes (char *d, int dsize)
 char *
 generate_nonce (void)
 {
-#ifdef HAVE_DEV_RANDOM
+#if HAVE_DEV_RANDOM
     int f;
 #endif /* HAVE_DEV_RANDOM */
     char *nonce;

@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -38,6 +40,7 @@ int Server_Port;		/* which port to listen on for connections */
 int Server_Queue_Length;
 int Client_Queue_Length;
 int Max_Search_Results;
+int Compression_Level;
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;
@@ -157,8 +160,31 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_DISCONNECT, server_disconnect }, /* 10101 */
     { MSG_CLIENT_KILL_SERVER, kill_server }, /* 10110 */
     { MSG_CLIENT_REMOVE_SERVER, remove_server }, /* 10111 */
+    { MSG_SERVER_COMPRESSED_DATA, compressed_data }, /* 10200 */
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
+
+void
+dispatch_command (CONNECTION *con, short tag, short len)
+{
+    int l;
+
+    for (l = 0; l < Protocol_Size; l++)
+    {
+	if (Protocol[l].message == tag)
+	{
+	    ASSERT (Protocol[l].handler != 0);
+	    /* note that we pass only the data part of the packet */
+	    Protocol[l].handler (con, con->recvdata);
+	    return;
+	}
+    }
+
+    log ("dispatch_command(): unknown message: tag=%d, length=%d, data=%s",
+	tag, len, len ? con->recvdata : "(empty)");
+
+    send_cmd (con, MSG_SERVER_NOSUCH, "unknown command code %d", tag);
+}
 
 static void
 handle_connection (CONNECTION *con)
@@ -292,21 +318,7 @@ handle_connection (CONNECTION *con)
     ASSERT (con->recvdata != 0);
     con->recvdata[len] = 0;		/* terminate the string */
 
-    for (l = 0; l < Protocol_Size; l++)
-    {
-	if (Protocol[l].message == tag)
-	{
-	    ASSERT (Protocol[l].handler != 0);
-	    /* note that we pass only the data part of the packet */
-	    Protocol[l].handler (con, con->recvdata);
-	    return;
-	}
-    }
-
-    log ("main(): unknown message: tag=%d, length=%d, data=%s", tag, len,
-	len ? con->recvdata : "(empty)");
-
-    send_cmd (con, MSG_SERVER_NOSUCH, "unknown command code %d", tag);
+    dispatch_command (con, tag, len);
 }
 
 static void

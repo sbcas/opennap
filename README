@@ -164,6 +164,18 @@ are implemented as additional functionality in the opennap server.
 	reqeusts that <server> be removed from the table of allowed links.
 	must be elite to execute this command
 
+10200	compressed packet [SERVER]
+
+	<len><data>
+
+	<len> is the size of the uncompressed packet(s)
+	<data> is the compressed packet
+
+	this packet is used to transmit one or more packets together in
+	compressed form.  since most of the messages are text, they should
+	compress very well.  once uncompressed, the data should contain 1
+	or more valid packets
+
 * References
 
 RFC1459, the IRC protocol was helpful in implementing many features.

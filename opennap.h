@@ -102,6 +102,8 @@ struct _connection
     char *sendbuf;		/* queued data to send */
     int sendbuflen;		/* length of queued data */
     int sendbufmax;		/* memory allocated for queue */
+    int sendbufcompressed;	/* how many bytes in the queue have been
+				   compressed already */
 
     /* input buffer */
     char recvhdr[4];		/* packet header */
@@ -248,6 +250,7 @@ typedef struct _ban {
 #define MSG_CLIENT_DISCONNECT		10101
 #define MSG_CLIENT_KILL_SERVER		10110
 #define MSG_CLIENT_REMOVE_SERVER	10111
+#define MSG_SERVER_COMPRESSED_DATA	10200
 
 /* offsets into the row returned for library searches */
 #define IDX_NICK	0
@@ -273,6 +276,7 @@ extern int Stat_Click;
 extern int Server_Queue_Length;
 extern int Client_Queue_Length;
 extern int Max_Search_Results;
+extern int Compression_Level;
 
 extern unsigned long Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
@@ -310,6 +314,7 @@ void *array_remove (void *, int *, void *);
 void close_db (void);
 void config (const char *);
 void config_defaults (void);
+void dispatch_command (CONNECTION *con, short tag, short len);
 void expand_hex (char *, int);
 void free_ban (BAN *);
 void free_channel (CHANNEL *);
@@ -360,6 +365,7 @@ HANDLER (browse);
 HANDLER (change_data_port);
 HANDLER (change_speed);
 HANDLER (client_quit);
+HANDLER (compressed_data);
 HANDLER (data_port_error);
 HANDLER (download);
 HANDLER (download_end);
