@@ -387,20 +387,20 @@ HANDLER (add_directory)
 	log ("add_directory(): missing directory component");
 	return;
     }
-    dirbuf[sizeof (dirbuf) - 1] = 0;	/* ensure nul termination */
-    strncpy (dirbuf, dir, sizeof (dirbuf) - 1);
-    pathlen = strlen (dirbuf);
+    pathlen = strlen (dir);
     if ((size_t) pathlen >= sizeof (dirbuf) - 1)
     {
-	ASSERT ((size_t) pathlen < sizeof (dirbuf));
 	log ("add_directory(): directory component is too long, ignoring");
 	return;
     }
+    ASSERT(pathlen<sizeof(dirbuf)-1);
+    dirbuf[sizeof (dirbuf) - 1] = 0;	/* ensure nul termination */
+    strncpy (dirbuf, dir, sizeof (dirbuf) - 1);
 
     if (pathlen > 0 && dirbuf[pathlen - 1] != '\\')
     {
-	strncpy (dirbuf + pathlen, "\\", sizeof (dirbuf) - pathlen - 1);
-	pathlen++;
+	dirbuf[pathlen++]='\\';
+	dirbuf[pathlen]=0;
 	if ((size_t) pathlen >= sizeof (dirbuf) - 1)
 	{
 	    ASSERT ((size_t) pathlen < sizeof (dirbuf));
@@ -432,6 +432,7 @@ HANDLER (add_directory)
 
 	strncpy(path,dirbuf,sizeof(path)-1);
 	strncpy(path+pathlen,basename,sizeof(path)-1-pathlen);
+	ASSERT(path[sizeof(path)-1]==0);
 
 	if (con->uopt->files && hash_lookup (con->uopt->files, path))
 	{

@@ -94,8 +94,7 @@ search_callback (DATUM * match, SEARCH * parms)
     else
     {
 	send_cmd (parms->con, MSG_SERVER_SEARCH_RESULT,
-		  "\"%s\" %s %d %d %d %d %s %u %d",
-		  match->filename,
+		  "\"%s\" %s %d %d %d %d %s %u %d", match->filename,
 #if RESUME
 		  match->hash,
 #else
@@ -151,42 +150,160 @@ tokenize (char *s)
 	while (*s && !WORD_CHAR (*s))
 	    s++;
 	ptr = s;
-	while (*ptr && WORD_CHAR (*ptr))
+	while (WORD_CHAR (*ptr))
 	    ptr++;
 	if (*ptr)
 	    *ptr++ = 0;
 	strlower (s);		/* convert to lower case to save time */
+
 	/* don't bother with common words, if there is more than 5,000 of
 	   any of these it doesnt do any good for the search engine because
 	   it won't match on them.  its doubtful that these would narrow
 	   searches down any even after the selection of the bin to search */
-	if (!strcmp ("a", s) || !strcmp ("i", s) ||
-	    !strcmp ("the", s) || !strcmp ("and", s) || !strcmp ("in", s) ||
-	    !strcmp ("of", s) || !strcmp ("you", s) || !strcmp ("it", s) ||
-	    !strcmp ("me", s) || !strcmp ("to", s) || !strcmp ("on", s) ||
-	    !strcmp ("love", s) || !strcmp ("g", s) || !strcmp ("m", s) ||
-	    !strcmp ("s", s) ||
-	    /* the following are common path names and don't really
-	       provide useful information */
-	    !strcmp ("mp3", s) || !strcmp ("c", s) || !strcmp ("d", s) ||
-	    !strcmp ("f", s) || !strcmp ("e", s) || !strcmp ("napster", s) ||
-	    !strcmp ("music", s) || !strcmp ("program", s) ||
-	    !strcmp ("files", s) || !strcmp ("windows", s) ||
-	    !strcmp ("songs", s) || !strcmp ("desktop", s) ||
-	    !strcmp ("my", s) || !strcmp ("documents", s) ||
-	    !strcmp ("mp3's", s) || !strcmp ("rock", s) ||
-	    !strcmp ("new", s) || !strcmp ("winamp", s) ||
-	    !strcmp ("scour", s) || !strcmp ("media", s) ||
-	    !strcmp ("agent", s) || !strcmp ("stuff", s) ||
-	    !strcmp ("download", s) || !strcmp ("home", s) ||
-	    !strcmp ("downloads", s) || !strcmp ("live", s) ||
-	    !strcmp ("mp3s", s) || !strcmp ("2", s) || !strcmp ("1", s) ||
-	    !strcmp ("mnt", s) || !strcmp ("mp3z", s) ||
-	    !strcmp ("cd", s) || !strcmp ("remix", s))
+	if (*s == 'a')
 	{
-	    s = ptr;
-	    continue;
+	    if (!*(s + 1) || !strcmp ("nd", s + 1) || !strcmp ("gent", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
 	}
+	else if (*s == 'c')
+	{
+	    if (!*(s + 1) || !strcmp ("d", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 'd')
+	{
+	    if (!*(s + 1) || !strcmp ("esktop", s + 1)
+		|| !strcmp ("ocuments", s + 1) || !strcmp ("ownload", s + 1)
+		|| !strcmp ("ownloads", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 'e' || *s == 'g' || *s == '2' || *s == '1')
+	{
+	    if (!*(s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 'f')
+	{
+	    if (!*(s + 1) || !strcmp ("iles", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 'h')
+	{
+	    if (!strcmp ("ome", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 'i')
+	{
+	    if (!*(s + 1) || !strcmp ("n", s + 1) || !strcmp ("t", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 'l')
+	{
+	    if (!strcmp ("ove", s + 1) || !strcmp ("ive", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 'm')
+	{
+	    if (!*(s + 1) || !strcmp ("e", s + 1) || !strcmp ("p3", s + 1) ||
+		!strcmp ("usic", s + 1) || !strcmp ("y", s + 1) ||
+		!strcmp ("p3's", s + 1) || !strcmp ("edia", s + 1) ||
+		!strcmp ("p3s", s + 1) || !strcmp ("mp3z", s + 1) ||
+		!strcmp ("nt", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 'n')
+	{
+	    if (!strcmp ("apster", s + 1) || !strcmp ("ew", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 'o')
+	{
+	    if (!strcmp ("f", s + 1) || !strcmp ("n", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 'p')
+	{
+	    if (!strcmp ("rogram", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 'r')
+	{
+	    if (!strcmp ("ock", s + 1) || !strcmp ("emix", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 's')
+	{
+	    if (!*(s + 1) || !strcmp ("ongs", s + 1)
+		|| !strcmp ("cour", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 't')
+	{
+	    if (!strcmp ("he", s + 1) || !strcmp ("o", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 'w')
+	{
+	    if (!strcmp ("indows", s + 1) || !strcmp ("inamp", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+	else if (*s == 'y')
+	{
+	    if (!strcmp ("ou", s + 1))
+	    {
+		s = ptr;
+		continue;
+	    }
+	}
+
 	/* don't add duplicate tokens to the list.  this will cause searches
 	   on files that have the same token more than once to show up how
 	   ever many times the token appears in the filename */
@@ -368,12 +485,12 @@ fdb_search (HASH * table,
 	d = (DATUM *) ptok->data;
 	ASSERT (VALID_LEN (d, sizeof (DATUM)));
 	if (d->size != (unsigned) -1 && match (tokens, d->filename) &&
-		cb (d, cbdata))
+	    cb (d, cbdata))
 	{
 	    /* callback accepted match */
 	    hits++;
 	    if (hits == maxhits)
-		break;	/* finished */
+		break;		/* finished */
 	}
     }
     return hits;
@@ -447,8 +564,8 @@ generate_search_id (void)
 	OUTOFMEMORY ("generate_search_id");
 	return 0;
     }
-    for(i=0;i<8;i++)
-	id[i]='A' + (rand() % 26);
+    for (i = 0; i < 8; i++)
+	id[i] = 'A' + (rand () % 26);
     id[8] = 0;
     return id;
 }
@@ -734,24 +851,25 @@ find_search (const char *id)
     DSEARCH *ds;
 
     list = &Remote_Search;
-    while(*list)
+    while (*list)
     {
 	ASSERT ((*list)->data != 0);
-	ds=(*list)->data;
+	ds = (*list)->data;
 	if (!strcmp (ds->id, id))
 	    return ds;
 	/* expire timed-out search requests */
-	if(ds->timestamp + Search_Timeout < Current_Time)
+	if (ds->timestamp + Search_Timeout < Current_Time)
 	{
-	    log("find_search(): expiring request %d", ds->id);
-	    if(ISUSER(ds->con))
-		send_cmd(ds->con,MSG_SERVER_SEARCH_END, "");
+	    log ("find_search(): expiring request %d", ds->id);
+	    if (ISUSER (ds->con))
+		send_cmd (ds->con, MSG_SERVER_SEARCH_END, "");
 	    else
-		send_cmd(ds->con,MSG_SERVER_REMOTE_SEARCH_END, "%s", ds->id);
-	    tmp=*list;
-	    *list=(*list)->next;
-	    free_dsearch(ds);
-	    FREE(tmp);
+		send_cmd (ds->con, MSG_SERVER_REMOTE_SEARCH_END, "%s",
+			  ds->id);
+	    tmp = *list;
+	    *list = (*list)->next;
+	    free_dsearch (ds);
+	    FREE (tmp);
 	    continue;
 	}
 	list = &(*list)->next;

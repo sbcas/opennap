@@ -4,9 +4,12 @@
 
    $Id$ */
 
+#include <ctype.h>
 #include "opennap.h"
 
-/* returns >0 if the pattern matches, 0 if the pattern does not match */
+/* returns >0 if the pattern matches, 0 if the pattern does not match.
+ * the match is case-insensitive
+ */
 int
 glob_match (const char *pattern, const char *s)
 {
@@ -29,17 +32,17 @@ glob_match (const char *pattern, const char *s)
 	    ptr = s + strlen (s);
 	    for (;;)
 	    {
-		while (ptr > s && *(ptr - 1) != *pattern)
+		while (ptr > s && tolower (*(ptr - 1)) != tolower (*pattern))
 		    ptr--;
 		if (ptr == s)
 		    return 0;	/* no match */
-		if (glob_match (pattern+1, ptr))
+		if (glob_match (pattern + 1, ptr))
 		    return 1;
 		ptr--;
 	    }
 	    /* not reached */
 	}
-	else if (*pattern == '?' || *pattern == *s)
+	else if (*pattern == '?' || tolower (*pattern) == tolower (*s))
 	{
 	    pattern++;
 	    s++;
