@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <mysql.h>
+#include <netinet/in.h> /* for `struct in_addr' */
 #include <arpa/inet.h>
 #include "opennap.h"
 #include "debug.h"

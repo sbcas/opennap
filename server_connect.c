@@ -14,7 +14,7 @@
 #include "opennap.h"
 #include "debug.h"
 
-void
+static void
 try_connect (char *host, int port)
 {
     struct hostent *he;

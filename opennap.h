@@ -290,6 +290,7 @@ void show_motd (CONNECTION * con);
 void send_queued_data (CONNECTION *con);
 void sql_error (const char *function, const char *query);
 void synch_server (CONNECTION *);
+void try_connect_privmsg (char *);
 int validate_user (USER *);
 int validate_channel (CHANNEL *);
 int validate_connection (CONNECTION *);

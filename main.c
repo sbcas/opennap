@@ -360,11 +360,7 @@ main (int argc, char **argv)
     fd_set set;
     struct sigaction sa;
     char *config_file = 0;
-#ifdef linux
-    size_t sinsize;
-#else
-    int sinsize;
-#endif
+    socklen_t sinsize;
     time_t next_update = 0;
     struct timeval t = { UPDATE_CLICK, 0 };
 
