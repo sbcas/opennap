@@ -16,6 +16,6 @@ setup_SOURCES=setup.c
 EXTRA_DIST=sample.conf sample.motd napster.txt .indent.pro \
 	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp \
 	opennap.opt sample.users sample.servers opennap.spec \
-	getopt.c mkpass.dsp sample.channels README.WIN32 README.UNIX \
-	napchk
+	getopt.c mkpass.dsp sample.channels \
+	napchk logchk
 INCLUDES=-DSHAREDIR=\"$(pkgdatadir)\"
