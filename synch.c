@@ -80,8 +80,9 @@ sync_server_list (CONNECTION *con)
     for (list = Server_Links; list; list = list->next)
     {
 	slink = list->data;
-	send_cmd (con, MSG_SERVER_LINK_INFO, "%s %s %d",
-		slink->server, slink->peer, slink->hops + 1);
+	send_cmd (con, MSG_SERVER_LINK_INFO, "%s %d %s %d %d",
+		slink->server, slink->port, slink->peer, slink->peerport,
+		slink->hops + 1);
     }
 }
 

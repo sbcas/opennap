@@ -331,7 +331,7 @@ error:
     }
 }
 
-/* 10020 :<server> <server> "<reason>" */
+/* 10020 :<server> <server> [ "<reason>" ] */
 HANDLER (server_quit)
 {
     LIST **list, *tmpList;
@@ -348,7 +348,7 @@ HANDLER (server_quit)
 	return;
     }
     ac = split_line (av, FIELDS (av), pkt + 1);
-    if (ac != 3)
+    if (ac < 2)
     {
 	log ("server_quit(): wrong number of parameters");
 	send_cmd (con, MSG_SERVER_NOSUCH,
@@ -370,6 +370,9 @@ HANDLER (server_quit)
 	    break;
 	}
     }
-    notify_mods ("Server %s has quit: %s", av[1], av[2]);
-    pass_message_args (con, tag, ":%s %s \"%s\"", av[0], av[1], av[2]);
+    notify_mods ("Server %s has quit: %s", av[1], ac>2?av[2]:"");
+    if (ac > 2)
+	pass_message_args (con, tag, ":%s %s \"%s\"", av[0], av[1], av[2]);
+    else
+	pass_message_args (con, tag, ":%s %s", av[0], av[1]);
 }
