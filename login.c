@@ -87,6 +87,13 @@ HANDLER (login)
 	    send_cmd (con, MSG_SERVER_BAD_NICK, "");
 	    con->destroy = 1;
 	}
+	else
+	{
+	    ASSERT (ISSERVER (con));
+	    log("login(): sending KILL for %s", av[0]);
+	    pass_message_args(NULL,MSG_CLIENT_KILL,":%s %s \"invalid nick\"",
+		    Server_Name, av[0]);
+	}
 	return;
     }
 
