@@ -67,7 +67,7 @@ HANDLER (server_connect)
 {
     USER *user;
     char *fields[3];
-    int argc;
+    int i, argc;
 
     (void) tag;
     (void) len;
@@ -92,6 +92,19 @@ HANDLER (server_connect)
 
     if (argc == 2 || (argc == 3 && !strcasecmp (fields[2], Server_Name)))
     {
+	/* make sure we aren't already connected to this server */
+	for (i = 0; i < Num_Servers; i++)
+	{
+	    if (!strcasecmp (fields[0], Servers[i]->host))
+	    {
+		log ("server_connect(): %s tried to link server %s, but it is already connected",
+			user->nick, fields[0]);
+		if (user->con)
+		    send_cmd (user->con, MSG_SERVER_NOSUCH,
+			    "server %s is already connected", fields[0]);
+		return;
+	    }
+	}
 	try_connect (fields[0], atoi (fields[1]));
     }
     else if (con->class == CLASS_USER)

@@ -387,9 +387,6 @@ void finalize_compress (ZIP *);
 void free_ban (BAN *);
 void free_channel (CHANNEL *);
 void free_config (void);
-#if MINIDB
-void free_elem (ELEM *);
-#endif
 void free_hotlist (HOTLIST *);
 void free_user (USER *);
 void fudge_path (const char *, char *, int);
