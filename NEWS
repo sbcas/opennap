@@ -1,3 +1,8 @@
+[opennap 0.27]
+
+changed `server_port' variable to `server_ports'.  it can now take a space
+separated list of ports for the server to listen on
+
 [opennap 0.26]
 
 added `lock_memory' boolean configuration option to prevent the process from

@@ -71,7 +71,7 @@ HANDLER (public)
 	chanUser = list->data;
 	if (ISUSER (chanUser->con))
 	{
-	    send_cmd(chanUser->con,tag,"%s %s %s", chan->name,
+	    send_cmd(chanUser->con,MSG_SERVER_PUBLIC,"%s %s %s", chan->name,
 		    (!sender->cloaked || chanUser->level > LEVEL_USER)?sender->nick:"Operator",
 		    pkt);
 	}
