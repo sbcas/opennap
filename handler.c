@@ -308,32 +308,10 @@ handle_connection (CONNECTION * con)
 	    return;
 	}
 	Bytes_In += n;
-#if HAVE_LIBZ
-	if(con->compress > 0)
+	if (buffer_decompress (con->recvbuf, con->sopt->zin, Buf, n))
 	{
-	    if (buffer_decompress (con->recvbuf, con->sopt->zin, Buf, n))
-	    {
-		con->destroy = 1;
-		return;
-	    }
-	}
-	else
-#endif
-	{
-	    if (con->recvbuf->datasize + n > con->recvbuf->datamax)
-	    {
-		if (safe_realloc ((void **) &con->recvbuf->data,
-				  con->recvbuf->datasize + n + 1))
-		{
-		    OUTOFMEMORY ("handle_connection");
-		    con->destroy = 1;
-		    return;
-		}
-		con->recvbuf->datamax = con->recvbuf->datasize + n;
-		*(con->recvbuf->data + con->recvbuf->datamax) = 0;
-	    }
-	    memcpy (con->recvbuf->data + con->recvbuf->datasize, Buf, n);
-	    con->recvbuf->datasize += n;
+	    con->destroy = 1;
+	    return;
 	}
     }
     else

@@ -100,14 +100,9 @@ remove_connection (CONNECTION * con)
 	   out the server connections. */
 	hash_foreach (Users, (hash_callback_t) server_split, con);
 
-#if HAVE_LIBZ
-	if(con->compress>0)
-	{
-	    finalize_compress (con->sopt);
-	    buffer_free (con->sopt->outbuf);
-	    FREE (con->sopt);
-	}
-#endif
+	finalize_compress (con->sopt);
+	buffer_free (con->sopt->outbuf);
+	FREE (con->sopt);
     }
     else
     {

@@ -9,12 +9,14 @@
 
 #ifdef WIN32
 #include <windows.h>
+/* the next two #defines are needed for zlib */
+#define _WINDOWS
+#define ZLIB_DLL
+#include "zlib.h"
 #endif
 #include <stdarg.h>
 #include <sys/types.h>
-#if HAVE_LIBZ
 #include <zlib.h>
-#endif /* HAVE LIBZ */
 #include "hash.h"
 #include "list.h"
 
@@ -30,11 +32,14 @@
 #define MAGIC_CHANUSER 0x728dc736
 #define MAGIC_OPS 0xa28e453f
 
-/* convert the bytes of a 16-bit integer to little endian */
 #if WORDS_BIGENDIAN
+/* convert the bytes of a 16-bit integer to little endian */
 #define BSWAP16(c) (((c & 0xff) << 8) | ((c >> 8) & 0xff))
+/* convert the bytes of a 32-bit integer to little endian */
+#define BSWAP32(c) ((c>>24)&0xff)|((c>>8)&0xff00)|((c<<8)&0xff0000)|(c<<24)
 #else
 #define BSWAP16(c) c
+#define BSWAP32(c) c
 #endif
 
 #define ISSPACE(c) isspace((unsigned char)c)
@@ -153,7 +158,6 @@ enum
 #define ISUSER(c)	((c)->class == CLASS_USER)
 #define ISUNKNOWN(c)	((c)->class==CLASS_UNKNOWN)
 
-#if HAVE_LIBZ
 typedef struct
 {
     z_streamp zin;		/* input stream decompressor */
@@ -161,7 +165,6 @@ typedef struct
     BUFFER *outbuf;		/* compressed output buffer */
 }
 SERVER;
-#endif
 
 typedef struct
 {
@@ -205,13 +208,14 @@ struct _connection
 
     union
     {
+	/* parameters for use when the connection is a server.  items which
+	   only apply to users on the local server are placed here in order
+	   to reduce memory consumption */
 #define uopt opt.useropt
 	USEROPT *useropt;
 	/* parameters for server->server connection */
-#if HAVE_LIBZ
 #define sopt opt.server
 	SERVER *server;
-#endif
 	/* this field is used for the authentication phase of server links */
 	AUTH *auth;
     }
@@ -224,7 +228,7 @@ struct _connection
 				   remove it from inside a handler, so we mark
 				   it here and have it removed at a later time 
 				   when it is safe */
-    unsigned int server_login:1;	/* server login in progress */
+    unsigned int server_login:1;
     unsigned int compress:4;	/* compression level for this connection */
     unsigned int class:2;	/* connection class (unknown, user, server) */
     unsigned int xxx:7;		/* unused */
@@ -571,9 +575,7 @@ BUFFER *buffer_append (BUFFER *, BUFFER *);
 BUFFER *buffer_consume (BUFFER *, int);
 void buffer_free (BUFFER *);
 int buffer_size (BUFFER *);
-#if HAVE_LIBZ
 int buffer_decompress (BUFFER *, z_streamp, char *, int);
-#endif
 int buffer_validate (BUFFER *);
 void cancel_search (CONNECTION * con);
 int check_ban (CONNECTION *, const char *, ban_t);
@@ -587,9 +589,7 @@ void dump_channels(void);
 void exec_timers (time_t);
 void expand_hex (char *, int);
 void fdb_garbage_collect (HASH *);
-#if HAVE_LIBZ
 void finalize_compress (SERVER *);
-#endif
 CHANNEL *find_channel (LIST *, const char *);
 int form_message (char *, int, int, const char *, ...);
 void free_ban (BAN *);

@@ -46,9 +46,7 @@ static struct config Vars[] = {
     {"listen_addr", VAR_TYPE_STR, UL & Listen_Addr, UL "0.0.0.0"},
     {"max_browse_result", VAR_TYPE_INT, UL & Max_Browse_Result, 500},
     {"collect_interval", VAR_TYPE_INT, UL & Collect_Interval, 300},
-#if HAVE_LIBZ
     {"compression_level", VAR_TYPE_INT, UL & Compression_Level, 1},
-#endif
 #ifndef WIN32
     {"uid", VAR_TYPE_INT, UL & Uid, -1},
     {"gid", VAR_TYPE_INT, UL & Gid, -1},

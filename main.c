@@ -462,11 +462,7 @@ main (int argc, char **argv)
 		if (Clients[i]->fd > maxfd)
 		    maxfd = Clients[i]->fd;
 		/* check sockets for writing */
-#if HAVE_LIBZ
 #define CheckWrite(p) (p->sendbuf || (ISSERVER(p) && p->sopt->outbuf))
-#else
-#define CheckWrite(p) p->sendbuf
-#endif
 		if (Clients[i]->connecting || CheckWrite(Clients[i]))
 		    FD_SET (Clients[i]->fd, &wset);
 	    }

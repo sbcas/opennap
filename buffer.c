@@ -165,7 +165,6 @@ buffer_validate (BUFFER * b)
 }
 #endif /* DEBUG */
 
-#if HAVE_LIBZ
 #define BUFFER_SIZE 16384
 
 static BUFFER *
@@ -348,7 +347,6 @@ finalize_compress (SERVER * serv)
     FREE (serv->zin);
     FREE (serv->zout);
 }
-#endif
 
 int
 send_queued_data (CONNECTION * con)
@@ -357,8 +355,7 @@ send_queued_data (CONNECTION * con)
 
     ASSERT (validate_connection (con));
 
-#if HAVE_LIBZ
-    if (ISSERVER (con) && con->compress > 0)
+    if (ISSERVER (con))
     {
 	BUFFER *r;
 
@@ -366,7 +363,6 @@ send_queued_data (CONNECTION * con)
 	    (r = buffer_compress (con->sopt->zout, &con->sopt->outbuf)))
 	    con->sendbuf = buffer_append (con->sendbuf, r);
     }
-#endif
 
     /* is there data to write? */
     if (!con->sendbuf)
@@ -411,14 +407,7 @@ queue_data (CONNECTION * con, char *s, int ssize)
     if(ISSERVER(con))
     {
 	/* for a server connection, allocate chunks of 16k bytes */
-#if HAVE_LIBZ
-	/* if using compression, accumulate in the compressor's queue */
-	if(con->compress>0)
-	    con->sopt->outbuf = buffer_queue (con->sopt->outbuf, s, ssize, 16384);
-	else
-#endif
-	    /* otherwise just queue for send */
-	    con->sendbuf = buffer_queue (con->sendbuf, s, ssize, 16384);
+	con->sopt->outbuf = buffer_queue (con->sopt->outbuf, s, ssize, 16384);
     }
     else
 	/* for a client connection, allocate chunks of 1k bytes */

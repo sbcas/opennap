@@ -298,14 +298,9 @@ HANDLER (server_login_ack)
     Servers = list_append (Servers, list);
 
     con->class = CLASS_SERVER;
-#if HAVE_LIBZ
-    if(con->compress > 0)
-    {
-	con->opt.server = CALLOC (1, sizeof (SERVER));
-	/* set up the compression handlers for this connection */
-	init_compress (con, con->compress);
-    }
-#endif
+    con->opt.server = CALLOC (1, sizeof (SERVER));
+    /* set up the compression handlers for this connection */
+    init_compress (con, con->compress);
 
     log ("server_login(): server %s has joined", con->host);
 

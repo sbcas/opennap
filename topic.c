@@ -79,7 +79,7 @@ HANDLER (topic)
 	    return;
 	}
 	/* make sure we don't have any wacky characters in the topic */
-	for(ptr=chan->topic;ptr;ptr++)
+	for(ptr=chan->topic;*ptr;ptr++)
 	    if(*ptr=='\r' || *ptr=='\n')
 		*ptr=' ';
 	/* relay to peer servers */
