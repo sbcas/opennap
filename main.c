@@ -120,8 +120,8 @@ update_stats (void)
     log ("update_stats(): %d local clients, %d linked servers",
 	 Num_Clients - numServers, numServers);
     delta = Current_Time - Last_Click;
-    log ("update_stats(): %.2d kbytes/sec in, %.2d kbytes/sec out",
-	(float) Bytes_In / delta / 1024, (float) Bytes_Out / delta / 1024);
+    log ("update_stats(): %.2f kbytes/sec in, %.2f kbytes/sec out",
+	(float) Bytes_In / 1024. / delta, (float) Bytes_Out / 1024. / delta);
     Bytes_In = 0;
     Bytes_Out = 0;
     Last_Click = Current_Time;
