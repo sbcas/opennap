@@ -1,5 +1,45 @@
 2000-05-31  drscholl  <drscholl@users.sourceforge.net>
 
+	* announce.c, login.c:
+	announce() should use Operator as the nick when the user is cloaked
+
+	invalid_nick() should not allow `operator'
+
+	* login.c:
+	forgot to issue a KILL when terminating a ghost
+
+	* login.c, napster.txt:
+	server will now terminate old connections if a client logs in from the same
+	ip for the same nick.  this allows clients to kill their own ghosts.
+
+	* ban.c, browse.c, change.c, channel.c, hotlist.c, join.c, level.c, login.c, opennap.h, privmsg.c, sample.conf, serverlib.c:
+	added generic invalid_nick_msg() function
+
+	* ban.c, change.c, config.c, kick.c, kill_user.c, main.c, muzzle.c, opennap.h, serverlib.c:
+	added max_reason configuration variable to limit the size of the reason
+	strings in the muzzle/kick/kill messages
+
+	* FAQ, config.c, list_users.c, part.c, public.c:
+	re-added the form_message() calls for public() and emote()
+
+	* config.c, configure, configure.in, login.c, main.c, napster.txt, opennap.h, sample.conf, topic.c:
+	added max_client_string config variable to limit the length of the client
+	version string in the login command
+
+	strlen() returns ssize_t so have to cast the Max_* to unsigned to avoid
+	compiler warnings
+
+	* Makefile.in, ban.c, config.c, download.c, hotlist.c, main.c, muzzle.c, opennap.h, privmsg.c, sample.conf, topic.c:
+	added max_ignore config var to limit user lists
+
+	added max_hotlist config var to limit user lists
+
+	added max_topic config var to limit channel topics
+
+	more fixes to detect invalid nicknames before they are used
+
+2000-05-31  drscholl  <drscholl@users.sourceforge.net>
+
 	* Makefile.in, buffer.c:
 	fixed buffer overflow when output to the client is larger than 1024 bytes in
 	one command

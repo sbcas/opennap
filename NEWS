@@ -1,3 +1,19 @@
+[opennap 0.30]
+
+added new config var max_topic to limit the max length of a channel topic
+
+added new config var max_reason to limit the max length of a
+kick/kill/muzzle reason
+
+added new config var max_hotlist to limit the max number of users allowed on
+a user's hotlist
+
+added new config var max_ignore to limit the max number of users allowed on
+a user's ignore list
+
+added new config var max_client_string to limit the max length of the client
+version string
+
 [opennap 0.29]
 
 fixes buffer overflow in server output to clients
