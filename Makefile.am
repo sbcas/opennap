@@ -15,5 +15,5 @@ metaserver_SOURCES=metaserver.c
 EXTRA_DIST=sample.conf sample.motd napster.txt .indent.pro \
 	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp \
 	opennap.opt sample.users sample.servers opennap.spec \
-	getopt.c mkpass.dsp sample.channels
+	getopt.c mkpass.dsp sample.channels README.WIN32 README.UNIX
 INCLUDES=-DSHAREDIR=\"$(pkgdatadir)\"
