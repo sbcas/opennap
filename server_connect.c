@@ -78,6 +78,7 @@ complete_connect (CONNECTION * con)
     /* a previous call to read() may have reset the error code */
     if (con->destroy || check_connect_status (con->fd) != 0)
     {
+	notify_mods(SERVERLOG_MODE,"Server link to %s failed",con->host);
 	con->destroy = 1;
 	return;
     }

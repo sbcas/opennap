@@ -519,6 +519,10 @@ main (int argc, char **argv)
 			 Current_Time - Clients[i]->timer >= Login_Timeout)
 		{
 		    log ("main(): login timeout for %s", Clients[i]->host);
+		    if(Clients[i]->server_login)
+			notify_mods(SERVERLOG_MODE,
+				"Server link to %s timed out",
+				Clients[i]->host);
 		    Clients[i]->destroy = 1;
 		}
 		if (Clients[i]->destroy)
