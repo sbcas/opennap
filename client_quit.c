@@ -25,7 +25,10 @@ HANDLER (client_quit)
     }
     ASSERT (validate_user (user));
     if (user->con == 0)
+    {
+	log ("client_quit(): received remote QUIT for user %s", user->nick);
 	hash_remove (Users, user->nick);
+    }
     else
 	log ("client_quit(): recieved QUIT for local user %s!", user->nick);
 }

@@ -16,13 +16,16 @@
 
 extern MYSQL *Db;
 
-/* 203 <nick> <filename> */
-/* 500 <nick> <filename> */
+/* 203 <nick> "<filename>" */
+/* 500 <nick> "<filename>" */
 /* handle client request for download of a file */
 HANDLER (download)
 {
-    char *fields[2];
-    USER *user;
+    char	*fields[2];
+    USER	*user;
+    MYSQL_RES	*result;
+    MYSQL_ROW	row;
+    char	path[256];
 
     (void) tag;
     (void) len;
@@ -45,25 +48,70 @@ HANDLER (download)
     }
     ASSERT (validate_user (user));
 
-    /* make sure both parties are not firewalled
-       -and-
-       client is not making a 203 request to a firewalled user (this isn't
-       really necessary it seems, but to maintain compatibility with the
-       official server, we'll return an error */
-    if (user->port == 0 &&
-	    (con->user->port == 0 || tag == MSG_CLIENT_DOWNLOAD))
+    if (tag == MSG_CLIENT_DOWNLOAD_FIREWALL /* 500 */)
     {
-	log ("download(): both %s and %s are firewalled", con->user->nick,
-	    user->nick);
-	send_cmd (con, MSG_SERVER_FILE_READY,
-		"%s %lu %d \"%s\" firewallerror 0", user->nick, user->host,
-		user->port, fields[1]);
-	return;
+	if (user->port != 0)
+	{
+	    /* this user is not firewalled */
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not firewalled",
+		    user->nick);
+	    return;
+	}
+	if (con->user->port == 0)
+	{
+	    /* error, both clients are firewalled */
+	    send_cmd (con, MSG_SERVER_FILE_READY,
+		    "%s %lu %d \"%s\" firewallerror %d", user->nick, user->host,
+		    user->port, fields[1], user->speed);
+	    return;
+	}
+    }
+    else
+    {
+	ASSERT (tag == MSG_CLIENT_DOWNLOAD);
+	if (user->port == 0)
+	{
+	    /* uploader is firewalled, send file info so that downloader can
+	       send the 500 request */
+	    fudge_path (fields[1], path, sizeof (path));
+	    snprintf (Buf, sizeof (Buf),
+		    "SELECT md5 FROM library WHERE owner='%s' && filename='%s'",
+		    user->nick, path);
+	    if (mysql_query (Db, Buf))
+	    {
+		sql_error ("download", Buf);
+		return;
+	    }
+	    result = mysql_store_result (Db);
+	    if (!result)
+	    {
+		log ("download(): mysql_store_result() returned NULL");
+		return;
+	    }
+	    if (mysql_num_rows (result) != 1)
+	    {
+		log ("download(): expected 1 row returned from SQL query");
+		mysql_free_result (result);
+		return;
+	    }
+	    row = mysql_fetch_row (result);
+	    if (!row)
+	    {
+		log ("download(): mysql_fetch_row() returned NULL");
+		mysql_free_result (result);
+		return;
+	    }
+	    send_cmd (con, MSG_SERVER_FILE_READY,
+		    "%s %lu %d \"%s\" %s %d", user->nick, user->host,
+		    user->port, fields[1], row[0], user->speed);
+	    mysql_free_result (result);
+	    return;
+	}
     }
 
     /* send a message to the requestee */
     log ("download(): REQEST \"%s\" %s => %s",
-	fields[1], fields[0], con->user->nick);
+	fields[1], user->nick, con->user->nick);
 
     /* if the client holding the file is a local user, send the request
        directly */

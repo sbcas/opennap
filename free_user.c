@@ -26,6 +26,7 @@ free_user (USER * user)
     if (user->con && Num_Servers)
     {
 	/* local user, notify peers of this user's departure */
+	log ("free_user(): sending QUIT message for user %s", user->nick);
 	pass_message_args (user->con, MSG_CLIENT_QUIT, "%s", user->nick);
     }
 

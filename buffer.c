@@ -229,7 +229,7 @@ buffer_compress (z_streamp zip, BUFFER **b)
     do
     {
 	/* ensure there is at least 2k of buffer space available */
-	n = (bytes>2048)?bytes:2048;
+	n = (bytes > 2048) ? bytes : 2048;
 	if (r->datasize + n > r->datamax)
 	{
 	    r->datamax = r->datasize + n;
@@ -239,7 +239,7 @@ buffer_compress (z_streamp zip, BUFFER **b)
 	zip->avail_out = r->datamax - r->datasize;
 	/* set this to the full amount and then subtract the leftover bytes
 	   once we exit the loop */
-	r->datasize += r->datamax - r->datasize;
+	r->datasize = r->datamax;
 
 	n = deflate (zip, flush);
 	if (n != Z_OK)
@@ -295,11 +295,13 @@ buffer_uncompress (z_streamp zip, BUFFER **b)
     {
 	/* allocate 2 times the compressed data for output, plus one extra
 	   byte to terminate the string with a nul (\0) */
-	cur->datamax = cur->datasize + 2 * zip->avail_in + 1;
+	n = 2 * zip->avail_in;
+	cur->datamax = cur->datasize + n + 1;
 	cur->data = REALLOC (cur->data, cur->datamax);
 	zip->next_out = (uchar *) cur->data + cur->datasize;
-	zip->avail_out = 2 * zip->avail_in;
-	cur->datasize += 2 * zip->avail_in;
+	zip->avail_out = n;
+	cur->datasize += n; /* we subtract leftover bytes after the inflate()
+			       call below */
 
 	/* if there is still more input after this, don't bother flushing */
 	flush = ((*b)->next) ? Z_NO_FLUSH : Z_SYNC_FLUSH;

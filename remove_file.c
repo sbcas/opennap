@@ -18,10 +18,10 @@ extern MYSQL *Db;
 /* packet contains: [ :<user> ] <filename> */
 HANDLER (remove_file)
 {
-    USER *user;
+    USER	*user;
     MYSQL_RES	*result;
     MYSQL_ROW	row;
-    int fsize;
+    int		fsize;
     char	path[256];
 
     (void) tag;
@@ -47,11 +47,15 @@ HANDLER (remove_file)
 	return;
     }
     result = mysql_store_result (Db);
-    if ((fsize = mysql_num_rows (result)) >= 1)
+    if ((fsize = mysql_num_rows (result)) != 1)
     {
-	ASSERT (fsize == 1);
-
 	row = mysql_fetch_row (result);
+	if (!row)
+	{
+	    log ("remove_file(): mysql_fetch_row() returned NULL");
+	    mysql_free_result (result);
+	    return;
+	}
 
 	fsize = atoi (row[0]) / 1024; /* kB */
 	user->libsize -= fsize;
@@ -61,8 +65,8 @@ HANDLER (remove_file)
 	user->shared--;
 
 	snprintf (Buf, sizeof (Buf),
-		"DELETE FROM library WHERE owner = '%s' && filename = '%s'",
-		user->nick, pkt);
+		"DELETE FROM library WHERE owner='%s' && filename='%s'",
+		user->nick, path);
 	if (mysql_query (Db, Buf) != 0)
 	    sql_error ("remove_file", Buf);
     }
