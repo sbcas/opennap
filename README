@@ -347,10 +347,11 @@ are implemented as additional functionality in the opennap server.
 
 10116	rehash (reload) configuration files [CLIENT]
 
-	Format: (none)
+	Format: [server]
 
-	Causes the server to reread its configuration file and reload the
-	motd into memory.
+	Causes [server] to reread its configuration file and reload the
+	motd into memory.  If [server] is not specified, the server to which
+	the client is connected is affected.
 
 10201	set channel level [CLIENT]
 

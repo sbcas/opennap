@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <limits.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -188,6 +189,7 @@ config (const char *path)
 
     if ((f = fopen (path, "r")))
     {
+	log("config(): reading %s", path);
 	while (fgets (Buf, sizeof (Buf), f))
 	{
 	    /* strip trailing whitespace */
@@ -372,4 +374,38 @@ HANDLER (server_reconfig)
 	    return;
 	}
     send_cmd (con, MSG_SERVER_NOSUCH, "no such variable %s", pkt);
+}
+
+/* 10116 [ :user ] [server]
+ * reload configuration file
+ */
+HANDLER (rehash)
+{
+    USER *sender;
+
+    (void)len;
+    if(pop_user(con,&pkt,&sender))
+	return;
+    if(sender->level < LEVEL_ELITE)
+    {
+	permission_denied(con);
+	return;
+    }
+    notify_mods(SERVERLOG_MODE,"%s reloaded configuration on %s",
+	    sender->nick, pkt && *pkt ? pkt : Server_Name);
+    if(!pkt || !*pkt || !strcasecmp(Server_Name, pkt))
+    {
+	char path[_POSIX_PATH_MAX];
+
+	snprintf(path,sizeof(path),"%s/config",Config_Dir);
+	config(path);
+	/* since the motd is stored in memory, reread it */
+	motd_close();
+	motd_init();
+    }
+    /* pass the message even if this is the server we are reloading so that
+     * everyone sees the message
+     */
+    pass_message_args(con,tag,":%s %s",sender->nick,
+	    pkt && *pkt ? pkt : Server_Name);
 }

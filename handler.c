@@ -186,6 +186,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_REMOVE_SERVER, remove_server},	/* 10111 */
     {MSG_CLIENT_LINKS, server_links},	/* 10112 */
     {MSG_CLIENT_USAGE_STATS, server_usage},	/* 10115 */
+    {MSG_CLIENT_REHASH, rehash},		/* 10116 */
     {MSG_CLIENT_REGISTER_USER, register_user},	/* 10200 */
     {MSG_CLIENT_CHANNEL_LEVEL, channel_level},	/* 10201 */
     {MSG_CLIENT_KICK_USER, kick},	/* 10202 - deprecated */

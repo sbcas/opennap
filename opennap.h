@@ -586,6 +586,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_LINKS		10112
 #define MSG_CLIENT_USAGE_STATS		10115	/* server usage stats */
 #define MSG_SERVER_USAGE_STATS		10115
+#define MSG_CLIENT_REHASH		10116	/* reload config file */
 #define MSG_CLIENT_REGISTER_USER	10200
 #define MSG_CLIENT_CHANNEL_LEVEL	10201	/* set min channel user level */
 #define MSG_CLIENT_KICK_USER		10202	/* deprecated, use 829 instead*/
@@ -789,6 +790,7 @@ HANDLER (queue_limit);
 HANDLER (reginfo);
 HANDLER (register_nick);
 HANDLER (register_user);
+HANDLER (rehash);
 HANDLER (remote_notify_mods);
 HANDLER (remote_search);
 HANDLER (remote_search_result);
