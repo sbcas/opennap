@@ -814,8 +814,11 @@ main (int argc, char **argv)
 			Clients[i]->destroy = 1;
 		}
 	    }
-	    /* client */
-	    else if (Clients[i]->sendbuf && WRITABLE (i))
+	    /* client.  if there is output to send and either the socket is
+	       writable or we're about to close the connection, send any
+	       queued data */
+	    else if (Clients[i]->sendbuf &&
+		(WRITABLE (i) || Clients[i]->destroy))
 	    {
 		if (send_queued_data (Clients[i]) == -1)
 		    Clients[i]->destroy = 1;
