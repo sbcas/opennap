@@ -258,14 +258,14 @@ buffer_decompress (BUFFER * b, z_streamp zip, char *in, int insize)
     int n;
 
     ASSERT (buffer_validate (b));
+    ASSERT (insize > 0);
     zip->next_in = (unsigned char *) in;
     zip->avail_in = insize;
     zip->next_out = (unsigned char *) b->data + b->datasize;
     zip->avail_out = b->datamax - b->datasize;
     /* set this to the max size and subtract what is left after the inflate */
     b->datasize = b->datamax;
-    while (zip->avail_in > 0 || zip->avail_out == 0)
-    {
+    do {
 	/* if there is no more output space left, create some more */
 	if (zip->avail_out == 0)
 	{
@@ -289,9 +289,9 @@ buffer_decompress (BUFFER * b, z_streamp zip, char *in, int insize)
 		 NONULL (zip->msg), n);
 	    return -1;
 	}
-	/* subtract unused bytes */
-	b->datasize -= zip->avail_out;
-    }
+    } while (zip->avail_out == 0);
+    /* subtract unused bytes */
+    b->datasize -= zip->avail_out;
     return 0;
 }
 
