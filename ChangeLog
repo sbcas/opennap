@@ -1,3 +1,100 @@
+2000-07-20  drscholl  <drscholl@users.sourceforge.net>
+
+	* login.c:
+	clone checker and max connections should only be checked for user logins,
+	not server logins.
+
+	* napster.txt:
+	updated napster.txt on the 870 (add directory) command
+
+	* add_file.c, handler.c, search.c:
+	fixed possible buffer overrun in add_directory()
+
+	fixed handle_connection() to avoid sending MSG_SERVER_USER_SHARING commands
+	after every MSG_CLIENT_ADD_DIRECTORY command.
+
+	added the server from which the command came to the log() messages generated
+	by remote_search() and remote_search_result()
+
+2000-07-16  drscholl  <drscholl@users.sourceforge.net>
+
+	* config.c, login.c, main.c, opennap.h, sample.conf:
+	added clone checking controlled by new `max_clones' config var.
+
+2000-07-13  drscholl  <drscholl@users.sourceforge.net>
+
+	* browse.c:
+	fixed bug in new_browse() where no results would be returned in
+	max_browse_results was set to 0 (which should mean unlimited)
+
+2000-07-08  drscholl  <drscholl@users.sourceforge.net>
+
+	* add_file.c, configure.in, opennap.h:
+	fixed buffer overflow in add_directory() when the directory portion of the
+	filename was >=255 chars
+
+2000-07-06  drscholl  <drscholl@users.sourceforge.net>
+
+	* server_usage.c:
+	added bytes in and bytes out to the server stats
+
+2000-07-02  drscholl  <drscholl@users.sourceforge.net>
+
+	* README, opennap.h, privmsg.c:
+	changed rehash numeric to 10117 to avoid conflict with old server ping
+	numeric
+
+	added `rehash' to the list of operserv commands
+
+	* README, config.c, handler.c, opennap.h:
+	added rehash (10116) command to cause a server to reload it config files
+
+	* README, add_file.c, server_connect.c:
+	log message for bitrateToMask() said freqToMask
+
+	server_connect should check for missing host argument
+
+2000-06-30  drscholl  <drscholl@users.sourceforge.net>
+
+	* muzzle.c:
+	added missing return when attempting to unmuzzle a user that isnt muzzled
+
+2000-06-29  drscholl  <drscholl@users.sourceforge.net>
+
+	* channel.c:
+	channel_voice() did not check for permission to execute the command
+
+	* browse.c, channel.c, muzzle.c, serverlib.c:
+	fixed compilation warnings about unused `len'
+
+	pop_user_server() had a bad log() message with the message tag value causing
+	a segfault
+
+	muzzle() should ensure that db is not NULL before using it
+
+2000-06-27  drscholl  <drscholl@users.sourceforge.net>
+
+	* whois.c:
+	append_string() allocated extra space but didnt copy the data to append
+
+	* channel.c, join.c:
+	bugfixes from panasync.  join() was setting the wrong user to channel
+	operator since chanUser was reused for sending a join message to all clients
+	in the channel.
+
+	in channel_muzzle(), need to check for sender!=NULL when checking the user
+	level permission
+
+2000-06-26  drscholl  <drscholl@users.sourceforge.net>
+
+	* browse.c, channel.c, muzzle.c, whois.c:
+	muzzled users should not be able to channel wallop
+
+2000-06-24  drscholl  <drscholl@users.sourceforge.net>
+
+	* ChangeLog, NEWS, README:
+	post 0.34 release commit
+
 2000-06-23  drscholl  <drscholl@users.sourceforge.net>
 
 	* TODO, channel.c:

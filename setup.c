@@ -21,6 +21,8 @@
 #define MKDIR(a,b) mkdir(a)
 #define F_OK 00
 #define DIRSEP '\\'
+#define S_IRUSR _S_IREAD
+#define S_IWUSR _S_IWRITE
 #endif
 
 /* opennap installation program */
