@@ -20,7 +20,6 @@ HANDLER (public)
     USER *chanUser, *sender;
     LIST *list;
     char *ptr;
-    int l;
 
     (void) tag;
     (void) len;
@@ -66,17 +65,16 @@ HANDLER (public)
     /* relay this message to peer servers */
     pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name, pkt);
 
-    /* format the message */
-    l = form_message (Buf, sizeof (Buf), MSG_SERVER_PUBLIC, "%s %s %s",
-	    chan->name,
-	    (chan->level < LEVEL_MODERATOR && sender->cloaked) ? "Operator" : sender->nick, pkt);
-
     /* send this message to everyone in the channel */
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
 	if (ISUSER (chanUser->con))
-	    queue_data (chanUser->con, Buf, l);
+	{
+	    send_cmd(chanUser->con,tag,"%s %s %s", chan->name,
+		    (!sender->cloaked || chanUser->level > LEVEL_USER)?sender->nick:"Operator",
+		    pkt);
+	}
     }
 }
 
@@ -85,7 +83,6 @@ HANDLER (emote)
 {
     USER *user, *chanUser;
     CHANNEL *chan;
-    int buflen;
     char *ptr, *av[2];
     LIST *list;
 
@@ -129,18 +126,15 @@ HANDLER (emote)
     /* relay to peer servers */
     pass_message_args (con, tag, ":%s %s \"%s\"", user->nick, chan->name, av[1]);
 
-    /* since we send the same data to multiple clients, format the data once
-       and queue it up directly */
-    buflen = form_message (Buf, sizeof (Buf), MSG_CLIENT_EMOTE,
-	    "%s %s \"%s\"", chan->name,
-	    (chan->level < LEVEL_MODERATOR && user->cloaked) ? "Operator" : user->nick,
-	    av[1]);
-
     /* send this message to all channel members */
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
 	if (ISUSER(chanUser->con))
-	    queue_data (chanUser->con, Buf, buflen);
+	{
+	    send_cmd(chanUser->con,tag,"%s %s \"%s\"", chan->name,
+		    (!user->cloaked || chanUser->level > LEVEL_MODERATOR)?user->nick:"Operator",
+		    av[1]);
+	}
     }
 }
