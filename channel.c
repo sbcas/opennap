@@ -572,3 +572,55 @@ HANDLER (channel_op_list)
     send_cmd (con, MSG_CLIENT_PRIVMSG,
 	      "ChanServ END of operators for channel %s", chan->name);
 }
+
+/* 10207 [ :<sender> ] <channel> [ "<reason>" ]
+   drop channel */
+HANDLER (channel_drop)
+{
+    USER *sender;
+    char *av[2];
+    int ac=-1;
+    CHANNEL *chan;
+
+    ASSERT(validate_connection(con));
+    if(pop_user(con,&pkt,&sender))
+	return;
+    if(pkt)
+	ac=split_line(av,FIELDS(av),pkt);
+    if(ac<1)
+    {
+	unparsable(con);
+	return;
+    }
+    chan=hash_lookup(Channels,av[0]);
+    if(!chan)
+    {
+	nosuchchannel(con);
+	return;
+    }
+    if(!chan->userCreated)
+    {
+	if(ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"channel %s is not registered",
+		     chan->name);
+	return;
+    }
+    /* dont allow just anyone to drop channels */
+    if(sender->level < LEVEL_MODERATOR || sender->level < chan->level)
+    {
+	permission_denied(con);
+	return;
+    }
+    pass_message_args(con,tag,":%s %s \"%s\"",sender->nick,chan->name,
+		      (ac>1)?av[1]:"");
+    notify_mods(CHANGELOG_MODE,"%s dropped channel %s: %s",
+		sender->nick, chan->name, (ac>1)?av[1]:"");
+    notify_ops(chan,"%s dropped channel %s: %s",
+		sender->nick, chan->name, (ac>1)?av[1]:"");
+
+    /* if there are no users left, destroy the channel */
+    if(!chan->users)
+	hash_remove(Channels,chan->name);
+    else
+	chan->userCreated = 1;	/* otherwise just set as a normal channel */
+}

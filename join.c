@@ -330,14 +330,14 @@ HANDLER (join)
     }
 }
 
-/* 10201 [ :<sender> ] <channel> [level]
+/* 10201 [ :<sender> ] <channel> [level] [timestamp]
    sets the minimum user level required to enter a channel */
 HANDLER (channel_level)
 {
     int level;
     char *sender;
     int ac;
-    char *av[2];
+    char *av[3];
     CHANNEL *chan;
 
     (void) len;
@@ -370,13 +370,6 @@ HANDLER (channel_level)
 	return;
     }
     ASSERT (validate_channel);
-    /* ensure the user is a member of this channel */
-    if (ISUSER (con) && list_find (con->user->channels, chan) == 0)
-    {
-	send_cmd (con, MSG_SERVER_NOSUCH,
-		  "You are not a member of that channel");
-	return;
-    }
     if (ac > 1)
     {
 	level = get_level (av[1]);
@@ -386,6 +379,8 @@ HANDLER (channel_level)
 		send_cmd (con, MSG_SERVER_NOSUCH, "invalid level");
 	    return;
 	}
+	if(chan->level == level)
+	    return;	/* same value, ignore */
 	/* check for permission */
 	if (ISUSER (con) &&
 	    (chan->level > con->user->level ||
@@ -396,28 +391,40 @@ HANDLER (channel_level)
 	    permission_denied (con);
 	    return;
 	}
+	/* check the TS if present */
+	if (ISSERVER (con) && ac > 2)
+	{
+	    time_t ts = atoi (av[2]);
+	    if(ts > chan->timestamp)
+	    {
+		log("channel_level(): TS is newer, ignoring");
+		return;
+	    }
+	}
 	pass_message_args (con, tag, ":%s %s %s", sender, chan->name,
 			   Levels[level]);
 	chan->level = level;
 	notify_mods (CHANNELLOG_MODE, "%s set channel %s to level %s",
 		     sender, chan->name, Levels[level]);
+	notify_ops (chan, "%s set channel %s to level %s",
+		    sender, chan->name, Levels[level]);
     }
     else
     {
 	/* report the current level */
 	ASSERT (ac == 1);
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Channel %s is set to level %s",
+	    send_cmd (con, MSG_SERVER_NOSUCH, "channel %s is set to level %s",
 		      chan->name, Levels[chan->level]);
 	else
 	    log ("channel_level(): query from server (should not happen)");
     }
 }
 
-/* 826 [ :<sender> ] <channel> <limit> */
+/* 826 [ :<sender> ] <channel> <limit> [timestamp] */
 HANDLER (channel_limit)
 {
-    char *chanName, *sender;
+    char *chanName, *sender, *slimit;
     int limit;
     CHANNEL *chan;
 
@@ -439,22 +446,28 @@ HANDLER (channel_limit)
 	sender = con->user->nick;
     }
     chanName = next_arg (&pkt);
-    if (!chanName || !pkt)
+    slimit = next_arg(&pkt);
+    if (!chanName || !slimit)
     {
 	unparsable (con);
 	return;
     }
-    limit = atoi (pkt);
+    limit = atoi (slimit);
     if (limit < 0 || limit > 65535)
     {
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid limit");
+	    send_cmd (con, MSG_SERVER_NOSUCH, "invalid limit");
 	return;
     }
     chan = hash_lookup (Channels, chanName);
     if (!chan)
     {
 	nosuchchannel (con);
+	return;
+    }
+    if (chan->limit == limit)
+    {
+	/* same value, just ignore it */
 	return;
     }
     if (ISUSER (con))
@@ -465,13 +478,28 @@ HANDLER (channel_limit)
 	    permission_denied (con);
 	    return;
 	}
-	if (list_find (con->user->channels, chan) == 0)
+    }
+    else
+    {
+	/* when synching servers, check the timestamp to handle differences */
+	ASSERT (ISSERVER (con));
+	if (pkt)
 	{
-	    send_cmd (con, MSG_SERVER_NOSUCH, "You are not on that channel");
-	    return;
+	    time_t timestamp = atoi (pkt);
+	    if (timestamp > chan->timestamp)
+	    {
+		log("channel_limit(): newer timestamp, ignoring");
+		return;
+	    }
+	    else if (timestamp == chan->timestamp)
+	    {
+		/* TODO: need to handle this case at some point */
+		log("channel_limit(): WARNING: TS was equal, but different value");
+	    }
 	}
     }
     chan->limit = limit;
+    chan->timestamp = Current_Time;
     pass_message_args (con, tag, ":%s %s %d", sender, chan->name, limit);
     notify_mods (CHANNELLOG_MODE, "%s set limit on channel %s to %d",
 		 sender, chan->name, limit);

@@ -15,7 +15,7 @@
 HANDLER (level)
 {
     char *sender, *fields[2];
-    USER *user;
+    USER *user, *senderUser=0;
     int level, ac;
     USERDB *db;
 
@@ -42,9 +42,18 @@ HANDLER (level)
 	    log ("level(): request contained too few fields");
 	    return;
 	}
+	if (!is_server(sender))
+	{
+	    senderUser=hash_lookup(Users,sender);
+	    if(!senderUser)
+		log("level(): could not find user %s", sender);
+	}
     }
     else
+    {
 	sender = con->user->nick;
+	senderUser = con->user;
+    }
 
     if ((ac = split_line (fields, FIELDS (fields), pkt)) != 2)
     {
@@ -56,7 +65,6 @@ HANDLER (level)
 
     if ((level = get_level (fields[1])) == -1)
     {
-	log ("level(): unknown level %s", fields[1]);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "invalid level");
 	return;
@@ -75,6 +83,8 @@ HANDLER (level)
     {
 	/* user is logged in */
 	ASSERT (validate_user (user));
+	if (level == user->level)
+	    return;	/* ignore */
 	if (ISUSER (con) && con->user->level < LEVEL_ELITE &&
 	    con->user != user &&	/* allow self demotion */
 	    user->level >= con->user->level)
@@ -84,7 +94,6 @@ HANDLER (level)
 	}
 	if (user->level == level)
 	{
-	    log ("level(): %s is already %s", user->nick, Levels[level]);
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already %s",
 			  user->nick, Levels[level]);
@@ -93,7 +102,8 @@ HANDLER (level)
 	if (ISUSER (user->con))
 	    send_cmd (user->con, MSG_SERVER_NOSUCH,
 		      "%s changed your user level to %s (%d)",
-		      sender, Levels[level], level);
+		      (senderUser && senderUser->cloaked && level < LEVEL_MODERATOR) ? "Operator" : sender,
+		      Levels[level], level);
 	/* delay setting user->level until after the notify_mods() call so
 	   that a user promoted to mod+ doesnt get notified twice */
     }
@@ -194,7 +204,4 @@ HANDLER (level)
        doesnt get notified twice */
     if (user)
 	user->level = level;
-
-    log ("level(): %s changed %s's user level to %s", sender, fields[0],
-	 Levels[level]);
 }

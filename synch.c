@@ -68,11 +68,12 @@ static void
 sync_chan (CHANNEL * chan, CONNECTION * con)
 {
     if (chan->level != LEVEL_USER)
-	send_cmd (con, MSG_CLIENT_CHANNEL_LEVEL, ":%s %s %s",
-		  Server_Name, chan->name, Levels[chan->level]);
+	send_cmd (con, MSG_CLIENT_CHANNEL_LEVEL, ":%s %s %s %d",
+		  Server_Name, chan->name, Levels[chan->level], chan->timestamp);
     if (chan->limit != Channel_Limit)
-	send_cmd (con, MSG_CLIENT_CHANNEL_LIMIT, ":%s %s %d",
-		  Server_Name, chan->name, chan->limit);
+	send_cmd (con, MSG_CLIENT_CHANNEL_LIMIT, ":%s %s %d %d",
+		  Server_Name, chan->name, chan->limit, chan->timestamp);
+
     /* synch the list of channel operators if present */
     if (chan->ops)
     {

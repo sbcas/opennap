@@ -377,6 +377,10 @@ are implemented as additional functionality in the opennap server.
 
 	returns the list of defined channel operators for the given channel
 
+10207	drop channel [CLIENT]
+
+	Format: <channel> [ "<reason>" ]
+
 10300	share generic media file [CLIENT]
 
 	"<filename>" <size> <md5> <content-type>

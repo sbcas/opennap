@@ -98,6 +98,7 @@ struct _channel
     unsigned char userCreated;	/* true if a user created channel */
     unsigned char level;	/* minimum level to enter channel */
     LIST *bans;			/* channel specific bans */
+    time_t timestamp;		/* used to sync servers */
 };
 
 /* user level */
@@ -580,6 +581,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_OP			10204
 #define MSG_CLIENT_DEOP			10205
 #define MSG_CLIENT_OP_LIST		10206
+#define MSG_CLIENT_DROP_CHANNEL		10207
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
 
 /* utility routines */
@@ -713,6 +715,7 @@ HANDLER (change_pass);
 HANDLER (channel_ban);
 HANDLER (channel_banlist);
 HANDLER (channel_clear_bans);
+HANDLER (channel_drop);
 HANDLER (channel_level);
 HANDLER (channel_limit);
 HANDLER (channel_op);

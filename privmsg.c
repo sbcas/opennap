@@ -128,6 +128,8 @@ chanserv (CONNECTION * con, char *pkt)
 	tag = MSG_SERVER_TOPIC;
     else if (!strcasecmp ("limit", cmd))
 	tag = MSG_CLIENT_CHANNEL_LIMIT;
+    else if (!strcasecmp ("drop", cmd))
+	tag = MSG_CLIENT_DROP_CHANNEL;
     else if (!strcasecmp ("help", cmd))
     {
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
@@ -137,6 +139,7 @@ chanserv (CONNECTION * con, char *pkt)
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ banclear <channel>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ banlist <channel>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ clear <channel>");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ drop <channel>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ help");
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
 		  "ChanServ kick <channel> <user> [reason]");
