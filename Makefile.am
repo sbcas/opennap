@@ -13,5 +13,6 @@ opennap_SOURCES=opennap.h main.c add_file.c db.c search.c \
 opennap_LDADD=-L@MYSQLLIBDIR@ -lmysqlclient
 metaserver_SOURCES=metaserver.c
 EXTRA_DIST=sample.conf sample.motd napster.txt .indent.pro create_db.sql \
-	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp snprintf.c
+	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp snprintf.c \
+	opennap.opt opennap.plg
 INCLUDES=-I@MYSQLINCDIR@ -DSHAREDIR=\"$(pkgdatadir)\"
