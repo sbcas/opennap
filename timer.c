@@ -101,11 +101,17 @@ exec_timers (time_t now)
     }
 }
 
-/* returns the time at which the next pending event is scheduled */
+/* returns the time offset at which the next pending event is scheduled */
 time_t
 next_timer (void)
 {
-    return (Pending_Timers ? Pending_Timers->next_time : -1);
+    if (Pending_Timers)
+    {
+	if (Pending_Timers->next_time < Current_Time)
+	    return 0;	/* now! */
+	return (Pending_Timers->next_time - Current_Time);
+    }
+    return -1;
 }
 
 void
