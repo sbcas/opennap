@@ -6,10 +6,11 @@
 
    $Id$ */
 
+#include <time.h>
 #include "opennap.h"
 #include "debug.h"
 
-/* <user> */
+/* 10115 */
 HANDLER (server_usage)
 {
     USER *user;
@@ -31,7 +32,8 @@ HANDLER (server_usage)
     
     mem_used = MEMORY_USED;
 
-    send_cmd (user->con, MSG_SERVER_USAGE_STATS, "%d %d %d %d %d %d",
-	Num_Clients, Num_Servers, Num_Files,
-	Num_Gigs, Channels->dbsize, mem_used);
+    send_cmd (user->con, MSG_SERVER_USAGE_STATS, "%d %d %d %d %d %d %d %d %d",
+	Num_Clients - Num_Servers, Num_Servers, Users->dbsize, Num_Files,
+	Num_Gigs, Channels->dbsize, Server_Start, time (0) - Server_Start,
+	mem_used);
 }

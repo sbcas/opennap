@@ -60,6 +60,7 @@ int Nick_Expire;
 int Check_Expire;
 int Max_Browse_Result;
 unsigned int Interface = INADDR_ANY;
+time_t Server_Start;	/* time at which the server was started */
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;
@@ -593,6 +594,8 @@ main (int argc, char **argv)
 #endif /* !WIN32 */
 
     log ("version %s starting", VERSION);
+
+    Server_Start = time (0);
 
 #ifndef WIN32
     init_signals ();

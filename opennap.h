@@ -262,6 +262,7 @@ extern int Nick_Expire;
 extern int Check_Expire;
 extern int Max_Browse_Result;
 extern unsigned int Interface;
+extern time_t Server_Start;
 
 extern unsigned int Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */

@@ -212,10 +212,21 @@ are implemented as additional functionality in the opennap server.
 
 10115	show server stats [CLIENT, SERVER]
 
-	server: <clients> <servers> <files> <gigs> <channels> <memory>
+	server: <clients> <servers> <files> <gigs> <channels> <time> <uptime> <memory>
 
 	This command is used by administrators to get information about the
 	state of the server.
+
+	<clients>	number of locally connected clients
+	<servers>	number of locally connected servers
+	<users>		total number of global users
+	<files>		number of files in the db
+	<gigs>		total size of all files shared
+	<channels>	number of active channels
+	<time>		time at which the server was started
+	<uptime>	number of seconds of uptime
+	<memory>	if debugging is enabled, this will show the memory
+			currently in use, otherwise it will be -1
 
 10200	compressed packet [SERVER]
 
