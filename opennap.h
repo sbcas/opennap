@@ -189,6 +189,7 @@ struct _hotlist
 #define MSG_SERVER_LOGIN_ACK		10011	/* server login response */
 #define MSG_CLIENT_CONNECT		10012	/* user request for server
 						   connect */
+#define MSG_SERVER_USER_IP		10013	/* ip for user */
 
 /* offsets into the row returned for library searches */
 #define IDX_NICK	0
@@ -300,9 +301,11 @@ HANDLER (upload_ok);
 HANDLER (upload_start);
 HANDLER (upload_end);
 HANDLER (topic);
+HANDLER (user_ip);
 HANDLER (user_speed);
 HANDLER (whois);
 
 #define CHECK_USER_CLASS(f) if (con->class != CLASS_USER) { log ("%s: not USER class", f); return; }
+#define CHECK_SERVER_CLASS(f) if(con->class != CLASS_SERVER) { log ("%s: not SERVER class", f); return; }
 
 #endif /* opennap_h */

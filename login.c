@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <mysql.h>
+#include <arpa/inet.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -78,20 +79,25 @@ HANDLER (login)
     /* if this is a locally connected user, update our information */
     if (con->class == CLASS_UNKNOWN)
     {
+	/* save the ip address of this client */
+	user->host = inet_addr (con->host);
+
 	/* pass this information to our peer servers */
 	if (Num_Servers)
 	{
 	    pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
-			       field[0], field[1], field[2], field[3],
-			       field[4]);
+		    field[0], field[1], field[2], field[3], field[4]);
+	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %lu",
+		    field[0], user->host);
 	}
 
 	con->class = CLASS_USER;
 	con->user = user;
 	user->con = con;
 
-	/* ack the login */
-	send_cmd (con, MSG_SERVER_EMAIL, "-");
+	/* ack the login - we don't really keep track of email addresses,
+	   so fake it the way that napster does */
+	send_cmd (con, MSG_SERVER_EMAIL, "anon@%s", Server_Name);
 
 	show_motd (con);
 	send_stats (con);
@@ -110,46 +116,46 @@ HANDLER (login)
 
 	    switch (mysql_num_rows (result))
 	    {
-	    case 0:
-		break;		/* no entry, proceed normally */
-	    case 1:
-		{
-		    MYSQL_ROW row = mysql_fetch_row (result);
-
-		    /* verify the password */
-		    if (strcmp (field[1], row[1]) != 0)
+		case 0:
+		    break;		/* no entry, proceed normally */
+		case 1:
 		    {
-			log ("login(): bad password for user %s", user->nick);
-			remove_connection (con);
-		    }
-		    else
-		    {
-			if (strcasecmp ("admin", row[2]) == 0)
-			    user->flags |= FLAG_ADMIN;
-			else if (strcasecmp ("moderator", row[2]) == 0)
-			    user->flags |= FLAG_MODERATOR;
-			log ("login(): setting %s to level %s", user->nick,
-			     (user->flags & FLAG_ADMIN) ? "admin" :
-			     "moderator");
+			MYSQL_ROW row = mysql_fetch_row (result);
 
-			/* broadcast the updated userlevel to our peer
-			   servers */
-			if ((user->flags & (FLAG_ADMIN | FLAG_MODERATOR)) != 0
-			    && Num_Servers)
+			/* verify the password */
+			if (strcmp (field[1], row[1]) != 0)
 			{
-			    pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
-					       ":%s %s %s", Server_Name,
-					       user->nick,
-					       (user->flags & FLAG_ADMIN) ?
-					       "admin" : "moderator");
+			    log ("login(): bad password for user %s", user->nick);
+			    remove_connection (con);
+			}
+			else
+			{
+			    if (strcasecmp ("admin", row[2]) == 0)
+				user->flags |= FLAG_ADMIN;
+			    else if (strcasecmp ("moderator", row[2]) == 0)
+				user->flags |= FLAG_MODERATOR;
+			    log ("login(): setting %s to level %s", user->nick,
+				    (user->flags & FLAG_ADMIN) ? "admin" :
+				    "moderator");
+
+			    /* broadcast the updated userlevel to our peer
+			       servers */
+			    if ((user->flags & (FLAG_ADMIN | FLAG_MODERATOR)) != 0
+				    && Num_Servers)
+			    {
+				pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
+					":%s %s %s", Server_Name,
+					user->nick,
+					(user->flags & FLAG_ADMIN) ?
+					"admin" : "moderator");
+			    }
 			}
 		    }
-		}
-		break;
-	    default:
-		log ("login(): query returned >1 rows!");
-		remove_connection (con);
-		break;
+		    break;
+		default:
+		    log ("login(): query returned >1 rows!");
+		    remove_connection (con);
+		    break;
 	    }
 
 	    mysql_free_result (result);
@@ -177,4 +183,27 @@ HANDLER (login)
 	    send_cmd (hotlist->users[i], MSG_SERVER_USER_SIGNON, "%s %d",
 		user->nick, user->speed);
     }
+}
+
+/* 10013 <user> <ip> */
+/* peer server is sending us the ip address for a locally connected client */
+HANDLER (user_ip)
+{
+    char *field[2];
+    USER *user;
+
+    ASSERT (VALID (con));
+    CHECK_SERVER_CLASS ("user_ip");
+    if(split_line(field,sizeof(field)/sizeof(char*),pkt)!=2)
+    {
+	log("user_ip(): wrong number of arguments");
+	return;
+    }
+    user=hash_lookup(Users,field[0]);
+    if(!user)
+    {
+	log("user_ip(): could not find struct for %s", field[0]);
+	return;
+    }
+    user->host = strtoul (field[1], 0, 10);
 }

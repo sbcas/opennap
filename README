@@ -126,6 +126,15 @@ are implemented as additional functionality in the opennap server.
 	client is requesting that local server establish a connection with
 	the server running at <server-name>:<port>
 
+10013	user ip
+
+	<user> <ip>
+
+	this message is used for a server to pass the ip address of a
+	locally connected client to its peer servers, since that information
+	is not available in the login message.  <ip> is an unsigned long
+	integer specifying the ip address for <user>
+
 * References
 
 RFC1459, the IRC protocol was helpful in implementing many features.

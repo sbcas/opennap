@@ -84,14 +84,14 @@ main (int argc, char **argv)
 	    case 'l':
 		localport = atoi(optarg);
 		break;
-	case 's':
-	    host = optarg;
-	    break;
-	case 'p':
-	    port = atoi (optarg);
-	    break;
-	default:
-	    usage();
+	    case 's':
+		host = optarg;
+		break;
+	    case 'p':
+		port = atoi (optarg);
+		break;
+	    default:
+		usage();
 	}
     }
 

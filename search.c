@@ -40,6 +40,7 @@ format_request (const char *s, char *d, int dsize)
 	else
 	    *d++ = *s;
     }
+    *d=0;
 }
 
 HANDLER (search)

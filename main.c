@@ -152,7 +152,8 @@ static HANDLER Protocol[] = {
     { MSG_SERVER_LOGIN, server_login },
     { MSG_CLIENT_CONNECT, server_connect },
     { MSG_SERVER_LOGIN, server_login },
-    { MSG_SERVER_LOGIN_ACK, server_login_ack }
+    { MSG_SERVER_LOGIN_ACK, server_login_ack },
+    { MSG_SERVER_USER_IP, user_ip },
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
 
@@ -476,7 +477,7 @@ main (int argc, char **argv)
 	Num_Clients = n; /* actual number of clients */
 
 #ifdef linux
-	/* under linx, select() modifies this to return the amount of time
+	/* under linux, select() modifies this to return the amount of time
 	   not slept, so we have to reset the value.  for some strange
            reason, signals get blocked if you don't reset this value
 	   anyone know why? */

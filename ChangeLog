@@ -17,6 +17,12 @@ added support for downloading from firewalled clients (500,501)
 
 search patterns need to have %, ', _ and \ quoted in the SQL query
 
+login() did not set the ->host field of the USER struct, so downloads
+between machines would fail.
+
+added 10013 message type for transmitting the ip address of locally
+connected machines to peer servers
+
 Changes from 0.06
 =================
 
