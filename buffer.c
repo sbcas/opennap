@@ -490,9 +490,11 @@ send_queued_data (CONNECTION *con)
 	return -1;
     }
 
+#if 0
     if (con->sendbuf)
 	log ("send_queued_data(): %d bytes remain in the output buffer for %s",
 	    buffer_size (con->sendbuf), con->host);
+#endif
 
     return 0;
 }

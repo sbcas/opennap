@@ -45,8 +45,10 @@ HANDLER (add_hotlist)
     {
 	if (hotlist->users[i] == con)
 	{
+#if 0
 	    log ("add_hotlist(): %s is already on %s's hotlist (%d)",
 		    hotlist->nick, con->user->nick, tag);
+#endif
 	    return; /* already present */
 	}
     }
