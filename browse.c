@@ -26,8 +26,8 @@ browse_callback (DATUM * info, BROWSE * ctx)
     if (ctx->max == 0 || ctx->count < ctx->max)
     {
 	send_user (ctx->sender, MSG_SERVER_BROWSE_RESPONSE,
-		   "%s \"%s\" %s %d %hu %hu %hu",
-		   info->user->nick, info->filename,
+		   "%s \"%s%s\" %s %d %hu %hu %hu",
+		   info->user->nick, info->path->path, info->filename,
 #if RESUME
 		   info->hash,
 #else

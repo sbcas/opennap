@@ -13,10 +13,20 @@
 #include "debug.h"
 
 /* allowed bitrates for MPEG V1/V2 Layer III */
-const int BitRate[18] = { 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 192 , 224, 256, 320 };
+const int BitRate[18] =
+    { 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 192, 224,
+	256, 320 };
 
 /* allowed sample rates for MPEG V2/3 */
 const int SampleRate[6] = { 16000, 24000, 22050, 32000, 44100, 48000 };
+
+void
+path_free (PATH * p)
+{
+    ASSERT (p->refs == 0);
+    FREE (p->path);
+    FREE (p);
+}
 
 static void
 fdb_add (HASH * table, char *key, DATUM * d)
@@ -96,13 +106,13 @@ insert_datum (DATUM * info, char *av)
     info->refcount++;
 
     /* add this entry to the global file list.  the data entry currently
-    can't be referenced more than 32 times so if there are excess tokens,
-    discard the first several so that the refcount is not overflowed */
+       can't be referenced more than 32 times so if there are excess tokens,
+       discard the first several so that the refcount is not overflowed */
     fsize = list_count (tokens);
     ptr = tokens;
     while (fsize > 30)
     {
-	ptr=ptr->next;
+	ptr = ptr->next;
 	fsize--;
     }
     for (; ptr; ptr = ptr->next)
@@ -125,9 +135,10 @@ insert_datum (DATUM * info, char *av)
 }
 
 static DATUM *
-new_datum (char *filename, char *hash)
+new_datum (char *path, char *filename, char *hash)
 {
-    DATUM *info = CALLOC(1,sizeof(DATUM));
+    DATUM *info = CALLOC (1, sizeof (DATUM));
+    PATH *pathref;
 
     (void) hash;
     if (!info)
@@ -135,6 +146,25 @@ new_datum (char *filename, char *hash)
 	OUTOFMEMORY ("new_datum");
 	return 0;
     }
+    /* in order to conserve memory, we store the directory name in a hash
+     * table which can be referenced by all the files in that directory
+     */
+    pathref = hash_lookup (Paths, path);
+    if (!pathref)
+    {
+	/* create it now */
+	pathref = CALLOC (1, sizeof (PATH));
+	if (!pathref)
+	{
+	    OUTOFMEMORY ("new_datum");
+	    FREE (info);
+	    return 0;
+	}
+	pathref->path = STRDUP (path);
+	hash_add (Paths, pathref->path, pathref);
+    }
+    pathref->refs++;
+    info->path = pathref;
     info->filename = STRDUP (filename);
     if (!info->filename)
     {
@@ -156,31 +186,33 @@ new_datum (char *filename, char *hash)
 }
 
 static int
-bitrateToMask (int bitrate, USER *user)
+bitrateToMask (int bitrate, USER * user)
 {
     unsigned int i;
 
-    for(i=0;i<sizeof(BitRate)/sizeof(int);i++)
+    for (i = 0; i < sizeof (BitRate) / sizeof (int); i++)
+
     {
-	if(bitrate<=BitRate[i])
+	if (bitrate <= BitRate[i])
 	    return i;
     }
-    log("bitrateToMask(): invalid bit rate %d (%s, \"%s\")", bitrate,
-	user->nick, user->clientinfo);
-    return 0; /* invalid bitrate */
+    log ("bitrateToMask(): invalid bit rate %d (%s, \"%s\")", bitrate,
+	 user->nick, user->clientinfo);
+    return 0;			/* invalid bitrate */
 }
 
 static int
-freqToMask (int freq, USER *user)
+freqToMask (int freq, USER * user)
 {
     unsigned int i;
-    for(i=0;i<sizeof(SampleRate)/sizeof(int);i++)
+    for (i = 0; i < sizeof (SampleRate) / sizeof (int); i++)
+
     {
-	if(freq<=SampleRate[i])
+	if (freq <= SampleRate[i])
 	    return i;
     }
-    log("freqToMask(): invalid sample rate %d (%s, \"%s\")", freq,
-	user->nick, user->clientinfo);
+    log ("freqToMask(): invalid sample rate %d (%s, \"%s\")", freq,
+	 user->nick, user->clientinfo);
     return 0;
 }
 
@@ -191,6 +223,7 @@ HANDLER (add_file)
     char *av[6];
     DATUM *info;
     int fsize;
+    char path[_POSIX_PATH_MAX], fname[_POSIX_PATH_MAX], *ptr;
 
     (void) tag;
     (void) len;
@@ -203,20 +236,20 @@ HANDLER (add_file)
     if (Max_Shared && con->user->shared > Max_Shared)
     {
 	send_cmd (con, MSG_SERVER_NOSUCH,
-		"You may only share %d files", Max_Shared);
+		  "You may only share %d files", Max_Shared);
 	return;
     }
 
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 6)
     {
 	send_cmd (con, MSG_SERVER_NOSUCH,
-		"invalid parameter data to add a file");
+		  "invalid parameter data to add a file");
 	return;
     }
 
     if (av[1] - av[0] > _POSIX_PATH_MAX + 2)
     {
-	send_cmd(con,MSG_SERVER_NOSUCH,"filename too long");
+	send_cmd (con, MSG_SERVER_NOSUCH, "filename too long");
 	return;
     }
 
@@ -235,13 +268,24 @@ HANDLER (add_file)
 	return;
     }
 
+    /* split the filename into its directory and base name
+     * NOTE: the trailing / MUST be left in the path.  the search code
+     * depends on it.
+     */
+    strncpy (path, av[0], sizeof (path) - 1);
+    ptr = path + strlen (path);
+    while (ptr > path && *(ptr - 1) != '/' && *(ptr - 1) != '\\')
+	ptr--;
+    strncpy (fname, ptr, sizeof (fname) - 1);
+    *ptr = 0;
+
     /* create the db record for this file */
-    if (!(info = new_datum (av[0], av[1])))
+    if (!(info = new_datum (path, fname, av[1])))
 	return;
     info->user = con->user;
     info->size = fsize;
-    info->bitrate = bitrateToMask(atoi (av[3]), con->user);
-    info->frequency = freqToMask(atoi (av[4]), con->user);
+    info->bitrate = bitrateToMask (atoi (av[3]), con->user);
+    info->frequency = freqToMask (atoi (av[4]), con->user);
     info->duration = atoi (av[5]);
     info->type = CT_MP3;
 
@@ -263,6 +307,7 @@ HANDLER (share_file)
     char *av[4];
     DATUM *info;
     int i, type;
+    char path[_POSIX_PATH_MAX], fname[_POSIX_PATH_MAX], *ptr;
 
     (void) len;
     (void) tag;
@@ -307,11 +352,22 @@ HANDLER (share_file)
 
     if (av[1] - av[0] > _POSIX_PATH_MAX + 2)
     {
-	send_cmd(con,MSG_SERVER_NOSUCH,"filename too long");
+	send_cmd (con, MSG_SERVER_NOSUCH, "filename too long");
 	return;
     }
 
-    if (!(info = new_datum (av[0], av[2])))
+    /* split the filename into its directory and base name
+     * NOTE: the trailing / MUST be left in the path.  the search code
+     * depends on it.
+     */
+    strncpy (path, av[0], sizeof (path) - 1);
+    ptr = path + strlen (path);
+    while (ptr > path && *(ptr - 1) != '/' && *(ptr - 1) != '\\')
+	ptr--;
+    strncpy (fname, ptr, sizeof (fname) - 1);
+    *ptr = 0;
+
+    if (!(info = new_datum (path, fname, av[2])))
 	return;
     info->user = con->user;
     info->size = atoi (av[1]);
@@ -366,18 +422,18 @@ HANDLER (add_directory)
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("add_directory");
     dir = next_arg (&pkt);	/* directory */
-    if(!dir)
+    if (!dir)
     {
-	log("add_directory(): missing directory component");
+	log ("add_directory(): missing directory component");
 	return;
     }
     dirbuf[sizeof (dirbuf) - 1] = 0;	/* ensure nul termination */
     strncpy (dirbuf, dir, sizeof (dirbuf) - 1);
     pathlen = strlen (dirbuf);
-    if((size_t)pathlen>=sizeof(dirbuf)-1)
+    if ((size_t) pathlen >= sizeof (dirbuf) - 1)
     {
-	ASSERT((size_t)pathlen<sizeof(dirbuf));
-	log("add_directory(): directory component is too long, ignoring");
+	ASSERT ((size_t) pathlen < sizeof (dirbuf));
+	log ("add_directory(): directory component is too long, ignoring");
 	return;
     }
 
@@ -385,10 +441,11 @@ HANDLER (add_directory)
     {
 	strncpy (dirbuf + pathlen, "\\", sizeof (dirbuf) - pathlen - 1);
 	pathlen++;
-	if((size_t)pathlen>=sizeof(dirbuf)-1)
+	if ((size_t) pathlen >= sizeof (dirbuf) - 1)
 	{
-	    ASSERT((size_t)pathlen<sizeof(dirbuf));
-	    log("add_directory(): directory component is too long, ignoring");
+	    ASSERT ((size_t) pathlen < sizeof (dirbuf));
+	    log
+		("add_directory(): directory component is too long, ignoring");
 	    return;
 	}
     }
@@ -398,7 +455,7 @@ HANDLER (add_directory)
 	if (Max_Shared && con->user->shared > Max_Shared)
 	{
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		    "You may only share %d files", Max_Shared);
+		      "You may only share %d files", Max_Shared);
 	    return;
 	}
 	basename = next_arg (&pkt);
@@ -415,22 +472,22 @@ HANDLER (add_directory)
 	/* make sure this isn't a duplicate - have to redo the entire path
 	   including the directory since it gets munged by the insertion into
 	   the hash table */
-	path[sizeof(path)-1]=0;	/* ensure nul termination */
+	path[sizeof (path) - 1] = 0;	/* ensure nul termination */
 	strncpy (path, dirbuf, sizeof (path) - 1);
 	strncpy (path + pathlen, basename, sizeof (path) - 1 - pathlen);
 	if (con->uopt->files && hash_lookup (con->uopt->files, path))
 	{
 	    send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
-	    continue;	/* get next file */
+	    continue;		/* get next file */
 	}
 
 	/* create the db record for this file */
-	if (!(info = new_datum (path, md5)))
+	if (!(info = new_datum (dirbuf, basename, md5)))
 	    return;
 	info->user = con->user;
 	info->size = atoi (size);
-	info->bitrate = bitrateToMask(atoi (bitrate), con->user);
-	info->frequency = freqToMask(atoi (freq), con->user);
+	info->bitrate = bitrateToMask (atoi (bitrate), con->user);
+	info->frequency = freqToMask (atoi (freq), con->user);
 	info->duration = atoi (duration);
 	info->type = CT_MP3;
 

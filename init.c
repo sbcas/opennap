@@ -231,6 +231,7 @@ init_server (const char *cf)
 #if RESUME
     MD5 = hash_init (2053, (hash_destroy) free_flist);
 #endif
+    Paths = hash_init (2053, (hash_destroy) path_free);
     load_channels ();
 
     init_random ();

@@ -272,6 +272,17 @@ typedef struct
 }
 FLIST;
 
+/* to avoid duplicating the directory part of filenames, we create a hash
+ * table indexed by the directory name and keep track of how many files
+ * reference this structure.  this way only one copy of the directory name
+ * needs to be stored in memory for all files in that directory
+ */
+typedef struct
+{
+    char *path;
+    int refs;
+} PATH;
+
 /* content-type */
 enum
 {
@@ -284,11 +295,12 @@ enum
     CT_UNKNOWN
 };
 
-/* core database entry (16 (+4) bytes) */
+/* core database entry (20 (+4) bytes) */
 typedef struct
 {
     USER *user;			/* user who possesses this file */
-    char *filename;		/* the filename */
+    PATH *path;			/* directory portion of the name */
+    char *filename;		/* the filename (excluding path) */
 #if RESUME
     char *hash;			/* the md5 hash of the file */
 #endif
@@ -423,6 +435,7 @@ extern HASH *File_Table;
 extern HASH *MD5;
 #endif
 extern HASH *User_Db;
+extern HASH *Paths;
 
 extern char *Levels[LEVEL_ELITE + 1];
 extern char *Content_Types[CT_UNKNOWN];
@@ -684,6 +697,7 @@ void part_channel (CHANNEL *, USER *);
 void pass_message (CONNECTION *, char *, size_t);
 void pass_message_args (CONNECTION * con, unsigned int msgtype,
 			const char *fmt, ...);
+void path_free (PATH *);
 void permission_denied (CONNECTION * con);
 int pop_user (CONNECTION * con, char **pkt, USER ** user);
 int pop_user_server (CONNECTION * con, int tag, char **pkt, char **nick, USER ** user);

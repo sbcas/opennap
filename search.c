@@ -8,6 +8,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <limits.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -223,9 +224,14 @@ free_datum (DATUM * d)
     d->size = -1;	/* mark as invalid */
     d->user = 0;
     d->refcount--;
+    ASSERT(d->path!=0);
     if (d->refcount == 0)
     {
 	/* no more references, we can free this memory */
+
+	/* remove the path pointer for this file */
+	if(--d->path->refs==0)
+	    hash_remove(Paths,d->path->path);
 	FREE (d->filename);
 #if RESUME
 	FREE (d->hash);
@@ -340,6 +346,8 @@ fdb_search (HASH * table,
     FLIST *flist = 0, *tmp;
     DATUM *d;
     int hits = 0;
+    int len;
+    char path[_POSIX_PATH_MAX];
 
     /* find the file list with the fewest files in it */
     for (ptok = tokens; ptok; ptok = ptok->next)
@@ -356,18 +364,29 @@ fdb_search (HASH * table,
     }
     if (!flist)
 	return 0;		/* no matches */
+    path[sizeof(path)-1]=0;
     /* find the list of files which contain all search tokens */
     for (ptok = flist->list; ptok; ptok = ptok->next)
     {
 	d = (DATUM *) ptok->data;
 	ASSERT (VALID_LEN (d, sizeof (DATUM)));
-	if (d->size != (unsigned)-1 &&
-	    match (tokens, d->filename) && cb (d, cbdata))
+	if (d->size != (unsigned)-1)
 	{
-	    /* callback accepted match */
-	    hits++;
-	    if (hits == maxhits)
-		break;		/* finished */
+	    /* reconstruct the full filename */
+	    ASSERT(d->path!=0);
+	    len=strlen(d->path->path);
+	    if(len>(int)sizeof(path)-1)
+		len=sizeof(path)-1;
+	    strncpy(path,d->path->path,sizeof(path)-1);
+	    strncpy(path+len,d->filename,sizeof(path)-1-len);
+
+	    if(match (tokens, path) && cb (d, cbdata))
+	    {
+		/* callback accepted match */
+		hits++;
+		if (hits == maxhits)
+		    break;		/* finished */
+	    }
 	}
     }
     return hits;

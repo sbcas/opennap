@@ -83,6 +83,7 @@ HASH *Users;			/* global users list */
 HASH *File_Table;		/* global file list */
 HASH *Channels;			/* global channel list */
 HASH *Hotlist;			/* global hotlist */
+HASH *Paths;			/* global paths list */
 
 #if RESUME
 HASH *MD5;			/* global hash list */
@@ -593,6 +594,7 @@ main (int argc, char **argv)
     free_hash (Channels);
     free_hash (Hotlist);
     free_hash (User_Db);
+    free_hash (Paths);
     free_timers ();
 
     list_free (Bans, (list_destroy_t) free_ban);
