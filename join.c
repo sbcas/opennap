@@ -67,7 +67,7 @@ HANDLER (join)
     CHANNEL *chan;
     LIST *list;
     CHANUSER *chanUser;
-    int notifyUser = 0;
+    int chanop = 0;
 
     (void) tag;
     (void) len;
@@ -80,25 +80,32 @@ HANDLER (join)
 	unparsable (con);
 	return;
     }
-    /* enforce a maximum channels per user */
-    /* TODO: if linked servers have different settings, the channel membership
-       could become desynched */
-    if (user->level < LEVEL_MODERATOR &&
-	list_count (user->channels) > Max_User_Channels)
+
+    if (user->level < LEVEL_MODERATOR)
     {
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "channel join failed: you may only join %d channels", Max_User_Channels);
-	return;
+	/* enforce a maximum channels per user */
+	/* TODO: if linked servers have different settings, the channel membership
+	   could become desynched */
+	if (list_count (user->channels) > Max_User_Channels)
+	{
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			  "channel join failed: you may only join %d channels",
+			  Max_User_Channels);
+	    return;
+	}
+	if (user->muzzled)
+	{
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			  "channel join failed: can't join channels while muzzled");
+	    return;
+	}
     }
-    if (user->muzzled)
-    {
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "channel join failed: can't join channels while muzzled");
-	return;
-    }
-    do
+
+    /* this loop is here in case the channel has a limit so we can create
+       the rollover channels */
+    for(;;)
     {
 	chan = hash_lookup (Channels, pkt);
 	if (!chan)
@@ -127,7 +134,7 @@ HANDLER (join)
 	    }
 	    /* set the default topic */
 	    snprintf (Buf, sizeof (Buf), "Welcome to the %s channel.",
-		      chan->name);
+		    chan->name);
 	    chan->topic = STRDUP (Buf);
 	    if (!chan->topic)
 	    {
@@ -141,83 +148,100 @@ HANDLER (join)
 	    chan->level = LEVEL_USER;
 	    hash_add (Channels, chan->name, chan);
 	    log ("join(): creating channel %s", chan->name);
-	    break;
 	}
 	/* ensure that this user isn't already on this channel */
 	else if (list_find (user->channels, chan))
 	{
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH,
-			  "channel join failed: you have already joined that channel");
+			"channel join failed: already joined channel");
 	    return;
 	}
 	/* check to make sure the user has privilege to join */
 	else if (user->level < chan->level)
 	{
-	    permission_denied (con);
-	    return;
-	}
-	/* check to make sure this user is not banned from the channel */
-	else if (user->level < LEVEL_MODERATOR &&
-		 chan->bans && banned_from_channel (chan, user))
-	{
-	    /* log message is printed inside banned_from_channel() */
-	    return;
-	}
-	/* check for invitation */
-	else if ((chan->flags & ON_CHANNEL_INVITE) &&
-		user->level < LEVEL_MODERATOR &&
-		!list_find(user->invited,chan))
-	{
 	    if(ISUSER(con))
-		send_cmd(con,MSG_SERVER_NOSUCH,"channel join failed: channel is invite only");
+		send_cmd(con,MSG_SERVER_NOSUCH,
+			"channel join failed: requires level %s",
+			Levels[chan->level]);
 	    return;
-	}
-	else if (user->level < LEVEL_MODERATOR && chan->limit > 0 &&
-		list_count (chan->users) >= chan->limit)
-	{
-	    log ("join(): channel %s is full (%d)", chan->name, chan->limit);
-	    if (chan->flags & ON_CHANNEL_USER)
-	    {
-		if (ISUSER (con))
-		    send_cmd (con, MSG_SERVER_NOSUCH,
-			    "channel join failed: channel is full");
-		return;
-	    }
-	    /* for predefined channels, automatically create a rollover
-	       channel when full */
-	    else
-	    {
-		char *p;
-		int n = 1;
-
-		strncpy (Buf, chan->name, sizeof (Buf));
-		p = Buf + strlen (Buf);
-		while (p > Buf && isdigit (*(p - 1)))
-		    p--;
-		if (isdigit (*p))
-		{
-		    n = atoi (p);
-		    *p = 0;
-		}
-		snprintf (Buf + strlen (Buf), sizeof (Buf) - strlen (Buf),
-			  "%d", n);
-		pkt = Buf;
-		log ("join(): trying channel %s", pkt);
-	    }
 	}
 	else
-	    break;
+	{
+	    /* check if this user is a channel operator */
+	    for (list = chan->ops; list; list = list->next)
+	    {
+		if (!strcasecmp (user->nick, list->data))
+		{
+		    chanop = 1;
+		    break;
+		}
+	    }
+
+	    /* if not chanop or mod+, check extra permissions */
+	    if (!chanop && user->level < LEVEL_MODERATOR)
+	    {
+		/* check to make sure this user is not banned from the channel */
+		if (chan->bans && banned_from_channel (chan, user))
+		{
+		    /* log message is printed inside banned_from_channel() */
+		    return;
+		}
+
+		/* check for invitation */
+		if ((chan->flags & ON_CHANNEL_INVITE) &&
+			!list_find (user->invited, chan))
+		{
+		    if (ISUSER (con))
+			send_cmd (con, MSG_SERVER_NOSUCH,
+				"channel join failed: channel is invite only");
+		    return;
+		}
+
+		if (chan->limit > 0 && list_count (chan->users) >= chan->limit)
+		{
+		    if (chan->flags & ON_CHANNEL_USER)
+		    {
+			if (ISUSER (con))
+			    send_cmd (con, MSG_SERVER_NOSUCH,
+				    "channel join failed: channel is full");
+			return;
+		    }
+		    /* for predefined channels, automatically create a rollover
+		       channel when full */
+		    else
+		    {
+			char *p;
+			int n = 1;
+
+			strncpy (Buf, chan->name, sizeof (Buf));
+			p = Buf + strlen (Buf);
+			while (p > Buf && isdigit (*(p - 1)))
+			    p--;
+			if (isdigit (*p))
+			{
+			    n = atoi (p);
+			    *p = 0;
+			}
+			snprintf (Buf + strlen (Buf), sizeof (Buf) - strlen (Buf),
+				"%d", n);
+			pkt = Buf;
+			log ("join(): trying channel %s", pkt);
+			continue;
+		    }
+		}
+	    }
+	}
+	break;
     }
-    while (1);
 
     ASSERT (validate_channel (chan));
 
     /* clean up invite lists */
-    if(chan->flags & ON_CHANNEL_INVITE)
+    if (chan->flags & ON_CHANNEL_INVITE)
     {
-	chan->invited = list_delete(chan->invited,user);
-	user->invited = list_delete(user->invited,chan);
+	chan->invited = list_delete (chan->invited, user);
+	user->invited = list_delete (user->invited, chan);
     }
 
     /* add this channel to the list of this user is subscribed to */
@@ -237,19 +261,6 @@ HANDLER (join)
     chanUser->magic = MAGIC_CHANUSER;
 #endif
     chanUser->user = user;
-
-    /* check if this user is a channel operator */
-    for (list = chan->ops; list; list = list->next)
-    {
-	if (!strcasecmp (user->nick, list->data))
-	{
-	    notifyUser = 1;
-	    notify_ops (chan, "%s set %s as operator on channel %s",
-			Server_Name, user->nick, chan->name);
-	    chanUser->flags |= ON_OPERATOR;
-	    break;
-	}
-    }
 
     list = MALLOC (sizeof (LIST));
     if (!list)
@@ -295,6 +306,14 @@ HANDLER (join)
 		      chan->name, user->nick, user->shared, user->speed);
     }
 
+    /* notify ops/mods+ of this users status */
+    if (chanop)
+    {
+	notify_ops (chan, "%s set %s as operator on channel %s",
+		    Server_Name, user->nick, chan->name);
+	chanUser->flags |= ON_OPERATOR;
+    }
+
     if (ISUSER (con))
     {
 	/* send end of channel list message */
@@ -308,7 +327,7 @@ HANDLER (join)
 	ASSERT (chan->topic != 0);
 	send_cmd (con, MSG_SERVER_TOPIC /*410 */ , "%s %s", chan->name,
 		  chan->topic);
-	if (notifyUser)
+	if (chanop)
 	    send_cmd (con, MSG_SERVER_NOSUCH,
 		      "%s set you as operator on channel %s",
 		      Server_Name, chan->name);
@@ -362,7 +381,7 @@ HANDLER (channel_level)
     chan = hash_lookup (Channels, av[0]);
     if (!chan)
     {
-	nosuchchannel(con);
+	nosuchchannel (con);
 	return;
     }
     ASSERT (validate_channel);
@@ -375,8 +394,8 @@ HANDLER (channel_level)
 		send_cmd (con, MSG_SERVER_NOSUCH, "invalid level");
 	    return;
 	}
-	if(chan->level == level)
-	    return;	/* same value, ignore */
+	if (chan->level == level)
+	    return;		/* same value, ignore */
 	/* check for permission */
 	if (ISUSER (con) &&
 	    (chan->level > con->user->level ||
@@ -391,9 +410,10 @@ HANDLER (channel_level)
 	if (ISSERVER (con) && ac > 2)
 	{
 	    time_t ts = atoi (av[2]);
-	    if(ts > chan->timestamp)
+
+	    if (ts > chan->timestamp)
 	    {
-		log("channel_level(): TS is newer, ignoring");
+		log ("channel_level(): TS is newer, ignoring");
 		return;
 	    }
 	}
@@ -440,7 +460,7 @@ HANDLER (channel_limit)
 	sender = con->user->nick;
     }
     chanName = next_arg (&pkt);
-    slimit = next_arg(&pkt);
+    slimit = next_arg (&pkt);
     if (!chanName || !slimit)
     {
 	unparsable (con);
@@ -480,15 +500,17 @@ HANDLER (channel_limit)
 	if (pkt)
 	{
 	    time_t timestamp = atoi (pkt);
+
 	    if (timestamp > chan->timestamp)
 	    {
-		log("channel_limit(): newer timestamp, ignoring");
+		log ("channel_limit(): newer timestamp, ignoring");
 		return;
 	    }
 	    else if (timestamp == chan->timestamp)
 	    {
 		/* TODO: need to handle this case at some point */
-		log("channel_limit(): WARNING: TS was equal, but different value");
+		log
+		    ("channel_limit(): WARNING: TS was equal, but different value");
 	    }
 	}
     }

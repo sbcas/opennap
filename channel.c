@@ -446,7 +446,7 @@ HANDLER (channel_op)
 	return;
     }
     schan = next_arg (&pkt);
-    if (!schan)
+    if (!schan || !pkt)
     {
 	unparsable (con);
 	return;
@@ -457,8 +457,7 @@ HANDLER (channel_op)
 	nosuchchannel (con);
 	return;
     }
-    if (pkt)
-	pass_message_args (con, tag, ":%s %s %s", sender, chan->name, pkt);
+    pass_message_args (con, tag, ":%s %s %s", sender, chan->name, pkt);
     while (pkt)
     {
 	suser = next_arg (&pkt);
@@ -482,14 +481,16 @@ HANDLER (channel_op)
 		    {
 			chanUser = find_chanuser (chan->users, user);
 			if (chanUser)
+			{
+			    if (ISUSER (user->con))
+				send_cmd (user->con, MSG_SERVER_NOSUCH,
+					"%s removed you as operator on channel %s",
+					sender, chan->name);
 			    chanUser->flags &= ~ON_OPERATOR;
-			if (ISUSER (user->con))
-			    send_cmd (user->con, MSG_SERVER_NOSUCH,
-				      "%s removed you as operator on channel %s",
-				      sender, chan->name);
-			notify_ops (chan,
+			    notify_ops (chan,
 				    "%s removed %s as operator on channel %s",
 				    sender, user->nick, chan->name);
+			}
 		    }
 		}
 		break;		/* present */
@@ -503,16 +504,17 @@ HANDLER (channel_op)
 	    if (user)
 	    {
 		chanUser = find_chanuser (chan->users, user);
-		if (ISUSER (user->con))
-		    send_cmd (user->con, MSG_SERVER_NOSUCH,
-			      "%s set you as operator on channel %s",
-			      sender, chan->name);
-		notify_ops (chan, "%s set %s as operator on channel %s",
-			    sender, user->nick, chan->name);
-		/* only do the following if the user is in the channel */
-		/* do this here so the user doesn't get the message twice */
-		if (chanUser)
+		if(chanUser)
+		{
+		    if (ISUSER (user->con))
+			send_cmd (user->con, MSG_SERVER_NOSUCH,
+				"%s set you as operator on channel %s",
+				sender, chan->name);
+		    notify_ops (chan, "%s set %s as operator on channel %s",
+			    sender, suser, chan->name);
+		    /* do this here so the user doesn't get the message twice */
 		    chanUser->flags |= ON_OPERATOR;
+		}
 	    }
 	    /* make sure we dump this channel to disk */
 	    chan->flags &= ~ON_CHANNEL_USER;

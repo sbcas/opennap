@@ -13,9 +13,8 @@
 #include "opennap.h"
 #include "debug.h"
 
-static char *User_Levels[] = { "ERROR", "BAN", "CHANGE", "CHANNEL",
-    "KILL", "LEVEL", "SERVER", "MUZZLE", "PORT", "TOPIC", "WALLOP",
-    "CLOAK", ""
+static char *User_Levels[] = { "ERROR", "BAN", "CHANGE",
+    "KILL", "LEVEL", "SERVER", "MUZZLE", "PORT", "WALLOP", "CLOAK", ""
 };
 
 
