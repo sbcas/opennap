@@ -35,8 +35,8 @@ HANDLER (download)
 
     /* peek at the message type since we use this for both 203 and 500 */
     memcpy (&msg, con->recvhdr + 2, 2);
-#if __BYTE_ORDER == __BIG_ENDIAN
-    msg=bswap_16(msg);
+#if WORDS_BIGENDIAN
+    msg = BSWAP16 (msg);
 #endif
 
     /* make sure both parties are not firewalled

@@ -1,6 +1,7 @@
 AC_INIT(opennap.h)
 AM_INIT_AUTOMAKE(opennap,0.09)
 AM_PROG_CC_STDC
+AC_C_BIGENDIAN
 
 if test -d /usr/local/lib/mysql; then
 	MYSQLLIBDIR=/usr/local/lib/mysql

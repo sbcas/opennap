@@ -32,8 +32,8 @@ permission_denied (CONNECTION *con)
 void
 set_val (char *d, unsigned short val)
 {
-#if __BYTE_ORDER == __BIG_ENDIAN
-    val = bswap_16 (val);
+#if WORDS_BIGENDIAN
+    val = BSWAP16 (val);
 #endif
     memcpy (d, &val, 2);
 }

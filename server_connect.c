@@ -2,15 +2,15 @@
    This is free software distributed under the terms of the
    GNU Public License. */
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -86,7 +86,7 @@ HANDLER (server_connect)
 {
     char *fields[2];
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     CHECK_USER_CLASS ("server_connect");
 

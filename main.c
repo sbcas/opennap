@@ -2,14 +2,10 @@
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
-#include <sys/socket.h>
-#include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
-#include <arpa/inet.h>
 #include <stdarg.h>
 #include <errno.h>
 #include <ctype.h>
@@ -17,6 +13,10 @@
 #include <fcntl.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -203,11 +203,11 @@ handle_connection (CONNECTION *con)
     memcpy (&len, con->recvhdr, 2);
     memcpy (&tag, con->recvhdr + 2, 2);
 
-#if __BYTE_ORDER == __BIG_ENDIAN
+#if WORDS_BIGENDIAN
     /* need to convert to big endian */
-    len = bswap_16 (len);
-    tag = bswap_16 (tag);
-#endif
+    len = BSWAP16 (len);
+    tag = BSWAP16 (tag);
+#endif /* WORDS BIGENDIAN */
 
     /* make sure we don't buffer overflow */
     if (len > con->recvdatamax)
@@ -360,7 +360,11 @@ main (int argc, char **argv)
     fd_set set;
     struct sigaction sa;
     char *config_file = 0;
+#ifdef linux
     size_t sinsize;
+#else
+    int sinsize;
+#endif
     time_t next_update = 0;
     struct timeval t = { UPDATE_CLICK, 0 };
 

@@ -17,6 +17,8 @@ user and channel names are now case insensitive
 
 internal library size is now stored in kilobytes to avoid rounding errors
 
+endian checking was rewritten to be more portable
+
 Changes from 0.07
 =================
 
