@@ -506,7 +506,6 @@ int buffer_decompress (BUFFER *, z_streamp, char *, int);
 #endif
 int buffer_validate (BUFFER *);
 void cancel_search (CONNECTION * con);
-int check_accept (CONNECTION *);
 int check_ban (CONNECTION *, const char *, ban_t);
 int check_connect_status (int);
 void close_db (void);

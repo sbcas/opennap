@@ -70,6 +70,16 @@ HANDLER (login)
 	return;
     }
 
+    /* enforce maximum local users */
+    if (con->class == CLASS_UNKNOWN && Num_Clients >= Max_Connections)
+    {
+	log ("login(): max_connections (%d) reached", Max_Connections);
+	send_cmd (con, MSG_SERVER_ERROR,
+		  "This server is full (%d connections)", Max_Connections);
+	con->destroy = 1;
+	return;
+    }
+
     ac = split_line (av, FIELDS (av), pkt);
 
     if ((tag == MSG_CLIENT_LOGIN && ac < 5) ||

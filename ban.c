@@ -220,20 +220,3 @@ check_ban (CONNECTION *con, const char *target, ban_t type)
     }
     return 0;
 }
-
-int
-check_accept (CONNECTION * cli)
-{
-
-    ASSERT (validate_connection (cli));
-    /* check for max connections */
-    if (Num_Clients >= Max_Connections)
-    {
-	log ("check_accept: max connections reached (%d)", Max_Connections);
-	send_cmd (cli, MSG_SERVER_ERROR,
-		  "Server is full: %d local connections", Num_Clients);
-	cli->destroy = 1;
-	return 0;
-    }
-    return((check_ban(cli, cli->host, BAN_IP)==0));
-}

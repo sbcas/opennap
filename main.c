@@ -192,7 +192,7 @@ accept_connection (int s)
 	    return;
 	set_nonblocking (f);
 	set_keepalive (f, 1);	/* enable tcp keepalive messages */
-	check_accept (cli);
+	check_ban (cli, cli->host, BAN_IP);
     }
     /* not reached */
     ASSERT (0);
