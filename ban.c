@@ -221,6 +221,12 @@ check_ban (CONNECTION * con, const char *target, ban_t type)
 			     target, my_ntoa (con->ip), NONULL (ban->reason));
 	    if (con->class == CLASS_UNKNOWN)
 		con->destroy = 1;
+	    else if (ISSERVER (con) && type == BAN_USER)
+	    {
+		/* issue a kill to remove this banned user */
+		pass_message_args(con,MSG_CLIENT_BAN,":%s %s banned user",
+			Server_Name, target);
+	    }
 	    return 1;
 	}
     }
