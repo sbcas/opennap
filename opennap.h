@@ -135,6 +135,7 @@ struct _connection
     unsigned short flags;	/* flags for the connection */
     int fd;			/* socket for this connection */
     unsigned long ip;
+    unsigned int port;		/* remote port */
     char *host;			/* host from which this connection originates */
     CLASS class;		/* type of connection, server or client */
     USER *user;			/* pointer to the user associated with this

@@ -134,6 +134,10 @@ buffer_consume (BUFFER *b, int n)
 {
     ASSERT (buffer_validate (b));
     ASSERT (b->consumed + n <= b->datasize);
+    if (b->consumed + n > b->datasize)
+    {
+	ASSERT (0);
+    }
     b->consumed += n;
     if (b->consumed >= b->datasize)
     {

@@ -114,7 +114,7 @@ HANDLER (login)
     {
 	/* save the ip address of this client */
 	user->host = con->ip;
-	/* user->conport = con->port; */
+	user->conport = con->port;
 	user->server = STRDUP (Server_Name);
 
 	/* pass this information to our peer servers */

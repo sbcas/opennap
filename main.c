@@ -32,6 +32,7 @@ char *Db_Host = 0;
 char *Db_Name = 0;
 char *Server_Name = 0;
 char *Server_Pass = 0;
+unsigned long Server_Ip = 0;
 unsigned long Server_Flags = 0;
 int Max_User_Channels;		/* default, can be changed in config */
 int Stat_Click;			/* interval (in seconds) to send server stats */
@@ -197,7 +198,7 @@ HANDLER (dispatch_command)
 	    ("dispatch_command(): unknown message: tag=%hu, length=%hu, data=%s",
 	     tag, len,
 	     len ? (char *) con->recvbuf->data +
-	     con->recvbuf->consumed : "(empty)");
+	     con->recvbuf->consumed + 4 : "(empty)");
 
 	send_cmd (con, MSG_SERVER_NOSUCH, "unknown command code %hu", tag);
     }
@@ -308,7 +309,10 @@ lookup_hostname (void)
     gethostname (Buf, sizeof (Buf));
     he = gethostbyname (Buf);
     if (he)
+    {
 	Server_Name = STRDUP (he->h_name);
+	Server_Ip = *(unsigned long *)he->h_addr_list[0];
+    }
     else
     {
 	log ("unable to find fqdn for %s", Buf);
@@ -608,11 +612,23 @@ main (int argc, char **argv)
 
 		cli = new_connection ();
 		cli->fd = f;
-		cli->ip = sin.sin_addr.s_addr;
-		cli->host = STRDUP (inet_ntoa (sin.sin_addr));
+		log ("main(): connection from %s, port %d",
+			inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
+		/* if we have a local connection, use the external
+		   interface so others can download from them */
+		if (sin.sin_addr.s_addr == inet_addr ("127.0.0.1"))
+		{
+		    log ("main(): connected via loopback, using external ip");
+		    cli->ip = Server_Ip;
+		    cli->host = STRDUP (Server_Name);
+		}
+		else
+		{
+		    cli->ip = sin.sin_addr.s_addr;
+		    cli->host = STRDUP (inet_ntoa (sin.sin_addr));
+		}
+		cli->port = ntohs (sin.sin_port);
 		cli->class = CLASS_UNKNOWN;
-		log ("main(): connection from %s, port %d", cli->host,
-		     sin.sin_port);
 		add_client (cli);
 
 		set_nonblocking (f);
