@@ -180,10 +180,10 @@ struct _connection
 				   remove it from inside a handler, so we mark
 				   it here and have it removed at a later time 
 				   when it is safe */
-    unsigned int class : 2;	/* connection class (unknown, user, server) */
-    unsigned int compress : 4;	/* compression level for this connection */
     unsigned int server_login : 1;	/* server login in progress */
-    unsigned int xxx : 7;	/* unused */
+    unsigned int compress : 4;	/* compression level for this connection */
+    unsigned int class : 2;	/* connection class (unknown, user, server) */
+    unsigned int xxx : 6;	/* unused */
 };
 
 /* hotlist entry */

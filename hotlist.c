@@ -112,7 +112,10 @@ void
 free_hotlist (HOTLIST *h)
 {
     ASSERT (validate_hotlist (h));
-    FREE (h->nick);
+    ASSERT (h->users == 0);	/* shouldnt free this entry unless there are
+				   no users left.  this will cause a harmless
+				   assertion when cleaning up, however */
     list_free (h->users, 0);
+    FREE (h->nick);
     FREE (h);
 }
