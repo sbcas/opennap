@@ -14,12 +14,11 @@
 /* [ :<nick> ] <user> <level> */
 HANDLER (level)
 {
-    char *sender = 0, *fields[2];
+    char *sender, *fields[2];
     USER *user;
     int level, ac;
     USERDB *db;
 
-    (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
 
@@ -44,111 +43,127 @@ HANDLER (level)
 	    return;
 	}
     }
+    else
+	sender = con->user->nick;
 
     if ((ac = split_line (fields, FIELDS (fields), pkt)) != 2)
     {
-	log ("level(): malformed client request");
+	log ("level(): malformed request");
 	print_args (ac, fields);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of parameters");
+	unparsable (con);
 	return;
     }
 
-    user = hash_lookup (Users, fields[0]);
-    if (!user)
-    {
-	if (ISUSER (con))
-	    nosuchuser (con, fields[0]);
-	log ("level(): user synch error, can't locate user %s", fields[0]);
-	return;
-    }
-    ASSERT (validate_user (user));
     if ((level = get_level (fields[1])) == -1)
     {
-	log ("level(): tried to set %s to unknown level %s",
-	     user->nick, fields[1]);
+	log ("level(): unknown level %s", fields[1]);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "%s: invalid level", fields[1]);
 	return;
     }
-    if (user->level == level)
+
+    /* dont allow a user to set another user to a level higher than their
+       own */
+    if (ISUSER (con) && con->user->level < LEVEL_ELITE &&
+	level >= con->user->level)
     {
-	log ("level(): %s is already level %s", user->nick, Levels[level]);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is already level %s.",
-		    user->nick, Levels[level]);
+	permission_denied (con);
 	return;
     }
-    /* check for privilege */
-    if (ISUSER (con))
+
+    if ((user = hash_lookup (Users, fields[0])))
     {
-	ASSERT (validate_user (con->user));
-	if (con->user->level < LEVEL_ELITE &&
-	    /* don't allow change to a higher level than the issuer */
-	    (level >= con->user->level ||
-	     /* allow users to change themself to a lower level */
-	     (con->user != user && user->level >= con->user->level)))
+	/* user is logged in */
+	ASSERT (validate_user (user));
+	if (ISUSER (con) && user->level >= con->user->level)
 	{
-	    log ("level(): %s tried to set %s to level %s", con->user->nick,
-		user->nick, Levels[level]);
 	    permission_denied (con);
 	    return;
 	}
-	sender = con->user->nick;
+	if (user->level == level)
+	{
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already %s",
+			  user->nick, Levels[level]);
+	    return;
+	}
+	if (ISUSER (user->con))
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		      "%s changed your user level to %s (%d)",
+		      sender, Levels[level], level);
+	/* delay setting user->level until after the notify_mods() call */
     }
 
-    /* relay to peer servers */
-    pass_message_args (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s",
-		       sender, user->nick, Levels[level]);
-
-    notify_mods (LEVELLOG_MODE, "%s set %s's user level to %s (%d).", sender, user->nick,
-		 Levels[level], level);
-
-    /* we set this after the notify_mods so that the user being changed
-       doesnt get notified twice */
-    user->level = level;
-
-    if (user->local)
+    if ((db = hash_lookup (User_Db, fields[0])))
     {
-	/* notify the user of their change in status */
-	send_cmd (user->con, MSG_SERVER_NOSUCH,
-		  "%s changed your user level to %s (%d).",
-		  sender, Levels[user->level], user->level);
-    }
-
-    log ("level(): %s set %s's user level to %s", sender, user->nick,
-	 Levels[user->level]);
-
-    /* if this is a registered nick, update our db so this change is
-       persistent */
-    db = hash_lookup (User_Db, user->nick);
-    if (db)
-    {
-	log ("level(): updated level in user database");
+	/* registered nick */
+	if (ISUSER (con) && con->user->level <= db->level)
+	{
+	    ASSERT (user == 0);
+	    permission_denied (con);
+	    return;
+	}
+	if (db->level == level)
+	{
+	    ASSERT (user == 0 || user->level == db->level);
+	    if (user)
+		user->level = db->level;	/* just to be safe */
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already %s",
+			  db->nick, Levels[level]);
+	    return;
+	}
 	db->level = level;
     }
-    else
+    else if (user)
     {
-	char email[64];
-
-	/* no local user db entry.  this nick probably should be registered */
-	log ("level(): %s is not registered, creating entry", user->nick);
+	/* create a db entry for it now.  we already checked for permission
+	   above so don't do it here */
 	db = CALLOC (1, sizeof (USERDB));
-	if (!db)
+	if (db)
+	{
+	    db->nick = STRDUP (user->nick);
+	    db->password = generate_pass (user->pass);
+	    snprintf (Buf, sizeof (Buf), "anon@%s", Server_Name);
+	    db->email = STRDUP (Buf);
+	    db->level = level;
+	    db->created = Current_Time;
+	    db->lastSeen = Current_Time;
+	}
+	if (!db || !db->nick || !db->email || !db->password)
 	{
 	    OUTOFMEMORY ("level");
 	    return;
 	}
-	db->nick = STRDUP (user->nick);
-	db->password = generate_pass (user->pass);
-	db->level = user->level;
-	snprintf (email, sizeof (email), "anon@%s", Server_Name);
-	db->email = STRDUP (email);
-	/* we use the current time.  this should be ok since if we ever try
-	   to propogate this entry the server(s) with older entries will
-	   override this one and update our entry */
-	db->created = Current_Time;
-	db->lastSeen = Current_Time;
-	hash_add (User_Db, db->nick, db);
+	if (hash_add (User_Db, db->nick, db))
+	{
+	    log("level(): unable to add entry to hash table");
+	    userdb_free (db);	/* avoid memory leak */
+	}
     }
+    else
+    {
+	log ("level(): %s is not logged in or registered", fields[0]);
+	/* if not linked, error out here.  if we are linked, the user could
+	   be registered on another server so we just pass the request
+	   along */
+	if (!Servers)
+	{
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		      "%s is not logged in or registered", fields[0]);
+	    return;
+	}
+    }
+
+    pass_message_args (con, tag, ":%s %s %s", sender, fields[0], Levels[level]);
+
+    notify_mods (LEVELLOG_MODE, "%s changed %s's user level to %s (%d)",
+		 sender, fields[0], Levels[level], level);
+
+    /* we set this after the notify_mods so that the user being changed
+       doesnt get notified twice */
+    if (user)
+	user->level = level;
+
+    log ("level(): %s changed %s's user level to %s", sender, fields[0], Levels[level]);
 }

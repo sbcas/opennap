@@ -530,7 +530,7 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    n = atoi (av[i + 1]);
 	    if (!strcasecmp ("at least", av[i]))
 		parms.minspeed = n;
-	    else if (!strcasecmp ("at most", av[i]))
+	    else if (!strcasecmp ("at best", av[i]))
 		parms.maxspeed = n;
 	    else if (!strcasecmp ("equal to", av[i]))
 		parms.minspeed = parms.maxspeed = n;

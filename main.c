@@ -384,6 +384,13 @@ main (int argc, char **argv)
 	/* listen on port 8889 for stats reporting */
 	if ((sp = new_tcp_socket ()) == -1)
 	    exit (1);
+	i = 1;
+	if (setsockopt (sp, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST & i, sizeof (i))
+	    != 0)
+	{
+	    perror ("setsockopt");
+	    exit (1);
+	}
 	if (bind_interface (sp, Interface, 8889))
 	    exit (1);
 	if (listen (sp, BACKLOG))

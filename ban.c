@@ -231,10 +231,11 @@ check_ban (CONNECTION * con, const char *target, ban_t type)
 	{
 	    log ("check_ban(): %s is banned: %s", ban->target,
 		 NONULL (ban->reason));
-	    send_cmd (con,
-		      (type == BAN_IP) ? MSG_SERVER_ERROR : MSG_SERVER_NOSUCH,
-		      "You are banned from this server: %s",
-		      NONULL (ban->reason));
+	    if (ISUNKNOWN (con))
+		send_cmd (con,
+			  (type == BAN_IP) ? MSG_SERVER_ERROR : MSG_SERVER_NOSUCH,
+			  "You are banned from this server: %s",
+			  NONULL (ban->reason));
 	    if (type == BAN_IP)
 		notify_mods
 		    (BANLOG_MODE, "Connection attempt from banned hosts %s (%s): %s",
@@ -248,7 +249,7 @@ check_ban (CONNECTION * con, const char *target, ban_t type)
 	    {
 		/* issue a kill to remove this banned user */
 		pass_message_args(con,MSG_CLIENT_BAN,":%s %s banned user",
-			Server_Name, target);
+				  Server_Name, target);
 	    }
 	    return 1;
 	}
