@@ -379,7 +379,7 @@ generate_qualifier (char *d, int dsize, char *attr, int min, int max,
 	snprintf (d, dsize, " %s \"%s\" %d",
 		  attr, (min == max) ? "EQUAL TO" : "AT LEAST", min);
     else if (max < hardmax)
-	snprintf (d, dsize, "BITRATE \"AT MOST\" %d", max);
+	snprintf (d, dsize, " %s \"AT MOST\" %d", attr, max);
 }
 
 #define MAX_SPEED 10
@@ -462,7 +462,7 @@ static void
 search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 {
     char *av[32];
-    int ac, i, n, max_results = Max_Search_Results, done = 1;
+    int ac, i, n, max_results = Max_Search_Results, done = 1, local = 0;
     LIST *tokens = 0;
     SEARCH parms;
 
@@ -610,6 +610,11 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    }
 	    i++;
 	}
+	else if (!strcasecmp("local",av[i]))
+	{
+	    i++;
+	    local=1;/* only search for files from users on the same server */
+	}
 	else
 	{
 	    log ("search(): unknown search field: %s", av[i]);
@@ -621,7 +626,7 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 
     n = fdb_search (File_Table, tokens, max_results, search_callback, &parms);
 
-    if ((n < max_results) &&
+    if ((n < max_results) && !local &&
 	((ISSERVER (con) && list_count (Servers) > 1) ||
 	 (ISUSER (con) && Servers)))
     {
