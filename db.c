@@ -45,7 +45,7 @@ init_db (void)
 
     /* create the library table */
     snprintf (Buf, sizeof (Buf),
-	      "CREATE TABLE library (owner VARCHAR(32) NOT NULL, filename VARCHAR(255) NOT NULL, size INT UNSIGNED, md5 VARCHAR(48), bitrate INT UNSIGNED, freq INT UNSIGNED, time INT UNSIGNED, linespeed INT UNSIGNED), PRIMARY KEY (owner, filename)");
+	      "CREATE TABLE library (owner VARCHAR(15) NOT NULL, filename VARCHAR(240) NOT NULL, size INT UNSIGNED, md5 VARCHAR(48), bitrate INT UNSIGNED, freq INT UNSIGNED, time INT UNSIGNED, linespeed INT UNSIGNED, PRIMARY KEY (owner, filename))");
 
     if (mysql_query (Db, Buf) != 0)
     {

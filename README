@@ -1,6 +1,6 @@
 opennap - the open source napster server
 ========================================
-Last updated January 24, 2000
+Last updated January 26, 2000
 
 * For a description of the napster protocol, please see the file 'napster.txt'
   included with this distribution.
@@ -58,7 +58,7 @@ Last updated January 24, 2000
 
 	* Local accounts table
 
-		CREATE TABLE accounts (nick VARCHAR(32), password VARCHAR(32),
+		CREATE TABLE accounts (nick VARCHAR(15), password VARCHAR(32),
 			level VARCHAR(9));
 
 		This table is for local servers to set the default level
@@ -77,8 +77,8 @@ Last updated January 24, 2000
 
 	* Library table
 
-		CREATE TABLE library (owner VARCHAR(32) NOT NULL,
-			filename VARCHAR(256) NOT NULL,
+		CREATE TABLE library (owner VARCHAR(15) NOT NULL,
+			filename VARCHAR(240) NOT NULL,
 			size INT UNSIGNED, md5 CHAR(48), bitrate INT UNSIGNED,
 			freq INT UNSIGNED, duration INT UNSIGNED,
 			linespeed INT UNSIGNED, PRIMARY KEY (owner,
