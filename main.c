@@ -34,6 +34,7 @@ char *Db_Host = 0;
 char *Db_Name = 0;
 char *Server_Name = 0;
 char *Server_Pass = 0;
+unsigned long Server_Flags = 0;
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;
@@ -89,23 +90,6 @@ HANDLER (server_stats)
     (void) pkt;
     send_cmd (con, MSG_SERVER_STATS, "%d %d %d", Users->dbsize, Num_Files,
 	      Num_Gigs / (1024 * 1024));
-}
-
-static void
-usage (void)
-{
-    fprintf (stderr,
-	     "usage: %s [ -c <config-file> ] [ -hv ] [ -p <port> ] \n",
-	     PACKAGE);
-    exit (0);
-}
-
-static void
-version (void)
-{
-    fprintf (stderr, "%s %s\n", PACKAGE, VERSION);
-    fprintf (stderr, "Copyright (C) 2000 drscholl@users.sourceforge.net\n");
-    exit (0);
 }
 
 typedef struct
@@ -374,6 +358,28 @@ ip_glob_match (const char *pattern, const char *ip)
 	return ((strcmp (pattern, ip) == 0));
 }
 
+static void
+usage (void)
+{
+    fprintf (stderr,
+	     "usage: %s [ -hsv ] [ -c FILE ] [ -p PORT ] \n",
+	     PACKAGE);
+    fprintf (stderr, "  -c FILE	read config from FILE (default: %s/config\n", SHAREDIR);
+    fputs ("  -h		print this help message\n", stderr);
+    fputs ("  -p PORT	listen on PORT for connections (default: 8888)\n", stderr);
+    fputs ("  -s		channels may only be created by privileged users\n", stderr);
+    fputs ("  -v		display version information\n", stderr);
+    exit (0);
+}
+
+static void
+version (void)
+{
+    fprintf (stderr, "%s %s\n", PACKAGE, VERSION);
+    fprintf (stderr, "Copyright (C) 2000 drscholl@users.sourceforge.net\n");
+    exit (0);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -390,8 +396,6 @@ main (int argc, char **argv)
     time_t next_update = 0;
     struct timeval t = { UPDATE_CLICK, 0 };
 
-    log ("version %s starting", VERSION);
-
     while ((n = getopt (argc, argv, "c:hp:v")) != EOF)
     {
 	switch (n)
@@ -402,6 +406,9 @@ main (int argc, char **argv)
 	case 'p':
 	    port = atoi (optarg);
 	    break;
+	case 's':
+	    Server_Flags |= OPTION_STRICT_CHANNELS;
+	    break;
 	case 'v':
 	    version ();
 	    break;
@@ -410,6 +417,8 @@ main (int argc, char **argv)
 	    usage ();
 	}
     }
+
+    log ("version %s starting", VERSION);
 
     /* load default configuration values */
     defaults();

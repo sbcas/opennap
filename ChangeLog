@@ -34,6 +34,10 @@ server now notifies clients when login() sets their userlevel
 add_hotlist should immediately notify a client of a logged in user,
 otherwise the client won't see them
 
+clients may only join 5 channels at a time
+
+added -s option to allow only privileged users to create channels
+
 Changes from 0.07
 =================
 

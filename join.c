@@ -23,12 +23,31 @@ HANDLER (join)
 	return;
     ASSERT (validate_user (user));
 
+    /* enforce a maximum of 5 channels per user */
+    if (user->numchannels > 4)
+    {
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		"maximum number of channels is 5.");
+	return;
+    }
+
     chan = hash_lookup (Channels, pkt);
     if (!chan)
     {
+	/* check if this server allows normals to create channels */
+	if (Server_Flags & OPTION_STRICT_CHANNELS)
+	{
+	    if (con->class == CLASS_USER)
+		permission_denied (con);
+	    return;
+	}
 	chan = new_channel ();
 	chan->name = STRDUP (pkt);
 	chan->created = time (0);
+	snprintf (Buf, sizeof (Buf), "Welcome to the %s channel.",
+	    chan->name);
+	chan->topic = STRDUP (Buf);
 	hash_add (Channels, chan->name, chan);
 	log ("join(): creating channel %s", chan->name);
     }
@@ -39,7 +58,7 @@ HANDLER (join)
 	{
 	    if (user->channels[i] == chan)
 	    {
-		log("user %s is already on channel %s", user->nick,
+		log ("user %s is already on channel %s", user->nick,
 		    chan->name);
 		return;
 	    }
@@ -101,7 +120,7 @@ HANDLER (join)
 	send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST_END, "%s", chan->name);
 
 	/* send channel topic */
-	send_cmd (con, MSG_SERVER_TOPIC, "%s %s",
-		  chan->name, chan->topic ? chan->topic : "no topic set");
+	ASSERT (chan->topic != 0);
+	send_cmd (con, MSG_SERVER_TOPIC, "%s %s", chan->name, chan->topic);
     }
 }

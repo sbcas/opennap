@@ -266,6 +266,9 @@ extern char *Server_Pass;
 extern int Server_Port;
 extern int SigCaught;	/* flag to control main loop */
 
+extern unsigned long Server_Flags;
+#define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
+
 extern char Buf[1024];
 
 extern CONNECTION **Clients;	/* locally connected clients */
