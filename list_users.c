@@ -46,10 +46,12 @@ HANDLER (list_users)
     send_cmd (con, MSG_SERVER_NAMES_LIST_END /* 830 */ , "");
 }
 
-#define ON_ELITE 1
-#define ON_ADMIN 2
-#define ON_MODERATOR 4
-#define ON_LEECH 8
+#define ON_GFLAG_ELITE		1
+#define ON_GFLAG_ADMIN		2
+#define ON_GFLAG_MODERATOR	4
+#define ON_GFLAG_LEECH		8
+#define ON_GFLAG_MUZZLED	16
+#define ON_GFLAG_CLOAKED	32
 
 struct guldata
 {
@@ -65,18 +67,20 @@ global_user_list_cb (USER * user, struct guldata *data)
     ASSERT (data != 0);
     if (data->flags)
     {
-	/* selectively display users based on user level */
-	if (!(((data->flags & ON_ADMIN) && user->level == LEVEL_ADMIN) ||
-	      ((data->flags & ON_ELITE) && user->level == LEVEL_ELITE) ||
-	      ((data->flags & ON_MODERATOR) && user->level == LEVEL_MODERATOR)
-	      || ((data->flags & ON_LEECH) && user->level == LEVEL_LEECH)))
+	/* selectively display users based on user level/muzzle/cloak */
+	if (!(((data->flags & ON_GFLAG_ADMIN) && user->level == LEVEL_ADMIN) ||
+		    ((data->flags & ON_GFLAG_ELITE) && user->level == LEVEL_ELITE) ||
+		    ((data->flags & ON_GFLAG_MODERATOR) && user->level == LEVEL_MODERATOR) ||
+		    ((data->flags & ON_GFLAG_LEECH) && user->level == LEVEL_LEECH) ||
+		    ((data->flags & ON_GFLAG_MUZZLED) && user->muzzled) ||
+		    ((data->flags & ON_GFLAG_CLOAKED) && user->cloaked)))
 	    return;
     }
     if (data->server && *data->server != '*' &&
-	strcasecmp (data->server, user->server) != 0)
+	    strcasecmp (data->server, user->server) != 0)
 	return;			/* no match */
     send_cmd (data->con, MSG_SERVER_GLOBAL_USER_LIST, "%s %s", user->nick,
-	      my_ntoa (user->host));
+	    my_ntoa (user->host));
 }
 
 /* 831 [server] [flags] */
@@ -102,16 +106,22 @@ HANDLER (global_user_list)
 	    switch (*pkt)
 	    {
 	    case 'e':
-		data.flags |= ON_ELITE;
+		data.flags |= ON_GFLAG_ELITE;
 		break;
 	    case 'a':
-		data.flags |= ON_ADMIN;
+		data.flags |= ON_GFLAG_ADMIN;
 		break;
 	    case 'm':
-		data.flags |= ON_MODERATOR;
+		data.flags |= ON_GFLAG_MODERATOR;
 		break;
 	    case 'l':
-		data.flags |= ON_LEECH;
+		data.flags |= ON_GFLAG_LEECH;
+		break;
+	    case 'z':
+		data.flags |= ON_GFLAG_MUZZLED;
+		break;
+	    case 'c':
+		data.flags |= ON_GFLAG_CLOAKED;
 		break;
 	    }
 	    pkt++;
