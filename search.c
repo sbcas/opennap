@@ -202,7 +202,8 @@ fdb_search (HASH *table,
 	return;	/* no matches */
     log ("fdb_search(): bin contains %d files", flist->count);
     /* find the list of files which contain all search tokens */
-    for (ptok = flist->list; ptok; ptok = ptok->next)
+    ptok = flist->list;
+    while (ptok)
     {
 	d = (DATUM *) ptok->data;
 	/* see if this entry is still valid */
@@ -215,12 +216,15 @@ fdb_search (HASH *table,
 		flist->list = ptok->next;
 	    }
 	    else
-	    {
 		last->next = ptok->next;
-	    }
 	    /* don't free the whole list! */
 	    ptok->next = 0;
 	    list_free (ptok, (list_destroy_t) free_datum);
+	    if (!last)
+	    {
+		ptok = flist->list;
+		continue;
+	    }
 	    ptok = last; /* reset */
 	}
 	else if (token_compare (tokens, d->tokens))
@@ -235,6 +239,7 @@ fdb_search (HASH *table,
             }
         }
 	last = ptok;
+	ptok = ptok->next;
     }
 }
 
