@@ -225,18 +225,21 @@ HANDLER (kill_server)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
+    ASSERT(pkt!=0);
     if (pop_user (con, &pkt, &user) != 0)
 	return;
     ASSERT (validate_user (user));
     if (user->level < LEVEL_ELITE)
     {
-	log ("kill_server(): %s attempted to kill the server", user->nick);
-	if (con->class == CLASS_USER)
-	    permission_denied (con);
+	permission_denied (con);
 	return;
     }
     server = next_arg (&pkt);
-
+    if(!server)
+    {
+	unparsable(con);
+	return;
+    }
     pass_message_args (con, MSG_CLIENT_KILL_SERVER, ":%s %s %s",
 		       user->nick, server, NONULL (pkt));
     notify_mods (SERVERLOG_MODE, "%s killed server %s: %s", user->nick, server, NONULL (pkt));

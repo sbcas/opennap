@@ -233,7 +233,9 @@ int
 pop_user (CONNECTION * con, char **pkt, USER ** user)
 {
     ASSERT (validate_connection (con));
-    if (con->class == CLASS_SERVER)
+    ASSERT(pkt!=0 && *pkt != 0);
+    ASSERT(user!=0);
+    if (ISSERVER (con))
     {
 	char *ptr;
 
