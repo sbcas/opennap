@@ -13,6 +13,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <sys/time.h>
 #include <sys/resource.h>
 #endif /* !WIN32 */
 #include "opennap.h"
