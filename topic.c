@@ -14,17 +14,15 @@
 #include "debug.h"
 
 /* topic for channel has changed */
-/* [ :<nick> ] <channel> <topic> */
+/* [ :<nick> ] <channel> [ <topic> ] */
 
 HANDLER (topic)
 {
     CHANNEL *chan;
     int l;
-    USER *chanUser;
     char *chanName, *nick;
     LIST *list;
 
-    (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
 
@@ -43,24 +41,11 @@ HANDLER (topic)
     {
 	ASSERT (ISUSER (con));
 	ASSERT (validate_user (con->user));
-
-	/* check to make sure this user has privilege to change topic */
-	if (con->user->level < LEVEL_MODERATOR)
-	{
-	    log ("topic(): %s has no privilege", con->user->nick);
-	    return;
-	}
 	nick = con->user->nick;
     }
 
     /* don't use split line because the topic could be multi-word */
     chanName = next_arg (&pkt);
-    if (!pkt)
-    {
-	log ("topic(): malformed request");
-	return;
-    }
-
     chan = hash_lookup (Channels, chanName);
     if (!chan)
     {
@@ -76,31 +61,41 @@ HANDLER (topic)
 	return;
     }
 
-    if (chan->topic)
-	FREE (chan->topic);
-    if (!(chan->topic = STRDUP (pkt)))
+    if (pkt)
     {
-	OUTOFMEMORY ("topic");
-	return;
+	/* check to make sure this user has privilege to change topic */
+	if (ISUSER (con) && con->user->level < LEVEL_MODERATOR)
+	{
+	    log ("topic(): %s has no privilege", con->user->nick);
+	    permission_denied (con);
+	    return;
+	}
+	if (chan->topic)
+	    FREE (chan->topic);
+	if (!(chan->topic = STRDUP (pkt)))
+	{
+	    OUTOFMEMORY ("topic");
+	    return;
+	}
+	/* relay to peer servers */
+	pass_message_args (con, tag, ":%s %s %s", nick, chan->name, chan->topic);
+
+	l = form_message (Buf, sizeof (Buf), tag, "%s %s", chan->name, chan->topic);
+	for (list = chan->users; list; list = list->next)
+	{
+#define chanUser ((USER*)list->data)
+	    if (chanUser->local)
+		queue_data (chanUser->con, Buf, l);
+	}
     }
-
-    /* relay to peer servers */
-    pass_message_args (con, MSG_SERVER_TOPIC, ":%s %s %s",
-		       nick, chan->name, chan->topic);
-
-    /* notify the rest of the channel of the topic change. there should
-       probably be another message type which contains the nick who changed
-       the topic. */
-    set_tag (Buf, MSG_SERVER_TOPIC);
-    snprintf (Buf + 4, sizeof (Buf) - 4, "%s %s", chan->name, chan->topic);
-    l = strlen (Buf + 4);
-    set_len (Buf, l);
-    l += 4;
-
-    for (list = chan->users; list; list = list->next)
+    else if (ISUSER (con))
     {
-	chanUser = list->data;
-	if (chanUser->local)
-	    queue_data (chanUser->con, Buf, l);
+	/* return the current topic */
+	send_cmd (con, tag, "%s %s", chan->name, chan->topic);
+    }
+    else
+    {
+	ASSERT (ISSERVER (con));
+	log ("topic(): error, server %s requested topic", con->host);
     }
 }

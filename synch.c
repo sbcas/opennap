@@ -76,7 +76,21 @@ sync_server_list (CONNECTION *con)
 {
     LIST *list;
     LINK *slink;
+    CONNECTION *serv;
 
+    /* sync local servers */
+    for (list = Servers; list; list = list->next)
+    {
+	serv = list->data;
+	if (serv != con)
+	{
+	    send_cmd (con, MSG_SERVER_LINK_INFO, "%s %d %s %d 1",
+		Server_Name, get_local_port (serv->fd),
+		serv->host, serv->port);
+	}
+    }
+
+    /* sync remote servers */
     for (list = Server_Links; list; list = list->next)
     {
 	slink = list->data;

@@ -25,7 +25,7 @@ typedef struct
 }
 DSEARCH;
 
-LIST *Remote_Search = 0;
+static LIST *Remote_Search = 0;
 
 /* parameters for searching */
 typedef struct
@@ -853,11 +853,4 @@ cancel_search (CONNECTION * con)
 	}
 	list = &(*list)->next;
     }
-#if 0
-    if (Remote_Search)
-    {
-	log ("cancel_search(): %d pending search requests",
-		list_count (Remote_Search));
-    }
-#endif
 }

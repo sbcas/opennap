@@ -76,70 +76,70 @@ HANDLER;
 /* this is the table of valid commands we accept from both users and servers
    THIS TABLE MUST BE SORTED BY MESSAGE TYPE */
 static HANDLER Protocol[] = {
-    {MSG_CLIENT_LOGIN, login},	/* 2 */
-    {MSG_CLIENT_LOGIN_REGISTER, login},	/* 6 */
+    {MSG_CLIENT_LOGIN, login},			/* 2 */
+    {MSG_CLIENT_LOGIN_REGISTER, login},		/* 6 */
     {MSG_CLIENT_REGISTER, register_nick},	/* 7 */
-    {MSG_CLIENT_ADD_FILE, add_file},	/* 100 */
+    {MSG_CLIENT_ADD_FILE, add_file},		/* 100 */
     {MSG_CLIENT_REMOVE_FILE, remove_file},	/* 102 */
-    {MSG_CLIENT_SEARCH, search},	/* 200 */
-    {MSG_CLIENT_DOWNLOAD, download},	/* 203 */
-    {MSG_CLIENT_PRIVMSG, privmsg},	/* 205 */
+    {MSG_CLIENT_SEARCH, search},		/* 200 */
+    {MSG_CLIENT_DOWNLOAD, download},		/* 203 */
+    {MSG_CLIENT_PRIVMSG, privmsg},		/* 205 */
     {MSG_CLIENT_ADD_HOTLIST, add_hotlist},	/* 207 */
     {MSG_CLIENT_ADD_HOTLIST_SEQ, add_hotlist},	/* 208 */
-    {MSG_CLIENT_BROWSE, browse},	/* 211 */
-    {MSG_SERVER_STATS, server_stats},	/* 214 */
+    {MSG_CLIENT_BROWSE, browse},		/* 211 */
+    {MSG_SERVER_STATS, server_stats},		/* 214 */
     {MSG_CLIENT_RESUME_REQUEST, resume},	/* 215 */
     {MSG_CLIENT_DOWNLOAD_START, download_start},	/* 218 */
     {MSG_CLIENT_DOWNLOAD_END, download_end},	/* 219 */
     {MSG_CLIENT_UPLOAD_START, upload_start},	/* 220 */
     {MSG_CLIENT_UPLOAD_END, upload_end},	/* 221 */
     {MSG_CLIENT_REMOVE_HOTLIST, remove_hotlist},	/* 303 */
-    {MSG_CLIENT_JOIN, join},	/* 400 */
-    {MSG_CLIENT_PART, part},	/* 401 */
-    {MSG_CLIENT_PUBLIC, public},	/* 402 */
-    {MSG_SERVER_PUBLIC, public},	/* 403 */
-    {MSG_SERVER_NOSUCH, server_error},	/* 404 */
-    {MSG_SERVER_TOPIC, topic},	/* 410 */
+    {MSG_CLIENT_JOIN, join},			/* 400 */
+    {MSG_CLIENT_PART, part},			/* 401 */
+    {MSG_CLIENT_PUBLIC, public},		/* 402 */
+    {MSG_SERVER_PUBLIC, public},		/* 403 */
+    {MSG_SERVER_NOSUCH, server_error},		/* 404 */
+    {MSG_SERVER_TOPIC, topic},			/* 410 */
     {MSG_CLIENT_DOWNLOAD_FIREWALL, download},	/* 500 */
-    {MSG_CLIENT_USERSPEED, user_speed},	/* 600 */
-    {MSG_CLIENT_WHOIS, whois}, /* 603 */
-    {MSG_CLIENT_SETUSERLEVEL, level},	/* 606 */
-    {MSG_SERVER_UPLOAD_REQUEST, upload_request},	/* 607 */
-    {MSG_CLIENT_UPLOAD_OK, upload_ok},	/* 608 */
-    {MSG_CLIENT_KILL, kill_user},	/* 610 */
-    {MSG_CLIENT_BAN, ban},	/* 612 */
+    {MSG_CLIENT_USERSPEED, user_speed},		/* 600 */
+    {MSG_CLIENT_WHOIS, whois},			/* 603 */
+    {MSG_CLIENT_SETUSERLEVEL, level},		/* 606 */
+    {MSG_SERVER_UPLOAD_REQUEST, upload_request},/* 607 */
+    {MSG_CLIENT_UPLOAD_OK, upload_ok},		/* 608 */
+    {MSG_CLIENT_KILL, kill_user},		/* 610 */
+    {MSG_CLIENT_BAN, ban},			/* 612 */
     {MSG_CLIENT_ALTER_PORT, alter_port},	/* 613 */
-    {MSG_CLIENT_UNBAN, unban},	/* 614 */
-    {MSG_CLIENT_BANLIST, banlist},	/* 615 */
+    {MSG_CLIENT_UNBAN, unban},			/* 614 */
+    {MSG_CLIENT_BANLIST, banlist},		/* 615 */
     {MSG_CLIENT_LIST_CHANNELS, list_channels},	/* 618 */
-    {MSG_CLIENT_LIMIT, queue_limit},	/* 619 */
-    {MSG_CLIENT_MOTD, show_motd},	/* 621 */
-    {MSG_CLIENT_MUZZLE, muzzle},	/* 622 */
-    {MSG_CLIENT_UNMUZZLE, unmuzzle},	/* 623 */
+    {MSG_CLIENT_LIMIT, queue_limit},		/* 619 */
+    {MSG_CLIENT_MOTD, show_motd},		/* 621 */
+    {MSG_CLIENT_MUZZLE, muzzle},		/* 622 */
+    {MSG_CLIENT_UNMUZZLE, unmuzzle},		/* 623 */
     {MSG_CLIENT_ALTER_SPEED, alter_speed},	/* 625 */
     {MSG_CLIENT_DATA_PORT_ERROR, data_port_error},	/* 626 */
-    {MSG_CLIENT_WALLOP, wallop},	/* 627 */
-    {MSG_CLIENT_ANNOUNCE, announce},	/* 628 */
+    {MSG_CLIENT_WALLOP, wallop},		/* 627 */
+    {MSG_CLIENT_ANNOUNCE, announce},		/* 628 */
     {MSG_CLIENT_CHANGE_SPEED, change_speed},	/* 700 */
     {MSG_CLIENT_CHANGE_PASS, change_pass},	/* 701 */
     {MSG_CLIENT_CHANGE_EMAIL, change_email},	/* 702 */
     {MSG_CLIENT_CHANGE_DATA_PORT, change_data_port},	/* 703 */
-    {MSG_CLIENT_PING, ping},	/* 751 */
-    {MSG_CLIENT_PONG, ping},	/* 752 */
+    {MSG_CLIENT_PING, ping},			/* 751 */
+    {MSG_CLIENT_PONG, ping},			/* 752 */
     {MSG_CLIENT_ALTER_PASS, alter_pass},	/* 753 */
     {MSG_CLIENT_SERVER_RECONFIG, server_reconfig},	/* 800 */
-    {MSG_CLIENT_SERVER_VERSION, server_version},	/* 801 */
+    {MSG_CLIENT_SERVER_VERSION, server_version},/* 801 */
     {MSG_CLIENT_SERVER_CONFIG, server_config},	/* 810 */
-    {MSG_CLIENT_EMOTE, emote},	/* 824 */
+    {MSG_CLIENT_EMOTE, emote},			/* 824 */
     {MSG_CLIENT_NAMES_LIST, list_users},	/* 830 */
 
     /* non-standard messages */
-    {MSG_CLIENT_QUIT, client_quit},	/* 10000 */
-    {MSG_SERVER_LOGIN, server_login},	/* 10010 */
+    {MSG_CLIENT_QUIT, client_quit},		/* 10000 */
+    {MSG_SERVER_LOGIN, server_login},		/* 10010 */
     {MSG_SERVER_LOGIN_ACK, server_login_ack},	/* 10011 */
     {MSG_SERVER_USER_SHARING, user_sharing},	/* 10012 */
-    {MSG_SERVER_USER_IP, user_ip},	/* 10013 */
-    {MSG_SERVER_REGINFO, reginfo},	/* 10014 */
+    {MSG_SERVER_USER_IP, user_ip},		/* 10013 */
+    {MSG_SERVER_REGINFO, reginfo},		/* 10014 */
     {MSG_SERVER_REMOTE_SEARCH, remote_search},	/* 10015 */
     {MSG_SERVER_REMOTE_SEARCH_RESULT, remote_search_result},	/* 10016 */
     {MSG_SERVER_REMOTE_SEARCH_END, remote_search_end},	/* 10017 */
@@ -150,7 +150,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_DISCONNECT, server_disconnect},	/* 10101 */
     {MSG_CLIENT_KILL_SERVER, kill_server},	/* 10110 */
     {MSG_CLIENT_REMOVE_SERVER, remove_server},	/* 10111 */
-    {MSG_CLIENT_LINKS, server_links},	/* 10112 */
+    {MSG_CLIENT_LINKS, server_links},		/* 10112 */
     {MSG_CLIENT_USAGE_STATS, server_usage},	/* 10115 */
     {MSG_CLIENT_REGISTER_USER, register_user},	/* 10200 */
     {MSG_CLIENT_CHANNEL_LEVEL, channel_level},	/* 10201 */
@@ -330,9 +330,6 @@ handle_connection (CONNECTION * con)
 	    }
 	    else if (n == 0)
 	    {
-#if 0
-		log ("handle_connection(): EOF from %s", con->host);
-#endif
 		con->destroy = 1;
 		return;
 	    }

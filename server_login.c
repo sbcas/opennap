@@ -278,20 +278,20 @@ HANDLER (server_login_ack)
 /* 10019 <server> <port> <peer> <peerport> <hops> */
 HANDLER (link_info)
 {
-    int ac;
+    int ac, port;
     char *av[5];
     LIST *list;
     LINK *slink;
 
     ASSERT (validate_connection (con));
+    CHECK_SERVER_CLASS ("link_info");
     (void) len;
     ac = split_line (av, FIELDS (av), pkt);
     if (ac != 5)
     {
 	log ("link_info(): wrong number of parameters");
 	print_args (ac, av);
-	send_cmd (con, MSG_SERVER_NOSUCH, "Wrong number of parameters [%d]",
-		  tag);
+	send_cmd (con, MSG_SERVER_NOSUCH, "Wrong number of parameters for command %d", tag);
 	return;
     }
     slink = CALLOC (1, sizeof (LINK));
@@ -305,9 +305,31 @@ HANDLER (link_info)
 	OUTOFMEMORY ("link_info");
 	goto error;
     }
-    slink->port = atoi (av[1]);
-    slink->peerport = atoi (av[3]);
+    port = atoi (av[1]);
+    if (port < 0 || port > 65535)
+    {
+	log ("link_info(): invalid port %d", port);
+	send_cmd (con, MSG_SERVER_NOSUCH, "Invalid port %d", port);
+	port = 0;
+    }
+    slink->port = port;
+    port = atoi (av[3]);
+    if (port < 0 || port > 65535)
+    {
+	log ("link_info(): invalid port %d", port);
+	send_cmd (con, MSG_SERVER_NOSUCH, "Invalid port %d", port);
+	port = 0;
+    }
+    slink->peerport = port;
     slink->hops = atoi (av[4]);
+    if (slink->hops < 0)
+    {
+	log ("link_info(): invalid hop count %d", slink->hops);
+	send_cmd (con, MSG_SERVER_NOSUCH, "Invalid hop count %d", slink->hops);
+	slink->hops = 1;	/* at least */
+    }
+    log ("link_info(): %s:%d -> %s:%d (%d hops away)",
+	slink->peer, slink->peerport, slink->server, slink->port, slink->hops);
     list = CALLOC (1, sizeof (LIST));
     if (!list)
     {
@@ -331,13 +353,12 @@ error:
     }
 }
 
-/* 10020 :<server> <server> [ "<reason>" ] */
+/* 10020 :<sender> <server>
+   <sender> is reporting that <server> has disconnected from the cluster */
 HANDLER (server_quit)
 {
-    LIST **list, *tmpList;
-    LINK *slink;
     int ac;
-    char *av[3];
+    char *av[2];
 
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("server_quit");
@@ -349,33 +370,21 @@ HANDLER (server_quit)
 	return;
     }
     ac = split_line (av, FIELDS (av), pkt + 1);
-    if (ac < 2)
+    if (ac != 2)
     {
 	log ("server_quit(): wrong number of parameters");
 	send_cmd (con, MSG_SERVER_NOSUCH,
 		  "Invalid number of parameters for server quit");
 	return;
     }
-    for (list = &Server_Links; *list; list = &(*list)->next)
-    {
-	slink = (*list)->data;
-	if (!strcasecmp (av[0], slink->server) &&
-	    !strcasecmp (av[1], slink->peer))
-	{
-	    tmpList = *list;
-	    *list = (*list)->next;
-	    FREE (tmpList);
-	    FREE (slink->server);
-	    FREE (slink->peer);
-	    FREE (slink);
-	    break;
-	}
-    }
-    notify_mods ("Server %s has quit: %s", av[1], ac>2?av[2]:"");
-    if (ac > 2)
-	pass_message_args (con, tag, ":%s %s \"%s\"", av[0], av[1], av[2]);
-    else
-	pass_message_args (con, tag, ":%s %s", av[0], av[1]);
+    log ("server_quit(): %s reported that %s has quit", av[0], av[1]);
+    /* remove all link info for any servers behind the one that just
+       disconnected */
+    remove_links (av[1]);
+    /* notify interested parties */
+    notify_mods ("Server %s has quit.", av[1]);
+    /* pass along to peers */
+    pass_message_args (con, tag, ":%s %s", av[0], av[1]);
 }
 
 /* recursively mark entries to reap */

@@ -71,7 +71,7 @@ HANDLER (login)
 	return;
     }
 
-    ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
+    ac = split_line (av, FIELDS (av), pkt);
 
     if ((tag == MSG_CLIENT_LOGIN && ac < 5) ||
 	(tag == MSG_CLIENT_LOGIN_REGISTER && ac < 6))
@@ -264,8 +264,12 @@ HANDLER (login)
 	/* set the default userlevel */
 	user->level = db->level;
 	if (user->level != LEVEL_USER)
+	{
 	    log ("login(): set %s to level %s", user->nick,
 		 Levels[user->level]);
+	    notify_mods ("%s set user %s to level %s", Server_Name,
+		user->nick, Levels[user->level]);
+	}
     }
     else if (tag == MSG_CLIENT_LOGIN_REGISTER)
     {

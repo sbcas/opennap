@@ -44,7 +44,7 @@ HANDLER (level)
 	}
     }
 
-    if ((ac = split_line (fields, sizeof (fields) / sizeof (char *), pkt)) != 2)
+    if ((ac = split_line (fields, FIELDS (fields), pkt)) != 2)
     {
 	log ("level(): malformed client request");
 	print_args (ac, fields);
@@ -74,10 +74,8 @@ HANDLER (level)
     {
 	log ("level(): %s is already level %s", user->nick, Levels[level]);
 	if (ISUSER (con))
-	{
 	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is already level %s.",
 		    user->nick, Levels[level]);
-	}
 	return;
     }
     /* check for privilege */
