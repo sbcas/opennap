@@ -9,6 +9,10 @@
 #include <stdlib.h>
 #include "hash.h"
 #include "debug.h"
+#ifdef WIN32
+// this is needed for the WIN32 port #def's
+#include "opennap.h"
+#endif
 
 /* a simple hash table.  keys are case insensitive for this application */
 

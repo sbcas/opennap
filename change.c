@@ -85,7 +85,6 @@ HANDLER (change_pass)
 {
     USER *user;
 
-    (void) pkt;
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;
@@ -105,7 +104,6 @@ HANDLER (change_email)
 {
     USER *user;
 
-    (void) pkt;
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;

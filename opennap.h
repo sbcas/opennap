@@ -532,7 +532,7 @@ HANDLER (whois);
 typedef unsigned int socklen_t;
 
 #define strcasecmp stricmp
-#define strncasecmp strincmp
+#define strncasecmp strnicmp
 
 // see snprintf.c
 extern int snprintf (char *str,size_t count,const char *fmt,...);

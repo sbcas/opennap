@@ -4,12 +4,10 @@
 
    $Id$ */
 
-#ifndef WIN32
-#include <unistd.h>
-#else
+#ifdef WIN32
 #include <windows.h>
 #include <winsock.h>
-#endif /* !WIN32 */
+#endif /* WIN32 */
 #include <stdlib.h>
 #include <signal.h>
 #include <stdio.h>
@@ -17,12 +15,12 @@
 #include <ctype.h>
 #include <fcntl.h>
 #ifndef WIN32
+#include <unistd.h>
 #include <time.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#endif /* !WIN32 */
 #include <string.h>
 #if HAVE_POLL
 #include <sys/poll.h>
@@ -30,6 +28,7 @@
 /* use select() instead of poll() */
 #include <sys/time.h>
 #endif /* HAVE_POLL */
+#endif /* !WIN32 */
 #include "opennap.h"
 #include "debug.h"
 
@@ -534,6 +533,9 @@ main (int argc, char **argv)
 #endif /* HAVE_POLL */
     char *config_file = 0;
     time_t next_update = 0;
+#ifdef WIN32
+    WSADATA wsa;
+#endif /* WIN32 */
 
 #ifndef WIN32
     while ((n = getopt (argc, argv, "c:hl:p:v")) != EOF)

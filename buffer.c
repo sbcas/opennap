@@ -6,12 +6,12 @@
 
 #ifndef WIN32
 #include <unistd.h>
+#include <sys/time.h>
 #else
 #include <windows.h>
 #endif /* !WIN32 */
 #include <string.h>
 #include <errno.h>
-#include <sys/time.h>
 #include <stdlib.h>
 #include "opennap.h"
 #include "debug.h"
@@ -99,6 +99,7 @@ buffer_group (BUFFER *b, int n)
 }
 
 #ifdef WIN32
+#undef errno
 #define errno h_errno
 #endif
 
