@@ -218,7 +218,7 @@ enum {
     CT_UNKNOWN
 };
 
-/* core database entry */
+/* core database entry (24 bytes) */
 typedef struct
 {
     USER *user;		/* user who possesses this file */
@@ -232,10 +232,9 @@ typedef struct
     short bitrate;
     unsigned short duration;
     unsigned short frequency;
-    short type;	/* content type */
-
-    short refcount;	/* how many references to this structure? */
-    short valid;	/* is this a valid file? */
+    unsigned int type : 3;	/* content type */
+    unsigned int valid : 1;	/* is this a valid file? */
+    unsigned int refcount : 12;	/* how many references to this structure? */
 } DATUM;
 
 typedef enum {

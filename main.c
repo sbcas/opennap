@@ -320,6 +320,8 @@ main (int argc, char **argv)
     WSAStartup (MAKEWORD (1, 1), &wsa);
 #endif /* !WIN32 */
 
+    /* printf("%d\n", sizeof(DATUM)); */
+
 #ifndef WIN32
     while ((n = getopt (argc, argv, "c:hl:p:v")) != EOF)
     {
