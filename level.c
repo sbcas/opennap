@@ -73,9 +73,8 @@ HANDLER (level)
     if (con->class == CLASS_USER)
     {
 	ASSERT (validate_user (con->user));
-	if (con->user->level < LEVEL_MODERATOR &&
-		(level >= con->user->level && con->user->level < LEVEL_ELITE) ||
-		(user->level >= con->user->level))
+	if ((level >= con->user->level && con->user->level < LEVEL_ELITE) ||
+		user->level >= con->user->level)
 	{
 	    log ("level(): %s tried to set %s to level %s", con->user->nick,
 		    user->nick, Levels[level]);
