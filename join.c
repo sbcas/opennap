@@ -22,7 +22,7 @@ invalid_channel (const char *s)
 
     while (*s)
     {
-	if (ISSPACE (*s) || !ISPRINT (*s) || *s == ':' || *s == '%')
+	if (ISSPACE (*s) || !ISPRINT (*s) || *s == ':' || *s == '%' || *s == '$')
 	    return 1;
 	count++;
 	s++;
