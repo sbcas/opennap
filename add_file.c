@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License. */
+   GNU Public License.
+
+   $Id$ */
 
 #include <mysql.h>
 #include <stdio.h>
@@ -66,12 +68,12 @@ HANDLER (add_file)
     char path[256];
     int fsize;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &user) != 0)
 	return;
 
-    ASSERT (VALID (user));
+    ASSERT (validate_user (user));
 
     if (split_line (field, sizeof (field) / sizeof (char *), pkt) != 6)
     {
