@@ -247,7 +247,7 @@ accept_connection (int s)
 	cli->destroy = 1;
     return;
 error:
-    close (f);
+    CLOSE (f);
     if (cli->host)
 	FREE (cli->host);
     FREE (cli);
@@ -264,8 +264,7 @@ report_stats (int fd)
     n = accept (fd, (struct sockaddr *) &sin, &sinsize);
     if (n == -1)
     {
-	log ("report_stats(): accept: %s (errno %d)", strerror (errno),
-	     errno);
+	logerr ("report_stats", "accept");
 	return;
     }
     log ("report_stats(): connection from %s:%d", inet_ntoa (sin.sin_addr),

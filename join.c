@@ -211,7 +211,7 @@ HANDLER (join)
     }
 }
 
-/* 10201 [ :<sender> ] <channel> <level>
+/* 10201 [ :<sender> ] <channel> [ <level> ]
    sets the minimum user level required to enter a channel */
 HANDLER (channel_level)
 {

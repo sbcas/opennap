@@ -607,70 +607,66 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 
     n = fdb_search (File_Table, tokens, max_results, search_callback, &parms);
 
-    if (n < max_results)
+    if ((n < max_results) &&
+	    ((ISSERVER (con) && list_count (Servers) > 1) ||
+	     (ISUSER (con) && Servers)))
     {
-	if ((ISSERVER (con) && list_count (Servers) > 1) ||
-	    (ISUSER (con) && Servers))
-	{
-	    char *request;
-	    DSEARCH *dsearch;
-	    LIST *ptr;
+	char *request;
+	DSEARCH *dsearch;
+	LIST *ptr;
 
-	    generate_request (Buf, sizeof (Buf), max_results - n, tokens,
-			      &parms);
-	    /* generate a new request structure */
-	    dsearch = CALLOC (1, sizeof (DSEARCH));
-	    if (!dsearch)
+	generate_request (Buf, sizeof (Buf), max_results - n, tokens, &parms);
+	/* generate a new request structure */
+	dsearch = CALLOC (1, sizeof (DSEARCH));
+	if (!dsearch)
+	{
+	    OUTOFMEMORY ("search_internal");
+	    goto done;
+	}
+	if (id)
+	{
+	    if ((dsearch->id = STRDUP (id))==0)
 	    {
 		OUTOFMEMORY ("search_internal");
-		goto done;
-	    }
-	    if (id)
-	    {
-		dsearch->id = STRDUP (id);
-		if (!dsearch->id)
-		{
-		    FREE (dsearch);
-		    goto done;
-		}
-	    }
-	    else if ((dsearch->id = generate_search_id ()) == 0)
-	    {
 		FREE (dsearch);
 		goto done;
 	    }
-	    dsearch->con = con;
-	    dsearch->nick = STRDUP (user->nick);
-	    if (!dsearch->nick)
-	    {
-		OUTOFMEMORY ("search_internal");
-		free_dsearch (dsearch);
-		goto done;
-	    }
-	    dsearch->numServers = list_count (Servers);
-	    dsearch->valid = 1;
-	    if (ISSERVER (con))
-		dsearch->numServers--;
-	    ptr = CALLOC (1, sizeof (LIST));
-	    if (!ptr)
-	    {
-		OUTOFMEMORY ("search_internal");
-		free_dsearch (dsearch);
-		goto done;
-	    }
-	    ptr->data = dsearch;
-	    Remote_Search = list_append (Remote_Search, ptr);
-	    request = STRDUP (Buf);
-	    /* pass this message to all servers EXCEPT the one we recieved
-	       it from (if this was a remote search */
-	    pass_message_args (con, MSG_SERVER_REMOTE_SEARCH, "%s %s %s",
-			       dsearch->nick, dsearch->id, request);
-	    FREE (request);
-	    done = 0;		/* delay sending the end-of-search message */
 	}
+	else if ((dsearch->id = generate_search_id ()) == 0)
+	{
+	    FREE (dsearch);
+	    goto done;
+	}
+	dsearch->con = con;
+	if (!(dsearch->nick = STRDUP (user->nick)))
+	{
+	    OUTOFMEMORY ("search_internal");
+	    free_dsearch (dsearch);
+	    goto done;
+	}
+	dsearch->numServers = list_count (Servers);
+	dsearch->valid = 1;
+	if (ISSERVER (con))
+	    dsearch->numServers--;
+	ptr = CALLOC (1, sizeof (LIST));
+	if (!ptr)
+	{
+	    OUTOFMEMORY ("search_internal");
+	    free_dsearch (dsearch);
+	    goto done;
+	}
+	ptr->data = dsearch;
+	Remote_Search = list_append (Remote_Search, ptr);
+	request = STRDUP (Buf);
+	/* pass this message to all servers EXCEPT the one we recieved
+	   it from (if this was a remote search */
+	pass_message_args (con, MSG_SERVER_REMOTE_SEARCH, "%s %s %s",
+		dsearch->nick, dsearch->id, request);
+	FREE (request);
+	done = 0;		/* delay sending the end-of-search message */
     }
 
-  done:
+done:
 
     list_free (tokens, 0);
 

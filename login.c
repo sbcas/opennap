@@ -306,8 +306,7 @@ HANDLER (login)
 	user->local = 1;
 	user->host = con->ip;
 	user->conport = con->port;
-	user->server = STRDUP (Server_Name);
-	if (!user->server)
+	if (!(user->server = STRDUP (Server_Name)))
 	{
 	    /* TODO: this is problematic.  we've already added the this
 	       user struct to the global list and when we remove it,
@@ -317,7 +316,6 @@ HANDLER (login)
 	    hash_remove (Users, user->nick);
 	    goto failed;
 	}
-
 	con->class = CLASS_USER;
 	con->user = user;
 	/* send the login ack */
@@ -407,7 +405,6 @@ HANDLER (user_ip)
 
     (void) tag;
     (void) len;
-
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("user_ip");
     if (split_line (field, sizeof (field) / sizeof (char *), pkt) != 4)
@@ -421,14 +418,14 @@ HANDLER (user_ip)
 	log ("user_ip(): could not find struct for %s", field[0]);
 	return;
     }
-
+    ASSERT (validate_user (user));
+    ASSERT (user->local == 0);
     pass_message_args (con, tag, "%s %s %s %s", user->nick,
 		       field[1], field[2], field[3]);
-
     user->host = strtoul (field[1], 0, 10);
     user->conport = atoi (field[2]);
-    user->server = STRDUP (field[3]);
-    if (!user->server)
+    ASSERT (user->server == 0);
+    if (!(user->server = STRDUP (field[3])))
 	OUTOFMEMORY ("user_ip");
 }
 
