@@ -248,7 +248,8 @@ handle_connection (CONNECTION * con)
 	/* read the packet header if we haven't seen it already */
 	if (con->recvbuf->datasize < 4)
 	{
-	    n = read (con->fd, con->recvbuf->data, 4);
+	    n = read (con->fd, con->recvbuf->data + con->recvbuf->datasize,
+		    4 - con->recvbuf->datasize);
 	    if (n <= 0)
 	    {
 		if (n == -1)
