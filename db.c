@@ -48,7 +48,12 @@ init_db (void)
 
     /* create the library table */
     snprintf (Buf, sizeof (Buf),
-	      "CREATE TABLE library (owner VARCHAR(15) NOT NULL, filename VARCHAR(240) NOT NULL, size INT UNSIGNED, md5 VARCHAR(48), bitrate INT UNSIGNED, freq INT UNSIGNED, time INT UNSIGNED, linespeed INT UNSIGNED, soundex VARCHAR(255), type VARCHAR(32), PRIMARY KEY (owner, filename))");
+	      "CREATE TABLE library (owner VARCHAR(15) NOT NULL, "
+	      "filename VARCHAR(240) NOT NULL, size INT UNSIGNED, "
+	      "md5 CHAR(48), bitrate SMALLINT UNSIGNED, "
+	      "freq SMALLINT UNSIGNED, time SMALLINT UNSIGNED, "
+	      "linespeed TINYINT UNSIGNED, soundex VARCHAR(255), "
+	      "type VARCHAR(32), PRIMARY KEY (owner, filename))");
 
     if (mysql_query (Db, Buf) != 0)
     {
@@ -65,7 +70,7 @@ void
 sql_error (const char *func, const char *query)
 {
     log ("%s(): %s", func, query);
-    log ("%s(): %s", func, mysql_error (Db));
+    log ("%s(): %s (error %d)", func, mysql_error (Db), mysql_errno (Db));
 }
 
 void
