@@ -620,8 +620,20 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 			      &parms);
 	    /* generate a new request structure */
 	    dsearch = CALLOC (1, sizeof (DSEARCH));
+	    if (!dsearch)
+	    {
+		OUTOFMEMORY ("search_internal");
+		goto done;
+	    }
 	    if (id)
+	    {
 		dsearch->id = STRDUP (id);
+		if (!dsearch->id)
+		{
+		    FREE (dsearch);
+		    goto done;
+		}
+	    }
 	    else if ((dsearch->id = generate_search_id ()) == 0)
 	    {
 		FREE (dsearch);
@@ -629,6 +641,12 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    }
 	    dsearch->con = con;
 	    dsearch->nick = STRDUP (user->nick);
+	    if (!dsearch->nick)
+	    {
+		OUTOFMEMORY ("search_internal");
+		free_dsearch (dsearch);
+		goto done;
+	    }
 	    dsearch->numServers = list_count (Servers);
 	    dsearch->valid = 1;
 	    if (ISSERVER (con))
