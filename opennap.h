@@ -876,7 +876,7 @@ typedef unsigned int socklen_t;
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
-#define VERSION "0.34"
+#define VERSION "0.35"
 
 #define strcasecmp stricmp
 #define strncasecmp strnicmp

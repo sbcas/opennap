@@ -511,14 +511,28 @@ HANDLER (add_directory)
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("add_directory");
     dir = next_arg (&pkt);	/* directory */
-    dirbuf[sizeof (dirbuf) - 1] = 0;
+    dirbuf[sizeof (dirbuf) - 1] = 0;	/* ensure nul termination */
     strncpy (dirbuf, dir, sizeof (dirbuf) - 1);
     pathlen = strlen (dirbuf);
+    if((size_t)pathlen>=sizeof(dirbuf)-1)
+    {
+	ASSERT(pathlen<sizeof(dirbuf));
+	log("add_directory(): directory component is too long, ignoring");
+	return;
+    }
+
     if (pathlen > 0 && dirbuf[pathlen - 1] != '\\')
     {
 	strncpy (dirbuf + pathlen, "\\", sizeof (dirbuf) - pathlen - 1);
 	pathlen++;
+	if((size_t)pathlen>=sizeof(dirbuf)-1)
+	{
+	    ASSERT(pathlen<sizeof(dirbuf));
+	    log("add_directory(): directory component is too long, ignoring");
+	    return;
+	}
     }
+
     while (pkt)
     {
 	if (Max_Shared && con->user->shared > Max_Shared)
@@ -541,6 +555,7 @@ HANDLER (add_directory)
 	/* make sure this isn't a duplicate - have to redo the entire path
 	   including the directory since it gets munged by the insertion into
 	   the hash table */
+	path[sizeof(path)-1]=0;	/* ensure nul termination */
 	strncpy (path, dirbuf, sizeof (path) - 1);
 	strncpy (path + pathlen, basename, sizeof (path) - 1 - pathlen);
 	if (con->uopt->files && hash_lookup (con->uopt->files, path))
