@@ -14,7 +14,7 @@
 #include "debug.h"
 
 /* topic for channel has changed */
-/* [ :<nick> ] <channel> [ <topic> ] */
+/* [ :<nick> ] <channel> [topic] */
 
 HANDLER (topic)
 {
@@ -22,6 +22,7 @@ HANDLER (topic)
     int l;
     char *chanName, *nick;
     LIST *list;
+    CHANUSER *chanUser;
 
     (void) len;
     ASSERT (validate_connection (con));
@@ -64,9 +65,9 @@ HANDLER (topic)
     if (pkt)
     {
 	/* check to make sure this user has privilege to change topic */
-	if (ISUSER (con) && con->user->level < LEVEL_MODERATOR)
+	if (ISUSER (con) && con->user->level < LEVEL_MODERATOR &&
+	    !is_chanop(chan,con->user))
 	{
-	    log ("topic(): %s has no privilege", con->user->nick);
 	    permission_denied (con);
 	    return;
 	}
@@ -83,12 +84,15 @@ HANDLER (topic)
 	l = form_message (Buf, sizeof (Buf), tag, "%s %s", chan->name, chan->topic);
 	for (list = chan->users; list; list = list->next)
 	{
-#define chanUser ((USER*)list->data)
-	    if (chanUser->local)
-		queue_data (chanUser->con, Buf, l);
+	    chanUser=list->data;
+	    ASSERT(chanUser->magic==MAGIC_CHANUSER);
+	    if (chanUser->user->local)
+		queue_data (chanUser->user->con, Buf, l);
 	}
 
 	notify_mods (TOPICLOG_MODE, "%s set topic on %s: %s", nick,
+		     chan->name, chan->topic);
+	notify_ops (chan, "%s set topic on %s: %s", nick,
 		     chan->name, chan->topic);
     }
     else if (ISUSER (con))

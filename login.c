@@ -18,7 +18,7 @@ invalid_nick (const char *s)
     int count = 0;
 
     /* don't allow anyone to ever have this nick */
-    if (!strcasecmp (s, "operserv"))
+    if (!strcasecmp (s, "operserv") || !strcasecmp(s, "chanserv"))
 	return 1;
     while (*s)
     {

@@ -360,6 +360,24 @@ are implemented as additional functionality in the opennap server.
 
 	[-]{ALL,MUZZLE,BAN,KILL,PORT,WALLOP} [ ... ]
 
+10204	set channel op [CLIENT]
+
+	<channel> <user> [user ...]
+
+	enable <user> to kick/ban users on <channel>
+
+10205	remove channel op [CLIENT]
+
+	<channel> <user> [user ...]
+
+	remove <user> as operator on <channel>
+
+10206	channel op list
+
+	<channel>
+
+	returns the list of defined channel operators for the given channel
+
 10300	share generic media file [CLIENT]
 
 	"<filename>" <size> <md5> <content-type>

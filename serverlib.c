@@ -169,6 +169,7 @@ free_channel (CHANNEL * chan)
     if (chan->users)
 	list_free (chan->users, 0);
     list_free (chan->bans, (list_destroy_t) free_ban);
+    list_free (chan->ops, (list_destroy_t) free_pointer);
     FREE (chan);
 }
 

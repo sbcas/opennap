@@ -1024,7 +1024,14 @@ appropriate, examples of the <data> section for each message are given.
 	client is changing the data port being listened on for file
 	transfers
 
-704-749	missing.
+704-747	missing.
+
+748	login attempt [SERVER]
+
+	the server sends this message to a logged in client when another
+	client attempts to log in with the same nickname.
+
+749	missing.
 
 750	server ping [CLIENT, SERVER]
 

@@ -9,48 +9,58 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "opennap.h"
 #include "debug.h"
 
 void
 load_channels (void)
 {
-    char path[_POSIX_PATH_MAX], *av[4];
+    char path[_POSIX_PATH_MAX];
+    char *name, *slimit, *slevel, *topic, *ptr;
     FILE *fp;
-    int ac, limit, level;
+    int limit, level;
     CHANNEL *chan;
+    int line = 0;
+    LIST *list;
 
     snprintf (path, sizeof (path), "%s/channels", Config_Dir);
     fp = fopen (path, "r");
     if (!fp)
     {
-	log ("load_channels(): %s: %s (errno %d)", path, strerror (errno),
-	     errno);
+	if (errno != ENOENT)
+	    logerr ("load_channels", path);
 	return;
     }
     while (fgets (Buf, sizeof (Buf), fp))
     {
-	if (Buf[0] == '#' || Buf[0] == '\r' || Buf[0] == '\n')
+	line++;
+	ptr = Buf;
+	while (ISSPACE (*ptr))
+	    ptr++;
+	if (*ptr == '#' || *ptr == 0)
 	    continue;		/* blank or comment line */
-	ac = split_line (av, FIELDS (av), Buf);
-	if (ac < 3)
+	name = next_arg (&ptr);
+	slimit = next_arg (&ptr);
+	slevel = next_arg (&ptr);
+	topic = next_arg (&ptr);
+	if (!name || !slimit || !slevel || !topic)
 	{
-	    log ("load_channels(): too few parameters for channel %s",
-		 ac > 1 ? av[0] : "(unknown)");
+	    log ("load_channels(): %s:%d: too few parameters", path, line);
 	    continue;
 	}
-	level = get_level (av[2]);
+	level = get_level (slevel);
 	if (level == -1)
 	{
-	    log ("load_channels(): invalid level %s for channel %s",
-		 av[2], av[0]);
+	    log ("load_channels(): %s:%d: %s: invalid level",
+		 path, line, slevel);
 	    continue;
 	}
-	limit = atoi (av[1]);
+	limit = atoi (slimit);
 	if (limit < 0 || limit > 65535)
 	{
-	    log ("load_channels(): invalid limit %d for channel %s",
-		 limit, av[0]);
+	    log ("load_channels(): %s:%d: %d: invalid limit",
+		 path, line, limit);
 	    continue;
 	}
 	chan = CALLOC (1, sizeof (CHANNEL));
@@ -59,11 +69,20 @@ load_channels (void)
 #if DEBUG
 	    chan->magic = MAGIC_CHANNEL;
 #endif
-	    chan->name = STRDUP (av[0]);
-	    if (ac > 3)
-		chan->topic = STRDUP (av[3]);
+	    chan->name = STRDUP (name);
+	    chan->topic = STRDUP (topic);
 	    chan->limit = limit;
 	    chan->level = level;
+
+	    /* add the list of defined operators */
+	    while (ptr)
+	    {
+		list = CALLOC (1, sizeof (LIST));
+		list->data = STRDUP (ptr);
+		list->next = chan->ops;
+		chan->ops = list;
+		ptr = next_arg (&ptr);
+	    }
 	}
 	if (hash_add (Channels, chan->name, chan))
 	    free_channel (chan);
@@ -92,14 +111,7 @@ HANDLER (channel_ban)
 	sender = next_arg (&pkt);
     }
     else
-    {
-	if (con->user->level < LEVEL_MODERATOR)
-	{
-	    permission_denied (con);
-	    return;
-	}
 	sender = con->user->nick;
-    }
     if (pkt)
 	ac = split_line (av, FIELDS (av), pkt);
     if (ac < 2)
@@ -114,6 +126,17 @@ HANDLER (channel_ban)
 	nosuchchannel (con);
 	return;
     }
+    /* check for permission */
+    if (ISUSER (con))
+    {
+	if (con->user->level < LEVEL_MODERATOR
+	    && !is_chanop (chan, con->user))
+	{
+	    permission_denied (con);
+	    return;
+	}
+    }
+
     /* ensure this user/ip is not already banned */
     for (list = chan->bans; list; list = list->next)
     {
@@ -158,6 +181,8 @@ HANDLER (channel_ban)
 		       ac > 2 ? "\"" : "");
     notify_mods (BANLOG_MODE, "%s banned %s from %s: %s", sender, b->target,
 		 chan->name, NONULL (b->reason));
+    notify_ops (chan, "%s banned %s from %s: %s", sender, b->target,
+		 chan->name, NONULL (b->reason));
 }
 
 /* 423 [ :<sender> ] <channel> <user|ip> [ "<reason>" ] */
@@ -183,14 +208,7 @@ HANDLER (channel_unban)
 	sender = next_arg (&pkt);
     }
     else
-    {
-	if (con->user->level < LEVEL_MODERATOR)
-	{
-	    permission_denied (con);
-	    return;
-	}
 	sender = con->user->nick;
-    }
     if (pkt)
 	ac = split_line (av, FIELDS (av), pkt);
     if (ac < 2)
@@ -204,6 +222,15 @@ HANDLER (channel_unban)
 	nosuchchannel (con);
 	return;
     }
+    if (ISUSER (con))
+    {
+	if (con->user->level < LEVEL_MODERATOR
+	    && !is_chanop (chan, con->user))
+	{
+	    permission_denied (con);
+	    return;
+	}
+    }
     ASSERT (validate_channel (chan));
     for (list = &chan->bans; *list; list = &(*list)->next)
     {
@@ -215,6 +242,9 @@ HANDLER (channel_unban)
 			       ac > 2 ? " \"" : "",
 			       ac > 2 ? av[2] : "", ac > 2 ? "\"" : "");
 	    notify_mods (BANLOG_MODE, "%s unbanned %s from %s: %s",
+			 sender, b->target, chan->name,
+			 (ac > 2) ? av[2] : "");
+	    notify_ops (chan, "%s unbanned %s from %s: %s",
 			 sender, b->target, chan->name,
 			 (ac > 2) ? av[2] : "");
 	    free_ban (b);
@@ -268,11 +298,6 @@ HANDLER (channel_clear_bans)
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender))
 	return;
-    if (sender->level < LEVEL_MODERATOR)
-    {
-	permission_denied (con);
-	return;
-    }
     chan = hash_lookup (Channels, pkt);
     if (!chan)
     {
@@ -286,16 +311,196 @@ HANDLER (channel_clear_bans)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "You are not on that channel");
 	return;
     }
+    if (sender->level < LEVEL_MODERATOR && !is_chanop (chan, sender))
+    {
+	permission_denied (con);
+	return;
+    }
     /* pass just in case servers are desynched */
     pass_message_args (con, tag, ":%s %s", sender->nick, chan->name);
     if (!chan->bans)
     {
 	if (ISUSER (con))
-	    send_cmd (con,MSG_SERVER_NOSUCH, "There are no bans");
+	    send_cmd (con, MSG_SERVER_NOSUCH, "There are no bans");
 	return;
     }
     list_free (chan->bans, (list_destroy_t) free_ban);
     chan->bans = 0;
     notify_mods (BANLOG_MODE, "%s cleared the ban list on %s", sender->nick,
 		 chan->name);
+    notify_ops (chan, "%s cleared the ban list on %s", sender->nick,
+		 chan->name);
+}
+
+static CHANUSER *
+find_chanuser (LIST * list, USER * user)
+{
+    CHANUSER *chanUser;
+
+    for (; list; list = list->next)
+    {
+	chanUser = list->data;
+	ASSERT (chanUser->magic == MAGIC_CHANUSER);
+	if (chanUser->user == user)
+	    return chanUser;
+    }
+    return 0;
+}
+
+/* 10204/10205 [ :<sender> ] <channel> <nick> [nick ...]
+   op/deop channel user */
+HANDLER (channel_op)
+{
+    char *sender, *schan, *suser;
+    CHANNEL *chan;
+    CHANUSER *chanUser;
+    USER *user;
+    LIST **list, *tmpList;
+
+    ASSERT (validate_connection (con));
+    (void) len;
+    if (ISSERVER (con))
+    {
+	if (*pkt != ':')
+	{
+	    log ("channel_op(): missing sender from server message");
+	    return;
+	}
+	pkt++;
+	sender = next_arg (&pkt);
+    }
+    else
+    {
+	ASSERT (ISUSER (con));
+	if (con->user->level < LEVEL_MODERATOR)
+	    permission_denied (con);
+	sender = con->user->nick;
+    }
+    schan = next_arg (&pkt);
+    if (!schan)
+    {
+	unparsable (con);
+	return;
+    }
+    chan = hash_lookup (Channels, schan);
+    if (!chan)
+    {
+	nosuchchannel (con);
+	return;
+    }
+    if (pkt)
+	pass_message_args (con, tag, ":%s %s %s", sender, chan->name, pkt);
+    while (pkt)
+    {
+	suser = next_arg (&pkt);
+	for (list = &chan->ops; *list; list = &(*list)->next)
+	    if (!strcasecmp ((*list)->data, suser))
+	    {
+		if (tag == MSG_CLIENT_DEOP)
+		{
+		    tmpList = *list;
+		    *list = (*list)->next;
+		    FREE (tmpList->data);
+		    FREE (tmpList);
+		    /* if the user is present, change their status */
+		    user = hash_lookup (Users, suser);
+		    if (user)
+		    {
+			chanUser = find_chanuser (chan->users, user);
+			if (chanUser)
+			    chanUser->flags &= ~ON_OPERATOR;
+			if (ISUSER (user->con))
+			    send_cmd (user->con, MSG_SERVER_NOSUCH,
+				      "%s removed your operator on channel %s",
+				      sender, chan->name);
+			notify_mods (CHANGELOG_MODE,
+				     "%s removed %s as operator on channel %s",
+				     sender, user->nick, chan->name);
+			notify_ops (chan,
+				    "%s removed %s as operator on channel %s",
+				    sender, user->nick, chan->name);
+		    }
+		}
+		break;		/* present */
+	    }
+	if (tag == MSG_CLIENT_OP && !*list)
+	{
+	    *list = CALLOC (1, sizeof (LIST));
+	    (*list)->data = STRDUP (suser);
+	    /* if the user is present, change their status */
+	    user = hash_lookup (Users, suser);
+	    if (user)
+	    {
+		chanUser = find_chanuser (chan->users, user);
+		if (ISUSER (user->con))
+		    send_cmd (user->con, MSG_SERVER_NOSUCH,
+			      "%s set you as operator on channel %s",
+			      sender, chan->name);
+		notify_mods (CHANGELOG_MODE,
+			     "%s set %s as operator on channel %s",
+			     sender, user->nick, chan->name);
+		notify_ops (chan, "%s set %s as operator on channel %s",
+			    sender, user->nick, chan->name);
+		/* only do the following if the user is in the channel */
+		/* do this here so the user doesn't get the message twice */
+		if (chanUser)
+		    chanUser->flags |= ON_OPERATOR;
+	    }
+	}
+    }
+}
+
+void
+notify_ops (CHANNEL * chan, const char *fmt, ...)
+{
+    LIST *list;
+    CHANUSER *chanUser;
+    char buf[256];
+    int len;
+
+    va_list ap;
+
+    va_start (ap, fmt);
+    vsnprintf (buf + 4, sizeof (buf) - 4, fmt, ap);
+    va_end (ap);
+    len = strlen (buf + 4);
+    set_len (buf, len);
+    set_tag (buf, MSG_SERVER_NOSUCH);
+    for (list = chan->users; list; list = list->next)
+    {
+	chanUser = list->data;
+	ASSERT (chanUser->magic == MAGIC_CHANUSER);
+	if (ISUSER (chanUser->user->con) && (chanUser->flags & ON_OPERATOR))
+	    queue_data (chanUser->user->con, buf, 4 + len);
+    }
+}
+
+/* 10206 <channel>
+   list channel ops */
+HANDLER (channel_op_list)
+{
+    CHANNEL *chan;
+    LIST *list;
+
+    (void) tag;
+    (void) len;
+    ASSERT (validate_connection (con));
+    CHECK_USER_CLASS ("channel_op_list");
+    chan = hash_lookup (Channels, pkt);
+    if (!chan)
+    {
+	nosuchchannel (con);
+	return;
+    }
+    if (con->user->level < LEVEL_MODERATOR && !is_chanop (chan, con->user))
+    {
+	permission_denied (con);
+	return;
+    }
+    send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ Operators for channel %s:",
+	      chan->name);
+    for (list = chan->ops; list; list = list->next)
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ %s", list->data);
+    send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ END of operators for channel %s",
+	      chan->name);
 }

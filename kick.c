@@ -7,6 +7,34 @@
 #include "opennap.h"
 #include "debug.h"
 
+int
+is_chanop(CHANNEL *chan, USER *user)
+{
+    LIST *list;
+    CHANUSER *chanUser;
+
+    for(list=chan->users;list;list=list->next)
+    {
+	chanUser=list->data;
+	ASSERT(chanUser->magic==MAGIC_CHANUSER);
+	if(chanUser->user==user)
+	{
+	    return(chanUser->flags & ON_OPERATOR);
+	    break;
+	}
+    }
+    return 0;
+}
+
+static int
+can_kick(CHANNEL *chan, USER *sender, USER *user)
+{
+    if(sender->level == LEVEL_ELITE || sender->level > user->level ||
+       (is_chanop(chan,sender) && sender->level==user->level))
+       return 1;
+    return 0;
+}
+
 /* 10202 [ :<sender> ] <channel> <user> [ "<reason>" ] */
 HANDLER (kick)
 {
@@ -50,12 +78,9 @@ HANDLER (kick)
 	    nosuchuser (con, av[1]);
 	return;
     }
-    if (sender->level < LEVEL_ELITE && sender->level <= user->level)
+    if(sender->level < chan->level || !can_kick(chan,sender,user))
     {
-	log ("kick(): %s has no privilege to kick %s", sender->nick,
-	     user->nick);
-	if (ISUSER (con))
-	    permission_denied (con);
+	permission_denied(con);
 	return;
     }
     if (list_find (user->channels, chan) == 0)
@@ -88,6 +113,8 @@ HANDLER (kick)
 
     notify_mods (CHANNELLOG_MODE, "%s kicked %s out of channel %s: %s",
 		 sender->nick, user->nick, chan->name, ac == 3 ? av[2] : "");
+    notify_ops (chan, "%s kicked %s out of channel %s: %s",
+		 sender->nick, user->nick, chan->name, ac == 3 ? av[2] : "");
 
     /* has to come after the notify_mods() since it uses chan->name and
        chan may disappear if there are no users left
@@ -95,11 +122,12 @@ HANDLER (kick)
     part_channel (chan, user);
 }
 
-/* 820 [ :<sender> ] <channel> [ <reason> ] */
+/* 820 [ :<sender> ] <channel> [reason] */
 HANDLER (clear_channel)
 {
     CHANNEL *chan;
-    USER *sender, *user;
+    CHANUSER *chanUser;
+    USER *sender;
     LIST *list;
     char *chanName;
 
@@ -130,25 +158,26 @@ HANDLER (clear_channel)
     while (list)
     {
 	ASSERT (VALID_LEN (list, sizeof (LIST)));
-	user = list->data;
-	ASSERT (validate_user (user));
+	chanUser = list->data;
+	ASSERT(chanUser->magic==MAGIC_CHANUSER);
 	/* part_channel() may free the current `list' pointer so we advance
 	   it here prior to calling it */
 	list = list->next;
-	if (user != sender &&
-	    (sender->level == LEVEL_ELITE || user->level < sender->level))
+	if (chanUser->user != sender && can_kick(chan,sender,chanUser->user))
 	{
-	    user->channels = list_delete (user->channels, chan);
-	    if (ISUSER (user->con))
+	    chanUser->user->channels = list_delete (chanUser->user->channels, chan);
+	    if (ISUSER (chanUser->user->con))
 	    {
-		send_cmd (user->con, MSG_CLIENT_PART, "%s", chan->name);
-		send_cmd (user->con, MSG_SERVER_NOSUCH,
+		send_cmd (chanUser->user->con, MSG_CLIENT_PART, "%s", chan->name);
+		send_cmd (chanUser->user->con, MSG_SERVER_NOSUCH,
 			  "%s cleared channel %s: %s", sender->nick,
 			  chan->name, NONULL (pkt));
 	    }
-	    part_channel (chan, user);
+	    part_channel (chan, chanUser->user);
 	}
     }
     notify_mods (CHANNELLOG_MODE, "%s cleared channel %s: %s", sender->nick,
+		 chan->name, NONULL (pkt));
+    notify_ops (chan, "%s cleared channel %s: %s", sender->nick,
 		 chan->name, NONULL (pkt));
 }

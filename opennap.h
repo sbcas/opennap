@@ -27,6 +27,8 @@
 #define MAGIC_HOTLIST 0xb0f8ad23
 #define MAGIC_CONNECTION 0x3c4474a3
 #define MAGIC_BUFFER 0xe5a7a3be
+#define MAGIC_CHANUSER 0x728dc736
+#define MAGIC_OPS 0xa28e453f
 
 /* convert the bytes of a 16-bit integer to little endian */
 #if WORDS_BIGENDIAN
@@ -62,19 +64,35 @@ typedef struct _connection CONNECTION;
 typedef struct _user USER;
 typedef struct _channel CHANNEL;
 typedef struct _hotlist HOTLIST;
+typedef struct _chanuser CHANUSER;
+
+/* bitmasks for the `flags' member of struct _chanuser */
+#define ON_OPERATOR	1
+#define ON_VOICE	2
+
+struct _chanuser
+{
+#ifdef DEBUG
+    int magic;
+#endif
+    int flags;
+    USER *user;
+};
 
 struct _channel
 {
 #ifdef DEBUG
     unsigned int magic;
 #endif
-    char *name;
-    char *topic;
-    LIST *users;
-    short limit;			/* max number of users allowed */
-    unsigned char userCreated;		/* true if a user created channel */
-    unsigned char level;		/* minimum level to enter channel */
-    LIST *bans;				/* channel specific bans */
+    time_t created;		/* when the channel was created */
+    char *name;			/* name of the channel */
+    char *topic;		/* current topic of discussion */
+    LIST *ops;			/* list of operators for the channel */
+    LIST *users;		/* list of users on the channel */
+    short limit;		/* max number of users allowed */
+    unsigned char userCreated;	/* true if a user created channel */
+    unsigned char level;	/* minimum level to enter channel */
+    LIST *bans;			/* channel specific bans */
 };
 
 /* user level */
@@ -372,7 +390,9 @@ extern HASH *Users;
 extern HASH *Channels;
 extern HASH *Hotlist;
 extern HASH *File_Table;
+#if RESUME
 extern HASH *MD5;
+#endif
 extern HASH *User_Db;
 
 extern char *Levels[LEVEL_ELITE + 1];
@@ -538,23 +558,13 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_KICK_USER		10202	/* deprecated, use 829 instead*/
 #define MSG_CLIENT_USER_MODE		10203	/* set a user mode */
 #define MSG_SERVER_USER_MODE		10203
+#define MSG_CLIENT_OP			10204
+#define MSG_CLIENT_DEOP			10205
+#define MSG_CLIENT_OP_LIST		10206
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
-
-/* offsets into the row returned for library searches */
-#define IDX_NICK	0
-#define IDX_FILENAME	1
-#define IDX_SIZE	2
-#define IDX_MD5		3
-#define IDX_BITRATE	4
-#define IDX_FREQ	5
-#define IDX_LENGTH	6
-#define IDX_SPEED	7
-#define IDX_SOUNDEX	8
-#define IDX_TYPE	9
 
 /* utility routines */
 int add_client (CONNECTION *);
-void add_random_bytes (char *, int);
 void add_timer (int, int, timer_cb_t, void *);
 int bind_interface (int, unsigned int, int);
 BUFFER *buffer_append (BUFFER *, BUFFER *);
@@ -602,6 +612,7 @@ void init_random (void);
 int init_server (const char *);
 int invalid_channel (const char *);
 int ip_glob_match (const char *pattern, const char *ip);
+int is_chanop(CHANNEL*,USER*);
 int is_ignoring (LIST *, const char *);
 int is_ip (const char *);
 int is_linked (CONNECTION *, const char *);
@@ -622,6 +633,7 @@ time_t next_timer (void);
 void nosuchuser (CONNECTION *, char *);
 void nosuchchannel (CONNECTION*);
 void notify_mods (unsigned int, const char *, ...);
+void notify_ops (CHANNEL *, const char *, ...);
 void part_channel (CHANNEL *, USER *);
 void pass_message (CONNECTION *, char *, size_t);
 void pass_message_args (CONNECTION * con, unsigned int msgtype,
@@ -681,6 +693,8 @@ HANDLER (channel_banlist);
 HANDLER (channel_clear_bans);
 HANDLER (channel_level);
 HANDLER (channel_limit);
+HANDLER (channel_op);
+HANDLER (channel_op_list);
 HANDLER (channel_unban);
 HANDLER (check_password);
 HANDLER (check_port);
@@ -803,7 +817,7 @@ typedef unsigned int socklen_t;
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
-#define VERSION "0.27"
+#define VERSION "0.28"
 
 #define USE_CRLF 1
 

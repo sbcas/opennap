@@ -12,6 +12,29 @@
 #include "opennap.h"
 #include "debug.h"
 
+/* remove this user from the channel list */
+static LIST *
+channel_remove(CHANNEL *chan, USER *user)
+{
+    LIST **list, *tmpList;
+    CHANUSER *chanUser;
+
+    for(list=&chan->users;*list;list=&(*list)->next)
+    {
+	chanUser=(*list)->data;
+	ASSERT(chanUser->magic==MAGIC_CHANUSER);
+	if(chanUser->user==user)
+	{
+	    tmpList=*list;
+	    *list=(*list)->next;
+	    FREE(tmpList);
+	    FREE(chanUser);
+	    break;
+	}
+    }
+    return chan->users;
+}
+
 /* remove `user' from channel `chan' */
 /* this function only removes the user entry from the channel list and
    notifies any local users of the departure.  the server-server message
@@ -21,14 +44,13 @@ void
 part_channel (CHANNEL * chan, USER * user)
 {
     int len;
+    CHANUSER *chanUser;
     LIST *list;
-    USER *chanUser;
 
     ASSERT (validate_channel (chan));
     ASSERT (validate_user (user));
 
-    /* remove this user from the channel list */
-    chan->users = list_delete (chan->users, user);
+    chan->users=channel_remove(chan,user);
     if (chan->users)
     {
 	/* notify other members of this channel that this user has parted */
@@ -39,10 +61,11 @@ part_channel (CHANNEL * chan, USER * user)
 	{
 	    /* we only notify local clients */
 	    chanUser = list->data;
-	    if (ISUSER (chanUser->con))
+	    ASSERT(chanUser->magic==MAGIC_CHANUSER);
+	    if (ISUSER (chanUser->user->con))
 	    {
-		if (!user->cloaked || chanUser->level >= LEVEL_MODERATOR)
-		    queue_data (chanUser->con, Buf, len);
+		if (!user->cloaked || chanUser->user->level >= LEVEL_MODERATOR)
+		    queue_data (chanUser->user->con, Buf, len);
 	    }
 	}
     }

@@ -13,7 +13,7 @@ HANDLER (list_users)
 {
     CHANNEL *chan;
     LIST *list;
-    USER *chanUser;
+    CHANUSER *chanUser;
 
     (void) tag;
     (void) len;
@@ -37,9 +37,10 @@ HANDLER (list_users)
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
+	ASSERT(chanUser->magic==MAGIC_CHANUSER);
 	send_cmd (con, MSG_SERVER_NAMES_LIST /* 825 */ , "%s %s %d %d",
-		  chan->name, chanUser->nick, chanUser->shared,
-		  chanUser->speed);
+		  chan->name, chanUser->user->nick, chanUser->user->shared,
+		  chanUser->user->speed);
     }
 
     send_cmd (con, MSG_SERVER_NAMES_LIST_END /* 830 */ , "");

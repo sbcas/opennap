@@ -54,12 +54,78 @@ operserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_CHANNEL_BAN_LIST;
     else if (!strcasecmp ("cbanclear", cmd))
 	tag = MSG_CLIENT_CHANNEL_CLEAR_BANS;
+    else if (!strcasecmp ("clearchan", cmd))
+	tag = MSG_CLIENT_CLEAR_CHANNEL;
     else if (!strcasecmp ("cloak", cmd))
 	tag = MSG_CLIENT_CLOAK;
+    else if (!strcasecmp ("op", cmd))
+	tag = MSG_CLIENT_OP;
+    else if (!strcasecmp ("oplist", cmd))
+	tag = MSG_CLIENT_OP_LIST;
+    else if (!strcasecmp ("deop", cmd))
+	tag = MSG_CLIENT_DEOP;
     else
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "Unknown OperServ command: %s",
 		  cmd);
+	return;
+    }
+    if (pkt)
+	len = strlen (pkt);
+    else
+    {
+	/* most of the handler routines expect `pkt' to be non-NULL so pass
+	   a dummy value here */
+	pkt = &ch;
+	len = 0;
+    }
+    dispatch_command (con, tag, len, pkt);
+}
+
+static void
+chanserv (CONNECTION * con, char *pkt)
+{
+    char *cmd = next_arg (&pkt);
+    unsigned short tag, len;
+    char ch = 0;
+
+    if (!strcasecmp ("ban", cmd))
+	tag = MSG_CLIENT_CHANNEL_BAN;
+    else if (!strcasecmp ("unban", cmd))
+	tag = MSG_CLIENT_CHANNEL_UNBAN;
+    else if (!strcasecmp ("banclear", cmd))
+	tag = MSG_CLIENT_CHANNEL_CLEAR_BANS;
+    else if (!strcasecmp ("banlist", cmd))
+	tag = MSG_CLIENT_CHANNEL_BAN_LIST;
+    else if (!strcasecmp ("clear", cmd))
+	tag = MSG_CLIENT_CLEAR_CHANNEL;
+    else if (!strcasecmp ("kick", cmd))
+	tag = MSG_CLIENT_KICK;
+    else if (!strcasecmp ("oplist", cmd))
+	tag = MSG_CLIENT_OP_LIST;
+    else if (!strcasecmp ("topic", cmd))
+	tag = MSG_SERVER_TOPIC;
+    else if (!strcasecmp ("limit", cmd))
+	tag = MSG_CLIENT_CHANNEL_LIMIT;
+    else if (!strcasecmp ("help", cmd))
+    {
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ HELP for ChanServ commands:");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ ban <channel> <user> [reason]");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ banclear <channel>");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ banlist <channel>");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ clear <channel>");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ help");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ kick <channel> <user> [reason]");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ limit <channel> <number>");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ oplist <channel>");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ topic <channel> [topic]");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ unban <channel>");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ END of ChanServ HELP");
+	return;
+    }
+    else
+    {
+	send_cmd (con, MSG_SERVER_NOSUCH, "unknown ChanServ command");
 	return;
     }
     if (pkt)
@@ -106,11 +172,18 @@ HANDLER (privmsg)
 	return;
     }
 
-    if (ISUSER (con) && sender->level > LEVEL_USER &&
-	!strcasecmp (ptr, "operserv"))
+    if (ISUSER (con))
     {
-	operserv (con, pkt);
-	return;
+	if (sender->level > LEVEL_USER && !strcasecmp (ptr, "operserv"))
+	{
+	    operserv (con, pkt);
+	    return;
+	}
+	if (!strcasecmp ("chanserv", ptr))
+	{
+	    chanserv (con, pkt);
+	    return;
+	}
     }
 
     /* find the recipient */
@@ -162,7 +235,7 @@ HANDLER (ignore_list)
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("ignore_list");
     for (list = con->uopt->ignore; list; list = list->next, n++)
-	send_cmd (con, MSG_SERVER_IGNORE_ENTRY /* 321 */, "%s", list->data);
+	send_cmd (con, MSG_SERVER_IGNORE_ENTRY /* 321 */ , "%s", list->data);
     send_cmd (con, tag, "%d", n);
 }
 
@@ -179,7 +252,7 @@ HANDLER (ignore)
     for (list = con->uopt->ignore; list; list = list->next)
 	if (!strcasecmp (pkt, list->data))
 	{
-	    send_cmd(con,MSG_SERVER_ALREADY_IGNORED,"%s",pkt);
+	    send_cmd (con, MSG_SERVER_ALREADY_IGNORED, "%s", pkt);
 	    return;		/*already added */
 	}
     list = MALLOC (sizeof (LIST));
@@ -210,7 +283,7 @@ HANDLER (unignore)
 	    return;
 	}
     }
-    send_cmd (con, MSG_SERVER_NOT_IGNORED /* 324 */, "%s", pkt);
+    send_cmd (con, MSG_SERVER_NOT_IGNORED /* 324 */ , "%s", pkt);
 }
 
 /* 326

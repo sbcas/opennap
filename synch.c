@@ -72,6 +72,21 @@ sync_chan (CHANNEL *chan, CONNECTION *con)
     if (chan->limit != Channel_Limit)
 	send_cmd (con, MSG_CLIENT_CHANNEL_LIMIT, ":%s %s %d",
 		  Server_Name, chan->name, chan->limit);
+    /* synch the list of channel operators if present */
+    if(chan->ops)
+    {
+	char buf[2048];
+	LIST *list;
+	int len;
+
+	buf[0]=0;
+	for(list=chan->ops;list;list=list->next)
+	{
+	    len=strlen(buf);
+	    snprintf(buf+len,sizeof(buf)-len," %s",(char*)list->data);
+	}
+	send_cmd(con,MSG_CLIENT_OP,"%s%s",chan->name,buf);
+    }
 }
 
 static void

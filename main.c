@@ -72,15 +72,13 @@ CONNECTION **Clients = NULL;
 int Num_Clients = 0;
 int Max_Clients = 0;
 
-/* global users list */
-HASH *Users;
-
-/* global file list */
-HASH *File_Table;
+HASH *Users;		/* global users list */
+HASH *File_Table;	/* global file list */
+HASH *Channels;		/* global channel list */
+HASH *Hotlist; /* global hotlist */
 
 #if RESUME
-/* global hash list */
-HASH *MD5;
+HASH *MD5; /* global hash list */
 #endif /* RESUME */
 
 /* local server list.  NOTE that this contains pointers into the Clients
@@ -95,12 +93,6 @@ int Num_Files = 0;
 unsigned int Num_Gigs = 0;	/* in kB */
 int SigCaught = 0;
 char Buf[2048];			/* global scratch buffer */
-
-/* global channel list */
-HASH *Channels;
-
-/* global hotlist */
-HASH *Hotlist;
 
 #define BACKLOG 50
 

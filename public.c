@@ -17,9 +17,10 @@
 HANDLER (public)
 {
     CHANNEL *chan;
-    USER *chanUser, *sender;
+    USER *sender;
     LIST *list;
     char *ptr;
+    CHANUSER *chanUser;
 
     (void) tag;
     (void) len;
@@ -69,10 +70,11 @@ HANDLER (public)
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
-	if (ISUSER (chanUser->con))
+	ASSERT(chanUser->magic==MAGIC_CHANUSER);
+	if (ISUSER (chanUser->user->con))
 	{
-	    send_cmd(chanUser->con,MSG_SERVER_PUBLIC,"%s %s %s", chan->name,
-		    (!sender->cloaked || chanUser->level > LEVEL_USER)?sender->nick:"Operator",
+	    send_cmd(chanUser->user->con,MSG_SERVER_PUBLIC,"%s %s %s", chan->name,
+		    (!sender->cloaked || chanUser->user->level > LEVEL_USER)?sender->nick:"Operator",
 		    pkt);
 	}
     }
@@ -81,7 +83,8 @@ HANDLER (public)
 /* 824 [ :<user> ] <channel> "<text>" */
 HANDLER (emote)
 {
-    USER *user, *chanUser;
+    CHANUSER *chanUser;
+    USER *user;
     CHANNEL *chan;
     char *ptr, *av[2];
     LIST *list;
@@ -130,10 +133,11 @@ HANDLER (emote)
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
-	if (ISUSER(chanUser->con))
+	ASSERT(chanUser->magic==MAGIC_CHANUSER);
+	if (ISUSER(chanUser->user->con))
 	{
-	    send_cmd(chanUser->con,tag,"%s %s \"%s\"", chan->name,
-		    (!user->cloaked || chanUser->level > LEVEL_MODERATOR)?user->nick:"Operator",
+	    send_cmd(chanUser->user->con,tag,"%s %s \"%s\"", chan->name,
+		    (!user->cloaked || chanUser->user->level > LEVEL_MODERATOR)?user->nick:"Operator",
 		    av[1]);
 	}
     }
