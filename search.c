@@ -156,6 +156,66 @@ free_datum (DATUM *d)
     }
 }
 
+typedef struct {
+    int reaped;
+    HASH *table;
+} GARBAGE;
+
+static void
+collect_garbage (FLIST *files, GARBAGE *data)
+{
+    LIST *ptr, *last = 0;
+    DATUM *d;
+
+    ptr = files->list;
+    while (ptr)
+    {
+	d = ptr->data;
+	if (!d->valid)
+	{
+	    files->count--;
+	    ++data->reaped;
+	    if (last)
+		last->next = ptr->next;
+	    else
+	    {
+		/* first in list */
+		files->list = ptr->next;
+	    }
+	    ptr->next = 0;
+	    list_free (ptr, (list_destroy_t) free_datum);
+	    if (!last)
+	    {
+		ptr = files->list;
+		continue;
+	    }
+	    ptr = last; /* reset */
+	}
+	last = ptr;
+	ptr = ptr->next;
+    }
+
+    if (files->count == 0)
+    {
+	/* no more files, remove this entry from the hash table */
+	hash_remove (data->table, files->key);
+    }
+}
+
+/* walk the table and remove invalid entries */
+void
+fdb_garbage_collect (HASH *table)
+{
+    GARBAGE data;
+
+    data.reaped = 0;
+    data.table = table;
+
+    log ("fdb_garbage_collect(): collecting garbage");
+    hash_foreach (table, (hash_callback_t) collect_garbage, &data);
+    log ("fdb_garbage_collect(): reaped %d dead entries", data.reaped);
+}
+
 /* return nonzero if `tokens' contains all elements of `pattern' */
 static int
 token_compare (LIST * pattern, LIST * tokens)

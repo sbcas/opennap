@@ -561,6 +561,7 @@ main (int argc, char **argv)
 #endif /* HAVE_POLL */
     char *config_file = 0;
     time_t next_update = 0;
+    time_t next_collect = 0;	/* when to run garbage collection */
 #ifdef WIN32
     WSADATA wsa;
 #endif /* WIN32 */
@@ -856,6 +857,13 @@ main (int argc, char **argv)
 		log ("main(): closing connection for %s", Clients[i]->host);
 		remove_connection (Clients[i]);
 	    }
+	}
+
+	if (time (0) > next_collect)
+	{
+	    fdb_garbage_collect (File_Table);
+	    fdb_garbage_collect (MD5);
+	    next_collect = 60;	/* run once a minute */
 	}
     }
 

@@ -446,6 +446,7 @@ void complete_connect (CONNECTION *con);
 void config (const char *);
 void config_defaults (void);
 void expand_hex (char *, int);
+void fdb_garbage_collect (HASH *);
 void finalize_compress (ZIP *);
 void free_ban (BAN *);
 void free_channel (CHANNEL *);
