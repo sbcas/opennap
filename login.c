@@ -21,9 +21,11 @@ invalid_nick (const char *s)
     if (!strcasecmp (s, "operserv") || !strcasecmp (s, "chanserv") ||
 	!strcasecmp (s, "operator"))
 	return 1;
+    if(*s=='#'||*s=='&'||*s==':')
+	return 1;	/* nick can't begin with # or & (denotes a channel) */
     while (*s)
     {
-	if(*s<'!' || *s>'~' || strchr(":%$*?.!\"'", *s))
+	if(*s<'!' || *s>'~' || strchr("%$*?.!\"", *s))
 	    return 1;
 	count++;
 	s++;

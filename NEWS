@@ -6,6 +6,9 @@ support the new expanded ban syntax
 Bans are now of the form <nick!ip>.  `*' matches 0 or more chars, `?'
 matches any single char.
 
+Channel names must now begin with # or &.  The join command will
+automatically prepend a # to channel names if missing.
+
 Removed the USER_IP server numeric.  This version of opennap will not
 interoperate with other opennap servers < 0.33, but will use less
 bandwidth for server->server links

@@ -19,9 +19,12 @@ invalid_channel (const char *s)
 {
     int count = 0;
 
+    if(*s!='#'&&*s!='&')
+	return 1;	/* must start with # or & */
+    s++;
     while (*s)
     {
-	if (*s < '!' || *s > '~' || strchr (":%$*?\"'", *s))
+	if (*s < '!' || *s > '~' || strchr ("%$*?\"", *s))
 	    return 1;
 	count++;
 	s++;
@@ -93,6 +96,14 @@ HANDLER (join)
        the rollover channels */
     ASSERT (sizeof (chanbuf) >= (unsigned int) Max_Channel_Length);
     chanbuf[sizeof (chanbuf) - 1] = 0;
+
+    /* automatically prepend # to channel names if missing */
+    if(*pkt!='#' && *pkt!='&')
+    {
+	snprintf(chanbuf,sizeof(chanbuf),"#%s",pkt);
+	pkt=chanbuf;
+    }
+
     for (;;)
     {
 	chan = hash_lookup (Channels, pkt);
