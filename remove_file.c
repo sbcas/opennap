@@ -15,6 +15,7 @@ HANDLER (remove_file)
     USER *user;
     MYSQL_RES	*result;
     MYSQL_ROW	row;
+    int fsize;
 
     ASSERT (VALID (con));
 
@@ -39,10 +40,9 @@ HANDLER (remove_file)
     {
 	row = mysql_fetch_row (result);
 
-	/* avoid rounding errors by first subtracting the old value */
-	Num_Gigs -= user->libsize / 1024;
-	user->libsize -= atoi (row[0]) / 1024 / 1024; /* MB */
-	Num_Gigs += user->libsize / 1024; /* GB */
+	fsize = atoi (row[0]) / 1024; /* kB */
+	user->libsize -= fsize;
+	Num_Gigs -= fsize;
     }
     else
 	log ("remove_file(): expected 1 row returned from query");

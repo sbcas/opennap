@@ -48,7 +48,7 @@ struct _user
     unsigned short downloads;	/* no. of downloads in progress */
     unsigned short speed;	/* link speed */
     unsigned short shared;	/* # of shared files */
-    unsigned long libsize;	/* approximate size of shared files in MB */
+    unsigned long libsize;	/* approximate size of shared files in kB */
     unsigned long host;		/* ip of user in network byte order */
     int port;			/* data port client is listening on */
     int flags;
@@ -238,7 +238,7 @@ extern CONNECTION **Clients;	/* locally connected clients */
 extern int Num_Clients;
 
 extern int Num_Files;		/* total number of available files */
-extern int Num_Gigs;		/* total size of files available */
+extern int Num_Gigs;		/* total size of files available (in kB) */
 
 extern CONNECTION **Servers;	/* peer servers */
 extern int Num_Servers;

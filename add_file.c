@@ -64,6 +64,7 @@ HANDLER (add_file)
     char *field[6];
     USER *user;
     char path[256];
+    int fsize;
 
     ASSERT (VALID (con));
 
@@ -101,10 +102,9 @@ HANDLER (add_file)
     /* to avoid rounding errors in the total approximate size, we first
        subtract what we know this client has contributed, then recalculate
        the size in gigabytes */
-    Num_Gigs -= user->libsize / 1024;
-    user->libsize += atoi (field[2]) / 1024 / 1024; /* MB */
-    Num_Gigs += user->libsize / 1024;	/* GB */
-
+    fsize = atoi (field[2]) / 1024; /* file size in kB */
+    user->libsize += fsize;
+    Num_Gigs += fsize; /* this is actually kB, not gB */
     Num_Files++;
 
     /* if this is a local connection, pass this information to our peer

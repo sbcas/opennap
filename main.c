@@ -47,7 +47,7 @@ CONNECTION **Servers = NULL;
 int Num_Servers = 0;
 
 int Num_Files = 0;
-int Num_Gigs = 0;
+int Num_Gigs = 0;		/* in kB */
 int Server_Port = 8888;		/* default */
 int SigCaught = 0;
 char Buf[1024];			/* global scratch buffer */
@@ -83,7 +83,7 @@ HANDLER (server_stats)
 {
     (void) pkt;
     send_cmd (con, MSG_SERVER_STATS, "%d %d %d", Users->dbsize, Num_Files,
-	      Num_Gigs);
+	      Num_Gigs / (1024 * 1024));
 }
 
 static void
@@ -331,7 +331,7 @@ update_stats (void)
     /* since we send the same data to many people, optimize by forming
        the message once then writing it out */
     snprintf (Buf + 4, sizeof (Buf) - 4, "%d %d %d", Users->dbsize, Num_Files,
-	Num_Gigs);
+	Num_Gigs / (1024 * 1024));
     set_tag (Buf, MSG_SERVER_STATS);
     l = strlen (Buf + 4);
     set_len (Buf, l);

@@ -43,7 +43,7 @@ free_user (USER * user)
     }
 
     Num_Files -= user->shared;
-    Num_Gigs -= user->libsize / 1024;
+    Num_Gigs -= user->libsize; /* this is in kB */
 
     /* check the global hotlist for this user to see if anyone wants notice
        of this user's departure */
