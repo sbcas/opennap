@@ -45,25 +45,26 @@ HANDLER (remove_file)
 	return;
     }
     result = mysql_store_result (Db);
-    if (mysql_num_rows (result) == 1)
+    if ((fsize = mysql_num_rows (result)) >= 1)
     {
+	ASSERT (fsize == 1);
+
 	row = mysql_fetch_row (result);
 
 	fsize = atoi (row[0]) / 1024; /* kB */
 	user->libsize -= fsize;
 	Num_Gigs -= fsize;
+	Num_Files--;
+	user->shared--;
+
+	snprintf (Buf, sizeof (Buf),
+		"DELETE FROM library WHERE owner = '%s' && filename = '%s'",
+		user->nick, pkt);
+	if (mysql_query (Db, Buf) != 0)
+	    sql_error ("remove_file", Buf);
     }
     else
 	log ("remove_file(): expected 1 row returned from query");
 
     mysql_free_result (result);
-
-    snprintf (Buf, sizeof (Buf),
-	    "DELETE FROM library WHERE owner = '%s' && filename = '%s'",
-	user->nick, pkt);
-    if (mysql_query (Db, Buf) != 0)
-	sql_error ("remove_file", Buf);
-
-    Num_Files--;
-    user->shared--;
 }

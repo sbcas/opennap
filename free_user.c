@@ -50,6 +50,7 @@ free_user (USER * user)
 	FREE (user->channels);
     }
 
+    ASSERT (Num_Files >= user->shared);
     Num_Files -= user->shared;
     Num_Gigs -= user->libsize; /* this is in kB */
 
