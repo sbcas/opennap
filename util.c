@@ -218,7 +218,7 @@ void
 init_random (void)
 {
 #ifdef HAVE_DEV_RANDOM
-    int f;
+    int f, n;
     char seed[8];
 #endif
 
@@ -228,11 +228,13 @@ init_random (void)
     /* seed the random number generate with a better random value */
     if ((f = open ("/dev/random", O_RDONLY)) > 0)
     {
-	if (read (f, seed, sizeof(seed)) != sizeof(seed))
-	    log ("init_random(): could not read enough random bytes");
-	else
+	n = read (f, seed, sizeof(seed));
+	if (n > 0)
 	{
-	    md5_process_bytes (seed, sizeof (seed), &Random_Context);
+	    if ((unsigned int) n < sizeof (seed))
+		log ("init_random(): only got %d of %d random bytes", n,
+		    sizeof (seed));
+	    md5_process_bytes (seed, n, &Random_Context);
 	    Stale_Random = 0;
 	}
 	close (f);
