@@ -54,7 +54,6 @@ send_cmd (CONNECTION *con, unsigned long msgtype, const char *fmt, ...)
     set_tag (Buf, msgtype);
     l = strlen (Buf + 4);
     set_len (Buf, l);
-    ASSERT (l==0||(isalnum(Buf[4]) || Buf[4] == ':'));
     queue_data (con, Buf, 4 + l);
 }
 

@@ -175,6 +175,8 @@ HANDLER (dispatch_command)
        this packet with a \0 to make sure we dont read overflow in the
        handlers.  the buffer_read() function should always allocate 1 byte
        more than necessary for this purpose */
+    ASSERT (VALID_LEN (con->recvbuf->data, con->recvbuf->consumed + 4 + len + 1));
+
     byte = *(pkt + len);
     ASSERT (byte != END_BYTE);	/* make sure we didn't run off the end of the
 				   buffer */
