@@ -25,19 +25,20 @@ HANDLER (public)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-    if(pop_user(con,&pkt,&sender))
+    if (pop_user (con, &pkt, &sender))
 	return;
-    ASSERT (validate_user(sender));
+    ASSERT (validate_user (sender));
     /* can't use split line here because the text field is considered all
        one item */
     /* extract the channel name. NOTE: we don't use next_arg() here because
        it will strip leading space from the text being sent */
-    ptr=next_arg_noskip(&pkt);
+    ptr = next_arg_noskip (&pkt);
     if (!pkt)
     {
 	log ("public(): too few fields");
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "too few parameters for command");
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		      "too few parameters for command");
 	return;
     }
 
@@ -53,7 +54,7 @@ HANDLER (public)
 	}
 	else
 	    log ("public(): server sent message to nonexistent channel %s",
-		ptr);
+		 ptr);
 	return;
     }
     ASSERT (validate_channel (chan));
@@ -64,23 +65,24 @@ HANDLER (public)
     {
 	/* user is not a member of this channel */
 	log ("public(): %s is not a member of channel %s", sender->nick,
-		chan->name);
+	     chan->name);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		"you are not on channel %s", chan->name);
+		      "you are not on channel %s", chan->name);
 	return;
     }
 
     if (sender->muzzled)
     {
-	log("public(): %s is muzzled", sender->nick);
+	log ("public(): %s is muzzled", sender->nick);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "You are muzzled.");
 	return;
     }
 
     if (Num_Servers)
-	pass_message_args(con,tag,":%s %s %s", sender->nick, chan->name, pkt);
+	pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name,
+			   pkt);
 
     /* format the message */
     snprintf (Buf + 4, sizeof (Buf) - 4, "%s %s %s", chan->name, sender->nick,
@@ -112,17 +114,18 @@ HANDLER (emote)
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
 	return;
-    if(user->muzzled)
+    if (user->muzzled)
     {
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"You are muzzled");
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "You are muzzled");
 	return;
     }
 
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
     {
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_ERROR, "Wrong number of parameters for command.");
+	    send_cmd (con, MSG_SERVER_ERROR,
+		      "Wrong number of parameters for command.");
 	return;
     }
 
@@ -138,18 +141,19 @@ HANDLER (emote)
     {
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		"You are not a member of channel %s", chan->name);
+		      "You are not a member of channel %s", chan->name);
 	return;
     }
 
-    if(Num_Servers)
-	pass_message_args(con,tag,":%s %s \"%s\"",user->nick,chan->name,pkt);
+    if (Num_Servers)
+	pass_message_args (con, tag, ":%s %s \"%s\"", user->nick, chan->name,
+			   av[1]);
 
     /* since we send the same data to multiple clients, format the data once
        and queue it up directly */
     set_tag (Buf, MSG_CLIENT_EMOTE);
     snprintf (Buf + 4, sizeof (Buf) - 4, "%s %s \"%s\"",
-	    chan->name, user->nick, av[1]);
+	      chan->name, user->nick, av[1]);
     buflen = strlen (Buf + 4);
     set_len (Buf, buflen);
     buflen += 4;
