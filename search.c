@@ -123,7 +123,7 @@ LIST *
 tokenize (char *s)
 {
     LIST *r = 0, *cur = 0;
-    char *ptr;
+    char *ptr, *t;
 
     while (*s)
     {
@@ -134,14 +134,32 @@ tokenize (char *s)
             ptr++;
         if (*ptr)
             *ptr++ = 0;
+	t = STRDUP (s);
+	if (!t)
+	{
+	    log ("tokenize(): OUT OF MEMORY");
+	    break;
+	}
         if (cur)
         {
             cur->next = new_list ();
+	    if (!cur->next)
+	    {
+		FREE (t);
+		return r;
+	    }
             cur = cur->next;
         }
         else
+	{
             cur = r = new_list ();
-        cur->data = STRDUP (s);
+	    if (!cur)
+	    {
+		FREE (t);
+		return r;
+	    }
+	}
+	cur->data = t;
 	strlower (cur->data); /* convert to lower case to save time */
         s = ptr;
     }
@@ -288,27 +306,7 @@ fdb_search (HASH *table,
     {
 	d = (DATUM *) ptok->data;
 	/* see if this entry is still valid */
-	if (!d->valid)
-	{
-	    /* remove this entry from the list */
-	    if (!last)
-	    {
-		/* first entry in the list */
-		flist->list = ptok->next;
-	    }
-	    else
-		last->next = ptok->next;
-	    /* don't free the whole list! */
-	    ptok->next = 0;
-	    list_free (ptok, (list_destroy_t) free_datum);
-	    if (!last)
-	    {
-		ptok = flist->list;
-		continue;
-	    }
-	    ptok = last; /* reset */
-	}
-	else if (token_compare (tokens, d->tokens))
+	if (d->valid && token_compare (tokens, d->tokens))
         {
             /* found match, invoke callback */
             if (cb (d, cbdata))

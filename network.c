@@ -223,7 +223,10 @@ set_max_connections (int n)
     }
     /* attempt to increase the hard limit */
     if (lim.rlim_max < n)
+    {
+	log ("set_max_connections(): default hard limit was %d", lim.rlim_max);
 	lim.rlim_max = n;
+    }
 #ifndef HAVE_POLL
     if (lim.rlim_max < FD_SETSIZE)
     {

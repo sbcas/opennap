@@ -506,8 +506,9 @@ char *
 strlower (char *s)
 {
     char *r = s;
+    ASSERT (s != 0);
     while (*s)
-    	*s++ = tolower ((unsigned char)*s);
+    	*s++ = tolower ((unsigned char) *s);
     return r;
 }
 

@@ -1,6 +1,6 @@
 Frequently Asked Questions (FAQ) about opennap
 ==============================================
-Last updated on February 25, 2000.
+Last updated on February 28, 2000.
 
 Q:  What is opennap?
 A:  opennap is an open source server which speaks the napster protocol
@@ -17,3 +17,26 @@ A:  We are not affiliated with Napster, Inc.  You should contact them for
 
 Q:  What language is opennap written in?
 A:  ANSI C.
+
+Q:  How do I get more than 256 connections?
+A:  On some systems without a poll() function, the maximum number of file
+    descriptors that a process can have is controlled by the FD_SETSIZE
+    macro.  If you only have select(), try rerunning configure with the
+    --fd-setsize=1024 option to specify a higher value.
+
+Q:  How do I get more than 1024 connections under Linux?
+A:  You can set the per-process file descriptor limit dynamically by piping
+    an integer to /proc/sys/fs/file-max
+    (eg.  echo 8192 > /proc/sys/fs/file-max).  The default value seems to
+    4096 which should be good enough.
+
+    In order to utilize more than 1024 file descriptors, you must run
+    opennap as root.  Set your `connection_hard_limit' variable to something
+    higher than 1024 and you should be set.
+
+Q:  Isn't running opennap as root a security risk?
+A:  Running anything as root can potentially be a security risk.  Opennap
+    attempts to reduce the risk by allowing you to specify the default
+    uid/gid to run as.  After setting the max file descriptors, opennap
+    calls setuid() and setgid() to drop root privilege (by default it uses
+    user nobody, group nobody).

@@ -50,6 +50,17 @@ as will fit in it.
 wrote a custom db for storing the shared files. MySQL is now only used for
 account management.
 
+allow max_shared to be 0 to allow unlimited sharing
+
+added new config vars 'uid' and 'gid' to specify the uid/gid to switch to
+if running as root (uid 0)
+
+added new config var 'connection_hard_limit' to specify the maxium number
+of file descriptors the process can use
+
+added configure option --with-fd-setsize to specify the maxium number of
+filedescriptor that can be used on select() based systems
+
 Changes from 0.11
 =================
 
