@@ -1,4 +1,4 @@
-/* Copyright (C) 1999 drscholl@hotmail.com
+/* Copyright (C) 2000 drscholl@sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -99,7 +99,7 @@ static void
 version (void)
 {
     fprintf (stderr, "%s %s\n", PACKAGE, VERSION);
-    fprintf (stderr, "Copyright (C) 1999 drscholl@hotmail.com\n");
+    fprintf (stderr, "Copyright (C) 2000 drscholl@sourceforge.net\n");
     exit (0);
 }
 

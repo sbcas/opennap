@@ -1,6 +1,6 @@
-/* Copyright (C) 1999 drscholl@hotmail.com
+/* Copyright (C) 2000 drscholl@sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License. */
+   GNU Public License.  See the file COPYING for details. */
 
 #include <mysql.h>
 #include <stdio.h>
