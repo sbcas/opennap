@@ -87,7 +87,7 @@ sync_chan (CHANNEL * chan, CONNECTION * con)
 	    snprintf (buf + len, sizeof (buf) - len, " %s",
 		      (char *) list->data);
 	}
-	send_cmd (con, MSG_CLIENT_OP, "%s%s", chan->name, buf);
+	send_cmd (con, MSG_CLIENT_OP, ":%s %s%s", Server_Name, chan->name, buf);
     }
 }
 
