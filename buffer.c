@@ -416,6 +416,10 @@ send_queued_data (CONNECTION *con)
 	    log ("send_queued_data(): write: %s (errno %d)",
 		    strerror (errno), errno);
 	    log ("send_queued_data(): closing connection for %s", con->host);
+	    /* remove_connection() calls this routine, so zero the send
+	       buffer out so we don't infinite loop */
+	    buffer_free (con->sendbuf);
+	    con->sendbuf = 0;
 	    remove_connection (con);
 	}
 	return;
@@ -431,6 +435,10 @@ send_queued_data (CONNECTION *con)
 	log ("send_queued_data(): output buffer for %s exceeded %d bytes", 
 		con->host, n);
 	log ("send_queued_data(): closing connection for %s", con->host);
+	/* remove_connection() calls this routine, so zero the send
+	   buffer out so we don't infinite loop */
+	buffer_free (con->sendbuf);
+	con->sendbuf = 0;
 	remove_connection (con);
 	return;
     }
