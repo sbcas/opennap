@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <netdb.h>
+#include <limits.h>
 #if HAVE_MLOCKALL
 #include <sys/mman.h>
 #endif /* HAVE_MLOCKALL */
