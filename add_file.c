@@ -161,6 +161,7 @@ fdb_add (HASH * table, char *key, DATUM * d)
 {
     FLIST *files;
 
+    ASSERT (key != 0);
     files = hash_lookup (table, key);
     /* if there is no entry for this particular word, create one now */
     if (!files)
@@ -203,6 +204,9 @@ static void
 insert_datum (DATUM * info, char *av)
 {
     LIST *tok;
+
+    ASSERT (info != 0);
+    ASSERT (av != 0);
 
     /* split the filename into words */
     info->tokens = tokenize (av);

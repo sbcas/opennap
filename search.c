@@ -166,7 +166,7 @@ tokenize (char *s)
 	    if (!cur)
 	    {
 		FREE (t);
-		return r;
+		return 0;
 	    }
 	}
 	cur->data = t;
