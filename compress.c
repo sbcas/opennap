@@ -35,6 +35,10 @@ HANDLER (compressed_data)
 	log ("compressed_data(): decompressed size did not match packet label");
 	return;
     }
+
+    log ("compressed_data(): uncompressed %d bytes into %d bytes",
+	    con->recvbytes - 6, datasize);
+
     /* handle each of the uncompressed packets */
     while (offset < datasize)
     {

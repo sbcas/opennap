@@ -244,6 +244,7 @@ handle_connection (CONNECTION *con)
     /* make sure we don't buffer overflow */
     if (len > con->recvdatamax)
     {
+#if 0
 	if (len > 512)
 	{
 	    /* if we receive a message with length longer than this, there
@@ -253,6 +254,7 @@ handle_connection (CONNECTION *con)
 	    remove_connection (con);
 	    return;
 	}
+#endif
 	con->recvdatamax = len + 1; /* allow for the trailing \0 we add */
 	con->recvdata = REALLOC (con->recvdata, con->recvdatamax);
     }

@@ -266,10 +266,11 @@ send_queued_data (CONNECTION *con)
 		    set_val (con->sendbuf + con->sendbuflen,
 			MSG_SERVER_COMPRESSED_DATA);
 		    con->sendbuflen += 2;
-		    set_val (con->sendbuf, l); /* uncompressed size */
+		    set_val (con->sendbuf + con->sendbuflen, l); /* uncompressed size */
 		    con->sendbuflen += 2;
 
 		    memcpy (con->sendbuf + con->sendbuflen, data, datasize);
+		    con->sendbuflen += datasize;
 		    con->sendbufcompressed = con->sendbuflen;
 
 		    log ("send_queued_data(): compressed %d bytes into %d (%d%%).",
