@@ -548,7 +548,8 @@ main (int argc, char **argv)
 	}
 
 #if HAVE_POLL
-	if ((n = poll (ufd, ufdsize, next_timer () * 1000)) < 0)
+	i=next_timer () * 1000;
+	if ((n = poll (ufd, ufdsize, i)) < 0)
 	{
 	    int saveerrno = errno;
 
@@ -558,11 +559,16 @@ main (int argc, char **argv)
 		socklen_t sinsize;
 
 		/* try to figure out which argument caused the problem */
+		log("checking for errors");
+		log("timeout was %d", i);
+		log("ufdsize was %d", ufdsize);
 		ASSERT (ufdsize >= Max_Clients+2);
 		ASSERT (VALID_LEN (ufd, sizeof (struct pollfd) * ufdsize));
+		log("checking individual fd's");
 		for(i=0;i<ufdsize;i++) {
 		    if(i>1 && i <Max_Clients+2 && Clients[i-2]){
 			ASSERT(ufd[i].fd == Clients[i-2]->fd);
+			ASSERT(ufd[i].events & POLLIN);
 			sinsize=sizeof(sin);
 			if(getpeername(ufd[i].fd, (struct sockaddr*)&sin,
 				&sinsize)) {
@@ -574,13 +580,18 @@ main (int argc, char **argv)
 		    }
 		    else if(i==0) {
 			ASSERT(ufd[0].fd==s);
+			ASSERT(ufd[0].events & POLLIN);
 		    } else if(i==1) {
 			ASSERT(ufd[1].fd==sp);
+			ASSERT(ufd[1].events & POLLIN);
 		    } else {
 			ASSERT(ufd[i].fd==-1);
 			ASSERT(ufd[i].events==0);
 		    }
 		}
+#if 1
+		break;	/* die gracefully */
+#else
 		/* reallocate the ufd structs just to make sure */
 		FREE (ufd);
 		ufdsize=2;
@@ -589,6 +600,7 @@ main (int argc, char **argv)
 		ufd[0].events=POLLIN;
 		ufd[1].fd=sp;
 		ufd[1].events=POLLIN;
+#endif
 		continue;
 	    }
 	}
