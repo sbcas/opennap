@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-June 21, 2000
+July 19, 2000
 
 0.  Foreward
 
@@ -1211,11 +1211,23 @@ appropriate, examples of the <data> section for each message are given.
 
 832-869	missing.
 
-870	??? [CLIENT]
+870	add files by directory [CLIENT]
 
-	<?> ...?
+	Format: "<directory>" "<file>" <md5> <size> <bitrate> <freq> <duration>
+	[ ... ]
 
-	takes at least one argument.  no apparent effect.
+	This command allows a client to share multiple files in the same
+	directory as a shortcut to multiple 100 (share file) commands.
+	<directory> is the path which should be prepended to all the given
+	filenames in the rest of the command.  <file> is the name of the file
+	to share *without* its directory component.  When other clients do a
+	browse/share, the real path will be reported as <directory>/<file>.
+
+	The portion of this command after the <directory> may be repeated as
+	many times as necessary for files in the same directory. NOTE: most
+	servers will not accept commands of length longer than 2048 bytes
+	so you still may need to break up the files into multiple commands
+	if there are many files in a single directory.
 
 871-899	missing.
 
