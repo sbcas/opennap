@@ -359,7 +359,7 @@ HANDLER (add_file)
 	return;
     }
 
-    if (strlen (av[0]) > _POSIX_PATH_MAX)
+    if (av[1] - av[0] > _POSIX_PATH_MAX + 2)
     {
 	send_cmd(con,MSG_SERVER_NOSUCH,"filename too long");
 	return;
@@ -450,7 +450,7 @@ HANDLER (share_file)
 	return;
     }
 
-    if (strlen (av[0]) > _POSIX_PATH_MAX)
+    if (av[1] - av[0] > _POSIX_PATH_MAX + 2)
     {
 	send_cmd(con,MSG_SERVER_NOSUCH,"filename too long");
 	return;
@@ -523,11 +523,8 @@ HANDLER (add_directory)
     {
 	if (Max_Shared && con->user->shared > Max_Shared)
 	{
-	    log ("add_directory(): %s is sharing %d files", con->user->nick,
-		 con->user->shared);
-	    if (ISUSER (con))
-		send_cmd (con, MSG_SERVER_NOSUCH,
-			  "You may only share %d files", Max_Shared);
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		    "You may only share %d files", Max_Shared);
 	    return;
 	}
 	basename = next_arg (&pkt);
@@ -548,10 +545,7 @@ HANDLER (add_directory)
 	strncpy (path + pathlen, basename, sizeof (path) - 1 - pathlen);
 	if (con->uopt->files && hash_lookup (con->uopt->files, path))
 	{
-	    log ("add_directory(): duplicate for %s: %s", con->user->nick,
-		 path);
-	    if (ISUSER (con))
-		send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
+	    send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
 	    continue;	/* get next file */
 	}
 

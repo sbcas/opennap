@@ -21,7 +21,6 @@ HANDLER (remove_file)
     user = con->user;
     if (!user->shared)
     {
-	log ("remove_file(): %s is not sharing any files", user->nick);
 	send_cmd (con, MSG_SERVER_NOSUCH, "you are not sharing any files");
 	return;
     }
@@ -30,7 +29,6 @@ HANDLER (remove_file)
     info = hash_lookup (con->uopt->files, pkt);
     if (!info)
     {
-	log ("remove_file(): %s is not sharing %s", user->nick, pkt);
 	send_cmd (con, MSG_SERVER_NOSUCH, "you are not sharing that file");
 	return;
     }
