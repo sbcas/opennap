@@ -496,6 +496,7 @@ CONNECTION *new_connection (void);
 HOTLIST *new_hotlist (void);
 int new_tcp_socket (void);
 char *next_arg (char **);
+time_t next_timer (void);
 void nosuchuser (CONNECTION *, char *);
 void notify_mods (const char *, ...);
 void part_channel (CHANNEL *, USER *);

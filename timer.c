@@ -101,6 +101,13 @@ exec_timers (time_t now)
     }
 }
 
+/* returns the time at which the next pending event is scheduled */
+time_t
+next_timer (void)
+{
+    return (Pending_Timers ? Pending_Timers->next_time : -1);
+}
+
 void
 free_timers (void)
 {

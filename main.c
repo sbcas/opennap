@@ -500,13 +500,13 @@ main (int argc, char **argv)
 	ufd[Num_Clients+1].fd = sp;
 	ufd[Num_Clients+1].events = POLLIN;
 
-	if ((n = poll (ufd, Num_Clients + 2, pending ? 0 : Stat_Click * 1000)) < 0)
+	if ((n = poll (ufd, Num_Clients + 2, pending ? 0 : (next_timer() - Current_Time)* 1000)) < 0)
 	{
 	    perror ("poll");
 	    continue;
 	}
 #else
-	t.tv_sec = pending ? 0 : Stat_Click;
+	t.tv_sec = pending ? 0 : next_timer () - Current_Time;
 	t.tv_usec = 0;
 	if ((n = select (maxfd + 1, &set, &wset, NULL, &t)) < 0)
 	{
