@@ -174,9 +174,27 @@ HANDLER (login)
 
 	if (con->class == CLASS_UNKNOWN)
 	{
-	    log ("login(): %s is already active", user->nick);
-	    send_cmd (con, MSG_SERVER_ERROR, "%s is already active",
-		      user->nick);
+	    /* check for ghosts.  if another client from the same ip address
+	       logs in, kill both clients (for now) */
+	    if (user->host == con->ip)
+	    {
+		log ("login(): killing ghost for %s at %s",
+			user->nick, my_ntoa(user->host));
+		if(ISUSER(user->con))
+		{
+		    /* TODO: there is a numeric for this somewhere */
+		    send_cmd(user->con,MSG_SERVER_NOSUCH,"you are a ghost");
+		    user->con->destroy=1;
+		}
+		/* notify the user to log back in */
+		send_cmd(con,MSG_SERVER_ERROR,"killed your ghost, please log in again");
+	    }
+	    else
+	    {
+		log ("login(): %s is already active", user->nick);
+		send_cmd (con, MSG_SERVER_ERROR, "%s is already active",
+			user->nick);
+	    }
 	    con->destroy = 1;
 	}
 	else if (ISSERVER (con))

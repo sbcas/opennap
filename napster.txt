@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-May 24, 2000
+May 31, 2000
 
 0.  Foreward
 
@@ -114,7 +114,7 @@ appropriate, examples of the <data> section for each message are given.
 
 5       "auto-upgrade" [SERVER]
 
-        <version> <hostname:filename>
+        Format: <version> <hostname:filename>
 
         Napster is out of date, get a new version.
         Or also known as gaping security hole.
@@ -224,7 +224,7 @@ appropriate, examples of the <data> section for each message are given.
 
 100	client notification of shared file [CLIENT]
 
-	"<filename>" <md5> <size> <bitrate> <frequency> <time>
+	Format: "<filename>" <md5> <size> <bitrate> <frequency> <time>
 
 	<md5> see section "MD5"
 	<size> is bytes
@@ -238,7 +238,7 @@ appropriate, examples of the <data> section for each message are given.
 
 102	remove file [CLIENT]
 
-	<filename>
+	Format: <filename>
 
 	client requests to remove file from shared library
 
@@ -300,11 +300,11 @@ appropriate, examples of the <data> section for each message are given.
 
 202	end of search response from server [SERVER]
 
-	no data.
+	Format: (empty)
 
 203	download request [CLIENT]
 
-	<nick> "<filename>"
+	Format: <nick> "<filename>"
 
 	client requests to download <filename> from <nick>.  client expects
 	to make an outgoing connection to <nick> on their specified data
