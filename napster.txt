@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-February 1, 2000
+February 8, 2000
 
 0.  Forward
 
@@ -704,11 +704,11 @@ appropriate, examples of the <data> section for each message are given.
 
 	client requests that the enforced silence on <nick> be lifted
 
-624	un-nuke a user
+624	un-nuke a user [CLIENT]
 
-625	change a user's linespeed
+625	change a user's linespeed [CLIENT]
 
-626	data port error
+626	data port error [CLIENT]
 
 	<user>
 
@@ -742,6 +742,12 @@ appropriate, examples of the <data> section for each message are given.
 
 	client is notifying server that its correct link speed is <speed>,
 	in the range 0-10 (see the login message for details).
+
+701	change user password [CLIENT]
+
+	<password>
+
+	client wishes to change their password
 
 702	change email address [CLIENT]
 

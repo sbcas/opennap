@@ -75,3 +75,23 @@ HANDLER (change_speed)
     else if (con->class == CLASS_USER)
 	send_cmd (con, MSG_SERVER_NOSUCH, "invalid speed");
 }
+
+/* 701 [ :<user> ] <password>
+   change user password */
+HANDLER (change_pass)
+{
+    USER *user;
+
+    (void) pkt;
+    (void) len;
+    if (pop_user (con, &pkt, &user) != 0)
+	return;
+    snprintf (Buf, sizeof (Buf),
+	"UPDATE accounts SET password='%s' WHERE nick='%s'", pkt, user->nick);
+    if (mysql_query (Db, Buf) != 0)
+    {
+	sql_error ("change_pass", Buf);
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "db error");
+    }
+}
