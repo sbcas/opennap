@@ -1,7 +1,7 @@
-opennap v0.23 (ALPHA)
+opennap v0.24 (ALPHA)
 the open source (TM) napster server
 =====================
-March 28, 2000
+March 30, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -86,6 +86,25 @@ development of the server.
 
        In BWap, you would do:
        /admin connect <server> <port>
+
+* OperServ
+
+Since many existing Napster clients can't be extended to make use of the few
+opennap specific commands, a pseudo user named OperServ was created which
+only responds to private messages from users of level Moderator or above (it
+is invisible in all other ways).  It currently supports the following
+commands:
+
+	chanlevel
+	register
+	connect
+	disconnect
+	killserver
+	links
+	stats
+
+See below in the section `Non-standard messages' for a descripton of the
+syntax for these commands.
 
 * Server to Server messages
 
