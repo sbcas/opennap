@@ -55,11 +55,13 @@ search_callback (DATUM * match, SEARCH * parms)
 	return 0;
     if (BitRate[match->bitrate] < parms->minbitrate)
     {
+#if 0
 	/* TODO: remove this once testing is done.  for some reason its
 	   not working correctly */
 	log("search_callback(): %s => %s, %s, bitrate %d < minbitrate %d",
 		parms->user->nick, match->user->nick, match->filename,
 		BitRate[match->bitrate], parms->minbitrate);
+#endif
 	return 0;
     }
     if (BitRate[match->bitrate] > parms->maxbitrate)
