@@ -484,6 +484,34 @@ main (int argc, char **argv)
 	Current_Time = time (0);
 
 #if HAVE_POLL
+	/* under linux the poll() syscall does a sanity check to make sure
+	   the nfds argument passed in is less than the max number of fds
+	   allocated for the process.  in order to avoid the gap becoming
+	   too large we shift down to fill the holes when clients drop off
+	   to avoid hitting this error */
+	if (Num_Clients + 10 < Max_Clients)
+	{
+	    int j;
+
+	    log ("main(): shrinking connection arrarys");
+	    for (i = 0, j = 0; i < Max_Clients; i++)
+	    {
+		if (Clients[i])
+		{
+		    if (i != j)
+			Clients[j] = Clients[i];
+		    j++;
+		}
+	    }
+	    ASSERT (j == Num_Clients);
+	    if (safe_realloc ((void **) &Clients, (j + 10) * sizeof (CONNECTION *)))
+	    {
+		log ("main(): safe_realloc failed");
+		break;
+	    }
+	    Max_Clients = j + 10;
+	}
+
 	/* ensure that we have enough pollfd structs.  add two extra for
 	   the incoming connections port and the stats port */
 	if (ufdsize < Max_Clients + 2)
@@ -497,7 +525,6 @@ main (int argc, char **argv)
 	    }
 	    while (ufdsize < Max_Clients + 12)
 	    {
-		memset(&ufd[ufdsize], 0, sizeof (struct pollfd));
 		ufd[ufdsize].fd = -1;
 		ufdsize++;
 	    }
@@ -540,16 +567,13 @@ main (int argc, char **argv)
 	    }
 #if HAVE_POLL
 	    else
-	    {
-		memset(&ufd[i+2], 0, sizeof (struct pollfd));
 		ufd[i + 2].fd = -1;	/* unused */
-	    }
 #endif
 	}
 
 #if HAVE_POLL
-	i=next_timer () * 1000;
-	if ((n = poll (ufd, ufdsize, i)) < 0)
+	i = next_timer () * 1000;
+	if ((n = poll (ufd, Max_Clients + 2, i)) < 0)
 	{
 	    int saveerrno = errno;
 
@@ -562,6 +586,8 @@ main (int argc, char **argv)
 		log("checking for errors");
 		log("timeout was %d", i);
 		log("ufdsize was %d", ufdsize);
+		log("Max_Clients was %d", Max_Clients);
+		log("Num_Clients was %d", Num_Clients);
 		ASSERT (ufdsize >= Max_Clients+2);
 		ASSERT (VALID_LEN (ufd, sizeof (struct pollfd) * ufdsize));
 		log("checking individual fd's");
