@@ -16,6 +16,6 @@
 * allow channels file to accept the default level as either a word or the
   number
 
-* find the server output for the cloak command
-
 * find the server output for the global users list
+
+* add -cloak usermode

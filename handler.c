@@ -132,7 +132,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_LIMIT, queue_limit},		/* 619 */
     {MSG_CLIENT_MOTD, show_motd},		/* 621 */
     {MSG_CLIENT_MUZZLE, muzzle},		/* 622 */
-    {MSG_CLIENT_UNMUZZLE, unmuzzle},		/* 623 */
+    {MSG_CLIENT_UNMUZZLE, muzzle},		/* 623 */
 #if 0
     {MSG_CLIENT_UNNUKE, unnuke},		/* 624 */
 #endif

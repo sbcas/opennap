@@ -247,16 +247,12 @@ HANDLER (alter_speed)
     char *av[2];
 
     ASSERT (validate_connection (con));
-    (void) tag;
     (void) len;
     if (pop_user (con, &pkt, &sender))
 	return;
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
-
-    if (ac != 2)
+    if (ac < 2)
     {
-	log ("alter_speed(): wrong number of parameters");
-	print_args (ac, av);
 	unparsable (con);
 	return;
     }
@@ -276,10 +272,7 @@ HANDLER (alter_speed)
     user = hash_lookup (Users, av[0]);
     if (!user)
     {
-	log ("alter_speed(): could not find %s", av[0]);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "User %s is not currently online.", av[0]);
+	nosuchuser(con, av[0]);
 	return;
     }
     ASSERT (validate_user (user));

@@ -710,7 +710,6 @@ HANDLER (server_usage);
 HANDLER (server_version);
 HANDLER (share_file);
 HANDLER (show_motd);
-HANDLER (unmuzzle);
 HANDLER (upload_ok);
 HANDLER (upload_start);
 HANDLER (upload_end);

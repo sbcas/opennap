@@ -88,9 +88,7 @@ appropriate, examples of the <data> section for each message are given.
 		8  DSL
 		9  T1
 		10 T3 or greater
-	<num> it is unknown what this field is used for, and appears to be
-		optional when logging into the servers.  <num> appears to
-		always be 4398556 for Napster 2.0 Beta 5a.
+	<num> build number for the windows client [optional]
 		
 	Example:
 
