@@ -392,6 +392,15 @@ args (int argc, char **argv, int *sockfdcount)
     return sockfd;
 }
 
+/* sync in-memory state to disk so we can restore properly */
+static void
+dump_state (void)
+{
+    userdb_dump ();		/* write out the user database */
+    save_bans ();		/* write out server bans */
+    dump_channels ();		/* write out persistent channels file */
+}
+
 int
 main (int argc, char **argv)
 {
@@ -434,8 +443,7 @@ main (int argc, char **argv)
     add_timer (Collect_Interval, -1, (timer_cb_t) fdb_garbage_collect, MD5);
 #endif /* RESUME */
     add_timer (Stat_Click, -1, (timer_cb_t) update_stats, 0);
-    add_timer (User_Db_Interval, -1, (timer_cb_t) userdb_dump, 0);
-    add_timer (User_Db_Interval, -1, (timer_cb_t) dump_channels, 0);
+    add_timer (User_Db_Interval, -1, (timer_cb_t) dump_state, 0);
 
     /* initialize so we get the correct delta for the first call to
        update_stats() */
@@ -546,9 +554,7 @@ main (int argc, char **argv)
     if (sp != -1)
 	CLOSE (sp);
 
-    userdb_dump ();		/* write out the user database */
-    save_bans ();		/* write out server bans */
-    dump_channels ();		/* write out persistent channels file */
+    dump_state();	/* save to disk */
 
     /* close all client connections */
     for (i = 0; i < Max_Clients; i++)
