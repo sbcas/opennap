@@ -82,7 +82,7 @@ HANDLER (kill_user)
     ASSERT (validate_user (user));
 
     /* check for permission */
-    if (killer && (user->level >= killer->level))
+    if (killer && killer->level < LEVEL_ELITE && user->level >= killer->level)
     {
 	permission_denied (con);
 	return;
