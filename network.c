@@ -133,7 +133,7 @@ make_tcp_connection (const char *host, int port, unsigned int *ip)
 	{
 	    log ("make_tcp_connection: connect: %s (errno %d)",
 		    strerror (errno), errno);
-	    close (f);
+	    CLOSE (f);
 	    return -1;
 	}
 	log ("make_tcp_connection: connection to %s in progress", host);

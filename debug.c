@@ -63,8 +63,15 @@ debug_malloc (int bytes, const char *file, int line)
 		 file, line);
 	return 0;
     }
-    Memory_Usage += bytes;
     block->val = malloc (bytes + 1);
+    if (!block->val)
+    {
+	fprintf (stderr, "debug_malloc(): memory exhausted at %s:%d", __FILE__,
+		__LINE__);
+	free (block);
+	return 0;
+    }
+    Memory_Usage += bytes;
     block->len = bytes;
     block->file = strdup (file);
     block->line = line;

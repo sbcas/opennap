@@ -39,7 +39,7 @@ remove_connection (CONNECTION *con)
     send_queued_data (con);
 
     /* close socket */
-    close (con->fd);
+    CLOSE (con->fd);
 
     if (con->class == CLASS_USER)
     {
