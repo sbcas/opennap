@@ -29,16 +29,39 @@ HANDLER (server_links)
     {
 	serv = list->data;
 	send_cmd (con, MSG_SERVER_LINKS, "%s %d %s %d 0 %d",
-	    Server_Name, get_local_port (serv->fd), serv->host,
-	    serv->port, serv->recvbuf->datamax);
+		  Server_Name, get_local_port (serv->fd), serv->host,
+		  serv->port, serv->recvbuf->datamax);
     }
     /* dump remote servers */
     for (list = Server_Links; list; list = list->next)
     {
 	slink = list->data;
 	send_cmd (con, MSG_SERVER_LINKS, "%s %d %s %d %d -1", slink->server,
-		slink->port, slink->peer, slink->peerport, slink->hops);
+		  slink->port, slink->peer, slink->peerport, slink->hops);
     }
     /* terminate the list */
     send_cmd (con, MSG_SERVER_LINKS, "");
+}
+
+/* 10116 [ :<sender> ] <server> [ <args> ] */
+HANDLER (ping_server)
+{
+    USER *sender;
+    char *server;
+
+    (void) len;
+    ASSERT (validate_connection (con));
+    if (pop_user (con, &pkt, &sender))
+	return;
+    if (!pkt)
+    {
+	unparsable (con);
+	return;
+    }
+    server = next_arg (&pkt);
+    if (!strcasecmp (Server_Name, server))
+	send_user (sender, tag, "%s %s", Server_Name, NONULL (pkt));
+    else
+	pass_message_args (con, tag, ":%s %s %s", sender->nick, server,
+			   NONULL (pkt));
 }

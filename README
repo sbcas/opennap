@@ -328,6 +328,13 @@ are implemented as additional functionality in the opennap server.
 	<memory>	if debugging is enabled, this will show the memory
 			currently in use, otherwise it will be -1
 
+10116	server ping [CLIENT, SERVER]
+
+	<server> [ <arg> ]
+
+	allows a client to "ping" a server.  the option parameter <arg>
+	will be returned by the server in the ping response.
+
 10201	set channel level [CLIENT]
 
 	<channel> <level>
