@@ -314,7 +314,7 @@ void *array_remove (void *, int *, void *);
 void close_db (void);
 void config (const char *);
 void config_defaults (void);
-void dispatch_command (CONNECTION *con, short tag, short len);
+void dispatch_command (CONNECTION *con, unsigned short tag, unsigned short len);
 void expand_hex (char *, int);
 void free_ban (BAN *);
 void free_channel (CHANNEL *);

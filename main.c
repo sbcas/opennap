@@ -167,9 +167,11 @@ static HANDLER Protocol[] = {
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
 
 void
-dispatch_command (CONNECTION *con, short tag, short len)
+dispatch_command (CONNECTION *con, unsigned short tag, unsigned short len)
 {
     int l;
+
+    ASSERT (validate_connection (con));
 
     for (l = 0; l < Protocol_Size; l++)
     {
@@ -296,10 +298,6 @@ handle_connection (CONNECTION *con)
 	con->recvbytes += l;
     }
 
-    /* reset to 0 since we got all of the data we desired.  `len' contains
-       the lenght of the packet body */
-    con->recvbytes = 0;
-
     /* require that the client register before doing anything else */
     if (con->class == CLASS_UNKNOWN &&
 	(tag != MSG_CLIENT_LOGIN && tag != MSG_CLIENT_LOGIN_REGISTER &&
@@ -309,20 +307,28 @@ handle_connection (CONNECTION *con)
 	log ("main(): %s is not registered, closing connection",
 	     con->host);
 	remove_connection (con);
-	return;
+	goto done;
     }
 
     /* if we received this message from a peer server, pass it
        along to the other servers behind us.  the ONLY message we don't
        propogate is an ACK from a peer server that we've requested a link
        with */
-    if (con->class == CLASS_SERVER && tag != MSG_SERVER_LOGIN_ACK)
+    if (con->class == CLASS_SERVER && tag != MSG_SERVER_LOGIN_ACK &&
+	    Num_Servers)
 	pass_message (con, con->recvdata, len);
 
     ASSERT (con->recvdata != 0);
     con->recvdata[len] = 0;		/* terminate the string */
 
     dispatch_command (con, tag, len);
+
+done:
+
+    /* reset to 0 since we got all of the data we desired.  `len' contains
+       the lenght of the packet body */
+    con->recvbytes = 0;
+
 }
 
 static void

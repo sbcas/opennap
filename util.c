@@ -498,7 +498,7 @@ validate_connection (CONNECTION *con)
     ASSERT_RETURN_IF_FAIL (VALID (con->host), 0);
     ASSERT_RETURN_IF_FAIL ((con->recvdata != 0) ^ (con->recvdatamax == 0), 0);
     ASSERT_RETURN_IF_FAIL (con->recvdatamax == 0 || VALID_LEN (con->recvdata, con->recvdatamax), 0);
-    ASSERT_RETURN_IF_FAIL (con->recvbytes <= con->recvdatamax, 0);
+    ASSERT_RETURN_IF_FAIL (con->recvbytes <= con->recvdatamax + 4, 0);
     ASSERT_RETURN_IF_FAIL ((con->sendbuf != 0) ^ (con->sendbufmax == 0), 0);
     ASSERT_RETURN_IF_FAIL (con->sendbufmax == 0 || VALID_LEN (con->sendbuf, con->sendbufmax), 0);
     ASSERT_RETURN_IF_FAIL (con->sendbuflen <= con->sendbufmax, 0);
