@@ -21,17 +21,9 @@ HANDLER (server_links)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-    CHECK_USER_CLASS ("server_links");
     if (pop_user (con, &pkt, &user) != 0)
 	return;
     ASSERT (validate_user (user));
-
-    if (user->level < LEVEL_MODERATOR)
-    {
-	if (con->class == CLASS_USER)
-	    permission_denied (con);
-	return;			/* no privilege */
-    }
 
     if (!*pkt || !strcasecmp (Server_Name, pkt))
     {
@@ -40,8 +32,7 @@ HANDLER (server_links)
 	    serv = list->data;
 	    if (serv->recvbuf)
 		send_user (user, MSG_SERVER_LINKS, "%s %d %d %d %d",
-			   serv->host, serv->port,
-			   serv->recvbuf->datamax,
+			   serv->host, serv->port, serv->recvbuf->datamax,
 			   serv->recvbuf->datasize, serv->recvbuf->consumed);
 	    else
 		send_user (user, MSG_SERVER_LINKS, "%s %d 0 0 0",

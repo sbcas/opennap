@@ -423,11 +423,13 @@ appropriate, examples of the <data> section for each message are given.
 	client sends this message when they are finished uploading a file.
 	this subtracts one from the upload count maintained by the server.
 
-300	??? [CLIENT]
+300	optional ports [CLIENT]
 
 	<port>
 
-	[anyone know what this command is for? -ed]
+	This command allows the client to specify optional ports to try for
+	data connections if the one currently in use is unreachable by other
+	parties.
 
 301	hotlist ack [SERVER]
 
