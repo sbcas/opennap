@@ -32,11 +32,12 @@ notify_mods (const char *fmt, ...)
 }
 
 /* request to kill (disconnect) a user */
-/* [ :<nick> ] <user> [ <reason> ] */
+/* [ :<nick> ] <user> [ "<reason>" ] */
 HANDLER (kill_user)
 {
+    char *av[2], *killernick;
+    int ac;
     USER *killer = 0, *user;
-    char *killernick, *target;
 
     (void) tag;
     (void) len;
@@ -68,16 +69,22 @@ HANDLER (kill_user)
 	}
     }
 
-    /* extract the target of the kill */
-    target = next_arg (&pkt);
+    ac = split_line (av, sizeof (av) / sizeof (char), pkt);
+    if (ac < 1)
+    {
+	log ("kill_user(): missing target user");
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Too few parameters");
+	return;
+    }
 
     /* find the user to kill */
-    user = hash_lookup (Users, target);
+    user = hash_lookup (Users, av[0]);
     if (!user)
     {
-	log ("kill_user(): could not locate user %s", target);
-	if (con->class == CLASS_USER)
-	    nosuchuser (con, target);
+	log ("kill_user(): could not locate user %s", av[0]);
+	if (ISUSER (con))
+	    nosuchuser (con, av[0]);
 	return;
     }
     ASSERT (validate_user (user));
@@ -92,14 +99,18 @@ HANDLER (kill_user)
 	return;
     }
 
-    pass_message_args (con, MSG_CLIENT_KILL, ":%s %s %s",
-		       killernick, user->nick, NONULL (pkt));
+    if (ac > 1)
+	pass_message_args (con, MSG_CLIENT_KILL, ":%s %s \"%s\"",
+		killernick, user->nick, av[1]);
+    else
+	pass_message_args (con, MSG_CLIENT_KILL, ":%s %s",
+		killernick, user->nick);
 
     /* log this action */
-    log ("kill_user(): %s killed %s: %s", killernick, user->nick, NONULL (pkt));
+    log ("kill_user(): %s killed %s: %s", killernick, user->nick, ac>1?av[1]:"");
 
     /* notify mods+ that this user was killed */
-    notify_mods ("%s killed %s: %s", killernick, user->nick, NONULL (pkt));
+    notify_mods ("%s killed %s: %s", killernick, user->nick, ac>1?av[1]:"");
 
     /* forcefully close the client connection if local, otherwise remove
        from global user list */
@@ -108,7 +119,7 @@ HANDLER (kill_user)
 	user->con->destroy = 1;
 	/* notify user they were killed */
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-		  "You have been killed by %s: %s", killernick, NONULL (pkt));
+		  "You have been killed by %s: %s", killernick, ac>1?av[1]:"");
     }
     /* remote user, just remove from the global list */
     else

@@ -13,9 +13,6 @@
 
 * automatic purging of old accounts
 
-* find the numeric for an admin to change a user's password.  format appears
-  to be: <user> <password> [reason]
-
 * add a timeout to check for blocked server connect() call
 
 * channel kick and ban
