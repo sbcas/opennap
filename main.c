@@ -139,6 +139,7 @@ update_stats (void)
     }
 }
 
+/* accept all pending connections */
 static void
 accept_connection (int s)
 {
@@ -147,48 +148,54 @@ accept_connection (int s)
     struct sockaddr_in sin;
     int f;
 
-    sinsize = sizeof (sin);
-    if ((f = accept (s, (struct sockaddr *) &sin, &sinsize)) < 0)
+    for(;;)
     {
-	logerr ("accept_connection", "accept");
-	return;
-    }
-    if ((cli = new_connection ()) == 0)
-    {
-	CLOSE (f);
-	return;
-    }
-    cli->fd = f;
-    /* if we have a local connection, use the external
-       interface so others can download from them */
-    if (sin.sin_addr.s_addr == inet_addr ("127.0.0.1"))
-    {
-	log ("accept_connection(): connected via loopback, using external ip");
-	cli->ip = Server_Ip;
-	cli->host = STRDUP (Server_Name);
-	if (!cli->host)
+	sinsize = sizeof (sin);
+	if ((f = accept (s, (struct sockaddr *) &sin, &sinsize)) < 0)
 	{
-	    OUTOFMEMORY ("accept_connection");
-	    goto error;
+	    if (errno != EAGAIN)
+		logerr ("accept_connection", "accept");
+	    return;
 	}
-    }
-    else
-    {
-	cli->ip = sin.sin_addr.s_addr;
-	cli->host = STRDUP (inet_ntoa (sin.sin_addr));
-	if (!cli->host)
+	if ((cli = new_connection ()) == 0)
 	{
-	    OUTOFMEMORY ("accept_connection");
-	    goto error;
+	    CLOSE (f);
+	    return;
 	}
+	cli->fd = f;
+	/* if we have a local connection, use the external
+	   interface so others can download from them */
+	if (sin.sin_addr.s_addr == inet_addr ("127.0.0.1"))
+	{
+	    log ("accept_connection(): connected via loopback, using external ip");
+	    cli->ip = Server_Ip;
+	    cli->host = STRDUP (Server_Name);
+	    if (!cli->host)
+	    {
+		OUTOFMEMORY ("accept_connection");
+		goto error;
+	    }
+	}
+	else
+	{
+	    cli->ip = sin.sin_addr.s_addr;
+	    cli->host = STRDUP (inet_ntoa (sin.sin_addr));
+	    if (!cli->host)
+	    {
+		OUTOFMEMORY ("accept_connection");
+		goto error;
+	    }
+	}
+	cli->port = ntohs (sin.sin_port);
+	cli->class = CLASS_UNKNOWN;
+	if (add_client (cli))
+	    return;
+	set_nonblocking (f);
+	set_keepalive (f, 1);	/* enable tcp keepalive messages */
+	check_accept (cli);
     }
-    cli->port = ntohs (sin.sin_port);
-    cli->class = CLASS_UNKNOWN;
-    if (add_client (cli))
-	return;
-    set_nonblocking (f);
-    set_keepalive (f, 1);	/* enable tcp keepalive messages */
-    check_accept (cli);
+    /* not reached */
+    ASSERT (0);
     return;
 error:
     CLOSE (f);
@@ -446,12 +453,8 @@ main (int argc, char **argv)
 		    /* check for return from nonblocking connect() call */
 		    if (Clients[i]->connecting)
 			complete_connect (Clients[i]);
-		    else if (Clients[i]->sendbuf ||
-			(ISSERVER (Clients[i]) && Clients[i]->sopt->outbuf))
-		    {
-			if (send_queued_data (Clients[i]) == -1)
-			    Clients[i]->destroy = 1;
-		    }
+		    else if (send_queued_data (Clients[i]) == -1)
+			Clients[i]->destroy = 1;
 		}
 		if (Clients[i]->destroy)
 		{

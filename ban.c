@@ -232,6 +232,7 @@ check_accept (CONNECTION * cli)
 	log ("check_accept: max connections reached (%d)", Max_Connections);
 	send_cmd (cli, MSG_SERVER_ERROR,
 		  "Server is full: %d local connections", Num_Clients);
+	cli->destroy = 1;
 	return 0;
     }
     return((check_ban(cli, cli->host, BAN_IP)==0));

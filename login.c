@@ -63,10 +63,9 @@ HANDLER (login)
     (void) len;
     ASSERT (validate_connection (con));
 
-    if (con->class == CLASS_USER)
+    if (ISUSER (con))
     {
-	log ("login(): recived command %d from a logged in user: %s", tag,
-	     pkt);
+	log ("login(): recived command %d from a logged in user: %s", tag, pkt);
 	send_cmd (con, MSG_SERVER_NOSUCH, "you are already logged in");
 	return;
     }
