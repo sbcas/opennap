@@ -227,6 +227,8 @@ HANDLER (browse_new)
 					 BitRate[d->bitrate],
 					 SampleRate[d->frequency],
 					 d->duration);
+		    if(!rsp)
+			break;
 		    count++;
 		}
 		else
@@ -251,6 +253,8 @@ HANDLER (browse_new)
 					 BitRate[d->bitrate],
 					 SampleRate[d->frequency],
 					 d->duration);
+		    if (!rsp)
+			break;
 		    count = 0;
 		}
 	    }

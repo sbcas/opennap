@@ -619,6 +619,13 @@ HANDLER (channel_wallop)
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender))
 	return;
+    if (sender->muzzled)
+    {
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		      "channel wallop failed: you are muzzled");
+	return;
+    }
     chanName = next_arg (&pkt);
     if (!chanName || !pkt)
     {
@@ -684,10 +691,11 @@ HANDLER (channel_mode)
     }
 
     /* check for permission */
-    if(sender && (sender->level<chan->level ||
-		(sender->level<LEVEL_MODERATOR && !is_chanop(chan,sender))))
+    if (sender && (sender->level < chan->level ||
+		   (sender->level < LEVEL_MODERATOR
+		    && !is_chanop (chan, sender))))
     {
-	permission_denied(con);
+	permission_denied (con);
 	return;
     }
 

@@ -26,8 +26,8 @@ append_string (char *in, const char *fmt, ...)
     {
 	int len = strlen (in);
 
-	in = REALLOC (in, len + strlen (Buf) + 1);
-	strcpy (in + len, Buf);
+	if(safe_realloc((void**)&in, len + strlen (Buf) + 1))
+	    return 0;
 	return in;
     }
 }
