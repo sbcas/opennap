@@ -20,6 +20,9 @@
 #include <string.h>
 #include <sys/time.h>
 #endif /* !WIN32 */
+#if HAVE_LIBWRAP
+#include <tcpd.h>
+#endif
 #include "opennap.h"
 #include "debug.h"
 
@@ -60,8 +63,8 @@ int Max_Client_String;
 int Max_Reason;
 int Max_Clones;
 int Search_Timeout;
-unsigned int Total_Bytes_In = 0;		/* bytes received */
-unsigned int Total_Bytes_Out = 0;		/* bytes sent */
+unsigned int Total_Bytes_In = 0;	/* bytes received */
+unsigned int Total_Bytes_Out = 0;	/* bytes sent */
 
 #ifndef WIN32
 int Uid;
@@ -104,7 +107,7 @@ LIST *Server_Names = 0;
 
 int Local_Files = 0;		/* number of files shared by local users */
 int Num_Files = 0;
-double Num_Gigs = 0;	/* in kB */
+double Num_Gigs = 0;		/* in kB */
 int SigCaught = 0;
 char Buf[2048];			/* global scratch buffer */
 
@@ -131,7 +134,8 @@ update_stats (void)
     log ("update_stats(): %d local files", Local_Files);
     log ("update_stats(): File_Table contains %d entries",
 	 File_Table->dbsize);
-    log ("update_stats(): %.0f searches/sec", (float)Search_Count / (float)delta);
+    log ("update_stats(): %.0f searches/sec",
+	 (float) Search_Count / (float) delta);
     log ("update_stats(): User_Db contains %d entries", User_Db->dbsize);
     log ("update_stats(): %d channels", Channels->dbsize);
     log ("update_stats(): %.2f kbytes/sec in, %.2f kbytes/sec out",
@@ -139,7 +143,7 @@ update_stats (void)
     Total_Bytes_In += Bytes_In;
     Total_Bytes_Out += Bytes_Out;
     log ("update_stats(): %u bytes sent, %u bytes received",
-	    Total_Bytes_Out, Total_Bytes_In);
+	 Total_Bytes_Out, Total_Bytes_In);
 
     /* reset counters */
     Bytes_In = 0;
@@ -150,7 +154,7 @@ update_stats (void)
     /* since we send the same data to many people, optimize by forming
        the message once then writing it out */
     snprintf (Buf + 4, sizeof (Buf) - 4, "%d %d %.0f", Users->dbsize,
-	    Num_Files, Num_Gigs / 1048576.);
+	      Num_Files, Num_Gigs / 1048576.);
     set_tag (Buf, MSG_SERVER_STATS);
     l = strlen (Buf + 4);
     set_len (Buf, l);
@@ -161,6 +165,12 @@ update_stats (void)
 	    queue_data (Clients[i], Buf, l);
     }
 }
+
+#if HAVE_LIBWRAP
+int allow_severity = 0;
+int deny_severity = 0;
+int hosts_ctl (char *, char *, char *, char *);
+#endif
 
 /* accept all pending connections */
 static void
@@ -180,6 +190,16 @@ accept_connection (int s)
 		nlogerr ("accept_connection", "accept");
 	    return;
 	}
+#if HAVE_LIBWRAP
+	if (!hosts_ctl (PACKAGE, STRING_UNKNOWN, inet_ntoa (sin.sin_addr),
+			STRING_UNKNOWN))
+	{
+	    log ("accept_connection(): tcp wrappers denied %s",
+		 inet_ntoa (sin.sin_addr));
+	    CLOSE (f);
+	    return;
+	}
+#endif
 	if ((cli = new_connection ()) == 0)
 	{
 	    CLOSE (f);
@@ -439,7 +459,7 @@ main (int argc, char **argv)
        parsing code to a separate routine */
     sockfd = args (argc, argv, &sockfdcount);
 
-    if ((Server_Flags & ON_NO_LISTEN) == 0)
+    if ((Server_Flags & ON_NO_LISTEN) == 0 && Stats_Port != -1)
     {
 	/* listen on port 8889 for stats reporting */
 	if ((sp = new_tcp_socket (ON_REUSEADDR)) == -1)
@@ -513,10 +533,9 @@ main (int argc, char **argv)
 	/* process incoming requests */
 	for (i = 0; !SigCaught && i < Max_Clients; i++)
 	{
-	    if(Clients[i])
+	    if (Clients[i])
 	    {
-		if (!Clients[i]->destroy &&
-			FD_ISSET (Clients[i]->fd, &set))
+		if (!Clients[i]->destroy && FD_ISSET (Clients[i]->fd, &set))
 		    handle_connection (Clients[i]);
 	    }
 	}
@@ -542,10 +561,10 @@ main (int argc, char **argv)
 			 Current_Time - Clients[i]->timer >= Login_Timeout)
 		{
 		    log ("main(): login timeout for %s", Clients[i]->host);
-		    if(Clients[i]->server_login)
-			notify_mods(SERVERLOG_MODE,
-				"Server link to %s timed out",
-				Clients[i]->host);
+		    if (Clients[i]->server_login)
+			notify_mods (SERVERLOG_MODE,
+				     "Server link to %s timed out",
+				     Clients[i]->host);
 		    Clients[i]->destroy = 1;
 		}
 		if (Clients[i]->destroy)
@@ -581,7 +600,7 @@ main (int argc, char **argv)
     if (sp != -1)
 	CLOSE (sp);
 
-    dump_state();	/* save to disk */
+    dump_state ();		/* save to disk */
 
     /* close all client connections */
     for (i = 0; i < Max_Clients; i++)
@@ -591,7 +610,7 @@ main (int argc, char **argv)
     /* only clean up memory if we are in debug mode, its kind of pointless
        otherwise */
 #if DEBUG
-    motd_close();
+    motd_close ();
 
     if (sockfd)
 	FREE (sockfd);

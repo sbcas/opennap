@@ -19,6 +19,16 @@ searches will be considered valid before timing out.
 Added new config variable `stats_port' to make the port 8889 stats
 configurable since napigator now supports alternate ports.
 
+Added support for `tcp_wrappers' to control access to the server.
+
+Added opennap.init sample file for SysV-style init scripts
+[Geoffrey Lee <snailtalk@linux-mandrake.com>]
+
+Programs are now installed in /usr/local/sbin by default.
+
+If `stats_port' is set to -1 in the config file, opennap will not listen
+for stats reporting (by default it listens on port 8889).
+
 [opennap 0.35]
 
 added `max_clones' configuration variable to control how many clients may

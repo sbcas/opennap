@@ -1,0 +1,45 @@
+#!/bin/sh
+#
+# sysvinit file opennap
+# shamelessly ripped from the rwalld script.
+# Geoffrey Lee <snailtalk@linux-mandrake.com>
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# Get config.
+. /etc/sysconfig/network
+
+# Check that networking is up.
+if [ ${NETWORKING} = "no" ] ; then
+	exit 0
+fi
+
+# See how we were called.
+case "$1" in
+  start)
+	echo -n "Starting opennap server: "
+	daemon opennap -d
+	echo
+	touch /var/lock/subsys/opennap
+	;;
+  stop)
+	echo -n "Stopping opennap server: "
+	killproc opennap
+	echo
+	rm -f /var/lock/subsys/opennap
+	;;
+  status)
+	status opennap
+	;;
+  restart)
+	$0 stop
+	$0 start
+	;;
+  *)
+	echo "Usage: opennap {start|stop|status|restart}"
+	exit 1
+	;;
+esac
+
+exit 0

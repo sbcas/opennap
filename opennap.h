@@ -457,6 +457,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_BAD_NICK		10
 #define MSG_CLIENT_CHECK_PASS		11
 #define MSG_SERVER_PASS_OK		12
+#define MSG_SERVER_ECHO			13
 #define MSG_CLIENT_ADD_FILE		100
 #define MSG_CLIENT_REMOVE_FILE		102
 #define MSG_CLIENT_SEARCH		200
@@ -484,6 +485,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_CHECK_PORT		300
 #define MSG_SERVER_HOTLIST_ACK		301
 #define MSG_CLIENT_REMOVE_HOTLIST	303
+#define MSG_SERVER_DISCONNECTING	316
 #define MSG_CLIENT_IGNORE_LIST		320
 #define MSG_SERVER_IGNORE_ENTRY		321
 #define MSG_CLIENT_IGNORE_USER		322
@@ -547,6 +549,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_CHANGE_PASS		701
 #define MSG_CLIENT_CHANGE_EMAIL		702
 #define MSG_CLIENT_CHANGE_DATA_PORT	703
+#define MSG_SERVER_GHOST		748
 #define MSG_CLIENT_PING_SERVER		750
 #define MSG_CLIENT_PING			751
 #define MSG_SERVER_PING			751

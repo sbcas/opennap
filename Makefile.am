@@ -1,4 +1,4 @@
-bin_PROGRAMS=opennap metaserver setup #mkpass
+sbin_PROGRAMS=opennap metaserver setup #mkpass
 opennap_SOURCES=opennap.h main.c add_file.c search.c \
 	motd.c hash.h hash.c privmsg.c browse.c \
 	debug.c debug.h login.c whois.c free_user.c \
@@ -18,7 +18,7 @@ EXTRA_DIST=sample.conf sample.motd napster.txt .indent.pro \
 	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp \
 	opennap.opt sample.users sample.servers opennap.spec \
 	getopt.c mkpass.dsp sample.channels \
-	napchk logchk setup.dsp
+	napchk logchk setup.dsp opennap.init
 INCLUDES=-DSHAREDIR=\"$(pkgdatadir)\"
 
 .PHONY: log

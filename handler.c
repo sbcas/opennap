@@ -458,8 +458,13 @@ handle_connection (CONNECTION * con)
 	    *(con->recvbuf->data + con->recvbuf->consumed + 4 + len) = 0;
 	    log ("handle_connection(): tag=%hu, len=%hu, data=%s", tag, len,
 		 con->recvbuf->data + con->recvbuf->consumed + 4);
-	    send_cmd (con, MSG_SERVER_ERROR, "Unknown command code %hu", tag);
-	    con->destroy = 1;
+
+	    /* not sure why the official servers do this, but lets
+	     * be compatible.
+	     */
+	    send_cmd (con, MSG_SERVER_ECHO, "%hu: %s", tag,
+		    con->recvbuf->data + con->recvbuf->consumed + 4);
+
 	    return;
 	}
 	if (Servers && ISUSER (con))

@@ -63,19 +63,19 @@ MAKEINFO = @MAKEINFO@
 PACKAGE = @PACKAGE@
 VERSION = @VERSION@
 
-bin_PROGRAMS = opennap metaserver setup #mkpass
+sbin_PROGRAMS = opennap metaserver setup #mkpass
 opennap_SOURCES = opennap.h main.c add_file.c search.c 	motd.c hash.h hash.c privmsg.c browse.c 	debug.c debug.h login.c whois.c free_user.c 	join.c part.c public.c part_channel.c 	announce.c kill_user.c remove_connection.c config.c download.c 	upload_complete.c topic.c muzzle.c 	level.c client_quit.c server_login.c server_connect.c synch.c util.c 	md5.c md5.h hotlist.c remove_file.c list_channels.c 	list_users.c ping.c resume.c change.c ban.c network.c buffer.c 	server_usage.c server_links.c init.c handler.c timer.c list.c 	list.h userdb.c serverlib.c kick.c usermode.c channel.c glob.c 	redirect.c
 
 #mkpass_SOURCES=mkpass.c md5.c debug.c util.c
 metaserver_SOURCES = metaserver.c
 setup_SOURCES = setup.c
-EXTRA_DIST = sample.conf sample.motd napster.txt .indent.pro 	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp 	opennap.opt sample.users sample.servers opennap.spec 	getopt.c mkpass.dsp sample.channels 	napchk logchk setup.dsp
+EXTRA_DIST = sample.conf sample.motd napster.txt .indent.pro 	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp 	opennap.opt sample.users sample.servers opennap.spec 	getopt.c mkpass.dsp sample.channels 	napchk logchk setup.dsp opennap.init
 
 INCLUDES = -DSHAREDIR=\"$(pkgdatadir)\"
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
-PROGRAMS =  $(bin_PROGRAMS)
+PROGRAMS =  $(sbin_PROGRAMS)
 
 
 DEFS = @DEFS@ -I. -I$(srcdir) 
@@ -115,21 +115,6 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = gtar
 GZIP_ENV = --best
-DEP_FILES =  .deps/add_file.P .deps/announce.P .deps/ban.P \
-.deps/browse.P .deps/buffer.P .deps/change.P .deps/channel.P \
-.deps/client_quit.P .deps/config.P .deps/debug.P .deps/download.P \
-.deps/free_user.P .deps/glob.P .deps/handler.P .deps/hash.P \
-.deps/hotlist.P .deps/init.P .deps/join.P .deps/kick.P \
-.deps/kill_user.P .deps/level.P .deps/list.P .deps/list_channels.P \
-.deps/list_users.P .deps/login.P .deps/main.P .deps/md5.P \
-.deps/metaserver.P .deps/motd.P .deps/muzzle.P .deps/network.P \
-.deps/part.P .deps/part_channel.P .deps/ping.P .deps/privmsg.P \
-.deps/public.P .deps/redirect.P .deps/remove_connection.P \
-.deps/remove_file.P .deps/resume.P .deps/search.P \
-.deps/server_connect.P .deps/server_links.P .deps/server_login.P \
-.deps/server_usage.P .deps/serverlib.P .deps/setup.P .deps/synch.P \
-.deps/timer.P .deps/topic.P .deps/upload_complete.P .deps/userdb.P \
-.deps/usermode.P .deps/util.P .deps/whois.P
 SOURCES = $(opennap_SOURCES) $(metaserver_SOURCES) $(setup_SOURCES)
 OBJECTS = $(opennap_OBJECTS) $(metaserver_OBJECTS) $(setup_OBJECTS)
 
@@ -137,9 +122,9 @@ all: all-redirect
 .SUFFIXES:
 .SUFFIXES: .S .c .o .s
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu Makefile
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps Makefile
 
-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
@@ -151,30 +136,33 @@ config.status: $(srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 $(srcdir)/configure: @MAINTAINER_MODE_TRUE@$(srcdir)/configure.in $(ACLOCAL_M4) $(CONFIGURE_DEPENDENCIES)
 	cd $(srcdir) && $(AUTOCONF)
 
-mostlyclean-binPROGRAMS:
+mostlyclean-sbinPROGRAMS:
 
-clean-binPROGRAMS:
-	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+clean-sbinPROGRAMS:
+	-test -z "$(sbin_PROGRAMS)" || rm -f $(sbin_PROGRAMS)
 
-distclean-binPROGRAMS:
+distclean-sbinPROGRAMS:
 
-maintainer-clean-binPROGRAMS:
+maintainer-clean-sbinPROGRAMS:
 
-install-binPROGRAMS: $(bin_PROGRAMS)
+install-sbinPROGRAMS: $(sbin_PROGRAMS)
 	@$(NORMAL_INSTALL)
-	$(mkinstalldirs) $(DESTDIR)$(bindir)
-	@list='$(bin_PROGRAMS)'; for p in $$list; do \
+	$(mkinstalldirs) $(DESTDIR)$(sbindir)
+	@list='$(sbin_PROGRAMS)'; for p in $$list; do \
 	  if test -f $$p; then \
-	    echo "  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`"; \
-	     $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+	    echo "  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(sbindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`"; \
+	     $(INSTALL_PROGRAM) $$p $(DESTDIR)$(sbindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
 	  else :; fi; \
 	done
 
-uninstall-binPROGRAMS:
+uninstall-sbinPROGRAMS:
 	@$(NORMAL_UNINSTALL)
-	list='$(bin_PROGRAMS)'; for p in $$list; do \
-	  rm -f $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+	list='$(sbin_PROGRAMS)'; for p in $$list; do \
+	  rm -f $(DESTDIR)$(sbindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
 	done
+
+.c.o:
+	$(COMPILE) -c $<
 
 .s.o:
 	$(COMPILE) -c $<
@@ -271,11 +259,6 @@ distdir: $(DISTFILES)
 	-rm -rf $(distdir)
 	mkdir $(distdir)
 	-chmod 777 $(distdir)
-	here=`cd $(top_builddir) && pwd`; \
-	top_distdir=`cd $(distdir) && pwd`; \
-	distdir=`cd $(distdir) && pwd`; \
-	cd $(top_srcdir) \
-	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu Makefile
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
@@ -286,38 +269,6 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
-
-DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
-
--include $(DEP_FILES)
-
-mostlyclean-depend:
-
-clean-depend:
-
-distclean-depend:
-	-rm -rf .deps
-
-maintainer-clean-depend:
-
-%.o: %.c
-	@echo '$(COMPILE) -c $<'; \
-	$(COMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
-	@-cp .deps/$(*F).pp .deps/$(*F).P; \
-	tr ' ' '\012' < .deps/$(*F).pp \
-	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
-	    >> .deps/$(*F).P; \
-	rm .deps/$(*F).pp
-
-%.lo: %.c
-	@echo '$(LTCOMPILE) -c $<'; \
-	$(LTCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
-	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
-	  < .deps/$(*F).pp > .deps/$(*F).P; \
-	tr ' ' '\012' < .deps/$(*F).pp \
-	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
-	    >> .deps/$(*F).P; \
-	rm -f .deps/$(*F).pp
 info-am:
 info: info-am
 dvi-am:
@@ -326,7 +277,7 @@ check-am: all-am
 check: check-am
 installcheck-am:
 installcheck: installcheck-am
-install-exec-am: install-binPROGRAMS
+install-exec-am: install-sbinPROGRAMS
 install-exec: install-exec-am
 
 install-data-am:
@@ -335,14 +286,14 @@ install-data: install-data-am
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 install: install-am
-uninstall-am: uninstall-binPROGRAMS
+uninstall-am: uninstall-sbinPROGRAMS
 uninstall: uninstall-am
 all-am: Makefile $(PROGRAMS)
 all-redirect: all-am
 install-strip:
 	$(MAKE) $(AM_MAKEFLAGS) AM_INSTALL_PROGRAM_FLAGS=-s install
 installdirs:
-	$(mkinstalldirs)  $(DESTDIR)$(bindir)
+	$(mkinstalldirs)  $(DESTDIR)$(sbindir)
 
 
 mostlyclean-generic:
@@ -354,38 +305,36 @@ distclean-generic:
 	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
 
 maintainer-clean-generic:
-mostlyclean-am:  mostlyclean-binPROGRAMS mostlyclean-compile \
-		mostlyclean-tags mostlyclean-depend mostlyclean-generic
+mostlyclean-am:  mostlyclean-sbinPROGRAMS mostlyclean-compile \
+		mostlyclean-tags mostlyclean-generic
 
 mostlyclean: mostlyclean-am
 
-clean-am:  clean-binPROGRAMS clean-compile clean-tags clean-depend \
-		clean-generic mostlyclean-am
+clean-am:  clean-sbinPROGRAMS clean-compile clean-tags clean-generic \
+		mostlyclean-am
 
 clean: clean-am
 
-distclean-am:  distclean-binPROGRAMS distclean-compile distclean-tags \
-		distclean-depend distclean-generic clean-am
+distclean-am:  distclean-sbinPROGRAMS distclean-compile distclean-tags \
+		distclean-generic clean-am
 
 distclean: distclean-am
 	-rm -f config.status
 
-maintainer-clean-am:  maintainer-clean-binPROGRAMS \
+maintainer-clean-am:  maintainer-clean-sbinPROGRAMS \
 		maintainer-clean-compile maintainer-clean-tags \
-		maintainer-clean-depend maintainer-clean-generic \
-		distclean-am
+		maintainer-clean-generic distclean-am
 	@echo "This command is intended for maintainers to use;"
 	@echo "it deletes files that may require special tools to rebuild."
 
 maintainer-clean: maintainer-clean-am
 	-rm -f config.status
 
-.PHONY: mostlyclean-binPROGRAMS distclean-binPROGRAMS clean-binPROGRAMS \
-maintainer-clean-binPROGRAMS uninstall-binPROGRAMS install-binPROGRAMS \
-mostlyclean-compile distclean-compile clean-compile \
-maintainer-clean-compile tags mostlyclean-tags distclean-tags \
-clean-tags maintainer-clean-tags distdir mostlyclean-depend \
-distclean-depend clean-depend maintainer-clean-depend info-am info \
+.PHONY: mostlyclean-sbinPROGRAMS distclean-sbinPROGRAMS \
+clean-sbinPROGRAMS maintainer-clean-sbinPROGRAMS uninstall-sbinPROGRAMS \
+install-sbinPROGRAMS mostlyclean-compile distclean-compile \
+clean-compile maintainer-clean-compile tags mostlyclean-tags \
+distclean-tags clean-tags maintainer-clean-tags distdir info-am info \
 dvi-am dvi check check-am installcheck-am installcheck install-exec-am \
 install-exec install-data-am install-data install-am install \
 uninstall-am uninstall all-redirect all-am all installdirs \

@@ -75,6 +75,7 @@ zap_local_user (CONNECTION * con, const char *reason)
     /* TODO: there is a numeric for this somewhere */
     send_cmd (con, MSG_SERVER_NOSUCH, "You were killed by %s: %s",
 	      Server_Name, reason);
+    send_cmd (con, MSG_SERVER_DISCONNECTING, "0");
     con->killed = 1;		/* dont generate a QUIT message */
     remove_user (con);
     /* avoid free'g con->user in remove_connection().  do
@@ -126,6 +127,9 @@ eject_client (CONNECTION *con)
     if(loser == -1)
 	return 0;	/* no client to eject, reject current login */
     kill_client(Clients[loser]->user->nick, "server full, not sharing");
+    send_cmd (Clients[loser], MSG_SERVER_NOSUCH,
+	    "server is full and you are not sharing");
+    send_cmd (Clients[loser], MSG_SERVER_DISCONNECTING, "0");
     Clients[loser]->killed = 1;
     Clients[loser]->destroy = 1;
     return 1;	/* ok for current login to proceed despite being full */
@@ -405,7 +409,10 @@ HANDLER (login)
 		kill_client (user->nick, "ghost (%s)", user->server);
 		/* remove the old entry */
 		if (ISUSER (user->con))
-		    zap_local_user (user->con, "ghost");
+		{
+		    send_cmd (user->con, MSG_SERVER_GHOST, "");
+		    zap_local_user (user->con, "Someone else is logging in as you, disconnecting.");
+		}
 		else
 		    hash_remove (Users, user->nick);
 	    }

@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-August 3, 2000
+August 6, 2000
 
 0.  Foreward
 
@@ -18,6 +18,10 @@ between the linux nap client and may not resemble the official Windows client
 protocol.
 
 1.  Client-Server protocol
+
+Napster uses TCP for client to server communication.  Typically the servers
+run on ports 8888 and 7777.  Note that this is different from the `metaserver'
+(or redirector) which runs on port 8875.
 
 each message to/from the server is in the form of
 <length><type><data>
@@ -217,6 +221,13 @@ appropriate, examples of the <data> section for each message are given.
 	Format: (empty)
 
 	this message is returned in response to message 11 from the client
+
+13	echo??? [SERVER]
+
+	Format: <numeric>: [args]
+
+	Prior to issuing a login (2) command, the server will echo back the
+	received numeric and any arguments of any commands it receives.
 
 14	login options [CLIENT]
 
@@ -533,12 +544,21 @@ appropriate, examples of the <data> section for each message are given.
 
 	unknown command.  server returns 0 regardless of any parameters
 
-316	??? [CLIENT, SERVER]
+316	client disconnect??? [CLIENT, SERVER]
 
 	client: no data
 	server: 0
 
-	unknown command.  server returns 0 regardless of any parameters
+	The server sends this message with a value of `0' when the client is
+	about to be disconnected.
+
+	It is unkonwn what this command does when issued by the client.  The
+	server appears to send the 316 message without disconnected the client
+	in this case.
+
+	[the server seems to send this message if you send it a numeric
+	greater than 1000.  the server will also disconnect you after
+	sending this message.  -ed]
 
 320 (0x140)	user ignore list [CLIENT, SERVER]
 
@@ -829,14 +849,14 @@ appropriate, examples of the <data> section for each message are given.
 
 	lefty "generic band - generic song.mp3"
 
-609 (0x261)     get error [SERVER]      (same as [206])
+609 (0x261)     accept failed [SERVER]
 
         <nick> <filename>
 
-        the server sends this message when the file that the user has
-        requested to download is unavailable (such as the user is not logged
-        in).
+	this message is sent by the server when the client that the file was
+	requested from does not accept the upload request.
 
+	[
 610 (0x262)	kill (disconnect) a user [CLIENT]
 
 	<nick>

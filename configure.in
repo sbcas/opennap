@@ -24,6 +24,7 @@ fi
 AC_CHECK_LIB(xnet,gethostbyname)
 AC_CHECK_LIB(nsl,socket)
 AC_CHECK_LIB(socket,gethostbyname)
+AC_CHECK_LIB(wrap,request_init)
 AC_CHECK_FUNCS(mlockall)
 
 ac_cv_warnings=yes

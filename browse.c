@@ -154,7 +154,7 @@ dirname (char *d, int dsize, /* const */ char *s)
 }
 
 static char *
-basename (char *d, int dsize, /* const */ char *s)
+my_basename (char *d, int dsize, /* const */ char *s)
 {
     s = last_slash (s);
     strncpy (d, s + 1, dsize - 1);
@@ -216,7 +216,7 @@ HANDLER (browse_new)
 		DATUM *d = tmpList->data;
 
 		dirname (path, sizeof (path), d->filename);
-		basename (base, sizeof (base), d->filename);
+		my_basename (base, sizeof (base), d->filename);
 		if (count < 5 && dir[0] && !strcasecmp (dir, path))
 		{
 		    /* same directory as previous result, append */
