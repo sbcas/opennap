@@ -558,6 +558,7 @@ void print_args (int, char **);
 void queue_data (CONNECTION *, char *, int);
 size_t read_bytes (int, char *, size_t);
 void remove_connection (CONNECTION *);
+void remove_links (const char *);
 void remove_user (CONNECTION *);
 int safe_realloc (void **, int);
 void send_cmd (CONNECTION *, unsigned int msgtype, const char *fmt, ...);

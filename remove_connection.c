@@ -84,6 +84,9 @@ remove_connection (CONNECTION * con)
 	/* notify our peers this server has quit */
 	pass_message_args (con, MSG_SERVER_QUIT, ":%s %s", Server_Name,
 		con->host);
+	/* if this server was linked to other servers, remove the information
+	   we have on those links */
+	remove_links (con->host);
 
 	Servers = list_delete (Servers, con);
 

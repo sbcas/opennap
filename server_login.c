@@ -340,6 +340,7 @@ HANDLER (server_quit)
     char *av[3];
 
     ASSERT (validate_connection (con));
+    CHECK_SERVER_CLASS ("server_quit");
     (void) len;
     if (*pkt != ':')
     {
@@ -375,4 +376,50 @@ HANDLER (server_quit)
 	pass_message_args (con, tag, ":%s %s \"%s\"", av[0], av[1], av[2]);
     else
 	pass_message_args (con, tag, ":%s %s", av[0], av[1]);
+}
+
+/* recursively mark entries to reap */
+static void
+mark_links (const char *host)
+{
+    LIST *list = Server_Links;
+    LINK *link;
+
+    for (; list; list = list->next)
+    {
+	link = list->data;
+	if (!strcasecmp (host, link->server))
+	{
+	    link->port = -1;
+	    link->peerport = -1;
+	    mark_links (link->peer); /* mark servers connected to this peer */
+	}
+    }
+}
+
+/* reap all server link info behind the server named by `host' */
+void
+remove_links (const char *host)
+{
+    LIST **list, *tmpList;
+    LINK *link;
+
+    mark_links (host);
+    list = &Server_Links;
+    while (*list)
+    {
+	link = (*list)->data;
+	if (link->port == (unsigned short)-1 &&
+	    link->peerport == (unsigned short)-1)
+	{
+	    tmpList = *list;
+	    *list = (*list)->next;
+	    FREE (tmpList);
+	    FREE (link->server);
+	    FREE (link->peer);
+	    FREE (link);
+	    continue;
+	}
+	list = &(*list)->next;
+    }
 }
