@@ -54,6 +54,18 @@ get_attr (ATTRTYPE t, ATTRIBUTE * list, size_t listsize)
 }
 #endif
 
+static void
+fudge_path (const char *in, char *out)
+{
+    while (*in)
+    {
+	if(*in=='\\')
+	    *out++='\\';
+	*out++=*in++;
+    }
+    *out=0;
+}
+
 /* adds a file to the database */
 
 /* client request is of the form
@@ -63,6 +75,7 @@ HANDLER (add_file)
 {
     char *field[6];
     USER *user;
+    char path[256];
 
     ASSERT (VALID (con));
 
@@ -77,10 +90,14 @@ HANDLER (add_file)
 	return;
     }
 
+    /* sql will take DOS path names with backslashes to mean the escape
+       char, so we have to escape them here */
+    fudge_path (field[0], path);
+
     /* form the SQL request */
     snprintf (Buf, sizeof (Buf),
 	      "INSERT INTO library VALUES('%s','%s',%s,'%s',%s,%s,%s,%d)",
-	      user->nick, field[0], field[2], field[1],
+	      user->nick, path, field[2], field[1],
 	      field[3], field[4], field[5], user->speed);
 
     if (mysql_query (Db, Buf) != 0)
@@ -89,7 +106,7 @@ HANDLER (add_file)
 	return;
     }
 
-    log ("add_file(): user %s added file", user->nick);
+    log ("add_file(): user %s added file %s", user->nick, path);
 
     user->shared++;
 

@@ -192,11 +192,15 @@ main (int argc, char **argv)
     char *user = "kuila0";
     struct hostent *he;
     int reconnect = 0;
+    char *metaserver = "server.napster.com";
 
-    while ((i = getopt (argc, argv, "hrs:p:u:v")) != -1)
+    while ((i = getopt (argc, argv, "m:hrs:p:u:v")) != -1)
     {
 	switch (i)
 	{
+	    case 'm':
+		metaserver = optarg;
+		break;
 	    case 'r':
 		reconnect = 1;
 		break;
@@ -236,7 +240,7 @@ main (int argc, char **argv)
 	printf ("getting best host...");
 	fflush (stdout);
 	sin.sin_port = htons (8875);
-	he = gethostbyname ("server.napster.com");
+	he = gethostbyname (metaserver);
 	if (!he)
 	{
 	    perror ("gethostbyname");
