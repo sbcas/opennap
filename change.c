@@ -282,12 +282,13 @@ HANDLER (alter_speed)
 		 speed);
 }
 
-/* 611 [ :<sender> ] <user>
+/* 611 [ :<sender> ] <user> [ <reason> ]
    nuke a user's account */
 HANDLER (nuke)
 {
     USER *sender;
     USERDB *db;
+    char *nick;
 
     ASSERT (validate_connection (con));
     (void) len;
@@ -305,12 +306,13 @@ HANDLER (nuke)
 	ASSERT (ISSERVER (con));
 	return;
     }
-    db = hash_lookup (User_Db, pkt);
+    nick=next_arg(&pkt);
+    db = hash_lookup (User_Db, nick);
     if (!db)
     {
-	log ("nuke(): %s is not registered", pkt);
+	log ("nuke(): %s is not registered", nick);
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not registered", pkt);
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not registered", nick);
 	return;
     }
     if (sender->level < LEVEL_ELITE && sender->level <= db->level)
@@ -321,9 +323,11 @@ HANDLER (nuke)
 	    permission_denied (con);
 	return;
     }
-    pass_message_args (con, tag, ":%s %s", sender->nick, pkt);
-    notify_mods ("%s nuked %s's account", sender->nick, pkt);
-    hash_remove(User_Db, pkt);
+    pass_message_args (con, tag, ":%s %s %s", sender->nick, db->nick,
+		       NONULL(pkt));
+    notify_mods ("%s nuked %s's account: %s", sender->nick, db->nick,
+		 NONULL (pkt));
+    hash_remove(User_Db, db->nick);
 }
 
 #if 0
