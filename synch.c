@@ -21,16 +21,20 @@ char *Levels[LEVEL_ELITE+1] = {
 };
 
 static void
-synch_user (void *data, void *funcdata)
+synch_user (USER *user, CONNECTION *con)
 {
-    USER *user = (USER *) data;
-    CONNECTION *con = (CONNECTION *) funcdata;
     int i, n;
     MYSQL_RES *result;
     MYSQL_ROW row;
 
     ASSERT (validate_connection (con));
     ASSERT (validate_user (user));
+
+    /* we should never tell a peer server about a user that is behind
+       them */
+    ASSERT (user->con != con);
+    if (user->con == con)
+	return;
 
     /* send a login message for this user */
     send_cmd (con, MSG_CLIENT_LOGIN, "%s - %d \"%s\" %d",
@@ -89,7 +93,7 @@ synch_server (CONNECTION *con)
     log ("synch_server: syncing user list...");
 
     /* send our peer server a list of all users we know about */
-    hash_foreach (Users, synch_user, (void *) con);
+    hash_foreach (Users, (hash_callback_t) synch_user, (void *) con);
 
     log ("synch_server: done");
 }
