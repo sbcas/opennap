@@ -147,7 +147,7 @@ HANDLER (login)
 	    {
 		/* pass this message to everyone */
 		pass_message_args (NULL, MSG_CLIENT_KILL,
-				   ":%s %s nick collision", Server_Name,
+				   ":%s %s \"nick collision\"", Server_Name,
 				   user->nick);
 		/* destroy the connection */
 		user->con->destroy = 1;
@@ -222,7 +222,7 @@ HANDLER (login)
 		   we have on this server */
 		log ("login(): sending KILL for user %s", av[0]);
 		pass_message_args (NULL, MSG_CLIENT_KILL,
-				   ":%s %s account is already registered",
+				   ":%s %s \"account is already registered\"",
 				   Server_Name, av[0]);
 		sync_reginfo (db);
 	    }
@@ -249,7 +249,7 @@ HANDLER (login)
 		   kind of icky, but its the best we can do */
 		log ("login(): sending KILL for user %s", av[0]);
 		pass_message_args (NULL, MSG_CLIENT_KILL,
-				   ":%s %s invalid password", Server_Name,
+				   ":%s %s \"invalid password\"", Server_Name,
 				   av[0]);
 		sync_reginfo (db);
 	    }
