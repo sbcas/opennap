@@ -8,6 +8,9 @@ for multiple words.
 
 server was reporting total library size in MB, not GB
 
+each connection now has its own input buffer, dynamically allocated, so that
+we can use nonblocking read() calls
+
 Changes from 0.04
 =================
 

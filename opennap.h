@@ -75,6 +75,12 @@ struct _connection
     int sendbuflen;		/* length of queued data */
     int sendbufmax;		/* memory allocated for queue */
 
+    /* input buffer */
+    char recvhdr[4];
+    char *recvdata;
+    int recvbytes; /* bytes read, INCLUDING packet header */
+    int recvdatamax; /* actual length of .recvdata buffer */
+
     /* server authentication */
     char *nonce;
     char *sendernonce;

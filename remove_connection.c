@@ -81,6 +81,8 @@ remove_connection (CONNECTION *con)
 	FREE (con->host);
     if (con->sendbufmax)
 	FREE (con->sendbuf);
+    if (con->recvdata)
+	FREE (con->recvdata);
     /* just create a hole where this client was for now.  the main() event
        loop will fill in the holes when appropriate.  we don't do this
        here because there are many places, such as kill_user() where a

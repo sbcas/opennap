@@ -151,11 +151,6 @@ static HANDLER Protocol[] = {
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
 
-/* private buffer for handle_connection().  we make it a global variable
-   since handle_connection() is called frequently and we don't want to
-   have to waste time allocating it every time */
-static char Packet[1024];
-
 static void
 handle_connection (CONNECTION *con)
 {
@@ -165,25 +160,39 @@ handle_connection (CONNECTION *con)
     ASSERT (VALID (con));
 
     /* read the packet header */
-    l = read_bytes (con->fd, Packet, 4);
-    if (l != 4)
+    /* we loop here because read() will return less than we ask for if the
+       data arrives in separate packets */
+    while (con->recvbytes < 4)
     {
+	l = read (con->fd, con->recvhdr + con->recvbytes, 4 - con->recvbytes);
 	if (l == -1)
-	    log ("main(): read error %d (%s) from %s",
-		 errno, strerror (errno), con->host);
-	else
+	{
+	    if (errno == EAGAIN)
+	    {
+		/* no data waiting, wail until next call to try and read
+		   the rest of the packet header */
+		log ("handle_connection(): read %d bytes of header, waiting...",
+			con->recvbytes);
+		return;
+	    }
+	    log ("handle_connection(): %s (errno %d)", strerror (errno), errno);
+	    remove_connection (con);
+	    return;
+	}
+	else if (l == 0)
 	{
 	    /* the only circumstance under which we get returned
 	       less than we asked for is EOF from the client */
 	    log ("main(): EOF from %s", con->host);
+	    remove_connection (con);
+	    return;
 	}
-	remove_connection (con);
-	return;
+	con->recvbytes += l;
     }
 
     /* read the length and tag shorts from the packet */
-    memcpy (&len, Packet, 2);
-    memcpy (&tag, Packet + 2, 2);
+    memcpy (&len, con->recvhdr, 2);
+    memcpy (&tag, con->recvhdr + 2, 2);
 
 #if __BYTE_ORDER == __BIG_ENDIAN
     /* need to convert to big endian */
@@ -192,30 +201,56 @@ handle_connection (CONNECTION *con)
 #endif
 
     /* make sure we don't buffer overflow */
-    /* -1 counts for the trailing \0 char we add */
-    if (len > (int) sizeof (Packet) - 1)
+    if (len > con->recvdatamax)
     {
-	log ("main(): %d byte message from %s", len, con->host);
-	remove_connection (con);
-	return;
+	if (len > 512)
+	{
+	    /* if we receive a message with length longer than this, there
+	       is probably something wrong, and we don't want to allocate
+	       all of our memory */
+	    log ("handle_connection(): %d byte message from %s", len, con->host);
+	    remove_connection (con);
+	    return;
+	}
+	con->recvdatamax = len + 1; /* allow for the trailing \0 we add */
+	con->recvdata = REALLOC (con->recvdata, con->recvdatamax);
     }
 
     /* read the data portion of the message */
-    l = read_bytes (con->fd, Packet, len);
-    if (l != len)
+    /* we loop here because read() will return less than we ask for if the
+       data arrives in separate packets */
+    while (con->recvbytes - 4 < len)
     {
+	l = read (con->fd, con->recvhdr + con->recvbytes - 4, len - con->recvbytes + 4);
 	if (l == -1)
-	    log ("main(): read error %d (%s) from %s", errno,
+	{
+	    if (errno == EAGAIN)
+	    {
+		/* no data pending, wait until next round for more data to
+		   come in */
+		log ("handle_connection(): read %d of %d bytes from packet, waiting...",
+			con->recvbytes - 4, len);
+		return;
+	    }
+	    log ("handle_connection(): read error %d (%s) from %s", errno,
 		 strerror (errno), con->host);
-	else
+	    remove_connection (con);
+	    return;
+	}
+	else if (l == 0)
 	{
 	    /* the only circumstance under which we get returned less
 	       than we asked for is EOF from the client */
-	    log ("main(): EOF from %s", con->host);
+	    log ("handle_connection(): EOF from %s", con->host);
+	    remove_connection (con);
+	    return;
 	}
-	remove_connection (con);
-	return;
+	con->recvbytes += l;
     }
+
+    /* reset to 0 since we got all of the data we desired.  `len' contains
+       the lenght of the packet body */
+    con->recvbytes = 0;
 
     /* require that the client register before doing anything else */
     if (con->class == CLASS_UNKNOWN &&
@@ -234,9 +269,9 @@ handle_connection (CONNECTION *con)
        propogate is an ACK from a peer server that we've requested a link
        with */
     if (con->class == CLASS_SERVER && tag != MSG_SERVER_LOGIN_ACK)
-	pass_message (con, Packet, len);
+	pass_message (con, con->recvdata, len);
 
-    Packet[len] = 0;		/* terminate the string */
+    con->recvdata[len] = 0;		/* terminate the string */
 
     for (l = 0; l < Protocol_Size; l++)
     {
@@ -244,13 +279,13 @@ handle_connection (CONNECTION *con)
 	{
 	    ASSERT (Protocol[l].handler != 0);
 	    /* note that we pass only the data part of the packet */
-	    Protocol[l].handler (con, Packet);
+	    Protocol[l].handler (con, con->recvdata);
 	    return;
 	}
     }
 
     log ("main(): unknown message: tag=%d, length=%d, data=%s", tag, len,
-	Packet);
+	len ? con->recvdata : "(empty)");
 }
 
 void
