@@ -50,6 +50,9 @@ fi])
 AC_ARG_ENABLE(tresolv,
 	[  --enable-tresolv	Turn on support for threaded resolver],
 	[AC_DEFINE(TRESOLV)
-	LIBS="$LIBS -lpthread"])
+	dnl some systems have this in libc
+	AC_CHECK_FUNC(pthread_create,
+		[],
+		[AC_CHECK_LIB(pthread, pthread_create)])])
 
 AC_OUTPUT(Makefile)

@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include "opennap.h"
 #include "debug.h"
+#if TRESOLV
+#include "tresolv.h"
+#endif
 
 /* this is nasty but a necessary evil to avoid using a static buffer */
 static char *
@@ -93,7 +96,12 @@ HANDLER (whois)
 	db = hash_lookup (User_Db, user->nick);
 	rsp = append_string (rsp, " %d %d %s %d %d",
 			     user->totaldown, user->totalup,
-			     my_ntoa (user->host), user->conport, user->port);
+#if TRESOLV
+			     ISUSER(user->con) ? (user->con->host!=QUERY_PENDING?user->con->host:"pending") : my_ntoa(user->host),
+#else
+			     my_ntoa (user->host),
+#endif
+			     user->conport, user->port);
 #if EMAIL
 #define EmailAddr(db) db?db->email:"unknown"
 #else
