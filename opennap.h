@@ -329,6 +329,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_NICK_BANLIST		629
 #define MSG_CLIENT_CHANGE_SPEED		700
 #define MSG_CLIENT_CHANGE_PASS		701
+#define MSG_CLIENT_CHANGE_EMAIL		702
 #define MSG_CLIENT_CHANGE_DATA_PORT	703
 #define MSG_CLIENT_PING			751
 #define MSG_SERVER_PING			751
@@ -446,6 +447,7 @@ HANDLER (ban);
 HANDLER (banlist);
 HANDLER (browse);
 HANDLER (change_data_port);
+HANDLER (change_email);
 HANDLER (change_speed);
 HANDLER (change_pass);
 HANDLER (client_quit);

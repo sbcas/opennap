@@ -95,3 +95,23 @@ HANDLER (change_pass)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "db error");
     }
 }
+
+/* 702 [ :<user> ] <email>
+   change email address */
+HANDLER (change_email)
+{
+    USER *user;
+
+    (void) pkt;
+    (void) len;
+    if (pop_user (con, &pkt, &user) != 0)
+	return;
+    snprintf (Buf, sizeof (Buf),
+	"UPDATE accounts SET email='%s' WHERE nick='%s'", pkt, user->nick);
+    if (mysql_query (Db, Buf) != 0)
+    {
+	sql_error ("change_email", Buf);
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "db error");
+    }
+}

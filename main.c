@@ -148,6 +148,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_SETUSERLEVEL, level},
     {MSG_CLIENT_CHANGE_SPEED, change_speed},	/* 700 */
     {MSG_CLIENT_CHANGE_PASS, change_pass},	/* 701 */
+    {MSG_CLIENT_CHANGE_EMAIL, change_email},	/* 702 */
     {MSG_CLIENT_CHANGE_DATA_PORT, change_data_port}, /* 703 */
     {MSG_CLIENT_PING, ping},	/* 751 */
     {MSG_CLIENT_PONG, ping},	/* 752 */

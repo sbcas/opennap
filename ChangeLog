@@ -21,6 +21,8 @@ dump of the library table in hopes of improving performance.
 
 added support for account registration
 
+added support for change email (702) command
+
 Changes from 0.10
 =================
 added max_connections config variable

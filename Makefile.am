@@ -1,5 +1,5 @@
 # $Id$
-bin_PROGRAMS=opennap metaserver #spynap
+bin_PROGRAMS=opennap metaserver
 opennap_SOURCES=opennap.h main.c add_file.c db.c search.c \
 	motd.c hash.h hash.c privmsg.c browse.c \
 	debug.c debug.h login.c whois.c free_user.c \
@@ -11,8 +11,6 @@ opennap_SOURCES=opennap.h main.c add_file.c db.c search.c \
 	list_users.c ping.c resume.c change.c ban.c network.c buffer.c
 opennap_LDADD=-L@MYSQLLIBDIR@ -lmysqlclient
 metaserver_SOURCES=metaserver.c
-#spynap_SOURCES=spynap.c md5c.c
-#spynap_LDADD=-lreadline -ltermcap
 EXTRA_DIST=sample.conf sample.motd napster.txt .indent.pro create_db.sql \
-	FAQ patchnap.c spyserv.c spynap.c
+	FAQ patchnap.c spyserv.c
 INCLUDES=-I@MYSQLINCDIR@ -DSHAREDIR=\"$(pkgdatadir)\"
