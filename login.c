@@ -10,10 +10,24 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <mysql.h>
+#include <ctype.h>
 #include "opennap.h"
 #include "debug.h"
 
 extern MYSQL *Db;
+
+static int
+invalid_nick (const char *s)
+{
+    while (*s)
+    {
+	if (*s & 0x80 || isspace (*s) || iscntrl (*s) || !isprint(*s) ||
+		*s == ':')
+	    return 1;
+	s++;
+    }
+    return 0;
+}
 
 /* <nick> <pass> <port> <client-info> <speed> [ <email> ] */
 HANDLER (login)
@@ -40,6 +54,14 @@ HANDLER (login)
     if (speed < 0 || speed > 10)
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "%d is an invalid speed.", speed);
+	return;
+    }
+
+    if (invalid_nick (field[0]))
+    {
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_BAD_NICK, "");
+	log ("login(): invalid nick: %s", field[0]);
 	return;
     }
 
