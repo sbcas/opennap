@@ -16,7 +16,6 @@ HANDLER (add_hotlist)
     USER *user;
     int i;
 
-    (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("add_hotlist");
@@ -46,8 +45,8 @@ HANDLER (add_hotlist)
     {
 	if (hotlist->users[i] == con)
 	{
-	    log ("add_hotlist(): %s is already on %s's hotlist",
-		    hotlist->nick, con->user->nick);
+	    log ("add_hotlist(): %s is already on %s's hotlist (%d)",
+		    hotlist->nick, con->user->nick, tag);
 	    return; /* already present */
 	}
     }
