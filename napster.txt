@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-February 8, 2000
+February 11, 2000
 
 0.  Forward
 
@@ -686,11 +686,16 @@ appropriate, examples of the <data> section for each message are given.
 
 	<nick> "<filename>" <filesize> <digit>
 
-621	message of the day.  sent after client login [SERVER]
+621	message of the day [CLIENT, SERVER]
 
-	<motd-text>
+	<text>
 
-	each 621 message contains a single line of text
+	Server: each 621 message contains a single line of text
+
+	Client: client sends a 621 command with no data to request the
+	motd be sent.  The server will usually send this automatically after
+	a user logs in, so this command allows a user to reread it upon
+	request.
 
 622	muzzle a user [CLIENT]
 

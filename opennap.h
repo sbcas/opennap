@@ -318,6 +318,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_LIST_CHANNELS	617
 #define MSG_SERVER_CHANNEL_LIST_END	617
 #define MSG_SERVER_CHANNEL_LIST		618
+#define MSG_CLIENT_MOTD			621	/* client request for motd */
 #define MSG_SERVER_MOTD			621
 #define MSG_CLIENT_MUZZLE		622
 #define MSG_CLIENT_UNMUZZLE		623
@@ -429,7 +430,6 @@ void send_cmd (CONNECTION *, unsigned int msgtype, const char *fmt, ...);
 int set_keepalive (int, int);
 int set_nonblocking (int);
 int split_line (char **template, int templatecount, char *pkt);
-void show_motd (CONNECTION * con);
 void send_queued_data (CONNECTION *con);
 void sql_error (const char *function, const char *query);
 void synch_server (CONNECTION *);
@@ -490,6 +490,7 @@ HANDLER (server_reconfig);
 HANDLER (server_stats);
 HANDLER (server_version);
 HANDLER (share_file);
+HANDLER (show_motd);
 HANDLER (unmuzzle);
 HANDLER (upload_ok);
 HANDLER (upload_start);

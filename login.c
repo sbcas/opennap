@@ -308,7 +308,7 @@ HANDLER (login)
 	con->user = user;
 	user->con = con;
 	send_cmd (con, MSG_SERVER_EMAIL, user->email);
-	show_motd (con);
+	show_motd (con, 0, 0, NULL);
 	server_stats (con, 0, 0, NULL);
     }
     else

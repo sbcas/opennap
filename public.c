@@ -129,6 +129,8 @@ HANDLER (emote)
     int i, argc;
     char *argv[2];
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
 	return;

@@ -11,13 +11,18 @@
 #include "opennap.h"
 #include "debug.h"
 
-void
-show_motd (CONNECTION * con)
+HANDLER (show_motd)
 {
     FILE *f;
     size_t l;
 
+    (void) tag;
+    (void) len;
+    (void) pkt;
+
     ASSERT (validate_connection (con));
+    CHECK_USER_CLASS ("show_motd");
+
     /* we print the version info here so that clients can enable features
        only present in this server, but without disturbing the windows
        client */

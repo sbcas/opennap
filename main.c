@@ -143,6 +143,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_UNBAN, unban},	/* 614 */
     {MSG_CLIENT_BANLIST, banlist},	/* 615 */
     {MSG_CLIENT_LIST_CHANNELS, list_channels},	/* 618 */
+    {MSG_CLIENT_MOTD, show_motd},	/* 621 */
     {MSG_CLIENT_DATA_PORT_ERROR, data_port_error},	/* 626 */
     {MSG_CLIENT_WALLOP, wallop},	/* 627 */
     {MSG_CLIENT_ANNOUNCE, announce},	/* 628 */
