@@ -20,6 +20,11 @@
 #include "opennap.h"
 #include "debug.h"
 
+/* solaris 2.6 doesn't seem to define this */
+#ifndef INADDR_NONE
+#define INADDR_NONE 0xffffffff
+#endif
+
 unsigned int
 lookup_ip (const char *host)
 {
