@@ -482,3 +482,29 @@ form_message (char *d, int dsize, int tag, const char *fmt, ...)
     set_len (d, len);
     return (len + 4);
 }
+
+/* an ip address consists of only numbers and dots */
+int
+is_ip (const char *s)
+{
+    for (; *s; s++)
+	if (!isdigit ((unsigned char) *s) && *s != '.')
+	    return 0;
+    return 1;
+}
+
+int
+ip_glob_match (const char *pattern, const char *ip)
+{
+    int l;
+
+    ASSERT (pattern != 0);
+    ASSERT (ip != 0);
+    /* if `pattern' ends with a `.', we ban an entire subclass */
+    l = strlen (pattern);
+    ASSERT (l > 0);
+    if (pattern[l - 1] == '.')
+	return ((strncmp (pattern, ip, l) == 0));
+    else
+	return ((strcmp (pattern, ip) == 0));
+}

@@ -74,6 +74,7 @@ struct _channel
     short limit;			/* max number of users allowed */
     unsigned char userCreated;		/* true if a user created channel */
     unsigned char level;		/* minimum level to enter channel */
+    LIST *bans;				/* channel specific bans */
 };
 
 /* user level */
@@ -501,6 +502,9 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_KICK_USER		10202
 #define MSG_CLIENT_USER_MODE		10203	/* set a user mode */
 #define MSG_SERVER_USER_MODE		10203
+#define MSG_CLIENT_CHANNEL_BAN		10204
+#define MSG_CLIENT_CHANNEL_UNBAN	10205
+#define MSG_CLIENT_CHANNEL_BAN_LIST	10206
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
 
 /* offsets into the row returned for library searches */
@@ -560,6 +564,8 @@ int init_db (void);
 void init_random (void);
 int init_server (const char *);
 int invalid_channel (const char *);
+int ip_glob_match (const char *pattern, const char *ip);
+int is_ip (const char *);
 int is_linked (CONNECTION *, const char *);
 int load_bans (void);
 void load_channels (void);
@@ -630,8 +636,11 @@ HANDLER (change_data_port);
 HANDLER (change_email);
 HANDLER (change_speed);
 HANDLER (change_pass);
+HANDLER (channel_ban);
+HANDLER (channel_banlist);
 HANDLER (channel_level);
 HANDLER (channel_limit);
+HANDLER (channel_unban);
 HANDLER (check_password);
 HANDLER (check_port);
 HANDLER (clear_channel);
@@ -747,7 +756,7 @@ typedef unsigned int socklen_t;
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
-#define VERSION "0.25"
+#define VERSION "0.26"
 
 #define USE_CRLF 1
 

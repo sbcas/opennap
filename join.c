@@ -30,6 +30,33 @@ invalid_channel (const char *s)
     return ((count == 0));
 }
 
+static int
+banned_from_channel (CHANNEL * chan, USER * user)
+{
+    LIST *list;
+    BAN *b;
+
+    strncpy (Buf, my_ntoa (user->host), sizeof (Buf));
+    for (list = chan->bans; list; list = list->next)
+    {
+	b = list->data;
+	if ((b->type == BAN_USER && !strcasecmp (user->nick, b->target)) ||
+	    (b->type == BAN_IP && ip_glob_match (b->target, Buf)))
+	{
+	    log ("banned_from_channel(): %s is banned from %s: %s (%s)",
+		 user->nick, chan->name, NONULL (b->reason), b->setby);
+	    if (ISUSER (user->con))
+	    {
+		send_cmd (user->con, MSG_SERVER_NOSUCH,
+			  "You are banned from %s: %s (%s)",
+			  chan->name, NONULL (b->reason), b->setby);
+	    }
+	    return 1;
+	}
+    }
+    return 0;
+}
+
 /* handle client request to join channel */
 /* [ :<nick> ] <channel> */
 HANDLER (join)
@@ -132,6 +159,13 @@ HANDLER (join)
 	    log ("join(): channel %s is set to level %s", chan->name,
 		 Levels[chan->level]);
 	    permission_denied (con);
+	    return;
+	}
+	/* check to make sure this user is not banned from the channel */
+	else if (user->level < LEVEL_MODERATOR &&
+		 banned_from_channel (chan, user))
+	{
+	    /* log message is printed inside banned_from_channel() */
 	    return;
 	}
 	else if (user->level < LEVEL_MODERATOR && chan->limit > 0 &&

@@ -176,6 +176,9 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_CHANNEL_LEVEL, channel_level},	/* 10201 */
     {MSG_CLIENT_KICK_USER, kick},		/* 10202 */
     {MSG_CLIENT_USER_MODE, user_mode},		/* 10203 */
+    {MSG_CLIENT_CHANNEL_BAN, channel_ban},	/* 10204 */
+    {MSG_CLIENT_CHANNEL_UNBAN, channel_unban},	/* 10205 */
+    {MSG_CLIENT_CHANNEL_BAN_LIST, channel_banlist},	/* 10206 */
     {MSG_CLIENT_SHARE_FILE, share_file},	/* 10300 */
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);

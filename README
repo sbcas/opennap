@@ -1,7 +1,7 @@
-opennap v0.25 (ALPHA)
+opennap v0.26 (ALPHA)
 the open source (TM) napster server
 =====================
-April 17, 2000
+April 26, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -335,6 +335,29 @@ are implemented as additional functionality in the opennap server.
 
 	sets channel "Operators" such that only users with level moderator
 	or above may join the channel.
+
+10202	kick user from channel [CLIENT]
+
+	<channel> <user> [ "<reason>" ]
+
+10203	set user mode [CLIENT]
+
+	[-]{ALL,MUZZLE,BAN,KILL,PORT,WALLOP} [ ... ]
+
+10204	ban user/ip from channel [CLIENT]
+
+	<channel> <user|ip> [ "<reason>" ]
+
+10205	unban user/ip from channel [CLIENT]
+
+	<channel> <user|ip> [ "<reason>" ]
+
+10206	channel ban list [CLIENT, SERVER]
+
+	client: <channel>
+	server: <user|ip> <set-by> "<reason>" <when>
+
+	server list is terminated by an empty (zero-length) 10205 message.
 
 10300	share generic media file [CLIENT]
 
