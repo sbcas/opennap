@@ -148,6 +148,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_MUZZLE, muzzle},
     {MSG_CLIENT_UNMUZZLE, unmuzzle},
     {MSG_CLIENT_BAN, ban},	/* 612 */
+    {MSG_CLIENT_ALTER_PORT, alter_port},	/* 613 */
     {MSG_CLIENT_UNBAN, unban},	/* 614 */
     {MSG_CLIENT_BANLIST, banlist},	/* 615 */
     {MSG_CLIENT_LIST_CHANNELS, list_channels},	/* 618 */

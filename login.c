@@ -115,7 +115,7 @@ HANDLER (login)
 	    if (user->con)
 	    {
 		/* pass this message to everyone */
-		pass_message_args (NULL, MSG_CLIENT_KILL, ":%s %s",
+		pass_message_args (NULL, MSG_CLIENT_KILL, ":%s %s nick collision",
 				   Server_Name, user->nick);
 		/* destroy the connection - ok to remove it here since
 		   con != user->con in this case */
