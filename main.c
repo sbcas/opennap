@@ -629,7 +629,7 @@ main (int argc, char **argv)
 #if HAVE_POLL
 	if (ufd[1].revents & POLLIN)
 #else
-	if (FD_ISSET (sp, &set))
+	if (sp != -1 && FD_ISSET (sp, &set))
 #endif
 	{
 	    report_stats (sp);

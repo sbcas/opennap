@@ -25,7 +25,8 @@ HANDLER (whois)
 
     (void) tag;
     (void) len;
-    sender=con->user;
+    CHECK_USER_CLASS ("whois");
+    sender = con->user;
     ASSERT (validate_connection (con));
     user = hash_lookup (Users, pkt);
     if (!user)
@@ -50,8 +51,16 @@ HANDLER (whois)
     for (chan = user->channels; chan; chan = chan->next)
     {
 	l = strlen (Buf);
-	snprintf (Buf + l, sizeof (Buf) - l, "%s%s",
-		(l>0)?" ":"", ((CHANNEL*)chan->data)->name);
+	snprintf (Buf + l, sizeof (Buf) - l, " %s",
+		((CHANNEL*)chan->data)->name);
+    }
+    if (!Buf[0])
+    {
+	/* the windows client doesn't seem to be able to parse an empty
+	   string so we ensure that there is always one space in the string
+	   returned to the client */
+	Buf[0] = ' ';
+	Buf[1] = 0;
     }
     chanlist = STRDUP (Buf);
 

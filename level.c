@@ -74,11 +74,14 @@ HANDLER (level)
     if (ISUSER (con))
     {
 	ASSERT (validate_user (con->user));
-	if ((level >= con->user->level && con->user->level < LEVEL_ELITE) ||
-	    user->level >= con->user->level)
+	if (con->user->level < LEVEL_ELITE &&
+	    /* don't allow change to a higher level than the issuer */
+	    (level >= con->user->level ||
+	     /* allow users to change themself to a lower level */
+	     (con->user != user && user->level >= con->user->level)))
 	{
 	    log ("level(): %s tried to set %s to level %s", con->user->nick,
-		 user->nick, Levels[level]);
+		user->nick, Levels[level]);
 	    permission_denied (con);
 	    return;
 	}
