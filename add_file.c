@@ -97,8 +97,13 @@ insert_datum (DATUM * info, char *av)
 	}
     }
 
-    /* add this entry to the hash table for this user's files */
-    hash_add (info->user->con->uopt->files, av, info);
+    /* add this entry to the hash table for this user's files
+     * NOTE: only hash by the basename part of the file, not including the
+     * directory component.  I've assumed for the sake of simplicity that
+     * there will not be a file named the same in a different directory.
+     * I don't believe that would display well on any of the clients
+     */
+    hash_add (info->user->con->uopt->files, info->filename, info);
     info->refcount++;
 
     /* split the filename into words */
@@ -270,23 +275,23 @@ HANDLER (add_file)
 	return;
     }
 
-    /* make sure this isn't a duplicate */
-    if (con->uopt->files && hash_lookup (con->uopt->files, av[0]))
-    {
-	send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
-	return;
-    }
-
     /* split the filename into its directory and base name
      * NOTE: the trailing / MUST be left in the path.  the search code
      * depends on it.
      */
     strncpy (path, av[0], sizeof (path) - 1);
-    ptr = path + strlen (path);
-    while (ptr > path && *(ptr - 1) != '/' && *(ptr - 1) != '\\')
-	ptr--;
+    ptr=my_basename(path);
     strncpy (fname, ptr, sizeof (fname) - 1);
     *ptr = 0;
+
+    /* make sure this isn't a duplicate - only compare the basename, not
+     * including the directory component
+     */
+    if (con->uopt->files && hash_lookup (con->uopt->files, fname))
+    {
+	send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
+	return;
+    }
 
     /* create the db record for this file */
     if (!(info = new_datum (path, fname, av[1])))
@@ -370,11 +375,18 @@ HANDLER (share_file)
      * depends on it.
      */
     strncpy (path, av[0], sizeof (path) - 1);
-    ptr = path + strlen (path);
-    while (ptr > path && *(ptr - 1) != '/' && *(ptr - 1) != '\\')
-	ptr--;
+    ptr = my_basename(path);
     strncpy (fname, ptr, sizeof (fname) - 1);
     *ptr = 0;
+
+    /* make sure this isn't a duplicate - only compare the basename, not
+     * including the directory component
+     */
+    if (con->uopt->files && hash_lookup (con->uopt->files, fname))
+    {
+	send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
+	return;
+    }
 
     if (!(info = new_datum (path, fname, av[2])))
 	return;
@@ -478,15 +490,12 @@ HANDLER (add_directory)
 	    unparsable (con);
 	    return;
 	}
-	/* make sure this isn't a duplicate - have to redo the entire path
-	   including the directory since it gets munged by the insertion into
-	   the hash table */
-	path[sizeof (path) - 1] = 0;	/* ensure nul termination */
-	strncpy (path, dirbuf, sizeof (path) - 1);
-	strncpy (path + pathlen, basename, sizeof (path) - 1 - pathlen);
-	if (con->uopt->files && hash_lookup (con->uopt->files, path))
+	/* make sure this isn't a duplicate - only compare the basename,
+	 * not including the directory component
+	 */
+	if (con->uopt->files && hash_lookup (con->uopt->files, basename))
 	{
-	    send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
+	    send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file: %s", basename);
 	    continue;		/* get next file */
 	}
 

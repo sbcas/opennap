@@ -4,6 +4,7 @@
 
    $Id$ */
 
+#include <string.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -47,22 +48,22 @@ HANDLER (download)
 	       send the 500 request */
 	    if (ISUSER (user->con))
 	    {
-		DATUM *info = hash_lookup (user->con->uopt->files, av[1]);
+		DATUM *info = hash_lookup (user->con->uopt->files,
+			my_basename(av[1]));
 
-		if (!info)
+		if (!info ||
+			/* make sure the path component is also correct */
+			strncasecmp(av[1], info->path->path, strlen(info->path->path)) != 0)
 		{
-		    /* TODO: what error message to return to sender? */
-		    log ("download(): user %s does not have file %s",
-			 user->nick, av[1]);
+		    log("download(): %s is not sharing %s", av[1]);
 		    send_user (sender, MSG_SERVER_SEND_ERROR, "%s \"%s\"",
 			       user->nick, av[1]);
 		}
 		else
 		{
 		    send_user (sender, MSG_SERVER_FILE_READY /* 204 */ ,
-			       "%s %u %d \"%s%s\" %s %d", user->nick,
-			       user->ip, user->port, info->path->path,
-			       info->filename,
+			       "%s %u %d \"%s\" %s %d", user->nick,
+			       user->ip, user->port, av[1],
 #if RESUME
 			       info->hash,
 #else
@@ -105,10 +106,17 @@ HANDLER (download)
 
     /* if the client holding the file is a local user, send the request
        directly */
-    if (user->local)
+    if (ISUSER(user->con))
     {
+	DATUM *info = hash_lookup(user->con->uopt->files, my_basename(av[1]));
+
+	if(!info||strncasecmp(av[1],info->path->path,strlen(info->path->path))!=0)
+	{
+	    send_user (sender, MSG_SERVER_SEND_ERROR, "%s \"%s\"", av[0], av[1]);
+	    return;
+	}
 	send_cmd (user->con, MSG_SERVER_UPLOAD_REQUEST, "%s \"%s\"",
-		  sender->nick, av[1]);
+		sender->nick, av[1]);
     }
     /* otherwise pass it to the peer servers for delivery */
     else
@@ -116,7 +124,7 @@ HANDLER (download)
 	/* don't use direct delivery here because the server the client is
 	   connected to needs to consult their db and rewrite this messsage */
 	send_cmd (user->con, MSG_SERVER_UPLOAD_REQUEST, ":%s %s \"%s\"",
-		  sender->nick, user->nick, av[1]);
+		sender->nick, user->nick, av[1]);
     }
 }
 
@@ -324,16 +332,15 @@ HANDLER (queue_limit)
     ASSERT (validate_connection (recip->con));
 
     /* look up the filesize in the db */
-    info = hash_lookup (con->uopt->files, av[1]);
+    info = hash_lookup (con->uopt->files, my_basename(av[1]));
     if (!info)
     {
 	log ("queue_limit(): %s is not sharing %s", con->user->nick, av[1]);
-	send_cmd (con, MSG_SERVER_NOSUCH, "you aren't sharing that file",
-		  av[1]);
+	send_cmd (con, MSG_SERVER_NOSUCH, "you aren't sharing that file", av[1]);
 	return;
     }
 
     /* deliver to user even if remote */
-    send_user (recip, MSG_SERVER_LIMIT, "%s \"%s%s\" %d %s",
-	       con->user->nick, info->path->path, info->filename, info->size, av[2]);
+    send_user (recip, MSG_SERVER_LIMIT, "%s \"%s\" %d %s",
+	       con->user->nick, av[1], info->size, av[2]);
 }

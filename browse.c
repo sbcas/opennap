@@ -184,7 +184,7 @@ HANDLER (browse_new)
 		{
 		    /* same directory as previous result, append */
 		    rsp = append_string (rsp, " \"%s\" %s %d %d %d %d",
-			    d->path,
+			    d->path->path,
 #if RESUME
 			    d->md5,
 #else

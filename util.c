@@ -435,3 +435,11 @@ free_pointer (void *p)
     FREE (p);
 }
 
+char *
+my_basename (char *s)
+{
+    char *p = s + strlen (s);
+    while(p>s && *(p-1)!='/' && *(p-1)!='\\')
+	p--;
+    return p;
+}

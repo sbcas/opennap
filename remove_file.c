@@ -26,7 +26,7 @@ HANDLER (remove_file)
     }
 
     /* find the file in the user's list */
-    info = hash_lookup (con->uopt->files, pkt);
+    info = hash_lookup (con->uopt->files, my_basename(pkt));
     if (!info)
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "you are not sharing that file");
