@@ -310,6 +310,8 @@ extern unsigned int Bytes_Out;
 extern int User_Db_Interval;
 extern int Channel_Limit;
 extern int Login_Timeout;
+extern int Local_Files;
+extern int Max_Nick_Length;
 
 #ifndef WIN32
 extern int Uid;
@@ -319,7 +321,6 @@ extern int Max_Data_Size;
 extern int Max_Rss_Size;
 #endif
 extern time_t Current_Time;
-extern int Max_Nick_Length;
 extern char *User_Db_Path;
 extern char *Server_Db_Path;
 
@@ -506,16 +507,11 @@ void set_val (char *d, unsigned short val);
 int add_client (CONNECTION *);
 void add_random_bytes (char *, int);
 void add_timer (int, int, timer_cb_t, void *);
-void *array_add (void *, int *, void *);
-void *array_remove (void *, int *, void *);
 int bind_interface (int, unsigned int, int);
 BUFFER *buffer_append (BUFFER *, BUFFER *);
 BUFFER *buffer_consume (BUFFER *, int);
 void buffer_free (BUFFER *);
-int buffer_group (BUFFER *, int);
-int buffer_read (int, BUFFER **);
 int buffer_size (BUFFER *);
-
 #if HAVE_LIBZ
 int buffer_decompress (BUFFER *, z_streamp, char *, int);
 #endif
@@ -576,7 +572,6 @@ void permission_denied (CONNECTION * con);
 int pop_user (CONNECTION * con, char **pkt, USER ** user);
 void print_args (int, char **);
 void queue_data (CONNECTION *, char *, int);
-size_t read_bytes (int, char *, size_t);
 void remove_connection (CONNECTION *);
 void remove_links (const char *);
 void remove_user (CONNECTION *);
@@ -689,8 +684,8 @@ HANDLER (user_speed);
 HANDLER (wallop);
 HANDLER (whois);
 
-#define CHECK_USER_CLASS(f) if (con->class != CLASS_USER) { log ("%s: not USER class", f); return; }
-#define CHECK_SERVER_CLASS(f) if(con->class != CLASS_SERVER) { log ("%s: not SERVER class", f); return; }
+#define CHECK_USER_CLASS(f) if (con->class != CLASS_USER) { log ("%s(): not USER class", f); return; }
+#define CHECK_SERVER_CLASS(f) if(con->class != CLASS_SERVER) { log ("%s(): not SERVER class", f); return; }
 
 #define NONULL(p) (p!=0?p:"")
 

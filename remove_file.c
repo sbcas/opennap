@@ -41,6 +41,8 @@ HANDLER (remove_file)
     Num_Gigs -= fsize;
     ASSERT (Num_Files > 0);
     Num_Files--;
+    ASSERT (Local_Files > 0);
+    Local_Files--;
     user->shared--;
 
     /* this invokes free_datum() indirectly */

@@ -90,6 +90,7 @@ LIST *Servers = 0;
 /* list of all servers in the cluster */
 LIST *Server_Links = 0;
 
+int Local_Files = 0;	/* number of files shared by local users */
 int Num_Files = 0;
 int Num_Gigs = 0;		/* in kB */
 int SigCaught = 0;
@@ -117,9 +118,10 @@ update_stats (void)
     log ("update_stats(): current time is %s", Buf);
     log ("update_stats(): library is %d KB (%d GB), %d files, %d users",
 	 Num_Gigs, Num_Gigs / (1024 * 1024), Num_Files, Users->dbsize);
-    log ("update_stats(): File_Table contains %d entries", File_Table->dbsize);
     log ("update_stats(): %d local clients, %d linked servers",
 	 Num_Clients - numServers, numServers);
+    log ("update_stats(): %s local files", Local_Files);
+    log ("update_stats(): File_Table contains %d entries", File_Table->dbsize);
     delta = Current_Time - Last_Click;
     log ("update_stats(): %.2f kbytes/sec in, %.2f kbytes/sec out",
 	(float) Bytes_In / 1024. / delta, (float) Bytes_Out / 1024. / delta);

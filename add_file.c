@@ -246,6 +246,7 @@ insert_datum (DATUM * info, char *av)
     info->user->libsize += fsize;
     Num_Gigs += fsize;		/* this is actually kB, not gB */
     Num_Files++;
+    Local_Files++;
 
     /* notify peer servers that this user's file count has increased */
     /* TODO: this should be changed so that the servers will periodically
