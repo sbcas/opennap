@@ -863,7 +863,7 @@ main (int argc, char **argv)
 	{
 	    fdb_garbage_collect (File_Table);
 	    fdb_garbage_collect (MD5);
-	    next_collect = 60;	/* run once a minute */
+	    next_collect = time(0) + 60;	/* run once a minute */
 	}
     }
 

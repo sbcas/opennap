@@ -81,6 +81,17 @@ list_append (LIST * l, void *data)
     return r;
 }
 
+static LIST *
+list_concat (LIST *a, LIST *b)
+{
+    if (!a)
+	return b;
+    while (a && a->next)
+	a = a->next;
+    a->next = b;
+    return a;
+}
+
 void
 list_free (LIST *l, list_destroy_t cb)
 {
@@ -351,12 +362,9 @@ HANDLER (search)
 		goto done;
 	    }
 	    i++;
-	    if (tokens)
-	    {
-		send_cmd (con, MSG_SERVER_NOSUCH, "invalid search request");
-		goto done;
-	    }
-	    tokens = tokenize (av[i]);
+	    /* do an implicit AND operation if multiple FILENAME CONTAINS
+	       clauses are specified */
+	    tokens = list_concat (tokens, tokenize (av[i]));
 	}
 	else if (strcasecmp ("max_results", av[i]) == 0)
 	{
