@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <mysql.h>
 #include "opennap.h"
@@ -40,7 +42,7 @@ HANDLER (resume)
     {
 	user = hash_lookup (Users, row[IDX_NICK]);
 	ASSERT (user != 0);
-	send_cmd (con, MSG_SERVER_RESUME_MATCH, "%s %ul %d %s %s %s %uh",
+	send_cmd (con, MSG_SERVER_RESUME_MATCH, "%s %lu %d %s %s %s %hu",
 	    row[IDX_NICK], user->host, user->port, row[IDX_FILENAME],
 	    row[IDX_MD5], row[IDX_SIZE], user->speed);
     }

@@ -129,24 +129,6 @@ HANDLER (server_connect)
 	user->nick, argc == 3 ? fields[2] : Server_Name, fields[0], fields[1]);
 }
 
-#if 0
-/* this will eventually go away once there is proper support in clients to
-   call the server_connect() function */
-void
-try_connect_privmsg (char *s)
-{
-    char *ptr;
-
-    while (*s == ' ')
-	s++;
-    ptr = strchr (s, ' ');
-    if (!ptr)
-	return;
-    *ptr++ = 0;
-    try_connect (s, atoi (ptr));
-}
-#endif
-
 /* 10101 [ :<nick> ] <server> <reason> */
 HANDLER (server_disconnect)
 {
@@ -178,7 +160,7 @@ HANDLER (server_disconnect)
 		user->nick, pkt, reason ? reason : "disconnect");
 	return;
     }
-    notify_mods ("%s disconnected server %s: %s", user->nick,
+    notify_mods ("%s disconnected server %s: %s", user->nick, pkt,
 	reason ? reason : "");
     serv = Servers[i];
     Servers = array_remove (Servers, &Num_Servers, Servers[i]);

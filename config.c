@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,7 +41,10 @@ static CONFIG Vars[] = {
     { "server_password", VAR_TYPE_STR, UL &Server_Pass, UL "opensource" },
     { "server_port", VAR_TYPE_INT, UL &Server_Port, 8888 },
     { "stat_click", VAR_TYPE_INT, UL &Stat_Click, 60 },
-    { "strict_channels", VAR_TYPE_BOOL, OPTION_STRICT_CHANNELS, 0 }
+    { "strict_channels", VAR_TYPE_BOOL, OPTION_STRICT_CHANNELS, 0 },
+    { "server_queue_length", VAR_TYPE_INT, UL &Server_Queue_Length, 1048576 },
+    { "client_queue_length", VAR_TYPE_INT, UL &Client_Queue_Length, 10240 },
+    { "max_results", VAR_TYPE_INT, UL &Max_Search_Results, 100 }
 };
 
 static int Vars_Size = sizeof (Vars) / sizeof (CONFIG);
@@ -219,4 +224,38 @@ config_defaults (void)
 		set_int_var (&Vars[i], Vars[i].def);
 	}
     }
+}
+
+/* 800 [ :<user> ] <var>
+   reset `var' to its default value */
+HANDLER (server_reconfig)
+{
+    int i;
+
+    ASSERT (validate_connection (con));
+    CHECK_USER_CLASS ("server_reconfig");
+    ASSERT (validate_user (con->user));
+    if (con->user->level < LEVEL_ELITE)
+    {
+	permission_denied (con);
+	return;
+    }
+    for (i = 0; i < Vars_Size; i++)
+	if (!strcmp (pkt, Vars[i].name))
+	{
+	    if (Vars[i].def)
+	    {
+		if (Vars[i].type == VAR_TYPE_STR)
+		    set_str_var (&Vars[i], (char*) Vars[i].def);
+		else if (Vars[i].type == VAR_TYPE_INT)
+		    set_int_var (&Vars[i], Vars[i].def);
+	    }
+	    else
+	    {
+		send_cmd (con, MSG_SERVER_NOSUCH, "no default value for %s",
+		    pkt);
+	    }
+	    return;
+	}
+    send_cmd (con, MSG_SERVER_NOSUCH, "no such variable %s", pkt);
 }

@@ -35,6 +35,9 @@ unsigned long Server_Flags = 0;
 int Max_User_Channels;		/* default, can be changed in config */
 int Stat_Click;			/* interval (in seconds) to send server stats */
 int Server_Port;		/* which port to listen on for connections */
+int Server_Queue_Length;
+int Client_Queue_Length;
+int Max_Search_Results;
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;
@@ -139,6 +142,8 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_SETUSERLEVEL, level },
     { MSG_CLIENT_PING, ping }, /* 751 */
     { MSG_CLIENT_PONG, pong }, /* 752 */
+    { MSG_CLIENT_SERVER_RECONFIG, server_reconfig }, /* 800 */
+    { MSG_CLIENT_SERVER_VERSION, server_version }, /* 801 */
     { MSG_CLIENT_SERVER_CONFIG, server_config }, /* 810 */
     { MSG_CLIENT_NAMES_LIST, list_users }, /* 830 */
 

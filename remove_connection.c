@@ -72,7 +72,6 @@ remove_connection (CONNECTION *con)
 	   entire hash table does not need to be optimized the way we split
 	   out the server connections. */
 	hash_foreach (Users, server_split, con);
-
     }
 
     /* destroy authentication information */

@@ -26,6 +26,16 @@ on systems without it
 
 added support for the server version (801) client request
 
+added support for the server reconfig (800) client request
+
+added client_queue_length and server_queue_length config variables to tune the
+maximum queue lengths allowed
+
+fixed resume messages which used broken sequences %ul and %uh
+
+added max_results server config variable to control the maximum number of
+matches returned on a client search
+
 Changes from 0.08
 =================
 

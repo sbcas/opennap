@@ -770,23 +770,23 @@ appropriate, examples of the <data> section for each message are given.
 
 	[returns permission denied.  -ed]
 
-800	reload config
+800	reload config [CLIENT]
 
 	<config variable>
 
-	[what does this do?  -ed]
+	resets configuration parameter to its default value
 
-801	server version
+801	server version [CLIENT]
 
 	no data.
 
 	client request's a server's version
 
-810	set config
+810	set config [CLIENT]
 
 	<config string>
 
-	[what does this do? -ed]
+	request a change in server configuration variables
 
 820	clear channel
 

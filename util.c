@@ -1,8 +1,10 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
 
-/* this file contains various utility functions useful elsewhere in this
+   $Id$
+
+   This file contains various utility functions useful elsewhere in this
    server */
 
 #include <fcntl.h>
@@ -225,7 +227,7 @@ queue_data (CONNECTION *con, char *s, int ssize)
 void
 send_queued_data (CONNECTION *con)
 {
-    int l;
+    int l, qlen;
     struct timeval t;
     fd_set wfd;
 
@@ -234,42 +236,47 @@ send_queued_data (CONNECTION *con)
     if (con->sendbuflen == 0)
 	return; /* nothing to do */
 
-    /* see if we are ready for writing */
+    /* see if we are ready for writing, with no wait */
     t.tv_sec = 0;
     t.tv_usec = 0;
     FD_ZERO (&wfd);
     FD_SET (con->fd, &wfd);
-    switch (select (con->fd + 1, 0, &wfd, 0, &t))
-    {
-	case -1:
-	    log ("send_queued_data(): select: %s (errno %d).", strerror (errno), errno);
-	    con->sendbuflen = 0;
-	    remove_connection (con);
-	    return;
-	case 0:
-	    return; /* not ready yet */
-    }
-
-    /* write as much of the queued data as we can */
-    l = write (con->fd, con->sendbuf, con->sendbuflen);
+    l = select (con->fd + 1, 0, &wfd, 0, &t);
     if (l == -1)
     {
-	log ("flush_queued_data(): write: %s (errno %d).", strerror (errno), errno);
-	con->sendbuflen = 0; /* avoid an infinite loop */
+	log ("send_queued_data(): select: %s (errno %d).", strerror (errno),
+	    errno);
+	con->sendbuflen = 0;
 	remove_connection (con);
 	return;
     }
-    con->sendbuflen -= l;
-    /* shift any data that was left down to the begin of the buf */
-    if (con->sendbuflen)
-	memmove (con->sendbuf, con->sendbuf + l, con->sendbuflen);
+    else if (l == 1)
+    {
+	/* write as much of the queued data as we can */
+	l = write (con->fd, con->sendbuf, con->sendbuflen);
+	if (l == -1)
+	{
+	    log ("flush_queued_data(): write: %s (errno %d).", strerror (errno), errno);
+	    con->sendbuflen = 0; /* avoid an infinite loop */
+	    remove_connection (con);
+	    return;
+	}
+	con->sendbuflen -= l;
+
+	/* shift any data that was left down to the begin of the buf */
+	/* TODO: this should probably be implemented as a circular buffer to
+	   avoid having to move the memory after every write call */
+	if (con->sendbuflen)
+	    memmove (con->sendbuf, con->sendbuf + l, con->sendbuflen);
+    }
 
     /* if there is more than 2kbytes left to send, close the connection
        since the peer is likely dead */
-    if (con->sendbuflen > 2048)
+    qlen = (con->class == CLASS_USER) ? Client_Queue_Length : Server_Queue_Length;
+    if (con->sendbuflen > qlen)
     {
-	log ("send_queued_data(): closing link for %s (sendq exceeded)",
-		con->host);
+	log ("send_queued_data(): closing link for %s (sendq exceeded %d bytes)",
+	    con->host, qlen);
 	con->sendbuflen = 0; /* avoid an infinite loop */
 	remove_connection (con);
     }

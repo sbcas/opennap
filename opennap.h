@@ -232,6 +232,7 @@ typedef struct _ban {
 #define MSG_SERVER_PING			751
 #define MSG_CLIENT_PONG			752
 #define MSG_SERVER_PONG			752
+#define MSG_CLIENT_SERVER_RECONFIG	800
 #define MSG_CLIENT_SERVER_VERSION	801
 #define MSG_CLIENT_SERVER_CONFIG	810
 #define MSG_SERVER_NAMES_LIST		825
@@ -269,6 +270,9 @@ extern int Server_Port;
 extern int SigCaught;	/* flag to control main loop */
 extern int Max_User_Channels;	/* # of channels is a user allowed to join */
 extern int Stat_Click;
+extern int Server_Queue_Length;
+extern int Client_Queue_Length;
+extern int Max_Search_Results;
 
 extern unsigned long Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
@@ -384,6 +388,7 @@ HANDLER (server_connect);
 HANDLER (server_disconnect);
 HANDLER (server_login);
 HANDLER (server_login_ack);
+HANDLER (server_reconfig);
 HANDLER (server_stats);
 HANDLER (server_version);
 HANDLER (unmuzzle);

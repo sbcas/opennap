@@ -1,8 +1,10 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
 
-/* TODO: this is pretty ugly and needs to be written more cleanly, and
+   $Id$
+
+   TODO: this is pretty ugly and needs to be written more cleanly, and
    with bounds checking */
 
 #include <mysql.h>
@@ -55,7 +57,7 @@ HANDLER (search)
     char *fields[32], *p;
     MYSQL_RES *result;
     MYSQL_ROW row;
-    int i, numrows, numwords, max_results = 100, compound = 0;
+    int i, numrows, numwords, max_results = Max_Search_Results, compound = 0;
     size_t l;
     USER *user;
     char quoted[128];
@@ -115,11 +117,11 @@ HANDLER (search)
 	       processing */
 	    i++;
 	    max_results = atoi (fields[i]);
-	    if (max_results > 100)
+	    if (max_results > Max_Search_Results)
 	    {
 		log ("search(): client requested a maximum of %d results",
 			max_results);
-		max_results = 100;
+		max_results = Max_Search_Results;
 	    }
 	    i++;
 	}
