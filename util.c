@@ -286,15 +286,18 @@ send_queued_data (CONNECTION *con)
 	    datasize = calculate_chunk_length (con);
 	    data = REALLOC (data, datasize);
 	    l = datasize;
+	    log ("send_queued_data(): attempting to compress %d bytes",
+		    datasize);
 	    if (compress2 (data, (unsigned long *) &datasize,
 			(unsigned char *) con->sendbuf + con->sendbufcompressed,
 			datasize, Compression_Level) == Z_OK)
 	    {
-		int delta = datasize + 6 - l;	/* net change */
+		int delta = l - datasize - 8;	/* net change */
+		unsigned int len;
 
 		/* make sure there is enough room to hold the compressed
 		   packet */
-		if (con->sendbufcompressed + datasize + 6 > con->sendbufmax)
+		if (con->sendbufcompressed + datasize + 8 > con->sendbufmax)
 		{
 		    log ("send_queued_data(): compressed packet is larger, not compressing");
 		    break;
@@ -307,10 +310,11 @@ send_queued_data (CONNECTION *con)
 			MSG_SERVER_COMPRESSED_DATA);
 		con->sendbufcompressed += 2;
 
-		/* uncompressed size */
-		ASSERT (l <= 65535);
-		set_val (con->sendbuf + con->sendbufcompressed, l);
-		con->sendbufcompressed += 2;
+		/* uncompressed size, 4 bytes */
+		ASSERT (sizeof (unsigned int) == 4);
+		len = BSWAP32 (l);
+		memcpy (con->sendbuf + con->sendbufcompressed, &len, 4);
+		con->sendbufcompressed += 4;
 
 		/* compressed data */
 		memcpy (con->sendbuf + con->sendbufcompressed, data, datasize);

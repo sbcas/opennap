@@ -17,8 +17,10 @@
 /* convert the bytes of a 16-bit integer to little endian */
 #if WORDS_BIGENDIAN
 #define BSWAP16(c) (((c & 0xff) << 8) | ((c >> 8) & 0xff))
+#define BSWAP32(c) (((c >> 24) & 0xff) | ((c & 0xff0000) >> 8) | ((c & 0xff00) << 8) | (c << 24))
 #else
 #define BSWAP16(c) c
+#define BSWAP32(c) c
 #endif
 
 typedef unsigned char uchar;

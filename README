@@ -186,7 +186,7 @@ are implemented as additional functionality in the opennap server.
 
 	<len><data>
 
-	<len>	is the size of the uncompressed packet(s), specified as a 2
+	<len>	is the size of the uncompressed packet(s), specified as a 4
 		byte value in little-endian format
 	<data> is the compressed packet
 

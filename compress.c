@@ -17,35 +17,37 @@ HANDLER (compressed_data)
     unsigned short len, tag;
     unsigned long offset = 0, datasize;
     unsigned char *data;
+    unsigned int usize;
 
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("compressed_data");
-    memcpy (&len, pkt, 2);
-    len = BSWAP16(len);
-    datasize = len;
+    ASSERT (sizeof (usize) == 4);
+    memcpy (&usize, pkt, 4);
+    usize = BSWAP32 (usize);
+    datasize = usize;
     if (datasize == 0)
     {
 	log ("compressed_data(): warning, 0 bytes in compressed packet");
 	return;
     }
-    data = MALLOC (len);
+    data = MALLOC (usize);
     log ("compressed_data(): packet says uncompressed data is %d bytes",
 	    datasize);
-    if (uncompress (data, &datasize, (unsigned char *) pkt + 2,
-	    con->recvbytes - 6) != Z_OK)
+    if (uncompress (data, &datasize, (unsigned char *) pkt + 4,
+	    con->recvbytes - 8) != Z_OK)
     {
 	log ("compressed_data(): unable to uncompress data");
 	goto error;
     }
 
-    if (datasize != len)
+    if (datasize != usize)
     {
 	log ("compressed_data(): decompressed size did not match packet label");
 	goto error;
     }
 
     log ("compressed_data(): uncompressed %d bytes into %d bytes",
-	    con->recvbytes - 6, datasize);
+	    con->recvbytes - 8, datasize);
 
     /* handle each of the uncompressed packets */
     while (offset < datasize)
