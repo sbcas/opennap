@@ -173,11 +173,9 @@ HANDLER (login)
 		      user->nick);
 	    con->destroy = 1;
 	}
-	else
+	else if (ISSERVER (con))
 	{
-	    ASSERT (con->class == CLASS_SERVER);
-
-	    log ("login(): nick collision for user %s", user->nick);
+	    log ("login(): nick collision for %s", user->nick);
 
 	    /* issue a KILL for this user if we have one of them locally
 	       connected */
@@ -197,6 +195,11 @@ HANDLER (login)
 		   for each server, which is overkill */
 		hash_remove (Users, user->nick);
 	    }
+	}
+	else
+	{
+	    log ("login(): ERROR!  received collision from USER class!");
+	    con->destroy = 1;
 	}
 	return;
     }

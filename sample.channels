@@ -1,7 +1,12 @@
+# $Id$
+#
 # sample channel configuration file
-# this file contains a list of persistent channels that should be maintained
+#
+# This file contains a list of persistent channels that should be maintained
 # even when no users are present in them
+#
 # <channel> <limit> <level> "<default topic>"
+
 Help 200 Leech "Get your OpenNap questions answered here!"
 Admins 200 Moderator "OpenNap administration channel"
 Lobby 200 User "General chat channel"

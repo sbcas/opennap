@@ -30,8 +30,8 @@ load_channels (void)
     }
     while (fgets (Buf, sizeof (Buf), fp))
     {
-	if (Buf[0] == '#')
-	    continue;
+	if (Buf[0] == '#' || Buf[0] == '\r' || Buf[0] == '\n')
+	    continue;	/* blank or comment line */
 	ac = split_line (av, FIELDS (av), Buf);
 	if (ac < 3)
 	{
