@@ -1,7 +1,7 @@
-opennap v0.26 (ALPHA)
+opennap v0.27 (ALPHA)
 the open source (TM) napster server
 =====================
-May 15, 2000
+May 21, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -50,51 +50,8 @@ development of the server.
 
 * INSTALLATION
 
-  1.  build and optionally install opennap
-
-  	useful configure options (Unix platforms):
-
-	--disable-debug		turn off debug support in opennap.
-				debugging uses a lot of extra memory and
-				cpu, so production servers should use this
-				option
-
-	--disable-resume	turn off support for resuming file transfer.
-				many clients don't implement this correctly
-				so using this option will save some memory
-				by not storing the hash table used for this
-				function
-
-	--with-fd-setsize=N	on systems where FD_SETSIZE can be
-				redefined, change the maximum number of file
-				descriptors (connections) to N.
-
-  2.  create at least one elite (server operator) nick to use on the server
-
-	edit /usr/local/share/opennap/users (c:\opennap\users on Win32)
-	add the following lines:
-
-		:version 1
-		<nick> <password> <email> Elite 0 0
-
-      where <nick> is the nick you want to use, <email> is your email address
-      (optional, but it must not be empty).  <password> is an MD5 hashed
-      password which you make with the `mkpass' utility distributed with
-      opennap.  To create an MD5 password based upon a plain text password,
-      simply run
-	mkpass password
-      which will spit out a password of the form
-	1,wNmMEV+L,pGma3IflsSxFulv2jucmew
-      this is the string that gets put in the `users' file for the
-      <password> field.
-
-      The string ":version 1" MUST be present as the first line of the file,
-      or else opennap will not understand it.
-
-      When you log into the server with your client, you should see a
-      message from the server:
-
-      * Server: <server name> set your level to Elite (4).
+  Please see README.UNIX or README.WIN32 for platform specific installation
+  steps.
 
 * Linking Servers
 
