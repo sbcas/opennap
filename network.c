@@ -126,3 +126,13 @@ check_connect_status (int f)
     }
     return 0;
 }
+
+char *
+my_ntoa (unsigned long ip)
+{
+    struct in_addr a;
+
+    memset (&a, 0, sizeof (a));
+    a.s_addr = ip;
+    return (inet_ntoa (a));
+}

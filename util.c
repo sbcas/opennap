@@ -13,8 +13,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <sys/time.h>
 #ifdef HAVE_LIBZ
 #include <zlib.h>
@@ -286,11 +284,10 @@ send_queued_data (CONNECTION *con)
 	    datasize = calculate_chunk_length (con);
 	    data = REALLOC (data, datasize);
 	    l = datasize;
-	    log ("send_queued_data(): attempting to compress %d bytes",
-		    datasize);
+	    log ("send_queued_data(): attempting to compress %d bytes", l);
 	    if (compress2 (data, (unsigned long *) &datasize,
 			(unsigned char *) con->sendbuf + con->sendbufcompressed,
-			datasize, Compression_Level) == Z_OK)
+			l, Compression_Level) == Z_OK)
 	    {
 		int delta = l - datasize - 8;	/* net change */
 		unsigned int len;
@@ -304,7 +301,7 @@ send_queued_data (CONNECTION *con)
 		}
 
 		/* compressed packet header */
-		set_val (con->sendbuf + con->sendbufcompressed, datasize + 2);
+		set_val (con->sendbuf + con->sendbufcompressed, datasize + 4);
 		con->sendbufcompressed += 2;
 		set_val (con->sendbuf + con->sendbufcompressed,
 			MSG_SERVER_COMPRESSED_DATA);
@@ -342,7 +339,8 @@ send_queued_data (CONNECTION *con)
 		break;
 	    }
 	}
-	FREE (data);
+	if (data)
+	    FREE (data);
     }
 #endif /* HAVE_LIBZ */
 
@@ -640,14 +638,4 @@ new_connection (void)
     c->magic = MAGIC_CONNECTION;
 #endif
     return c;
-}
-
-char *
-my_ntoa (unsigned long ip)
-{
-    struct in_addr a;
-
-    memset (&a, 0, sizeof (a));
-    a.s_addr = ip;
-    return (inet_ntoa (a));
 }
