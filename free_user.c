@@ -35,6 +35,13 @@ free_user (USER * user)
 	list_free (user->channels, 0);
     }
 
+    /* free up invite list */
+    for(list=user->invited;list;list=list->next)
+    {
+	CHANNEL *chan = list->data;
+	chan->invited=list_delete(chan->invited,user);
+    }
+
     ASSERT (Num_Files >= user->shared);
     Num_Files -= user->shared;
     Num_Gigs -= user->libsize;	/* this is in kB */

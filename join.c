@@ -32,23 +32,6 @@ invalid_channel (const char *s)
 	    || (Max_Channel_Length > 0 && count > Max_Channel_Length));
 }
 
-#if 0
-/* returns nonzero if `user' is a member of `chan' */
-static int
-is_member (CHANNEL * chan, USER * user)
-{
-    LIST *list;
-
-    for (list = chan->users; list; list = list->next)
-    {
-	ASSERT (((CHANUSER *) list->data)->magic == MAGIC_CHANUSER);
-	if (((CHANUSER *) list->data)->user == user)
-	    return 1;
-    }
-    return 0;
-}
-#endif
-
 static int
 banned_from_channel (CHANNEL * chan, USER * user)
 {
@@ -105,14 +88,14 @@ HANDLER (join)
     {
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "You may only join %d channels", Max_User_Channels);
+		      "channel join failed: you may only join %d channels", Max_User_Channels);
 	return;
     }
     if (user->muzzled)
     {
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "Can't join channels while muzzled");
+		      "channel join failed: can't join channels while muzzled");
 	return;
     }
     do
@@ -165,7 +148,7 @@ HANDLER (join)
 	{
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH,
-			  "You have already joined that channel");
+			  "channel join failed: you have already joined that channel");
 	    return;
 	}
 	/* check to make sure the user has privilege to join */
@@ -181,15 +164,24 @@ HANDLER (join)
 	    /* log message is printed inside banned_from_channel() */
 	    return;
 	}
+	/* check for invitation */
+	else if ((chan->flags & ON_CHANNEL_INVITE) &&
+		user->level < LEVEL_MODERATOR &&
+		!list_find(user->invited,chan))
+	{
+	    if(ISUSER(con))
+		send_cmd(con,MSG_SERVER_NOSUCH,"channel join failed: channel is invite only");
+	    return;
+	}
 	else if (user->level < LEVEL_MODERATOR && chan->limit > 0 &&
-		 list_count (chan->users) >= chan->limit)
+		list_count (chan->users) >= chan->limit)
 	{
 	    log ("join(): channel %s is full (%d)", chan->name, chan->limit);
 	    if (chan->flags & ON_CHANNEL_USER)
 	    {
 		if (ISUSER (con))
 		    send_cmd (con, MSG_SERVER_NOSUCH,
-			      "channel join failed: channel is full");
+			    "channel join failed: channel is full");
 		return;
 	    }
 	    /* for predefined channels, automatically create a rollover
@@ -220,6 +212,13 @@ HANDLER (join)
     while (1);
 
     ASSERT (validate_channel (chan));
+
+    /* clean up invite lists */
+    if(chan->flags & ON_CHANNEL_INVITE)
+    {
+	chan->invited = list_delete(chan->invited,user);
+	user->invited = list_delete(user->invited,chan);
+    }
 
     /* add this channel to the list of this user is subscribed to */
     list = MALLOC (sizeof (LIST));

@@ -444,21 +444,6 @@ generate_pass (const char *pass)
     return (STRDUP (output));
 }
 
-int
-form_message (char *d, int dsize, int tag, const char *fmt, ...)
-{
-    va_list ap;
-    int len;
-
-    va_start (ap, fmt);
-    vsnprintf (d + 4, dsize - 4, fmt, ap);
-    va_end (ap);
-    len = strlen (d + 4);
-    set_tag (d, tag);
-    set_len (d, len);
-    return (len + 4);
-}
-
 /* an ip address consists of only numbers and dots */
 int
 is_ip (const char *s)
@@ -501,3 +486,4 @@ free_pointer (void *p)
 {
     FREE (p);
 }
+

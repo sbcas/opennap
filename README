@@ -393,7 +393,7 @@ are implemented as additional functionality in the opennap server.
 
 	sends <message> to all operators and mods+ on <channel>
 
-10209	change channel mode [CLIENT]
+10209	change channel mode [CLIENT, SERVER]
 
 	Format: <channel> [mode]
 
@@ -405,6 +405,15 @@ are implemented as additional functionality in the opennap server.
 
 		PRIVATE		- makes the channel not show up in the list
 		MODERATED	- only ops and mods+ can speak in public
+		INVITE		- channel is invite only
+
+10210	invite user to a channel [CLIENT, SERVER]
+
+	Format: <channel> <user>
+
+	when a channel is +INVITE, this sends an invitation to a user to
+	join the specified channel.  the user issuing the invite must be
+	a member of the channel.
 
 10300	share generic media file [CLIENT]
 

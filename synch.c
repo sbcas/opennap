@@ -110,7 +110,8 @@ sync_chan (CHANNEL * chan, CONNECTION * con)
 	send_cmd(con,MSG_CLIENT_CHANNEL_MODE,":%s %s%s%s",
 		Server_Name, chan->name,
 		(chan->flags & ON_CHANNEL_PRIVATE) ? " +PRIVATE" : "",
-		(chan->flags & ON_CHANNEL_MODERATED) ? " +MODERATED" : "");
+		(chan->flags & ON_CHANNEL_MODERATED) ? " +MODERATED" : "",
+		(chan->flags & ON_CHANNEL_INVITE) ? " +INVITE" : "");
 }
 
 static void

@@ -90,6 +90,7 @@ struct _chanuser
 #define ON_CHANNEL_USER		1	/* user created channel */
 #define ON_CHANNEL_PRIVATE	2	/* private (hidden) channel */
 #define ON_CHANNEL_MODERATED	4	/* moderated channel */
+#define ON_CHANNEL_INVITE	8	/* invitation required */
 
 struct _channel
 {
@@ -105,6 +106,7 @@ struct _channel
     unsigned char level;	/* minimum level to enter channel */
     LIST *bans;			/* channel specific bans */
     time_t timestamp;		/* used to sync servers */
+    LIST *invited;		/* invited users */
 };
 
 /* user level */
@@ -152,6 +154,7 @@ struct _user
     LIST *channels;		/* channels of which this user is a member */
     CONNECTION *con;		/* local connection, or server which this
 				   user is behind */
+    LIST *invited;		/* invited channels */
 };
 
 enum
@@ -240,7 +243,8 @@ struct _connection
     unsigned int server_login:1;
     unsigned int compress:4;	/* compression level for this connection */
     unsigned int class:2;	/* connection class (unknown, user, server) */
-    unsigned int xxx:6;		/* unused */
+    unsigned int numerics:1;	/* use real numerics for opennap extensions */
+    unsigned int xxx:5;		/* unused */
     time_t	timer;		/* timer to detect idle connections */
 };
 
@@ -591,6 +595,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_DROP_CHANNEL		10207
 #define MSG_CLIENT_CHANNEL_WALLOP	10208
 #define MSG_CLIENT_CHANNEL_MODE		10209
+#define MSG_CLIENT_CHANNEL_INVITE	10210
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
 
 /* utility routines */
@@ -681,6 +686,7 @@ void remove_user (CONNECTION *);
 int safe_realloc (void **, int);
 int save_bans (void);
 void send_cmd (CONNECTION *, unsigned int msgtype, const char *fmt, ...);
+void send_cmd_pre (CONNECTION *, unsigned int msgtype, const char *pre, const char *fmt, ...);
 int send_queued_data (CONNECTION * con);
 void send_user (USER *, int, char *fmt, ...);
 int set_keepalive (int, int);
@@ -726,6 +732,7 @@ HANDLER (channel_ban);
 HANDLER (channel_banlist);
 HANDLER (channel_clear_bans);
 HANDLER (channel_drop);
+HANDLER (channel_invite);
 HANDLER (channel_level);
 HANDLER (channel_limit);
 HANDLER (channel_mode);

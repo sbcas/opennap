@@ -161,6 +161,8 @@ pass_message (CONNECTION * con, char *pkt, size_t pktlen)
 void
 free_channel (CHANNEL * chan)
 {
+    LIST *list;
+
     ASSERT (validate_channel (chan));
     FREE (chan->name);
     if (chan->topic)
@@ -169,6 +171,14 @@ free_channel (CHANNEL * chan)
 	list_free (chan->users, 0);
     list_free (chan->bans, (list_destroy_t) free_ban);
     list_free (chan->ops, (list_destroy_t) free_pointer);
+
+    /* free invite list*/
+    for(list=chan->invited;list;list=list->next)
+    {
+	USER *user=list->data;
+	user->invited=list_delete(user->invited,chan);
+    }
+
     FREE (chan);
 }
 
@@ -378,4 +388,52 @@ new_connection (void)
     c->magic = MAGIC_CONNECTION;
 #endif
     return c;
+}
+
+static int
+vform_message(char *d, int dsize, int tag, const char *fmt, va_list ap)
+{
+    int len;
+    vsnprintf(d+4,dsize-4,fmt,ap);
+    len=strlen(d+4);
+    set_tag (d, tag);
+    set_len (d, len);
+    return (len + 4);
+}
+
+int
+form_message (char *d, int dsize, int tag, const char *fmt, ...)
+{
+    va_list ap;
+    int len;
+
+    va_start (ap, fmt);
+    len=vform_message(d, dsize, tag, fmt, ap);
+    va_end (ap);
+    return len;
+}
+
+void
+send_cmd_pre(CONNECTION *con, unsigned int tag, const char *prefix, const char *fmt, ...)
+{
+    va_list ap;
+    int len;
+
+    va_start(ap,fmt);
+    /* if the user's client supports use of real numerics send the raw */
+    if(con->numerics)
+	len=vform_message(Buf,sizeof(Buf),tag,fmt,ap);
+    else
+    {
+	/*otherwise prefix it with a descriptive string and send it as a 404*/
+	strncpy(Buf+4,prefix,sizeof(Buf)-4);
+	len=strlen(Buf+4);
+	vsnprintf(Buf+4+len,sizeof(Buf)-4-len,fmt,ap);
+	len+=strlen(Buf+4+len);
+	set_tag(Buf,MSG_SERVER_NOSUCH);
+	set_len(Buf,len);
+	len+=4;
+    }
+    queue_data(con,Buf,len);
+    va_end(ap);
 }
