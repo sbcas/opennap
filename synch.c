@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <unistd.h>
 #include <mysql.h>
@@ -26,14 +28,18 @@ synch_user (void *data, void *funcdata)
     MYSQL_RES *result;
     MYSQL_ROW row;
 
-    ASSERT (VALID (user));
+    ASSERT (validate_connection (con));
+    ASSERT (validate_user (user));
 
     /* send a login message for this user */
     send_cmd (con, MSG_CLIENT_LOGIN, "%s - %d \"%s\" %d",
 	    user->nick, user->port, user->clientinfo, user->speed);
 
+    /* send the user's host */
+    send_cmd (con, MSG_SERVER_USER_IP, "%s %lu", user->nick, user->host);
+
     /* update the user's level */
-    if (user->level > LEVEL_USER)
+    if (user->level != LEVEL_USER)
     {
 	send_cmd (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s",
 	    Server_Name, user->nick, Levels[user->level]);
@@ -66,15 +72,13 @@ synch_user (void *data, void *funcdata)
 		row[IDX_LENGTH]);
     }
     mysql_free_result (result);
-
-    /* in order to avoid too much data building up in memory, flush the
-       info for this user here */
-    send_queued_data (con);
 }
 
 void
 synch_server (CONNECTION *con)
 {
+    ASSERT (validate_connection (con));
+
     /* send our peer server a list of all users we know about */
     hash_foreach (Users, synch_user, (void *) con);
 }

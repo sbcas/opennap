@@ -1,3 +1,4 @@
+dnl $Id$
 AC_INIT(opennap.h)
 AM_INIT_AUTOMAKE(opennap,0.10)
 AM_PROG_CC_STDC

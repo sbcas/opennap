@@ -1,6 +1,6 @@
 opennap - the open source napster server
 ========================================
-Last updated January 21, 2000
+Last updated January 24, 2000
 
 * For a description of the napster protocol, please see the file 'napster.txt'
   included with this distribution.
@@ -33,6 +33,24 @@ Last updated January 21, 2000
   6.  edit the opennap config file and change at least the `db_pass' line to
       correspond to the password you selected above in step #4.  By default,
       the config file is located in /usr/local/share/opennap/config.
+
+* Linking Servers
+
+  1.  you need to add the dns name of the server you wish to allow to connect
+      to your server in the MySQL database.  This needs to be done on both
+      ends, as it does mutual authentication to prevent bogus servers from
+      being able to join.
+
+      # mysql -u mp3 -p
+      Enter password:
+
+      mysql> use mp3;
+      mysql> insert into servers values('other.server.com','password');
+      mysql> quit;
+
+   2.  connect to your server and gain elite access, and execute the
+       `server connect' command (currently only bx-nap has support for
+       the opennap commands), specifying the host and port to connect to.
 
 * Database descriptions
 
@@ -91,14 +109,14 @@ specifying what input it expects.
 The following messages are not present in the official napster servers, but
 are implemented as additional functionality in the opennap server.
 
-10000	client quit
+10000	client quit [SERVER]
 
 	<nick>
 
 	the message is sent to peer servers when a client connection has
 	closed
 
-10010	server login
+10010	server login [SERVER]
 
 	<server-name> <nonce>
 
@@ -109,7 +127,7 @@ are implemented as additional functionality in the opennap server.
 	a peer server.  when a server receives this message, it will send its
 	own login command to the peer to initial mutual authentication
 
-10011	server login ack
+10011	server login ack [SERVER]
 
 	<hash-response>
 
@@ -126,7 +144,7 @@ are implemented as additional functionality in the opennap server.
 	client is requesting that local server establish a connection with
 	the server running at <server-name>:<port>
 
-10013	user ip
+10013	user ip [SERVER]
 
 	<user> <ip>
 
@@ -168,8 +186,12 @@ are implemented as additional functionality in the opennap server.
 
 	<len><data>
 
-	<len> is the size of the uncompressed packet(s)
+	<len>	is the size of the uncompressed packet(s), specified as a 2
+		byte value in little-endian format
 	<data> is the compressed packet
+
+	note: there is no whitespace between <len> and <data>, since the
+	body of this message does not contain text
 
 	this packet is used to transmit one or more packets together in
 	compressed form.  since most of the messages are text, they should
