@@ -63,9 +63,10 @@ HANDLER (level)
     if ((level = get_level (fields[1])) == -1)
     {
 	log ("level(): tried to set %s to unknown level %s",
-	    user->nick, fields[1]);
+	     user->nick, fields[1]);
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "no such level as %s", fields[1]);
+	    send_cmd (con, MSG_SERVER_NOSUCH, "no such level as %s",
+		      fields[1]);
 	return;
     }
 
@@ -74,10 +75,10 @@ HANDLER (level)
     {
 	ASSERT (validate_user (con->user));
 	if ((level >= con->user->level && con->user->level < LEVEL_ELITE) ||
-		user->level >= con->user->level)
+	    user->level >= con->user->level)
 	{
 	    log ("level(): %s tried to set %s to level %s", con->user->nick,
-		    user->nick, Levels[level]);
+		 user->nick, Levels[level]);
 	    permission_denied (con);
 	    return;
 	}
@@ -86,10 +87,10 @@ HANDLER (level)
 
     if (Num_Servers)
 	pass_message_args (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s",
-		sender, user->nick, Levels[level]);
+			   sender, user->nick, Levels[level]);
 
     notify_mods ("%s set %s's user level to %s (%d).", sender, user->nick,
-	    Levels[level], level);
+		 Levels[level], level);
 
     /* we set this after the notify_mods so that the user being changed
        doesnt get notified twice */
@@ -104,7 +105,7 @@ HANDLER (level)
     }
 
     log ("level(): %s set %s's level to %s", sender, user->nick,
-	    Levels[user->level]);
+	 Levels[user->level]);
 
     /* if this is a registered nick, update our db so this change is
        persistent */
@@ -117,5 +118,36 @@ HANDLER (level)
 	else
 	    log ("level(): updated level in user database");
 	userdb_free (db);
+    }
+    else if (user->level > LEVEL_USER)
+    {
+	char email[64];
+
+	/* no local user db entry.  this nick probably should be registered */
+	log ("level(): %s is not locally registered, creating entry");
+	db = CALLOC (1, sizeof (USERDB));
+	if (!db)
+	{
+	    OUTOFMEMORY ("level");
+	    return;
+	}
+	db->nick = user->nick;
+	db->password = user->pass;
+	db->level = user->level;
+	if (user->email)
+	    db->email = user->email;
+	else
+	{
+	    snprintf (email, sizeof (email), "anon@%s", Server_Name);
+	    db->email = email;
+	}
+	/* we use the current time.  this should be ok since if we ever try
+	   to propogate this entry the server(s) with older entries will
+	   override this one and update our entry */
+	db->created = Current_Time;
+	db->lastSeen = Current_Time;
+	if (userdb_store (db))
+	    log ("level(): userdb_store failed");
+	FREE (db);
     }
 }

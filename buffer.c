@@ -84,39 +84,6 @@ buffer_queue (BUFFER *b, char *d, int dsize, int step)
     return r;
 }
 
-/* ensure that at least 'n' bytes exist in the first buffer fragment */
-int
-buffer_group (BUFFER *b, int n)
-{
-    ASSERT (buffer_validate (b));
-    if (b->consumed + n > b->datasize)
-    {
-	int l = b->consumed + n - b->datasize;
-
-	/* allocate 1 extra byte to hold a nul (\0) char */
-	b->datamax = b->datasize + l + 1;
-	if (safe_realloc ((void **) &b->data, b->datamax))
-	{
-	    OUTOFMEMORY ("buffer_group");
-	    /* this will probably not make some of the other routines happy
-	       because they don't expect a 0 byte buffer at the beginning
-	       of the list, but its better than dumping core here */
-	    if (b->data)
-		FREE (b->data);
-	    b->datasize = b->datamax = b->consumed = 0;
-	    return -1;
-	}
-	ASSERT (b->next != 0);
-	/* steal `l' bytes from the next buffer block */
-	ASSERT (b->next->datasize >= l);
-	memcpy (b->data + b->datasize, b->next->data + b->next->consumed, l);
-	b->datasize += l;
-	*(b->data + b->datasize) = 0;
-	b->next = buffer_consume (b->next, l);
-    }
-    return 0;
-}
-
 #ifdef WIN32
 #undef errno
 #define errno h_errno
