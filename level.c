@@ -5,8 +5,14 @@
    $Id$ */
 
 #include <string.h>
+#ifdef WIN32
+#include <windows.h>
+#endif
+#include <mysql.h>
 #include "opennap.h"
 #include "debug.h"
+
+extern MYSQL *Db;
 
 /* change the user level for a user */
 /* [ :<nick> ] <user> <level> */
@@ -15,6 +21,7 @@ HANDLER (level)
     char *sender = 0, *fields[2];
     USER *user;
     LEVEL level;
+    MYSQL_RES	*result;
 
     (void) tag;
     (void) len;
@@ -113,4 +120,26 @@ HANDLER (level)
 
     log ("level: %s set %s's level to %s", sender, user->nick,
 	    Levels[user->level]);
+
+    /* if this is a registered nick, update our db so this change is
+       persistent */
+    snprintf (Buf, sizeof (Buf), "SELECT nick FROM accounts WHERE nick='%s'",
+	    user->nick);
+    if (mysql_query (Db, Buf) != 0)
+    {
+	sql_error ("level", Buf);
+	return;
+    }
+    result = mysql_store_result (Db);
+    if (mysql_num_rows (result) > 0)
+    {
+	/* registered nick, update the entry */
+	ASSERT (mysql_num_rows (result) == 1);
+	snprintf (Buf, sizeof (Buf),
+		"UPDATE accounts SET level='%s' WHERE nick='%s'",
+		Levels[user->level], user->nick);
+	if (mysql_query (Db, Buf) != 0)
+	    sql_error ("level", Buf);
+    }
+    mysql_free_result (result);
 }

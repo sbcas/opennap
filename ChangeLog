@@ -27,7 +27,12 @@ added support for the emote (824) command
 
 win32 port by "Damian Hodgkiss" <mian@thirty4.com>
 
-bumped up client queue length to 100Kbytes
+bumped up default client queue length to 100Kbytes
+
+added support for the sharing limit messages (619/620)
+
+modified level() to update the db for registered accounts so that level
+changes are persistent across logins
 
 Changes from 0.10
 =================

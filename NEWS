@@ -1,9 +1,8 @@
 opennap v0.12 (ALPHA)
 =====================
-February 13, 2000
+February 17, 2000
 
 http://opennap.sourceforge.net
-http://sourceforge.net/project/?group_id=1321
 IRC: #opennap on irc.openprojects.net
 Email: opennap-dev@lists.sourceforge.net
 
@@ -14,7 +13,7 @@ requests.  So far this server has only been tested on:
 	* Red Hat Linux 6.1 (i686) running MySQL 3.23.30
 	* Red Hat Linux 6.0 (Alpha) running MySQL 3.23.30
 	* BSDI 4.1
-	* Win32
+	* Win32 (using MS VC++ 6.0)
 Minimal porting should be required for compilation on other Unix variants
 (if you do a port, please send patches to drscholl@users.sourceforge.net)
 
@@ -37,5 +36,4 @@ What's included?
 * opennap server
 * metaserver for directing clients to server groups
 * protocol specification
-* sample client
 * SOURCE CODE!

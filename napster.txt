@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-February 16, 2000
+February 17, 2000
 
 0.  Forward
 
@@ -404,6 +404,12 @@ appropriate, examples of the <data> section for each message are given.
 
 	client sends this message when they are finished uploading a file.
 	this subtracts one from the upload count maintained by the server.
+
+300	??? [CLIENT]
+
+	<port>
+
+	[anyone know what this command is for? -ed]
 
 301	hotlist ack [SERVER]
 
@@ -881,14 +887,92 @@ The current method seems to be: skip id3v2, seek to frame sync and hash.
 Note: the linux nap client (versions 0.7 - 0.9) seem to hash exactly 300,000
 bytes, which is NOT what the official windows client does.
 
-4.  Where to get more help?
+4.  Client-Client Protocol
+
+File transfer occur directly between clients without passing through the
+server.  There are four transfer modes, upload, download, firewalled upload,
+firewalled download.  The normal method of transfer is that the client
+wishing to download a file makes a TCP connection to the client holding the
+file on their data port.  However, in the case where the client sharing the
+file is behind a firewall, it is necessary for them to "push" the data by
+making a TCP connection to the downloader's data port.
+
+4.1  Normal Downloading
+
+Regardless of which mode, the downloading client will first issue either a 
+search(200) or browse(211) command to the server.  This returns a list of
+files and information on the client sharin the file.  To request a download,
+a get(203) request is sent to the server.  The server will respond with
+a get ack(204) containing more detailed information.
+
+This is the point at which the different methods diverge.  If the 204 get
+ack says that the remote clients data port is 0, you must send a 500 request
+to the server requesting that the remote client send the data to you.  In
+this case you wait for the remote client to connect to your own data port.
+
+In the case where the sharing client is not firewalled, you make a TCP
+connection to the data port specified in the 204 message from the server.
+The remote client should accept the connection and immediately send one
+ASCII char, `1' (ASCII 49).  Once you read this char, you send a request
+for the file you wish to download.  First send the string "GET" in a single
+packet, then send
+	<mynick> "<filename>" <offset>
+where <mynick> is your napster user name, <filename> is the file you wish to
+download, and <offset> if the byte offst in the file to begin the transfer
+at (if you are downloading for the first time, and not resuming a prior
+transfer, you should uses 0 to start at the beginning of the file).
+
+The remote client will then return the file size, or an error message such
+as "INVALID REQUEST" or "FILE NOT SHARED".  Note that the file size is not
+terminated in any special way, and the best way to figure out the size is to
+keep reading until you hit a character that is not a digit (it will usually
+be 0xff which is the start of the MP3 frame sync header, but if a ID3v2
+tag is present it might look different).  Immediately following the file
+size is where the data stream for the file begins.
+
+Once the data transfer is initiated, the downloader should notify the server
+that they are downloading a file by sending the 218 message.  Once the
+transfer is complete, you send a 219 message to indicate you have finished
+the download.  Note that this is cummalitive, so that if you are downloading
+multiple files, you send one 218/219 pair for EACH concurrent download--this
+is how the server knows how many transfers you have going on.  Likewise,
+the uploader should send one 220 messge for each upload, and one 221 when
+each upload has finished.
+
+4.2  Firwalled Downloading
+
+As described above, when the file needs to be pushed from a client behind a
+firewall, the downloader sends a 500 message to the server.  This causes a
+501 message to be sent to the uploader, which is similar to the 204 message
+for a normal download.
+
+Once the uploader receives the 501 message from the server, they should make
+a TCP connection to the downloader's data port (given in the 501 message).
+Upon connection, the downloader's client will sent one byte, the ASCII
+character `1'.  The uploader should then send the string "SEND" in a single
+packet, and then the information:
+	<mynick> "<filename>" <size>
+where <mynick> is the uploader's napster user name, <filename> is the file
+being sent, and <size> is the size of the file in bytes.
+
+Upon receipt, the downloading client will either send the byte offset at
+whcih the transfer should start, or an error message such as
+"INVALID REQUEST".  The byte offset should be sent as a single packet
+in plain ASCII digits.  Just as with above in section 4.1, a 0 byte offset
+indicates the transfer should begin at the start of the file.
+
+Each client should notify the server that they are uploading or downloading
+with the 218/219 (downloading) or 220/221 (uploading) command pairs (see
+section 4.1 for more detailed information).
+
+5.  Where to get more help?
 
 Join the napdev mailing list by sending email to napdev-subscribe@onelist.com
 or by visiting the community page http://www.onelist.com/community/napdev/.
 This list is designed for open source napster developers to share information
 about the specification or applications.
 
-5.  Acknowledgements
+6.  Acknowledgements
 
 A big THANKS goes to the following people who contributed valuable information
 to this specification:
