@@ -13,7 +13,7 @@
 #include "debug.h"
 
 /* called when receiving a global message */
-/* [ <nick> ] <message> */
+/* 627 [ <nick> ] <message> */
 HANDLER (announce)
 {
     int i, l;
@@ -55,8 +55,7 @@ HANDLER (announce)
 	return;
     }
 
-    l = form_message (Buf, sizeof (Buf), MSG_SERVER_ANNOUNCE, "%s %s",
-	    user->nick, pkt);
+    l = form_message (Buf, sizeof (Buf), tag, "%s %s", user->nick, pkt);
 
     /* pass the message to our peer servers if a local user sent it */
     pass_message (con, Buf, l);
@@ -99,8 +98,7 @@ HANDLER (wallop)
 	}
     }
 
-    l = form_message (Buf, sizeof (Buf), MSG_SERVER_ANNOUNCE, "%s %s",
-	    ptr, pkt);
+    l = form_message (Buf, sizeof (Buf), tag, "%s %s", ptr, pkt);
     pass_message (con, Buf, l);
 
     /* deliver message to local users */

@@ -670,7 +670,7 @@ typedef unsigned int socklen_t;
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
-#define VERSION "0.20"
+#define VERSION "0.22"
 
 #define USE_CRLF 1
 
