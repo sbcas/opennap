@@ -6,6 +6,7 @@
 
 #include <unistd.h>
 #include <mysql.h>
+#include <string.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -67,10 +68,15 @@ synch_user (void *data, void *funcdata)
     {
 	mysql_data_seek (result, i);
 	row = mysql_fetch_row (result);
-	send_cmd (con, MSG_CLIENT_ADD_FILE, ":%s \"%s\" %s %s %s %s %s",
-		row[IDX_NICK], row[IDX_FILENAME], row[IDX_MD5],
-		row[IDX_SIZE], row[IDX_BITRATE], row[IDX_FREQ],
-		row[IDX_LENGTH]);
+	if (!strcasecmp (row[IDX_TYPE], "audio/mp3"))
+	    send_cmd (con, MSG_CLIENT_ADD_FILE, ":%s \"%s\" %s %s %s %s %s",
+		    row[IDX_NICK], row[IDX_FILENAME], row[IDX_MD5],
+		    row[IDX_SIZE], row[IDX_BITRATE], row[IDX_FREQ],
+		    row[IDX_LENGTH]);
+	else
+	    send_cmd (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %s %s",
+		    row[IDX_NICK], row[IDX_FILENAME], row[IDX_SIZE],
+		    row[IDX_MD5], row[IDX_TYPE]);
     }
     mysql_free_result (result);
 }

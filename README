@@ -211,7 +211,9 @@ are implemented as additional functionality in the opennap server.
 
 	"<filename>" <size> <md5> <content-type>
 
-	<content-type> is the MIME type defined for what the data is
+	<content-type> is the MIME type defined for what the data is.  This
+			should be of the form TYPE/SUBTYPE, where TYPE is
+			one of: audio, video, text, image, application
 
 	Examples:
 

@@ -279,6 +279,8 @@ HANDLER (share_file)
     (void) len;
     (void) tag;
 
+    ASSERT (validate_connection (con));
+
     if (pop_user (con, &pkt, &user) != 0)
 	return;
 
@@ -287,6 +289,20 @@ HANDLER (share_file)
 	log ("share_file: wrong number of fields");
 	if (user->con)
 	    send_cmd (user->con, MSG_SERVER_NOSUCH, "wrong number of fields");
+	return;
+    }
+
+    /* make sure the content-type looks correct */
+    if (strncasecmp ("audio/", field[3], 6) &&
+	    strncasecmp ("image/", field[3], 6) &&
+	    strncasecmp ("video/", field[3], 6) &&
+	    strncasecmp ("application/", field[3], 11) &&
+	    strncasecmp ("text/", field[3], 5))
+    {
+	log ("share_file: not a MIME type: %s", field[3]);
+	if (user->con)
+	    send_cmd (user->con, MSG_SERVER_NOSUCH,
+		    "%s is not a valid MIME content-type", field[3]);
 	return;
     }
 

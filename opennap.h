@@ -356,6 +356,8 @@ void set_val (char *d, unsigned short val);
 #define IDX_FREQ	5
 #define IDX_LENGTH	6
 #define IDX_SPEED	7
+#define IDX_SOUNDEX	8
+#define IDX_TYPE	9
 
 /* utility routines */
 void add_client (CONNECTION *);
