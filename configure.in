@@ -1,6 +1,6 @@
 dnl $Id$
 AC_INIT(opennap.h)
-AM_INIT_AUTOMAKE(opennap,0.35)
+AM_INIT_AUTOMAKE(opennap,0.36)
 AM_MAINTAINER_MODE
 AM_PROG_CC_STDC
 AC_HEADER_STDC
@@ -17,6 +17,7 @@ AC_CHECK_LIB(z, compress2,[LIBS="$LIBS -lz"],
 AC_CHECK_LIB(xnet,gethostbyname)
 AC_CHECK_LIB(nsl,socket)
 AC_CHECK_LIB(socket,gethostbyname)
+AC_CHECK_LIB(adns,adns_init)
 AC_CHECK_FUNCS(mlockall)
 
 ac_cv_warnings=yes

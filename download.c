@@ -61,7 +61,7 @@ HANDLER (download)
 		{
 		    send_user (sender, MSG_SERVER_FILE_READY /* 204 */ ,
 			       "%s %u %d \"%s\" %s %d", user->nick,
-			       user->host, user->port, info->filename,
+			       user->ip, user->port, info->filename,
 #if RESUME
 			       info->hash,
 #else
@@ -97,7 +97,7 @@ HANDLER (download)
 	    ASSERT (ISUSER (con));
 	    send_cmd (con, MSG_SERVER_FILE_READY /* 204 */ ,
 		      "%s %u %d \"%s\" firewallerror %d",
-		      user->nick, user->host, user->port, av[1], user->speed);
+		      user->nick, user->ip, user->port, av[1], user->speed);
 	    return;
 	}
     }
@@ -244,7 +244,7 @@ HANDLER (data_port_error)
     notify_mods
 	(PORTLOG_MODE,
 	 "Notification from %s: %s (%s) - configured data port %d is unreachable.",
-	 sender->nick, user->nick, my_ntoa (user->host), user->port);
+	 sender->nick, user->nick, user->host, user->port);
 
     /* if local, notify the target of the error */
     if (user->local)

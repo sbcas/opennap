@@ -147,7 +147,7 @@ update_stats (void)
 
 /* accept all pending connections */
 static void
-accept_connection (int s)
+accept_connection (int s, void *dns)
 {
     CONNECTION *cli;
     socklen_t sinsize;
@@ -182,6 +182,7 @@ accept_connection (int s)
 		OUTOFMEMORY ("accept_connection");
 		goto error;
 	    }
+	    cli->resolved = 1;
 	}
 	else
 	{
@@ -198,13 +199,29 @@ accept_connection (int s)
 	cli->timer = Current_Time;	/* set a login timer */
 	if (add_client (cli))
 	    return;
+#if HAVE_LIBADNS
+	/* submit a reverse lookup to find the dns name of this ip */
+	if(cli->ip!=Server_Ip)
+	{
+	    int r = adns_submit_reverse(dns, (struct sockaddr*)&sin,
+		    adns_r_ptr, 0, cli, &cli->dns);
+	    if(r!=0)
+	    {
+		log("accept_connection(): adns_submit returned %d", r);
+		/* kill the connection since it will be hung on dns lookup */
+		cli->destroy = 1;
+	    }
+	    else
+		log("accept_connection(): resolving %s", cli->host);
+	}
+#endif
 	set_nonblocking (f);
 	set_keepalive (f, 1);	/* enable tcp keepalive messages */
     }
     /* not reached */
     ASSERT (0);
     return;
-  error:
+error:
     CLOSE (f);
     if (cli->host)
 	FREE (cli->host);
@@ -409,8 +426,15 @@ main (int argc, char **argv)
     int sp = -1;		/* stats port */
     int i;			/* generic counter */
     int maxfd;
-    fd_set set, wset;
+    fd_set set, wset, eset;
     struct timeval t;
+    struct timeval *to;
+#if HAVE_LIBADNS
+    adns_state d_state;
+    adns_query dns_query;
+    struct timeval now;
+    void *ctx;
+#endif
 
 #ifdef WIN32
     WSADATA wsa;
@@ -449,6 +473,10 @@ main (int argc, char **argv)
        update_stats() */
     Last_Click = Current_Time;
 
+#if HAVE_LIBADNS
+    adns_init(&d_state, adns_if_noautosys, 0);
+#endif
+
     /* main event loop */
     while (!SigCaught)
     {
@@ -456,6 +484,7 @@ main (int argc, char **argv)
 
 	FD_ZERO (&set);
 	FD_ZERO (&wset);
+	FD_ZERO (&eset);
 	maxfd = -1;
 	for (i = 0; i < sockfdcount; i++)
 	{
@@ -474,23 +503,78 @@ main (int argc, char **argv)
 	{
 	    if (Clients[i])
 	    {
-		FD_SET (Clients[i]->fd, &set);
-		if (Clients[i]->fd > maxfd)
-		    maxfd = Clients[i]->fd;
+#if HAVE_LIBADNS
+		/* don't read anything unless we've looked up the dns name */
+		if(Clients[i]->resolved)
+#endif /*HAVE_LIBADNS*/
+		    FD_SET (Clients[i]->fd, &set);
+
 		/* check sockets for writing */
 #define CheckWrite(p) (p->sendbuf || (ISSERVER(p) && p->sopt->outbuf))
 		if (Clients[i]->connecting || CheckWrite (Clients[i]))
 		    FD_SET (Clients[i]->fd, &wset);
+
+		if (Clients[i]->fd > maxfd)
+		    maxfd = Clients[i]->fd;
 	    }
 	}
 
 	t.tv_sec = next_timer ();
 	t.tv_usec = 0;
-	if (select (maxfd + 1, &set, &wset, NULL, &t) < 0)
+
+	to = &t;
+
+#if HAVE_LIBADNS
+	gettimeofday(&now, NULL);
+	adns_beforeselect(d_state, &maxfd, &set, &wset, &eset, &to, NULL, &now);
+#endif
+
+	if (select (maxfd + 1, &set, &wset, &eset, to) < 0)
 	{
 	    logerr ("main", "select");
 	    continue;
 	}
+
+#if HAVE_LIBADNS
+	adns_afterselect(d_state, maxfd, &set, &wset, &eset, &now);
+
+	/* check for results of dns lookup */
+	for(adns_forallqueries_begin(d_state);
+		(dns_query = adns_forallqueries_next(d_state, &ctx));)
+	{
+	    adns_answer *dns_result;
+
+	    ASSERT(((CONNECTION*)ctx)->dns == dns_query);
+	    if(adns_check(d_state, &dns_query, &dns_result, &ctx)==0)
+	    {
+		CONNECTION *ptr = ctx;
+
+		ASSERT(dns_result!=0);
+		ASSERT(ptr!=0);
+		if(dns_result->status==adns_s_ok)
+		{
+		    FREE(ptr->host);
+		    ptr->host=STRDUP(*dns_result->rrs.str);
+		    if(!ptr->host)
+		    {
+			OUTOFMEMORY("main");
+			ptr->destroy = 1;
+			ptr->resolved = 1; /* don't call adns_cancel */
+			continue;
+		    }
+		    log("main(): %s resolves to %s",
+			    my_ntoa(ptr->ip), ptr->host);
+		}
+		else
+		{
+		    log("main(): unable to resolve %s (dns_result->status = %d)",
+			    ptr->host, dns_result->status);
+		    /* just make due with the ip address instead */
+		}
+		ptr->resolved = 1;
+	    }
+	}
+#endif
 
 	/* process incoming requests */
 	for (i = 0; !SigCaught && i < Max_Clients; i++)
@@ -548,7 +632,12 @@ main (int argc, char **argv)
 	for (i = 0; i < sockfdcount; i++)
 	{
 	    if (FD_ISSET (sockfd[i], &set))
-		accept_connection (sockfd[i]);
+#if HAVE_LIBADNS
+#define DNS d_state
+#else
+#define DNS 0
+#endif
+		accept_connection (sockfd[i], DNS);
 	}
 
 	/* execute any pending events now */
@@ -569,6 +658,10 @@ main (int argc, char **argv)
     for (i = 0; i < Max_Clients; i++)
 	if (Clients[i])
 	    remove_connection (Clients[i]);
+
+#if HAVE_LIBADNS
+    adns_finish(d_state);
+#endif
 
     /* only clean up memory if we are in debug mode, its kind of pointless
        otherwise */

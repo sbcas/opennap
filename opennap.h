@@ -19,6 +19,9 @@
 #include <zlib.h>
 #include "hash.h"
 #include "list.h"
+#if HAVE_LIBADNS
+#include <adns.h>
+#endif
 
 #define OUTOFMEMORY(f) log("%s(): OUT OF MEMORY at %s:%d", f, __FILE__, __LINE__)
 #define _logerr(f,s,e) log("%s(): %s: %s (errno %d)", f, s, strerror(e), e)
@@ -130,6 +133,7 @@ struct _user
     char *pass;			/* password for this user, needed for sync */
     char *clientinfo;
     char *server;		/* which server the user is connected to */
+    char *host;			/* dns name of client */
 
     unsigned short uploads;	/* no. of uploads in progress */
     unsigned short downloads;	/* no. of downloads in progress */
@@ -148,7 +152,7 @@ struct _user
     unsigned short totaldown;	/* total number of downloads */
 
     unsigned int libsize;	/* approximate size of shared files in kB */
-    unsigned int host;		/* ip of user in network byte order */
+    unsigned int ip;		/* ip of user in network byte order */
 
     unsigned short port;	/* data port client is listening on */
     unsigned short conport;	/* remote port for connection to server */
@@ -233,6 +237,12 @@ struct _connection
     }
     opt;
 
+#if HAVE_LIBADNS
+    adns_query dns;
+#endif
+
+    time_t	timer;		/* timer to detect idle connections */
+
     unsigned int connecting:1;
     unsigned int destroy:1;	/* connection should be destoyed in
 				   handle_connection().  because h_c() caches
@@ -243,11 +253,13 @@ struct _connection
     unsigned int killed:1;	/* set when the user was killed so free_user()
 				   knows not to generate a QUIT message */
     unsigned int server_login:1;
-    unsigned int compress:4;	/* compression level for this connection */
-    unsigned int class:2;	/* connection class (unknown, user, server) */
     unsigned int numerics:1;	/* use real numerics for opennap extensions */
-    unsigned int xxx:5;		/* unused */
-    time_t	timer;		/* timer to detect idle connections */
+    unsigned int resolved:1;	/* ip has been looked up */
+    unsigned int class:2;	/* connection class (unknown, user, server) */
+    unsigned int compress:4;	/* compression level for this connection */
+    unsigned int xxx:4;		/* unused */
+
+    short yyy;	/* unused - remaining 16 bits of above bitmasks */
 };
 
 /* hotlist entry */
@@ -300,16 +312,8 @@ typedef struct
 }
 DATUM;
 
-typedef enum
-{
-    BAN_IP,
-    BAN_USER
-}
-ban_t;
-
 typedef struct _ban
 {
-    ban_t type;
     char *target;
     char *setby;
     char *reason;
@@ -620,7 +624,7 @@ int buffer_size (BUFFER *);
 int buffer_decompress (BUFFER *, z_streamp, char *, int);
 int buffer_validate (BUFFER *);
 void cancel_search (CONNECTION * con);
-int check_ban (CONNECTION *, const char *);
+int check_ban (CONNECTION *, const char *, const char*);
 int check_connect_status (int);
 int check_pass (const char *info, const char *pass);
 void close_db (void);
@@ -649,6 +653,7 @@ char *generate_pass (const char *pass);
 int get_level (const char *);
 unsigned short get_local_port (int);
 void get_random_bytes (char *d, int);
+int glob_match(const char *, const char*);
 void handle_connection (CONNECTION *);
 void init_compress (CONNECTION *, int);
 int init_db (void);
@@ -679,6 +684,7 @@ int new_tcp_socket (int);
 char *next_arg (char **);
 char *next_arg_noskip (char **);
 time_t next_timer (void);
+char *normalize_ban(char *, char *, int);
 void nosuchuser (CONNECTION *);
 void nosuchchannel (CONNECTION*);
 void notify_mods (unsigned int, const char *, ...);
@@ -877,7 +883,7 @@ typedef unsigned int socklen_t;
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
-#define VERSION "0.35"
+#define VERSION "0.36"
 
 #define strcasecmp stricmp
 #define strncasecmp strnicmp

@@ -63,10 +63,10 @@ MAKEINFO = @MAKEINFO@
 PACKAGE = @PACKAGE@
 VERSION = @VERSION@
 
-bin_PROGRAMS = opennap metaserver mkpass setup
-opennap_SOURCES = opennap.h main.c add_file.c search.c 	motd.c hash.h hash.c privmsg.c browse.c 	debug.c debug.h login.c whois.c free_user.c 	join.c part.c public.c part_channel.c 	announce.c kill_user.c remove_connection.c config.c download.c 	upload_complete.c topic.c muzzle.c 	level.c client_quit.c server_login.c server_connect.c synch.c util.c 	md5.c md5.h hotlist.c remove_file.c list_channels.c 	list_users.c ping.c resume.c change.c ban.c network.c buffer.c 	server_usage.c server_links.c init.c handler.c timer.c list.c 	list.h userdb.c serverlib.c kick.c usermode.c channel.c
+bin_PROGRAMS = opennap metaserver setup #mkpass
+opennap_SOURCES = opennap.h main.c add_file.c search.c 	motd.c hash.h hash.c privmsg.c browse.c 	debug.c debug.h login.c whois.c free_user.c 	join.c part.c public.c part_channel.c 	announce.c kill_user.c remove_connection.c config.c download.c 	upload_complete.c topic.c muzzle.c 	level.c client_quit.c server_login.c server_connect.c synch.c util.c 	md5.c md5.h hotlist.c remove_file.c list_channels.c 	list_users.c ping.c resume.c change.c ban.c network.c buffer.c 	server_usage.c server_links.c init.c handler.c timer.c list.c 	list.h userdb.c serverlib.c kick.c usermode.c channel.c glob.c
 
-mkpass_SOURCES = mkpass.c md5.c debug.c util.c
+#mkpass_SOURCES=mkpass.c md5.c debug.c util.c
 metaserver_SOURCES = metaserver.c
 setup_SOURCES = setup.c
 EXTRA_DIST = sample.conf sample.motd napster.txt .indent.pro 	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp 	opennap.opt sample.users sample.servers opennap.spec 	getopt.c mkpass.dsp sample.channels 	napchk logchk setup.dsp
@@ -89,7 +89,7 @@ download.o upload_complete.o topic.o muzzle.o level.o client_quit.o \
 server_login.o server_connect.o synch.o util.o md5.o hotlist.o \
 remove_file.o list_channels.o list_users.o ping.o resume.o change.o \
 ban.o network.o buffer.o server_usage.o server_links.o init.o handler.o \
-timer.o list.o userdb.o serverlib.o kick.o usermode.o channel.o
+timer.o list.o userdb.o serverlib.o kick.o usermode.o channel.o glob.o
 opennap_LDADD = $(LDADD)
 opennap_DEPENDENCIES = 
 opennap_LDFLAGS = 
@@ -97,10 +97,6 @@ metaserver_OBJECTS =  metaserver.o
 metaserver_LDADD = $(LDADD)
 metaserver_DEPENDENCIES = 
 metaserver_LDFLAGS = 
-mkpass_OBJECTS =  mkpass.o md5.o debug.o util.o
-mkpass_LDADD = $(LDADD)
-mkpass_DEPENDENCIES = 
-mkpass_LDFLAGS = 
 setup_OBJECTS =  setup.o
 setup_LDADD = $(LDADD)
 setup_DEPENDENCIES = 
@@ -121,19 +117,20 @@ GZIP_ENV = --best
 DEP_FILES =  .deps/add_file.P .deps/announce.P .deps/ban.P \
 .deps/browse.P .deps/buffer.P .deps/change.P .deps/channel.P \
 .deps/client_quit.P .deps/config.P .deps/debug.P .deps/download.P \
-.deps/free_user.P .deps/handler.P .deps/hash.P .deps/hotlist.P \
-.deps/init.P .deps/join.P .deps/kick.P .deps/kill_user.P .deps/level.P \
-.deps/list.P .deps/list_channels.P .deps/list_users.P .deps/login.P \
-.deps/main.P .deps/md5.P .deps/metaserver.P .deps/mkpass.P .deps/motd.P \
-.deps/muzzle.P .deps/network.P .deps/part.P .deps/part_channel.P \
-.deps/ping.P .deps/privmsg.P .deps/public.P .deps/remove_connection.P \
-.deps/remove_file.P .deps/resume.P .deps/search.P \
-.deps/server_connect.P .deps/server_links.P .deps/server_login.P \
-.deps/server_usage.P .deps/serverlib.P .deps/setup.P .deps/synch.P \
-.deps/timer.P .deps/topic.P .deps/upload_complete.P .deps/userdb.P \
-.deps/usermode.P .deps/util.P .deps/whois.P
-SOURCES = $(opennap_SOURCES) $(metaserver_SOURCES) $(mkpass_SOURCES) $(setup_SOURCES)
-OBJECTS = $(opennap_OBJECTS) $(metaserver_OBJECTS) $(mkpass_OBJECTS) $(setup_OBJECTS)
+.deps/free_user.P .deps/glob.P .deps/handler.P .deps/hash.P \
+.deps/hotlist.P .deps/init.P .deps/join.P .deps/kick.P \
+.deps/kill_user.P .deps/level.P .deps/list.P .deps/list_channels.P \
+.deps/list_users.P .deps/login.P .deps/main.P .deps/md5.P \
+.deps/metaserver.P .deps/motd.P .deps/muzzle.P .deps/network.P \
+.deps/part.P .deps/part_channel.P .deps/ping.P .deps/privmsg.P \
+.deps/public.P .deps/remove_connection.P .deps/remove_file.P \
+.deps/resume.P .deps/search.P .deps/server_connect.P \
+.deps/server_links.P .deps/server_login.P .deps/server_usage.P \
+.deps/serverlib.P .deps/setup.P .deps/synch.P .deps/timer.P \
+.deps/topic.P .deps/upload_complete.P .deps/userdb.P .deps/usermode.P \
+.deps/util.P .deps/whois.P
+SOURCES = $(opennap_SOURCES) $(metaserver_SOURCES) $(setup_SOURCES)
+OBJECTS = $(opennap_OBJECTS) $(metaserver_OBJECTS) $(setup_OBJECTS)
 
 all: all-redirect
 .SUFFIXES:
@@ -201,10 +198,6 @@ opennap: $(opennap_OBJECTS) $(opennap_DEPENDENCIES)
 metaserver: $(metaserver_OBJECTS) $(metaserver_DEPENDENCIES)
 	@rm -f metaserver
 	$(LINK) $(metaserver_LDFLAGS) $(metaserver_OBJECTS) $(metaserver_LDADD) $(LIBS)
-
-mkpass: $(mkpass_OBJECTS) $(mkpass_DEPENDENCIES)
-	@rm -f mkpass
-	$(LINK) $(mkpass_LDFLAGS) $(mkpass_OBJECTS) $(mkpass_LDADD) $(LIBS)
 
 setup: $(setup_OBJECTS) $(setup_DEPENDENCIES)
 	@rm -f setup

@@ -23,7 +23,7 @@ invalid_channel (const char *s)
     while (*s)
     {
 	if (ISSPACE (*s) || !ISPRINT (*s) || *s == ':' || *s == '%'
-	    || *s == '$')
+	    || *s == '$' || *s == '*' || *s == '?')
 	    return 1;
 	count++;
 	s++;
@@ -32,29 +32,15 @@ invalid_channel (const char *s)
 	    || (Max_Channel_Length > 0 && count > Max_Channel_Length));
 }
 
-static int
-banned_from_channel (CHANNEL * chan, USER * user)
+BAN *
+is_banned (LIST *bans, const char *nick, const char *host)
 {
-    LIST *list;
-    BAN *b;
-
-    strncpy (Buf, my_ntoa (user->host), sizeof (Buf));
-    for (list = chan->bans; list; list = list->next)
+    char mask[256];
+    snprintf(mask,sizeof(mask),"%s!%s",nick, host);
+    for(;bans;bans=bans->next)
     {
-	b = list->data;
-	if ((b->type == BAN_USER && !strcasecmp (user->nick, b->target)) ||
-	    (b->type == BAN_IP && ip_glob_match (b->target, Buf)))
-	{
-	    log ("banned_from_channel(): %s is banned from %s: %s (%s)",
-		 user->nick, chan->name, NONULL (b->reason), b->setby);
-	    if (ISUSER (user->con))
-	    {
-		send_cmd (user->con, MSG_SERVER_NOSUCH,
-			  "You are banned from %s: %s (%s)",
-			  chan->name, NONULL (b->reason), b->setby);
-	    }
-	    return 1;
-	}
+	if(glob_match(((BAN*)bans->data)->target,mask))
+	    return bans->data;
     }
     return 0;
 }
@@ -182,9 +168,16 @@ HANDLER (join)
 	    if (!chanop && user->level < LEVEL_MODERATOR)
 	    {
 		/* check to make sure this user is not banned from the channel */
-		if (chan->bans && banned_from_channel (chan, user))
+		BAN *ban = is_banned (chan->bans, user->nick, user->host);
+
+		if(ban)
 		{
-		    /* log message is printed inside banned_from_channel() */
+		    if (ISUSER (user->con))
+		    {
+			send_cmd (user->con, MSG_SERVER_NOSUCH,
+				"channel join failed: banned: %s",
+				NONULL(ban->reason));
+		    }
 		    return;
 		}
 

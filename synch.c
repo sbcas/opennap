@@ -36,16 +36,9 @@ sync_user (USER * user, CONNECTION * con)
 
     /* send a login message for this user */
     send_cmd (con, MSG_CLIENT_LOGIN,
-	      "%s %s %d \"%s\" %d unknown %d %u %s %hu", user->nick,
+	      "%s %s %d \"%s\" %d unknown %d %u %s %hu %s", user->nick,
 	      user->pass, user->port, user->clientinfo, user->speed,
-	      user->connected, user->host, user->server, user->conport);
-
-    /* TODO: will be deprecated in 0.34 */
-#if 1
-    /* send the user's host */
-    send_cmd (con, MSG_SERVER_USER_IP, "%s %u %hu %s", user->nick,
-	      user->host, user->conport, user->server);
-#endif
+	      user->connected, user->ip, user->server, user->conport, user->host);
 
     /* update the user's level */
     if (user->level != LEVEL_USER)

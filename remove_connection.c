@@ -72,6 +72,12 @@ remove_connection (CONNECTION * con)
     /* close socket */
     CLOSE (con->fd);
 
+#if HAVE_LIBADNS
+    /* if we were in the process of resolving the ip, abort lookup */
+    if(!con->resolved)
+	adns_cancel(con->dns);
+#endif
+
     /* if this connection had any pending searches, cancel them */
     cancel_search (con);
 

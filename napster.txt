@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-July 19, 2000
+July 24, 2000
 
 0.  Foreward
 
@@ -202,6 +202,10 @@ appropriate, examples of the <data> section for each message are given.
 	(7) messages when the specified nickname is invalid, usually due to
 	bad characters such as spaces or other non-printable characters.
 
+	The Napster, Inc. servers only accept (upper- and lower-case) nicks
+	comprised of the following:
+		abcdefghijklmnopqrstuvwxyz1234567890_[]{}-@^!$
+
 11	??? [CLIENT]
 
 	Format: <nick> <pass>
@@ -282,7 +286,8 @@ appropriate, examples of the <data> section for each message are given.
 
 201	search response [SERVER]
 
-	"<filename>" <md5> <size> <bitrate> <frequency> <length> <nick> <ip> <link-type>
+	Format: "<filename>" <md5> <size> <bitrate> <frequency> <length> <nick> <ip>
+	<link-type> [ <weight> ]
 
 	<md5> see secton "MD5"
 	<size> is file size in bytes
@@ -293,6 +298,11 @@ appropriate, examples of the <data> section for each message are given.
 	<ip> is an unsigned long integer representing the ip address of the
 		user with this file
 	<link-type> see message client login (2) message for a description
+	<weight>	a weighting factor to allow the client to sort the
+			list of results.  positive values indicate a "better"
+			match, negative values indicate a "worse" match.
+			If not present, the weight should be considered to be
+			0.
 
 	Example:
 

@@ -12,6 +12,9 @@
 #include "opennap.h"
 #include "debug.h"
 
+/* list of valid chars from RFC1459 (IRC) */
+#define VALID_CHARS "abcdefghijklmnopqrstuvwxyz0123456789-[]\\`^{}"
+
 int
 invalid_nick (const char *s)
 {
@@ -23,8 +26,11 @@ invalid_nick (const char *s)
 	return 1;
     while (*s)
     {
+	/* be more leaniant and only disallow chars we actually use for
+	 * other purposes
+	 */
 	if (!ISPRINT (*s) || ISSPACE (*s) || *s == ':' || *s == '%'
-	    || *s == '$')
+	    || *s == '$' || *s == '?' || *s == '*' || *s == '.' || *s == '!')
 	    return 1;
 	count++;
 	s++;
@@ -107,12 +113,14 @@ count_clones (unsigned int ip)
    servers append some additional information that they need to share in
    order to link:
 
-   2 <nick> <pass> <port> <client-info> <speed> <email> <ts> <ip> <server> <serverport>
+   2 <nick> <pass> <port> <client-info> <speed> <email> <ts> <ip> <server> <serverport> <host>
 
    <ts> is the time at which the client logged in (timestamp)
    <ip> is the client's ip address
    <server> is the server they are connected to
-   <port> is the remote port on the server they are connected to */
+   <port> is the remote port on the server they are connected to
+   <host> is the dns name of the client */
+
 HANDLER (login)
 {
     char *av[10];
@@ -120,6 +128,7 @@ HANDLER (login)
     HOTLIST *hotlist;
     int ac, speed, port;
     USERDB *db = 0;
+    char *host;
 
     (void) len;
     ASSERT (validate_connection (con));
@@ -162,6 +171,19 @@ HANDLER (login)
 	return;
     }
 
+    /* determine the dns name for this client */
+    if(ISUNKNOWN(con))
+	host=con->host;
+    else if(ISSERVER(con) && ac>11)
+	host=av[11];
+    else if(ac>7)
+	host=av[7];
+    else
+    {
+	log("login(): unable to get dns name for user %s", av[0]);
+	host="UNKNOWN";
+    }
+
     /* retrieve registration info (could be NULL) */
     db = hash_lookup (User_Db, av[0]);
 
@@ -182,7 +204,7 @@ HANDLER (login)
 	    /* check for max clones on one server */
 	    if (Max_Clones > 0 && count_clones (con->ip) >= Max_Clones)
 	    {
-		log ("login(): clones detected from %s", my_ntoa (con->ip));
+		log ("login(): clones detected from %s", host);
 		send_cmd(con,MSG_SERVER_ERROR,
 			"Exceeded max connections to this server");
 		con->destroy = 1;
@@ -191,9 +213,8 @@ HANDLER (login)
 	}
 
 	/* check for user|ip ban.  */
-	if (check_ban (con, av[0]))
+	if (check_ban (con, av[0], host))
 	    return;
-
     }
 
     speed = atoi (av[4]);
@@ -285,12 +306,12 @@ HANDLER (login)
 	    {
 		/* warn about privileged users */
 		notify_mods (ERROR_MODE, "Bad password for %s (%s) from %s",
-			     db->nick, Levels[db->level], my_ntoa (con->ip));
+			     db->nick, Levels[db->level], host);
 		pass_message_args (NULL, MSG_SERVER_NOTIFY_MODS,
 				   ":%s %d \"Bad password for %s (%s) from %s\"",
 				   Server_Name, ERROR_MODE,
 				   db->nick, Levels[db->level],
-				   my_ntoa (con->ip));
+				   host);
 	    }
 	    if (ISUNKNOWN (con))
 	    {
@@ -323,7 +344,7 @@ HANDLER (login)
 	{
 	    /* check for ghosts.  if another client from the same ip address
 	       logs in, kill the older client and proceed normally */
-	    if (user->host == con->ip)
+	    if (user->ip == con->ip)
 	    {
 		kill_client (user->nick, "ghost (%s)", user->server);
 		/* remove the old entry */
@@ -473,8 +494,9 @@ HANDLER (login)
 	/* save the ip address of this client */
 	user->connected = Current_Time;
 	user->local = 1;
-	user->host = con->ip;
+	user->ip = con->ip;
 	user->conport = con->port;
+	user->host = STRDUP (con->host);
 	if (!(user->server = STRDUP (Server_Name)))
 	{
 	    OUTOFMEMORY ("login");
@@ -508,7 +530,7 @@ HANDLER (login)
 	{
 	    /* data is present */
 	    user->connected = atoi (av[6]);
-	    user->host = strtoul (av[7], 0, 10);
+	    user->ip = strtoul (av[7], 0, 10);
 	    user->server = STRDUP (av[8]);
 	    if (!user->server)
 	    {
@@ -516,6 +538,12 @@ HANDLER (login)
 		goto failed;
 	    }
 	    user->conport = atoi (av[9]);
+	    user->host=STRDUP(host);
+	    if(!user->host)
+	    {
+		OUTOFMEMORY("login");
+		goto failed;
+	    }
 	}
 	else
 	    user->connected = Current_Time; /* TS not present */
@@ -530,30 +558,16 @@ HANDLER (login)
     /* pass this information to our peer servers */
     if (Servers)
     {
-	/*  if we have full information, use the new method */
-	if ((ISSERVER (con) && ac >= 10) || ISUSER (con))
-	    pass_message_args (con, MSG_CLIENT_LOGIN,
-			       "%s %s %s \"%s\" %s %s %d %u %s %hu",
-			       av[0], av[1], av[2], av[3], av[4],
+	pass_message_args (con, MSG_CLIENT_LOGIN,
+		"%s %s %s \"%s\" %s %s %d %u %s %hu %s",
+		av[0], av[1], av[2], av[3], av[4],
 #if EMAIL
-			       db ? db->email : "unknown",
+		db ? db->email : "unknown",
 #else
-			       "unknown",
+		"unknown",
 #endif /* EMAIL */
-			       user->connected, user->host, user->server,
-			       user->conport);
-	else
-	    pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
-			       av[0], av[1], av[2], av[3], av[4]);
-
-	/* TODO: the following goes away once everyone is upgraded */
-#if 1
-	/* only generate this message for local users */
-	if (ISUSER (con))
-	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %u %hu %s",
-			       user->nick, user->host, user->conport,
-			       Server_Name);
-#endif
+		user->connected, user->ip, user->server,
+		user->conport, user->host);
     }
 
     if (db)
@@ -662,43 +676,11 @@ HANDLER (login)
    TODO: this message goes away once everyone is upgraded */
 HANDLER (user_ip)
 {
-    char *field[4];
-    USER *user;
-
     (void) tag;
     (void) len;
-    ASSERT (validate_connection (con));
-    CHECK_SERVER_CLASS ("user_ip");
-    if (split_line (field, sizeof (field) / sizeof (char *), pkt) != 4)
-    {
-	log ("user_ip(): wrong number of arguments");
-	return;
-    }
-    user = hash_lookup (Users, field[0]);
-    if (!user)
-    {
-	log ("user_ip(): could not find %s", field[0]);
-	return;
-    }
-    ASSERT (validate_user (user));
-    if (!ISUSER (user->con))
-    {
-	pass_message_args (con, tag, "%s %s %s %s", user->nick,
-			   field[1], field[2], field[3]);
-	if (user->server)
-	    return;		/* already have it from the new login(2) message */
-	user->host = strtoul (field[1], 0, 10);
-	user->conport = atoi (field[2]);
-	ASSERT (user->server == 0);
-	if (!(user->server = STRDUP (field[3])))
-	    OUTOFMEMORY ("user_ip");
-    }
-    else
-    {
-	/* nick collsion should have happened */
-	ASSERT (con->destroy == 1);
-	log ("user_ip(): ignoring info for local user (nick collision)");
-    }
+    (void) con;
+    (void) pkt;
+    /* we ignore this message now since it is sent in the login(2) numeric */
 }
 
 /* check to see if a nick is already registered */

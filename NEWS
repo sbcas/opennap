@@ -1,3 +1,19 @@
+[opennap 0.36]
+
+Added support for reverse dns lookups of clients.  You need to install
+ADNS (ftp://ftp.gnu.org/pub/gnu/adns) prior to running `configure' to enable
+support for this.
+
+`*', `?', `.' and `!' are no longer valid chars in nicks.  This is needed to
+support the new expanded ban syntax
+
+Bans are now of the form <nick!host>.  `*' matches 0 or more chars, `?'
+matches any single char.
+
+Removed the USER_IP server numeric.  This version of opennap will not
+interoperate with other opennap servers < 0.33, but will use less
+bandwidth for server->server links
+
 [opennap 0.34]
 
 added channel mode command (/msg chanserv mode <channel> [mode]) where

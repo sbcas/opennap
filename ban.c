@@ -28,13 +28,39 @@ free_ban (BAN * b)
     }
 }
 
-/* 612 [ :<sender> ] <user|ip> [ "<reason>" ] */
+char *
+normalize_ban(/*const*/ char *src, char *dest, int destlen)
+{
+    /* normalize the ban to the full user!host syntax */
+    if(strchr(src, '!'))
+	return src; /* already in proper format */
+    else if (invalid_nick(src))
+    {
+	char *star;
+
+	/* append a star if the last char is a . so that it means the same
+	 * as the old-style ban
+	 */
+	if(*src && src[strlen(src)-1]=='.')
+	    star="*";
+	else
+	    star="";
+	snprintf(dest,destlen,"*!%s%s",src,star); /* must be an ip/dns name? */
+    }
+    else
+	snprintf(dest,destlen,"%s!*",src); /* must be a nick */
+    return dest;
+}
+
+/* 612 [ :<sender> ] <user!host> [ "<reason>" ] */
 HANDLER (ban)
 {
     BAN *b;
     LIST *list;
     int ac = -1;
     char *av[2], *sender;
+    char realban[256];
+    char *banptr;
 
     (void) len;
     ASSERT (validate_connection (con));
@@ -67,44 +93,38 @@ HANDLER (ban)
 	unparsable (con);
 	return;
     }
+
+    banptr = normalize_ban(av[0], realban, sizeof(realban));
+
     /* check to see if this user is already banned */
     for (list = Bans; list; list = list->next)
     {
 	b = list->data;
-	if (!strcasecmp (av[0], b->target))
+	if (!strcasecmp (banptr, b->target))
 	{
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH, "already banned");
 	    return;
 	}
     }
-    if (!is_ip (av[0]) && invalid_nick (av[0]))
-    {
-	invalid_nick_msg (con);
-	return;
-    }
+
     if (ac > 1)
-    {
 	truncate_reason (av[1]);
-	pass_message_args (con, tag, ":%s %s \"%s\"", sender, av[0], av[1]);
-    }
-    else
-	pass_message_args (con, tag, ":%s %s", sender, av[0]);
+
+    pass_message_args (con, tag, ":%s %s \"%s\"", sender, banptr, ac>1 ? av[1] : "");
 
     do
     {
 	/* create structure and add to global ban list */
 	if (!(b = CALLOC (1, sizeof (BAN))))
 	    break;
-	if (!(b->target = STRDUP (av[0])))
+	if (!(b->target = STRDUP (banptr)))
 	    break;
 	if (!(b->setby = STRDUP (sender)))
 	    break;
 	if (!(b->reason = STRDUP (ac > 1 ? av[1] : "")))
 	    break;
 	b->when = Current_Time;
-	/* determine if this ban is on an ip or a user */
-	b->type = (is_ip (av[0])) ? BAN_IP : BAN_USER;
 	list = CALLOC (1, sizeof (LIST));
 	if (!list)
 	    break;
@@ -124,7 +144,7 @@ HANDLER (ban)
 	FREE (list);
 }
 
-/* 614 [ :<sender> ] <nick|ip> [ "<reason>" ] */
+/* 614 [ :<sender> ] <user!host> [ "<reason>" ] */
 HANDLER (unban)
 {
     USER *user;
@@ -132,6 +152,8 @@ HANDLER (unban)
     BAN *b;
     int ac = -1;
     char *av[2];
+    char *banptr;
+    char realban[256];
 
     (void) tag;
     (void) len;
@@ -154,10 +176,11 @@ HANDLER (unban)
     }
     if (ac > 1)
 	truncate_reason (av[1]);
+    banptr = normalize_ban(av[0], realban, sizeof(realban));
     for (list = &Bans; *list; list = &(*list)->next)
     {
 	b = (*list)->data;
-	if (!strcasecmp (av[0], b->target))
+	if (!strcasecmp (banptr, b->target))
 	{
 	    tmpList = *list;
 	    *list = (*list)->next;
@@ -166,9 +189,7 @@ HANDLER (unban)
 			 user->nick, b->target, ac > 1 ? av[1] : "");
 	    if (ac > 1)
 		pass_message_args (con, tag, ":%s %s \"%s\"", user->nick,
-				   b->target, av[1]);
-	    else
-		pass_message_args (con, tag, ":%s %s", user->nick, b->target);
+				   b->target, ac>1 ? av[1] : "");
 	    free_ban (b);
 	    return;
 	}
@@ -196,38 +217,26 @@ HANDLER (banlist)
 		  "%s %s \"%s\" %ld 0", ban->target, ban->setby,
 		  ban->reason, ban->when);
     }
-#if 0
-    /* the following doesnt seem to work with the windows client.  not sure
-       that this is correct at all */
-    for (list = Bans; list; list = list->next)
-    {
-	ban = list->data;
-	if (ban->type == BAN_USER)
-	    send_cmd (con, MSG_SERVER_NICK_BANLIST /* 626 */ , "%s",
-		      ban->target);
-    }
-#endif
     /* terminate the banlist */
     send_cmd (con, MSG_CLIENT_BANLIST /* 615 */ , "");
 }
 
 int
-check_ban (CONNECTION * con, const char *nick)
+check_ban (CONNECTION * con, const char *nick, const char *host)
 {
     LIST *list;
     BAN *ban;
+    char mask[256];
 
+    snprintf(mask,sizeof(mask),"%s!%s",nick,host);
     for (list = Bans; list; list = list->next)
     {
 	ban = list->data;
-	if ((ban->type == BAN_IP && ISUNKNOWN (con)
-		    && ip_glob_match (ban->target, con->host))
-		|| (ban->type == BAN_USER && !strcasecmp (ban->target, nick)))
+	if(glob_match(ban->target, mask))
 	{
 	    notify_mods (BANLOG_MODE,
-		    "Connection from %s (%s): %s banned: %s",
-		    nick, ISUNKNOWN(con) ? con->host : "remote",
-		    ban->target, NONULL (ban->reason));
+		    "Connection from %s: %s banned: %s",
+		    mask, ban->target, NONULL (ban->reason));
 	    if (ISUNKNOWN (con))
 	    {
 		send_cmd (con, MSG_SERVER_ERROR,
@@ -237,11 +246,11 @@ check_ban (CONNECTION * con, const char *nick)
 		   this for local users since the KILL message will serve
 		   as notice otherwise */
 		pass_message_args (NULL, MSG_SERVER_NOTIFY_MODS,
-			":%s %d \"Connection from %s (%s): %s banned: %s\"",
-			Server_Name, BANLOG_MODE, nick, con->host,
+			":%s %d \"Connection from %s: %s banned: %s\"",
+			Server_Name, BANLOG_MODE, mask,
 			ban->target, NONULL (ban->reason));
 	    }
-	    else if (ISSERVER (con) && ban->type == BAN_USER)
+	    else if (ISSERVER (con))
 	    {
 		/* issue a kill to remove this banned user */
 		pass_message_args (con, MSG_CLIENT_KILL,
@@ -296,6 +305,8 @@ load_bans (void)
     BAN *b;
     int ac;
     char *av[4], path[_POSIX_PATH_MAX];
+    char *banptr;
+    char realban[256];
 
     snprintf (path, sizeof (path), "%s/bans", Config_Dir);
     if (!(fp = fopen (path, "r")))
@@ -316,14 +327,8 @@ load_bans (void)
 	    fclose (fp);
 	    return -1;
 	}
-	b->type = (is_ip(av[0])) ? BAN_IP : BAN_USER;
-	if(b->type==BAN_USER && invalid_nick(av[0]))
-	{
-	    log("load_bans(): invalid nick: %s", av[0]);
-	    FREE(b);
-	    continue;
-	}
-	b->target = STRDUP (av[0]);
+	banptr=normalize_ban(av[0],realban,sizeof(realban));
+	b->target = STRDUP (banptr);
 	if (ac >= 4)
 	{
 	    b->setby = STRDUP (av[1]);

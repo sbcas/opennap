@@ -97,8 +97,7 @@ HANDLER (whois)
 	db = hash_lookup (User_Db, user->nick);
 	rsp = append_string (rsp, " %d %d %s %d %d",
 			     user->totaldown, user->totalup,
-			     my_ntoa (user->host),
-			     user->conport, user->port);
+			     user->host, user->conport, user->port);
 #if EMAIL
 #define EmailAddr(db) db?db->email:"unknown"
 #else
