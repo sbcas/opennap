@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "debug.h"
 
 #ifdef DEBUG
@@ -139,8 +140,8 @@ find_block (void *ptr)
     int offset = debug_hash (ptr);
     BLOCK *block;
 
-    for (block = Allocation[offset]; ptr > block->val; block = block->next);
-    return ((ptr == block->val) ? block : 0);
+    for (block = Allocation[offset]; block && ptr > block->val; block = block->next);
+    return ((block != 0 && ptr == block->val) ? block : 0);
 }
 
 void *
@@ -220,6 +221,21 @@ debug_free (void *ptr, const char *file, int line)
     Memory_Usage -= block->len;
 }
 
+/* display the contents of an allocated block */
+static void
+debug_dump (BLOCK *block)
+{
+    int i;
+
+    fputc('\t', stderr);
+    for (i = 0; i < block->len && i < 8; i++)
+	fprintf(stderr, "%02x ", *((unsigned char*)block->val+i));
+    fputc('\t', stderr);
+    for (i = 0; i < block->len && i < 8; i++)
+	fprintf(stderr, "%c", isprint(*((unsigned char*)block->val+i))?*((unsigned char*)block->val+i):'.');
+    fputc('\n',stderr);
+}
+
 void
 debug_cleanup (void)
 {
@@ -230,9 +246,10 @@ debug_cleanup (void)
     {
 	for (block = Allocation[i]; block; block = block->next)
 	{
+	    debug_overflow (block, "cleanup");
 	    fprintf (stderr, "debug_cleanup: %d bytes allocated at %s:%d\n",
 		    block->len, block->file, block->line);
-	    debug_overflow (block, "cleanup");
+	    debug_dump (block);
 	}
     }
     if (Memory_Usage)

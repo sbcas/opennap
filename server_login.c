@@ -93,6 +93,9 @@ HANDLER (server_login)
 	return;
     }
 
+    FREE (con->host);
+    con->host = STRDUP (fields[0]);
+
     /* see if there is any entry for this server */
     if ((pass = get_server_pass (con->host)) == 0)
     {
@@ -102,9 +105,6 @@ HANDLER (server_login)
 	return;
     }
     FREE (pass);
-
-    FREE (con->host);
-    con->host = STRDUP (fields[0]);
 
     compress = atoi (fields[2]);
     if (compress < 0 || compress > 9)

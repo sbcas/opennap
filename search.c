@@ -593,8 +593,11 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    dsearch = CALLOC (1, sizeof (DSEARCH));
 	    if (id)
 		dsearch->id = STRDUP (id);
-	    else
-		dsearch->id = generate_search_id ();
+	    else if ((dsearch->id = generate_search_id ())==0)
+	    {
+		FREE(dsearch);
+		goto done;
+	    }
 	    dsearch->con = con;
 	    dsearch->nick = STRDUP (user->nick);
 	    dsearch->numServers = Num_Servers;
@@ -605,14 +608,14 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    /* pass this message to all servers EXCEPT the one we recieved
 	       it from (if this was a remote search */
 	    pass_message_args (con, MSG_SERVER_REMOTE_SEARCH, "%s %s %s",
-			       dsearch->nick, dsearch->id, request);
+		    dsearch->nick, dsearch->id, request);
 	    FREE (request);
 	    done = 0;		/* delay sending the end-of-search message */
 	    /* give the user some feedback on why this might take longer than
 	       usual */
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH,
-			  "Relaying request to remote servers");
+			"Relaying request to remote servers");
 	}
     }
 

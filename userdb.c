@@ -122,6 +122,7 @@ userdb_store (USERDB * db)
     list = list_append (list, last);
     if ((result = textdb_new_result (User_Db, list)) == 0)
     {
+	list_free (list, 0);
 	log ("userdb_store(): textdb_new_result failed");
 	return -1;
     }
