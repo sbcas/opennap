@@ -492,7 +492,7 @@ HANDLER (channel_op)
 			    chanUser->flags &= ~ON_OPERATOR;
 			if (ISUSER (user->con))
 			    send_cmd (user->con, MSG_SERVER_NOSUCH,
-				      "%s removed your operator on channel %s",
+				      "%s removed you as operator on channel %s",
 				      sender, chan->name);
 			notify_mods (CHANGELOG_MODE,
 				     "%s removed %s as operator on channel %s",

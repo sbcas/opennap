@@ -105,7 +105,7 @@ HANDLER (muzzle)
 	{
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already muzzled",
-			  user->nick);
+			  user ? user->nick : db->nick);
 	    return;
 	}
 	if (user)
