@@ -407,7 +407,6 @@ HANDLER (rehash)
 	motd_close();
 	motd_init();
 	/* reread filter file */
-	free_filter();
 	load_filter();
     }
     /* pass the message even if this is the server we are reloading so that

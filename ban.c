@@ -136,7 +136,7 @@ HANDLER (ban)
 	list->next = Bans;
 	Bans = list;
 	notify_mods (BANLOG_MODE,
-		"%s banned %s%s%s%s: %s", sender, b->target,
+		"%s banned %s%s%s%s: %s", sendernick, b->target,
 		(timeout>0) ? " for " : "",
 		(timeout>0) ? av[2] : "",
 		(timeout>0) ? " seconds" : "",

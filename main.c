@@ -631,7 +631,8 @@ main (int argc, char **argv)
     free_hash (Hotlist);
     free_hash (User_Db);
     free_timers ();
-    free_filter ();
+
+    hash_destroy (Filter);
 
     list_free (Bans, (list_destroy_t) free_ban);
 

@@ -435,6 +435,7 @@ extern HASH *File_Table;
 extern HASH *MD5;
 #endif
 extern HASH *User_Db;
+extern HASH *Filter;
 
 extern char *Levels[LEVEL_ELITE + 1];
 extern char *Content_Types[CT_UNKNOWN];
@@ -654,7 +655,6 @@ void free_channel (CHANNEL *);
 void free_config (void);
 void free_datum (DATUM *);
 void free_flist (FLIST *);
-void free_filter (void);
 void free_hotlist (HOTLIST *);
 void free_pointer (void *);
 void free_timers (void);

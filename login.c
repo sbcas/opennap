@@ -21,11 +21,11 @@ invalid_nick (const char *s)
     if (!strcasecmp (s, "operserv") || !strcasecmp (s, "chanserv") ||
 	!strcasecmp (s, "operator"))
 	return 1;
-    if(*s=='#'||*s=='&'||*s==':')
-	return 1;	/* nick can't begin with # or & (denotes a channel) */
+    if (*s == '#' || *s == '&' || *s == ':')
+	return 1;		/* nick can't begin with # or & (denotes a channel) */
     while (*s)
     {
-	if(*s<'!' || *s>'~' || strchr("%$*?.!\"", *s))
+	if (*s < '!' || *s > '~' || strchr ("%$*?.!\"", *s))
 	    return 1;
 	count++;
 	s++;
@@ -91,14 +91,15 @@ count_clones (unsigned int ip)
 {
     int clones = 0;
     int j = 0;
-    for(j=0;j<Max_Clients;j++)
+
+    for (j = 0; j < Max_Clients; j++)
     {
-	if(Clients[j] && (ISUSER(Clients[j]) || ISUNKNOWN(Clients[j])) &&
-		Clients[j]->ip == ip)
+	if (Clients[j] && (ISUSER (Clients[j]) || ISUNKNOWN (Clients[j])) &&
+	    Clients[j]->ip == ip)
 	{
 	    clones++;
-	    if(clones>=Max_Clones)
-		break;	/* no need to count any more */
+	    if (clones >= Max_Clones)
+		break;		/* no need to count any more */
 	}
     }
     return clones;
@@ -109,30 +110,30 @@ count_clones (unsigned int ip)
  * room for other (possibly sharing) clients.
  */
 static int
-eject_client (CONNECTION *con)
+eject_client (CONNECTION * con)
 {
     int i, loser = -1;
     time_t when = Current_Time;
 
-    for(i=0;i<Max_Clients;i++)
+    for (i = 0; i < Max_Clients; i++)
     {
-	if(Clients[i] && ISUSER(Clients[i]) && Clients[i] != con &&
-		Clients[i]->user->sharing == 0 &&
-		Clients[i]->user->connected < when)
+	if (Clients[i] && ISUSER (Clients[i]) && Clients[i] != con &&
+	    Clients[i]->user->sharing == 0 &&
+	    Clients[i]->user->connected < when)
 	{
 	    loser = i;
 	    when = Clients[i]->user->connected;
 	}
     }
-    if(loser == -1)
-	return 0;	/* no client to eject, reject current login */
-    kill_client(Clients[loser]->user->nick, "server full, not sharing");
+    if (loser == -1)
+	return 0;		/* no client to eject, reject current login */
+    kill_client (Clients[loser]->user->nick, "server full, not sharing");
     send_cmd (Clients[loser], MSG_SERVER_NOSUCH,
-	    "server is full and you are not sharing");
+	      "server is full and you are not sharing");
     send_cmd (Clients[loser], MSG_SERVER_DISCONNECTING, "0");
     Clients[loser]->killed = 1;
     Clients[loser]->destroy = 1;
-    return 1;	/* ok for current login to proceed despite being full */
+    return 1;			/* ok for current login to proceed despite being full */
 }
 
 /* find the server name in the cache, or add it if it doesn't yet exist.
@@ -143,16 +144,17 @@ static char *
 find_server (char *s)
 {
     LIST *list;
-    for(list=Server_Names;list;list=list->next)
+
+    for (list = Server_Names; list; list = list->next)
     {
-	if(!strcasecmp(s, list->data))
+	if (!strcasecmp (s, list->data))
 	    return list->data;
     }
     /* not found yet, allocate */
-    list=CALLOC(1,sizeof(LIST));
-    list->data=STRDUP(s);
-    list->next=Server_Names;
-    Server_Names=list;
+    list = CALLOC (1, sizeof (LIST));
+    list->data = STRDUP (s);
+    list->next = Server_Names;
+    Server_Names = list;
     return list->data;
 }
 
@@ -191,7 +193,7 @@ HANDLER (login)
     /* check for the correct number of fields for this message type.  some
        clients send extra fields, so we just check to make sure we have
        enough for what is required in this implementation. */
-    if(ISUNKNOWN(con))
+    if (ISUNKNOWN (con))
     {
 	if (ac < 5)
 	{
@@ -204,23 +206,23 @@ HANDLER (login)
 	    }
 	    return;
 	}
-	host=con->host;
-	ip=con->ip;
+	host = con->host;
+	ip = con->ip;
     }
     else
     {
-	ASSERT(ISSERVER(con));
-	if(ac < 10)
+	ASSERT (ISSERVER (con));
+	if (ac < 10)
 	{
-	    log("login(): too few parameters from server %s", con->host);
-	    if(ac>0)
-		kill_client(av[0],"bad login message from server");
+	    log ("login(): too few parameters from server %s", con->host);
+	    if (ac > 0)
+		kill_client (av[0], "bad login message from server");
 	    return;
 	}
-	ip=strtoul(av[7],0,10);
-	strncpy(realhost,my_ntoa(ip),sizeof(realhost));
-	realhost[sizeof(realhost)-1]=0;
-	host=realhost;
+	ip = strtoul (av[7], 0, 10);
+	strncpy (realhost, my_ntoa (ip), sizeof (realhost));
+	realhost[sizeof (realhost) - 1] = 0;
+	host = realhost;
     }
 
     if (invalid_nick (av[0]))
@@ -244,38 +246,38 @@ HANDLER (login)
     /* bypass restrictions for privileged users */
     if (!db || db->level < LEVEL_MODERATOR)
     {
-	if(ISUNKNOWN(con))
+	/* check for user!ip ban.  */
+	if (check_ban (con, av[0], host))
+	    return;
+
+	if (ISUNKNOWN (con))
 	{
 	    /* check for max clones on one server */
 	    if (Max_Clones > 0 && count_clones (con->ip) >= Max_Clones)
 	    {
 		log ("login(): clones detected from %s", my_ntoa (con->ip));
-		send_cmd(con,MSG_SERVER_ERROR,
-			"Exceeded max connections to this server");
+		send_cmd (con, MSG_SERVER_ERROR,
+			  "Exceeded max connections to this server");
 		con->destroy = 1;
 		return;
 	    }
 
 	    /* enforce maximum local users */
-	    if(Num_Clients >= Max_Connections)
+	    if (Num_Clients >= Max_Connections)
 	    {
 		/* check if another client can be ejected */
-		if (!option(ON_EJECT_WHEN_FULL) || !eject_client(con))
+		if (!option (ON_EJECT_WHEN_FULL) || !eject_client (con))
 		{
 		    log ("login(): max_connections (%d) reached",
-			    Max_Connections);
+			 Max_Connections);
 		    send_cmd (con, MSG_SERVER_ERROR,
-			    "This server is full (%d connections)",
-			    Max_Connections);
+			      "This server is full (%d connections)",
+			      Max_Connections);
 		    con->destroy = 1;
 		    return;
 		}
 	    }
 	}
-
-	/* check for user!ip ban.  */
-	if (check_ban (con, av[0], host))
-	    return;
     }
 
     speed = atoi (av[4]);
@@ -287,11 +289,12 @@ HANDLER (login)
 	    con->destroy = 1;
 	    return;
 	}
-	ASSERT(ISSERVER(con));
-	notify_mods(ERROR_MODE,"Invalid speed %d for user %s from server %s",
-		    speed, av[0], con->host);
-	log ("login(): invalid speed %d received from server %s",
-	     speed, con->host);
+	ASSERT (ISSERVER (con));
+	notify_mods (ERROR_MODE,
+		     "Invalid speed %d for user %s from server %s", speed,
+		     av[0], con->host);
+	log ("login(): invalid speed %d received from server %s", speed,
+	     con->host);
 	/* set to something sane.  this is only informational so its not
 	   a big deal if we are out of synch */
 	speed = 0;
@@ -306,9 +309,9 @@ HANDLER (login)
 	    con->destroy = 1;
 	    return;
 	}
-	ASSERT(ISSERVER(con));
-	notify_mods(ERROR_MODE,"Invalid port %d for user %s from server %s",
-		    port, av[0], con->host);
+	ASSERT (ISSERVER (con));
+	notify_mods (ERROR_MODE, "Invalid port %d for user %s from server %s",
+		     port, av[0], con->host);
 	log ("login(): invalid port %d received from server %s",
 	     port, con->host);
 	port = 0;
@@ -411,7 +414,8 @@ HANDLER (login)
 		if (ISUSER (user->con))
 		{
 		    send_cmd (user->con, MSG_SERVER_GHOST, "");
-		    zap_local_user (user->con, "Someone else is logging in as you, disconnecting.");
+		    zap_local_user (user->con,
+				    "Someone else is logging in as you, disconnecting.");
 		}
 		else
 		    hash_remove (Users, user->nick);
@@ -440,11 +444,12 @@ HANDLER (login)
 		   pass this back to the server that we received the login
 		   from because that will kill the legitimate user */
 		pass_message_args (con, MSG_CLIENT_KILL,
-			":%s %s \"nick collision (%s %s)\"",
-			Server_Name, user->nick, av[8], user->server);
+				   ":%s %s \"nick collision (%s %s)\"",
+				   Server_Name, user->nick, av[8],
+				   user->server);
 		notify_mods (KILLLOG_MODE,
-			"%s killed %s: nick collision (%s %s)",
-			Server_Name, user->nick, av[8], user->server);
+			     "%s killed %s: nick collision (%s %s)",
+			     Server_Name, user->nick, av[8], user->server);
 
 		if (ISUSER (user->con))
 		    zap_local_user (user->con, "nick collision");
@@ -456,8 +461,9 @@ HANDLER (login)
 	    {
 		/* the client we already know about is older, reject
 		   this login */
-		log("login(): nick collision for user %s, rejected login from server %s",
-			user->nick, con->host);
+		log
+		    ("login(): nick collision for user %s, rejected login from server %s",
+		     user->nick, con->host);
 		return;
 	    }
 	}
@@ -504,7 +510,7 @@ HANDLER (login)
 	}
     }
 
-    user = new_user();
+    user = new_user ();
     if (user)
     {
 	user->nick = STRDUP (av[0]);
@@ -569,14 +575,15 @@ HANDLER (login)
 
     /* pass this information to our peer servers */
     pass_message_args (con, MSG_CLIENT_LOGIN,
-	    "%s %s %s \"%s\" %s %s %d %u %s %hu",
-	    user->nick, av[1], av[2], av[3], av[4],
+		       "%s %s %s \"%s\" %s %s %d %u %s %hu",
+		       user->nick, av[1], av[2], av[3], av[4],
 #if EMAIL
-	    db ? db->email : "unknown",
+		       db ? db->email : "unknown",
 #else
-	    "unknown",
+		       "unknown",
 #endif /* EMAIL */
-	    user->connected, user->ip, user->server, user->conport);
+		       user->connected, user->ip, user->server,
+		       user->conport);
 
     if (db)
     {
@@ -684,10 +691,10 @@ HANDLER (login)
    TODO: this message goes away once everyone is upgraded */
 HANDLER (user_ip)
 {
-    (void)tag;
-    (void)pkt;
-    (void)len;
-    (void)con;
+    (void) tag;
+    (void) pkt;
+    (void) len;
+    (void) con;
     /* deprecated */
 }
 
