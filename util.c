@@ -518,10 +518,6 @@ send_user (USER * user, int tag, char *fmt, ...)
     else
     {
 	/* encapsulate and send to remote server */
-#if 0
-	log ("send_user(): %s is remote, relaying to %s", user->nick,
-	     user->con->host);
-#endif
 	snprintf (Buf + 4, sizeof (Buf) - 4, ":%s %s ", Server_Name,
 		  user->nick);
 	offset = strlen (Buf + 4);
@@ -574,4 +570,19 @@ add_client (CONNECTION * cli)
     }
     Num_Clients++;
     return 0;
+}
+
+int
+form_message (char *d, int dsize, int tag, const char *fmt, ...)
+{
+    va_list ap;
+    int len;
+
+    va_start (ap, fmt);
+    vsnprintf (d + 4, dsize - 4, fmt, ap);
+    va_end (ap);
+    len = strlen (d + 4);
+    set_tag (d, tag);
+    set_len (d, len);
+    return (len + 4);
 }

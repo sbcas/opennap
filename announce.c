@@ -23,7 +23,7 @@ HANDLER (announce)
     (void) len;
     ASSERT (validate_connection (con));
 
-    if (con->class == CLASS_USER)
+    if (ISUSER (con))
 	user = con->user;
     else
     {
@@ -50,16 +50,13 @@ HANDLER (announce)
     if (user->level < LEVEL_ADMIN)
     {
 	log ("announce(): %s is not admin", user->nick);
-	if (con->class == CLASS_USER)
+	if (ISUSER (con))
 	    permission_denied (con);
 	return;
     }
 
-    set_tag (Buf, MSG_SERVER_ANNOUNCE);
-    snprintf (Buf + 4, sizeof (Buf) - 4, "%s %s", user->nick, pkt);
-    l = strlen (Buf + 4);
-    set_len (Buf, l);
-    l += 4;
+    l = form_message (Buf, sizeof (Buf), MSG_SERVER_ANNOUNCE, "%s %s",
+	    user->nick, pkt);
 
     /* pass the message to our peer servers if a local user sent it */
     pass_message (con, Buf, l);
@@ -77,7 +74,7 @@ HANDLER (announce)
 HANDLER (wallop)
 {
     char *ptr;
-    int i;
+    int i, l;
 
     (void) tag;
     (void) len;
@@ -102,13 +99,15 @@ HANDLER (wallop)
 	}
     }
 
-    pass_message_args (con, MSG_SERVER_ANNOUNCE, "%s %s", ptr, pkt);
+    l = form_message (Buf, sizeof (Buf), MSG_SERVER_ANNOUNCE, "%s %s",
+	    ptr, pkt);
+    pass_message (con, Buf, l);
 
     /* deliver message to local users */
     for (i = 0; i < Max_Clients; i++)
     {
 	if (Clients[i] && ISUSER (Clients[i]) &&
-	    Clients[i]->user->level >= LEVEL_MODERATOR)
-	    send_cmd (Clients[i], MSG_SERVER_ANNOUNCE, "%s %s", ptr, pkt);
+		Clients[i]->user->level >= LEVEL_MODERATOR)
+	    queue_data (Clients[i], Buf, l);
     }
 }

@@ -1,7 +1,7 @@
 opennap v0.21 (ALPHA)
 the open source (TM) napster server
 =====================
-March 9, 2000
+March 16, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -235,6 +235,14 @@ are implemented as additional functionality in the opennap server.
 	<uptime>	number of seconds of uptime
 	<memory>	if debugging is enabled, this will show the memory
 			currently in use, otherwise it will be -1
+
+10118	encapsulated message [SERVER]
+
+	:<sender> <recip> <message>
+
+	This command allows a server to send a private message to a user on
+	a remote server.  <message> should be a well-formed Napster message,
+	complete with tag and length header.
 
 10200	compressed packet [SERVER]
 

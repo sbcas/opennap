@@ -84,18 +84,15 @@ HANDLER (public)
     pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name, pkt);
 
     /* format the message */
-    snprintf (Buf + 4, sizeof (Buf) - 4, "%s %s %s", chan->name, sender->nick,
-	      pkt);
-    l = strlen (Buf + 4);
-    set_len (Buf, l);
-    set_tag (Buf, MSG_SERVER_PUBLIC);
+    l = form_message (Buf, sizeof (Buf), MSG_SERVER_PUBLIC, "%s %s %s",
+	    chan->name, sender->nick, pkt);
 
     /* send this message to everyone in the channel */
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
 	if (chanUser->local)
-	    queue_data (chanUser->con, Buf, 4 + l);
+	    queue_data (chanUser->con, Buf, l);
     }
 }
 
@@ -150,12 +147,8 @@ HANDLER (emote)
 
     /* since we send the same data to multiple clients, format the data once
        and queue it up directly */
-    set_tag (Buf, MSG_CLIENT_EMOTE);
-    snprintf (Buf + 4, sizeof (Buf) - 4, "%s %s \"%s\"",
-	      chan->name, user->nick, av[1]);
-    buflen = strlen (Buf + 4);
-    set_len (Buf, buflen);
-    buflen += 4;
+    buflen = form_message (Buf, sizeof (Buf), MSG_CLIENT_EMOTE,
+	    "%s %s \"%s\"", chan->name, user->nick, av[1]);
 
     /* send this message to all channel members */
     for (list = chan->users; list; list = list->next)
