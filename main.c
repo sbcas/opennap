@@ -608,7 +608,6 @@ main (int argc, char **argv)
 #endif
 	{
 	    report_stats (sp);
-	    n--;
 	}
 
 	/* check for new incoming connections. handle this last so that
@@ -622,7 +621,6 @@ main (int argc, char **argv)
 #endif
 	{
 	    accept_connection (s);
-	    n--;
 	}
 
 	/* execute any pending events now */
@@ -638,7 +636,7 @@ main (int argc, char **argv)
     CLOSE (s);
 
     /* close all client connections */
-    for (i = 0; i < Num_Clients; i++)
+    for (i = 0; i < Max_Clients; i++)
     {
 	/* might be holes, so check for existence */
 	if (Clients[i])

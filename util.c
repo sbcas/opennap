@@ -539,7 +539,7 @@ add_client (CONNECTION * cli)
     {
 	/* no space left, allocate more */
 	if (safe_realloc
-	    ((void **) &Clients, sizeof (CONNECTION *) * (Num_Clients + 10)))
+	    ((void **) &Clients, sizeof (CONNECTION *) * (Max_Clients + 10)))
 	{
 	    OUTOFMEMORY ("add_client");
 	    CLOSE (cli->fd);
@@ -547,11 +547,25 @@ add_client (CONNECTION * cli)
 	    FREE (cli);
 	    return -1;
 	}
-	while (Max_Clients < Num_Clients + 10)
-	    Clients[Max_Clients++] = 0;
+	memset (&Clients[Max_Clients+1], 0, sizeof (CONNECTION *) * 9);
+	Max_Clients += 10;
+	Clients[Num_Clients] = cli;
+	cli->id = Num_Clients;
     }
-    cli->id = Num_Clients;
-    Clients[Num_Clients] = cli;
+    else
+    {
+	int i;
+
+	/* find an empty spot for this connection */
+	for (i = 0; i < Max_Clients; i++)
+	{
+	    if (!Clients[i])
+	    {
+		Clients[i] = cli;
+		cli->id = i;
+	    }
+	}
+    }
     Num_Clients++;
     return 0;
 }
