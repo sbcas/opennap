@@ -18,7 +18,7 @@ AC_CHECK_LIB(xnet,gethostbyname)
 AC_CHECK_LIB(nsl,socket)
 AC_CHECK_LIB(socket,gethostbyname)
 dnl look for -ladns in /usr/local/lib
-if [ -f /usr/local/lib/libadns.a ]; then
+if test -f /usr/local/lib/libadns.a; then
 	LIBS="$LIBS -L/usr/local/lib"
 	CFLAGS="$CFLAGS -I/usr/local/include"
 fi
