@@ -121,9 +121,10 @@ update_stats (void)
 	 Num_Clients - numServers, numServers);
     delta = Current_Time - Last_Click;
     log ("update_stats(): %.2d kbytes/sec in, %.2d kbytes/sec out",
-	(float) Bytes_In / delta, (float) Bytes_Out / delta);
+	(float) Bytes_In / delta / 1024, (float) Bytes_Out / delta / 1024);
     Bytes_In = 0;
     Bytes_Out = 0;
+    Last_Click = Current_Time;
 
     /* since we send the same data to many people, optimize by forming
        the message once then writing it out */
