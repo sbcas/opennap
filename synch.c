@@ -106,9 +106,11 @@ sync_chan (CHANNEL * chan, CONNECTION * con)
 	send_cmd (con, MSG_CLIENT_OP, ":%s %s%s", Server_Name, chan->name, buf);
     }
 
-    if (chan->flags & ON_CHANNEL_PRIVATE)
-	send_cmd(con,MSG_CLIENT_CHANNEL_MODE,":%s %s +PRIVATE",
-		Server_Name, chan->name);
+    if (chan->flags & (ON_CHANNEL_PRIVATE|ON_CHANNEL_MODERATED))
+	send_cmd(con,MSG_CLIENT_CHANNEL_MODE,":%s %s%s%s",
+		Server_Name, chan->name,
+		(chan->flags & ON_CHANNEL_PRIVATE) ? " +PRIVATE" : "",
+		(chan->flags & ON_CHANNEL_MODERATED) ? " +MODERATED" : "");
 }
 
 static void

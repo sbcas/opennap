@@ -89,6 +89,7 @@ struct _chanuser
 /* bitmask values for the channel flags */
 #define ON_CHANNEL_USER		1	/* user created channel */
 #define ON_CHANNEL_PRIVATE	2	/* private (hidden) channel */
+#define ON_CHANNEL_MODERATED	4	/* moderated channel */
 
 struct _channel
 {

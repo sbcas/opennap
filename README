@@ -404,6 +404,7 @@ are implemented as additional functionality in the opennap server.
 	where STRING is one of
 
 		PRIVATE		- makes the channel not show up in the list
+		MODERATED	- only ops and mods+ can speak in public
 
 10300	share generic media file [CLIENT]
 

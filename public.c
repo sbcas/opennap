@@ -69,6 +69,15 @@ HANDLER (public)
 	return;
     }
 
+    if ((chan->flags & ON_CHANNEL_MODERATED) && sender->level < LEVEL_MODERATOR && !is_chanop(chan,sender))
+    {
+	if(ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,
+		    "permission denied: channel %s is moderated",
+		    chan->name);
+	return;
+    }
+
     /* relay this message to peer servers */
     pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name, pkt);
 
@@ -142,6 +151,15 @@ HANDLER (emote)
 	return;
     }
 
+    if ((chan->flags & ON_CHANNEL_MODERATED) &&
+	    user->level < LEVEL_MODERATOR && !is_chanop(chan,user))
+    {
+	if(ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,
+		    "permission denied: channel %s is moderated",
+		    chan->name);
+	return;
+    }
     /* relay to peer servers */
     pass_message_args (con, tag, ":%s %s \"%s\"", user->nick, chan->name,
 		       av[1]);

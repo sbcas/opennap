@@ -754,9 +754,11 @@ HANDLER (channel_mode)
 	/* TODO: evenutally this can be extended for whatever flags are
 	   added */
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "mode for channel %s: %s",
+	    send_cmd (con, MSG_SERVER_NOSUCH, "mode for channel %s:%s%s",
 		      chan->name,
-		      (chan->flags & ON_CHANNEL_PRIVATE) ? "+PRIVATE" : "NONE");
+		      (chan->flags & ON_CHANNEL_PRIVATE) ? " +PRIVATE" : "",
+		      (chan->
+		       flags & ON_CHANNEL_MODERATED) ? " +MODERATED" : "");
 	return;
     }
     while (pkt)
@@ -766,6 +768,8 @@ HANDLER (channel_mode)
 	ASSERT (arg != 0);
 	if (!strcasecmp ("PRIVATE", arg + 1))
 	    bit = ON_CHANNEL_PRIVATE;
+	else if (!strcasecmp ("MODERATED", arg + 1))
+	    bit = ON_CHANNEL_MODERATED;
 	else
 	{
 	    if (ISUSER (con))
@@ -804,15 +808,26 @@ HANDLER (channel_mode)
     /* only take action if something actually changed */
     if (onmask || offmask)
     {
-	/* right now we only support +/-PRIVATE */
-	notify_ops (chan, "%s changed mode on channel %s: %cPRIVATE",
-		    senderName, chan->name,
-		    (onmask & ON_CHANNEL_PRIVATE) ? '+' : '-');
+	char msg[512];
+
+	msg[0] = 0;
+	if ((onmask & ON_CHANNEL_PRIVATE) || (offmask & ON_CHANNEL_PRIVATE))
+	    snprintf (msg, sizeof (msg), "%cPRIVATE",
+		      (onmask & ON_CHANNEL_PRIVATE) ? '+' : '-');
+	if ((onmask & ON_CHANNEL_MODERATED)
+	    || (offmask & ON_CHANNEL_MODERATED))
+	    snprintf (msg + strlen (msg), sizeof (msg) - strlen (msg),
+		      "%s%cMODERATED", ((onmask & ~ON_CHANNEL_MODERATED)
+					|| (offmask & ~ON_CHANNEL_MODERATED))
+		      ? " " : "",
+		      (onmask & ON_CHANNEL_MODERATED) ? '+' : '-');
+
+	notify_ops (chan, "%s changed mode on channel %s: %s",
+		    senderName, chan->name, msg);
 	notify_mods (CHANGELOG_MODE,
-		     "%s changed mode on channel %s: %cPRIVATE", senderName,
-		     chan->name, (onmask & ON_CHANNEL_PRIVATE) ? '+' : '-');
-	pass_message_args (con, tag, ":%s %s %cPRIVATE", senderName,
-			   chan->name,
-			   (onmask & ON_CHANNEL_PRIVATE) ? '+' : '-');
+		     "%s changed mode on channel %s: %s", senderName,
+		     chan->name, msg);
+	pass_message_args (con, tag, ":%s %s %s", senderName,
+			   chan->name, msg);
     }
 }
