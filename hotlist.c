@@ -11,7 +11,7 @@ HANDLER (add_hotlist)
     HOTLIST *hotlist;
     int i;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("add_hotlist");
 
     /* check to see if there is an existing global hotlist entry for this
@@ -20,7 +20,7 @@ HANDLER (add_hotlist)
     if (!hotlist)
     {
 	/* no hotlist, create one */
-	hotlist = CALLOC (1, sizeof (HOTLIST));
+	hotlist = new_hotlist ();
 	hotlist->nick = STRDUP (pkt);
 	hash_add (Hotlist, hotlist->nick, hotlist);
     }
@@ -49,7 +49,7 @@ HANDLER (remove_hotlist)
     int i;
     HOTLIST *h = 0;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("remove_hotlist");
 
     /* find the user in this user's hotlist */
@@ -82,6 +82,7 @@ HANDLER (remove_hotlist)
 void
 free_hotlist (HOTLIST *h)
 {
+    ASSERT (validate_hotlist (h));
     FREE (h->nick);
     if (h->users)
 	FREE (h->users);

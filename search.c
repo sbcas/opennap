@@ -28,17 +28,23 @@ convert_to_lower_case (char *s)
 static void
 format_request (const char *s, char *d, int dsize)
 {
-    for (;*s;s++)
+    for (;dsize>1 && *s;s++)
     {
 	if (*s == ' ')
+	{
 	    *d++ = '%';
+	    while (isspace(*(s+1)))
+		s++;
+	}
 	else if (*s == '\'' || *s == '%' || *s == '_' || *s == '\\')
 	{
 	    *d++ = '\\';
 	    *d++ = *s;
+	    dsize--;
 	}
 	else
 	    *d++ = *s;
+	dsize--;
     }
     *d=0;
 }

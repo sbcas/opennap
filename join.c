@@ -17,16 +17,16 @@ HANDLER (join)
     CHANNEL *chan;
     int i;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &user) != 0)
 	return;
-    ASSERT (VALID (user));
+    ASSERT (validate_user (user));
 
     chan = hash_lookup (Channels, pkt);
     if (!chan)
     {
-	chan = CALLOC (1, sizeof (CHANNEL));
+	chan = new_channel ();
 	chan->name = STRDUP (pkt);
 	chan->created = time (0);
 	hash_add (Channels, chan->name, chan);
@@ -46,7 +46,7 @@ HANDLER (join)
 	}
     }
 
-    ASSERT (VALID (chan));
+    ASSERT (validate_channel (chan));
 
     /* if local user */
     if (con->class == CLASS_USER)

@@ -9,6 +9,11 @@
 #include <sys/types.h>
 #include "hash.h"
 
+#define MAGIC_USER 0xeaee402a
+#define MAGIC_CHANNEL 0xa66544cb
+#define MAGIC_HOTLIST 0xb0f8ad23
+#define MAGIC_CONNECTION 0x3c4474a3
+
 typedef unsigned char uchar;
 
 typedef struct _connection CONNECTION;
@@ -18,6 +23,9 @@ typedef struct _hotlist HOTLIST;
 
 struct _channel
 {
+#ifdef DEBUG
+    unsigned long magic;
+#endif
     char *name;
     char *topic;
     USER **users;
@@ -31,6 +39,9 @@ struct _channel
 
 struct _user
 {
+#ifdef DEBUG
+    unsigned long magic;
+#endif
     char *nick;
     char *clientinfo;
     unsigned short uploads;	/* no. of uploads in progress */
@@ -62,6 +73,9 @@ CLASS;
 
 struct _connection
 {
+#ifdef DEBUG
+    unsigned long magic;
+#endif
     short id;			/* offset into the Client[] arrary for this
 				   instance */
     short flags;		/* flags for the connection */
@@ -97,6 +111,9 @@ struct _connection
 /* hotlist entry */
 struct _hotlist
 {
+#ifdef DEBUG
+    unsigned long magic;
+#endif
     char *nick;		/* user being monitored */
     CONNECTION **users;	/* list of local clients requesting notification */
     int numusers;	/* number of local clients requesting notification */
@@ -249,6 +266,10 @@ void fudge_path (const char *, char *);
 char *generate_nonce (void);
 int init_db (void);
 void log (const char *fmt, ...);
+USER *new_user (void);
+CHANNEL *new_channel (void);
+HOTLIST *new_hotlist (void);
+CONNECTION *new_connection (void);
 void nosuchuser (CONNECTION *, char *);
 void part_channel (CHANNEL *, USER *);
 void pass_message (CONNECTION *, char *, size_t);
@@ -266,6 +287,10 @@ void show_motd (CONNECTION * con);
 void send_queued_data (CONNECTION *con);
 void sql_error (const char *function, const char *query);
 void synch_server (CONNECTION *);
+int validate_user (USER *);
+int validate_channel (CHANNEL *);
+int validate_connection (CONNECTION *);
+int validate_hotlist (HOTLIST *);
 
 /* protocol handlers */
 #define HANDLER(f) void f (CONNECTION *con, char *pkt)

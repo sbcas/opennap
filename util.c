@@ -348,3 +348,90 @@ fudge_path (const char *in, char *out)
     *out=0;
 }
 
+#ifdef DEBUG
+int
+validate_connection (CONNECTION *con)
+{
+    if (! VALID (con))
+	return 0;
+    if (con->magic != MAGIC_CONNECTION)
+	return 0;
+#if 0
+    if (! VALID (con->host))
+	return 0;
+    if (con->sendbuf && ! VALID (con->sendbuf))
+	return 0;
+#endif
+    return 1;
+}
+
+int
+validate_user (USER *user)
+{
+    if (!VALID(user))
+	return 0;
+    if (user->magic != MAGIC_USER)
+	return 0;
+    return 1;
+}
+
+int
+validate_channel (CHANNEL *chan)
+{
+    if (!VALID(chan))
+	return 0;
+    if (chan->magic != MAGIC_CHANNEL)
+	return 0;
+    return 1;
+}
+
+int
+validate_hotlist (HOTLIST *h)
+{
+    if (!VALID(h))
+	return 0;
+    if (h->magic != MAGIC_HOTLIST)
+	return 0;
+    return 1;
+}
+#endif
+
+USER *
+new_user (void)
+{
+    USER *u = CALLOC (1, sizeof (USER));
+#ifdef DEBUG
+    u->magic = MAGIC_USER;
+#endif
+    return u;
+}
+
+CHANNEL *
+new_channel (void)
+{
+    CHANNEL *c = CALLOC (1, sizeof (CHANNEL));
+#ifdef DEBUG
+    c->magic = MAGIC_CHANNEL;
+#endif
+    return c;
+}
+
+HOTLIST *
+new_hotlist (void)
+{
+    HOTLIST *h = CALLOC (1, sizeof (HOTLIST));
+#ifdef DEBUG
+    h->magic = MAGIC_HOTLIST;
+#endif
+    return h;
+}
+
+CONNECTION *
+new_connection (void)
+{
+    CONNECTION *c = CALLOC (1, sizeof (CONNECTION));
+#ifdef DEBUG
+    c->magic = MAGIC_CONNECTION;
+#endif
+    return c;
+}

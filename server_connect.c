@@ -61,7 +61,7 @@ try_connect (char *host, int port)
 	return;
     }
 
-    cli = CALLOC (1, sizeof (CONNECTION));
+    cli = new_connection ();
     cli->class = CLASS_UNKNOWN; /* not authenticated yet */
     cli->fd = f;
     cli->host = STRDUP (host);

@@ -299,7 +299,7 @@ handle_connection (CONNECTION *con)
     send_cmd (con, MSG_SERVER_NOSUCH, "unknown command code %d", tag);
 }
 
-void
+static void
 defaults (void)
 {
     struct hostent *he;
@@ -323,7 +323,7 @@ defaults (void)
     Db_Pass = STRDUP ("passtest");
 }
 
-void
+static void
 update_stats (void)
 {
     int i, l;
@@ -508,7 +508,7 @@ main (int argc, char **argv)
 	    {
 		CONNECTION *cli;
 
-		cli = CALLOC (1, sizeof (CONNECTION));
+		cli = new_connection ();
 		cli->fd = f;
 		cli->ip = sin.sin_addr.s_addr;
 		cli->host = STRDUP (inet_ntoa (sin.sin_addr));

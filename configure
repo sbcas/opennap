@@ -1081,61 +1081,18 @@ esac
 
 
 if test -d /usr/local/lib/mysql; then
-	MYSQLLIBDIR="-L/usr/local/lib/mysql"
-	MYSQLINCDIR="-I/usr/local/include/mysql"
-	
-	
+	MYSQLLIBDIR=/usr/local/lib/mysql
+	MYSQLINCDIR=/usr/local/include/mysql
+elif test -d /usr/lib/mysql; then
+	MYSQLLIBDIR=/usr/lib/mysql
+	MYSQLINCDIR=/usr/include/mysql
 else
-	MYSQLINCDIR="-I/usr/include/mysql"
-	
+	{ echo "configure: error: could not locate MySQL installation" 1>&2; exit 1; }
 fi
+echo "$ac_t""MySQL header files are in $MYSQLINCDIR" 1>&6
+echo "$ac_t""MySQL library files are in $MYSQLLIBDIR" 1>&6
 
-echo $ac_n "checking for mysql_init in -lmysqlclient""... $ac_c" 1>&6
-echo "configure:1095: checking for mysql_init in -lmysqlclient" >&5
-ac_lib_var=`echo mysqlclient'_'mysql_init | sed 'y%./+-%__p_%'`
-if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  ac_save_LIBS="$LIBS"
-LIBS="-lmysqlclient  $LIBS"
-cat > conftest.$ac_ext <<EOF
-#line 1103 "configure"
-#include "confdefs.h"
-/* Override any gcc2 internal prototype to avoid an error.  */
-/* We use char because int might match the return type of a gcc2
-    builtin and then its argument prototype would still apply.  */
-char mysql_init();
 
-int main() {
-mysql_init()
-; return 0; }
-EOF
-if { (eval echo configure:1114: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-  rm -rf conftest*
-  eval "ac_cv_lib_$ac_lib_var=yes"
-else
-  echo "configure: failed program was:" >&5
-  cat conftest.$ac_ext >&5
-  rm -rf conftest*
-  eval "ac_cv_lib_$ac_lib_var=no"
-fi
-rm -f conftest*
-LIBS="$ac_save_LIBS"
-
-fi
-if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
-  echo "$ac_t""yes" 1>&6
-    ac_tr_lib=HAVE_LIB`echo mysqlclient | sed -e 's/[^a-zA-Z0-9_]/_/g' \
-    -e 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/'`
-  cat >> confdefs.h <<EOF
-#define $ac_tr_lib 1
-EOF
-
-  LIBS="-lmysqlclient $LIBS"
-
-else
-  echo "$ac_t""no" 1>&6
-fi
 
 ac_cv_warnings=yes
 # Check whether --enable-warnings or --disable-warnings was given.
@@ -1145,7 +1102,7 @@ if test "${enable_warnings+set}" = set; then
 fi
 
 if test $ac_cv_warnings != "no"; then
-	CFLAGS="-W -Wall -pedantic $CFLAGS"
+	CFLAGS="-W -Wall -Wmissing-prototypes -pedantic $CFLAGS"
 fi
 ac_cv_debug=yes
 # Check whether --enable-debug or --disable-debug was given.
@@ -1314,8 +1271,8 @@ s%@AUTOHEADER@%$AUTOHEADER%g
 s%@MAKEINFO@%$MAKEINFO%g
 s%@SET_MAKE@%$SET_MAKE%g
 s%@CC@%$CC%g
-s%@MYSQLLIBDIR@%$MYSQLLIBDIR%g
 s%@MYSQLINCDIR@%$MYSQLINCDIR%g
+s%@MYSQLLIBDIR@%$MYSQLLIBDIR%g
 
 CEOF
 EOF

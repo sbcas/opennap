@@ -67,7 +67,7 @@ HANDLER (login)
 	return;
     }
 
-    user = CALLOC (1, sizeof (USER));
+    user = new_user ();
     user->nick = STRDUP (field[0]);
     user->port = atoi (field[2]);
     user->clientinfo = STRDUP (field[3]);

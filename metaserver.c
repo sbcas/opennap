@@ -13,13 +13,13 @@
 #include <string.h>
 #include <stdio.h>
 
-void
+static void
 handler (int sig)
 {
     (void) sig;
 }
 
-void
+static void
 usage (void)
 {
     puts ("usage: metaserver [ -v ] [ -p <port> ] [ host:port ... ]");
