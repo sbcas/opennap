@@ -32,7 +32,8 @@ HANDLER (join)
     /* enforce a maximum channels per user */
     if (list_count (user->channels) > Max_User_Channels)
     {
-	log ("join(): %s reached max channel count (%d)", Max_User_Channels);
+	log ("join(): %s reached max channel count (%d)", user->nick,
+	    Max_User_Channels);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
 		      "Maximum number of channels is %d.", Max_User_Channels);
