@@ -618,15 +618,31 @@ appropriate, examples of the <data> section for each message are given.
 
 	client request to delete account for <nick>
 
-612	ban user
+612	ban user [CLIENT]
 
-613	set data port for user
+613	set data port for user [CLIENT]
 
-614	unban user
+614	unban user [CLIENT]
 
-615	show bans for server
+615	show bans for server [CLIENT]
 
 	client requests the list of banned ips for the current server
+
+616	ip ban notification [SERVER]
+
+	<ip> <nick> "<reason>" <time>
+
+	<ip> is the string version of the ip banned
+	<nick> is the user setting the ban
+	<reason> is the reason given
+	<time> is the time_t when the ban was set
+
+	This message is sent in response to the 615 client request, one
+	for each ban.
+
+	Example:
+	
+	207.172.245. valkyrie "" 947304224
 
 617	list channels [CLIENT, SERVER]
 
@@ -654,7 +670,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	each 621 message contains a single line of text
 
-622	muzzle a user
+622	muzzle a user [CLIENT]
 
 	<nick> <time>
 
@@ -664,7 +680,7 @@ appropriate, examples of the <data> section for each message are given.
 	[the exact format of this message is unknown.  nap v0.8 just passes
 	whatever you type with /muzzle to the server.  -ed]
 
-623	unmuzzle a user
+623	unmuzzle a user [CLIENT]
 
 	<nick>
 
@@ -681,17 +697,26 @@ appropriate, examples of the <data> section for each message are given.
 	client is informing server that it was unable to connect to the data
 	port for <user>
 
-627	operator message
+627	operator message [CLIENT, SERVER]
 
-	<text>
+	client: <text>
+	server: <nick> <text>
 
 	client request to send a message to all admins/moderators
 
-628	global message
+628	global message [CLIENT, SERVER]
 
-	<text>
+	client: <text>
+	server: <nick> <text>
 
 	client request send a message to all users
+
+629	banned users [SERVER]
+
+	<nick>
+
+	when displaying the ban list for the server, this message is used
+	to indicate banned nicknames.
 
 700	change link speed [CLIENT]
 

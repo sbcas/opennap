@@ -37,8 +37,11 @@ struct _channel
 };
 
 /* user flags */
-#define FLAG_ADMIN	1
+#define FLAG_LEECH	0
+#define	FLAG_USER	1
 #define FLAG_MODERATOR	(1<<1)
+#define FLAG_ADMIN	(1<<2)
+#define FLAG_ELITE	(1<<3)
 
 struct _user
 {
