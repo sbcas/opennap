@@ -21,7 +21,7 @@ reordered code in login() so that no messages get sent to a client prior to
 the login/email ack being sent to avoid confusing the win32 client
 
 added max_browse_result config variable to control the maxium number of
-entries returned on a /browse command (default 1500)
+entries returned on a /browse command (default 500)
 
 allow max_search_result to be 0 to allow for arbitrary size searches
 
@@ -29,12 +29,6 @@ added support for 613 command for admin to alter the data port the client is
 listening on (only works with the win32 clients)
 
 set the tcp send/recv buffer length to 16k for server-server connections
-
-modified buffer_queue() to allocate memory in 1k chunks to avoid calling
-realloc() too often
-
-modified buffer_compress() to allocate memory in 2k chunks to avoid calling
-realloc() too often
 
 send_queued_data() should be called if there is uncompressed data waiting to
 be sent to the server
@@ -46,6 +40,12 @@ added a new command 10115 for getting some useful information about the
 server (colten edwards)
 
 added new command 10112 to show the server links (colten edwards)
+
+modified buffer_queue() preallocate a chunk of data (1k/16k) and create a
+list of buffers instead of calling realloc()
+
+modified buffer_compress() to allocate a 16k buffer and compress as much data
+as will fit in it.
 
 Changes from 0.11
 =================
