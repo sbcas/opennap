@@ -273,6 +273,8 @@ typedef struct link
 {
     char *server;
     char *peer;
+    unsigned short port;
+    unsigned short peerport;
     int hops;
 } LINK;
 
@@ -525,6 +527,7 @@ void free_timers (void);
 void free_user (USER *);
 char *generate_nonce (void);
 int get_level (const char *);
+unsigned short get_local_port (int);
 void get_random_bytes (char *d, int);
 void handle_connection (CONNECTION *);
 void init_compress (CONNECTION *, int);
@@ -690,12 +693,13 @@ typedef unsigned int socklen_t;
 #define READ(a,b,c) recv(a,b,c,0)
 #define WRITE(a,b,c) send(a,b,c,0)
 #define CLOSE closesocket
+#define SOCKOPTCAST (char*)
 #define EINPROGRESS WSAEINPROGRESS
 #define EWOULDBLOCK WSAEWOULDBLOCK
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
-#define VERSION "0.22"
+#define VERSION "0.23"
 
 #define USE_CRLF 1
 

@@ -292,3 +292,17 @@ set_rss_size (int n)
     return 0;
 }
 #endif /* !WIN32 */
+
+/* return the local port a socket is bound to */
+unsigned short
+get_local_port (int fd)
+{
+    struct sockaddr_in sin;
+    socklen_t sinsize = sizeof (sin);
+    if (getsockname (fd, (struct sockaddr *) &sin, &sinsize))
+    {
+	logerr ("get_local_port", "getsockname");
+	return 0;
+    }
+    return sin.sin_port;
+}

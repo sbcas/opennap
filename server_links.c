@@ -28,14 +28,16 @@ HANDLER (server_links)
     for (list = Servers; list; list = list->next)
     {
 	serv = list->data;
-	send_cmd (con, MSG_SERVER_LINKS, "%s %s 0", Server_Name, serv->host);
+	send_cmd (con, MSG_SERVER_LINKS, "%s %d %s %d 0 %d",
+	    Server_Name, get_local_port (serv->fd), serv->host,
+	    serv->port, serv->recvbuf->datamax);
     }
     /* dump remote servers */
     for (list = Server_Links; list; list = list->next)
     {
 	slink = list->data;
-	send_cmd (con, MSG_SERVER_LINKS, "%s %s %d", slink->server,
-		slink->peer, slink->hops);
+	send_cmd (con, MSG_SERVER_LINKS, "%s %d %s %d %d -1", slink->server,
+		slink->port, slink->peer, slink->peerport, slink->hops);
     }
     /* terminate the list */
     send_cmd (con, MSG_SERVER_LINKS, "");

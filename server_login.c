@@ -268,48 +268,67 @@ HANDLER (server_login_ack)
     notify_mods ("Server %s has joined.", con->host);
 
     /* notify peer servers this server has joined the cluster */
-    pass_message_args (con, MSG_SERVER_LINK_INFO, ":%s %s 1", Server_Name,
-		       con->host);
+    pass_message_args (con, MSG_SERVER_LINK_INFO, "%s %hu %s %hu 1",
+	Server_Name, get_local_port (con->fd), con->host, con->port);
 
     /* synchronize our state with this server */
     synch_server (con);
 }
 
-/* 10019 <server> <peer> <hops> */
+/* 10019 <server> <port> <peer> <peerport> <hops> */
 HANDLER (link_info)
 {
-    int ac, hops;
-    char *av[3];
+    int ac;
+    char *av[5];
     LIST *list;
     LINK *slink;
 
     ASSERT (validate_connection (con));
     (void) len;
     ac = split_line (av, FIELDS (av), pkt);
-    if (ac != 3)
+    if (ac != 5)
     {
 	log ("link_info(): wrong number of parameters");
+	print_args (ac, av);
 	send_cmd (con, MSG_SERVER_NOSUCH, "Wrong number of parameters [%d]",
 		  tag);
 	return;
     }
-    hops = atoi (av[2]);
-    if (hops < 0)
-    {
-	log ("link_info(): invalid hop count");
-	send_cmd (con, MSG_SERVER_NOSUCH, "Invalid hop count");
-	return;
-    }
-    pass_message_args (con, tag, ":%s %s %d", av[0], av[1], hops + 1);
-
     slink = CALLOC (1, sizeof (LINK));
-    slink->server = STRDUP (av[0]);
-    slink->peer = STRDUP (av[1]);
-    slink->hops = hops;
+    if (slink)
+    {
+	slink->server = STRDUP (av[0]);
+	slink->peer = STRDUP (av[2]);
+    }
+    if (!slink || !slink->server || !slink->peer)
+    {
+	OUTOFMEMORY ("link_info");
+	goto error;
+    }
+    slink->port = atoi (av[1]);
+    slink->peerport = atoi (av[3]);
+    slink->hops = atoi (av[4]);
     list = CALLOC (1, sizeof (LIST));
+    if (!list)
+    {
+	OUTOFMEMORY ("link_info");
+	goto error;
+    }
     list->data = slink;
     Server_Links = list_append (Server_Links, list);
-    notify_mods ("Server %s has joined.", av[1]);
+    pass_message_args (con, tag, "%s %d %s %d %d", slink->server, slink->port,
+	slink->peer, slink->peerport, slink->hops + 1);
+    notify_mods ("Server %s has joined.", slink->peer);
+    return;
+error:
+    if (slink)
+    {
+	if (slink->server)
+	    FREE (slink->server);
+	if (slink->peer)
+	    FREE (slink->peer);
+	FREE (slink);
+    }
 }
 
 /* 10020 :<server> <server> "<reason>" */

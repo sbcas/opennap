@@ -184,7 +184,7 @@ are implemented as additional functionality in the opennap server.
 
 10019	server link info [SERVER]
 
-	:<server> <server> <hops>
+	<server> <port> <server> <port> <hops> <bufsize>
 
 	This message is used by servers to share information about the
 	topology of the linked servers.  when a server joins, a message is

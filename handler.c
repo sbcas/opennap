@@ -252,7 +252,7 @@ handle_connection (CONNECTION * con)
     {
 	/* server data is compressed.  read as much as we can and pass it
 	   to the decompressor */
-	n = read (con->fd, Buf, sizeof (Buf));
+	n = READ (con->fd, Buf, sizeof (Buf));
 	if (n <= 0)
 	{
 	    if (n == -1)
@@ -266,11 +266,28 @@ handle_connection (CONNECTION * con)
 	    return;
 	}
 	Bytes_In += n;
+#if HAVE_LIBZ
 	if (buffer_decompress (con->recvbuf, con->sopt->zin, Buf, n))
 	{
 	    con->destroy = 1;
 	    return;
 	}
+#else
+	if (con->recvbuf->datasize + n > con->recvbuf->datamax)
+	{
+	    if (safe_realloc ((void **) &con->recvbuf->data,
+		    con->recvbuf->datasize + n + 1))
+	    {
+		OUTOFMEMORY ("handle_connection");
+		con->destroy = 1;
+		return;
+	    }
+	    con->recvbuf->datamax = con->recvbuf->datasize + n;
+	    *(con->recvbuf->data + con->recvbuf->datamax) = 0;
+	}
+	memcpy (con->recvbuf->data + con->recvbuf->datasize, Buf, n);
+	con->recvbuf->datasize += n;
+#endif
     }
     else
     {
@@ -299,14 +316,14 @@ handle_connection (CONNECTION * con)
 	/* read the packet header if we haven't seen it already */
 	while (con->recvbuf->datasize < 4)
 	{
-	    n = read (con->fd, con->recvbuf->data + con->recvbuf->datasize,
-		      4 - con->recvbuf->datasize);
+	    n = READ (con->fd, con->recvbuf->data + con->recvbuf->datasize,
+		4 - con->recvbuf->datasize);
 	    if (n == -1)
 	    {
 		if (errno != EWOULDBLOCK)
 		{
 		    log ("handle_connection(): read: %s (errno %d)",
-			 strerror (errno), errno);
+			strerror (errno), errno);
 		    con->destroy = 1;
 		}
 		return;
@@ -341,8 +358,8 @@ handle_connection (CONNECTION * con)
 		}
 		con->recvbuf->datamax = 4 + len;
 	    }
-	    n = read (con->fd, con->recvbuf->data + con->recvbuf->datasize,
-		      len + 4 - con->recvbuf->datasize);
+	    n = READ (con->fd, con->recvbuf->data + con->recvbuf->datasize,
+		len + 4 - con->recvbuf->datasize);
 	    if (n == -1)
 	    {
 		/* since the header and body could arrive in separate packets,
@@ -352,7 +369,7 @@ handle_connection (CONNECTION * con)
 		if (errno != EWOULDBLOCK)
 		{
 		    log ("handle_connection(): read: %s (errno %d)",
-			 strerror (errno), errno);
+			strerror (errno), errno);
 		    con->destroy = 1;
 		}
 		return;
@@ -386,7 +403,7 @@ handle_connection (CONNECTION * con)
 	    break;
 	/* add this data to the random pool */
 	add_random_bytes (con->recvbuf->data + con->recvbuf->consumed,
-			  4 + len);
+	    4 + len);
 	/* require that the client register before doing anything else */
 	if (con->class == CLASS_UNKNOWN &&
 	    (tag != MSG_CLIENT_LOGIN && tag != MSG_CLIENT_LOGIN_REGISTER &&
@@ -398,13 +415,13 @@ handle_connection (CONNECTION * con)
 	    log ("handle_connection(): %s is not registered", con->host);
 	    *(con->recvbuf->data + con->recvbuf->consumed + 4 + len) = 0;
 	    log ("handle_connection(): tag=%hu, len=%hu, data=%s", tag, len,
-		 con->recvbuf->data + con->recvbuf->consumed + 4);
+		con->recvbuf->data + con->recvbuf->consumed + 4);
 	    con->destroy = 1;
 	    return;
 	}
 	/* call the protocol handler */
 	dispatch_command (con, tag, len,
-			  con->recvbuf->data + con->recvbuf->consumed + 4);
+	    con->recvbuf->data + con->recvbuf->consumed + 4);
 	/* mark data as processed */
 	con->recvbuf->consumed += 4 + len;
     }
@@ -415,7 +432,7 @@ handle_connection (CONNECTION * con)
 	{
 	    /* shift down unprocessed data */
 	    memmove (con->recvbuf->data,
-		     con->recvbuf->data + con->recvbuf->consumed, n);
+		con->recvbuf->data + con->recvbuf->consumed, n);
 	}
 	con->recvbuf->datasize = n;
 	con->recvbuf->consumed = 0;	/* reset */
