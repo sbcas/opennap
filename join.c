@@ -38,6 +38,13 @@ HANDLER (join)
 	return;
     }
 
+    if (user->muzzled)
+    {
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Muzzled users may not join chat rooms.");
+	return;
+    }
+
     chan = hash_lookup (Channels, pkt);
     if (!chan)
     {

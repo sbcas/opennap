@@ -108,13 +108,6 @@ debug_malloc (int bytes, const char *file, int line)
     Memory_Usage += bytes;
     block->len = bytes;
     block->file = file;
-    if (!block->file)
-    {
-	debug_exhausted (__FILE__, __LINE__);
-	free (block->val);
-	free (block);
-	return 0;
-    }
     block->line = line;
     memset (block->val, ALLOC_BYTE, bytes);
     *((unsigned char *) block->val + bytes) = END_BYTE;
