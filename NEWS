@@ -1,3 +1,26 @@
+[opennap 0.23]
+
+Server was fixed to compile without zlib for use as a standalone server.
+This makes it much easier to compile under Win32 platforms.
+
+Server now crops public and emote messages longer than 128 to prevent
+exploitation of the DoS attack against the Windows Napster client.
+
+opennap should now consume considerably less CPU time.  It now attempts to
+accept() as many incoming connections as possible per iteration of the main
+event loop.
+
+The user database is now read into memory for fast lookup.  It is dumped to
+disk every `user_db_interval' seconds (default: 1800)
+
+opennap are now aware of all servers in the cluster that are linked.  The
+`server links' command was modified to present this information.
+
+Added new administrative commands for registering a nick and changing a user's
+reported line speed.
+
+opennap now prints bandwidth usage stats as part of its logging messages.
+
 [opennap 0.22]
 
 MySQL is no longer used in opennap.  The users and servers databaseses are

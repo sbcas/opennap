@@ -1,7 +1,7 @@
-opennap v0.22 (ALPHA)
+opennap v0.23 (ALPHA)
 the open source (TM) napster server
 =====================
-March 17, 2000
+March 28, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -16,6 +16,7 @@ platforms.  So far this server has only been tested on:
 	* Solaris
 	* OS/2
 	* Windows 2000 (MS VC++)
+	* Windows NT 4.0 (MS VC++)
 Minimal porting should be required for compilation on other Unix variants
 (if you do a port, please send patches to drscholl@users.sourceforge.net)
 

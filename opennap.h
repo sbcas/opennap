@@ -693,9 +693,11 @@ typedef unsigned int socklen_t;
 #define READ(a,b,c) recv(a,b,c,0)
 #define WRITE(a,b,c) send(a,b,c,0)
 #define CLOSE closesocket
+#undef SOCKOPTCAST
 #define SOCKOPTCAST (char*)
 #define EINPROGRESS WSAEINPROGRESS
 #define EWOULDBLOCK WSAEWOULDBLOCK
+#define _POSIX_PATH_MAX 256
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
