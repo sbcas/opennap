@@ -125,6 +125,5 @@ remove_connection (CONNECTION * con)
     buffer_free (con->recvbuf);
     Clients[con->id] = 0;
     Num_Clients--;
-
     FREE (con);
 }
