@@ -265,7 +265,7 @@ HANDLER (server_login_ack)
 
     log ("server_login(): server %s has joined", con->host);
 
-    notify_mods ("Server %s has joined.", con->host);
+    notify_mods ("Server %s has joined", con->host);
 
     /* notify peer servers this server has joined the cluster */
     pass_message_args (con, MSG_SERVER_LINK_INFO, "%s %hu %s %hu 1",
@@ -340,7 +340,7 @@ HANDLER (link_info)
     Server_Links = list_append (Server_Links, list);
     pass_message_args (con, tag, "%s %d %s %d %d", slink->server, slink->port,
 	slink->peer, slink->peerport, slink->hops + 1);
-    notify_mods ("Server %s has joined.", slink->peer);
+    notify_mods ("Server %s has joined", slink->peer);
     return;
 error:
     if (slink)
@@ -382,7 +382,7 @@ HANDLER (server_quit)
        disconnected */
     remove_links (av[1]);
     /* notify interested parties */
-    notify_mods ("Server %s has quit.", av[1]);
+    notify_mods ("Server %s has quit", av[1]);
     /* pass along to peers */
     pass_message_args (con, tag, ":%s %s", av[0], av[1]);
 }

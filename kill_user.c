@@ -106,11 +106,13 @@ HANDLER (kill_user)
 	pass_message_args (con, MSG_CLIENT_KILL, ":%s %s",
 		killernick, user->nick);
 
+#define REASON ((ac > 1) ? av[1] : "")
+
     /* log this action */
-    log ("kill_user(): %s killed %s: %s", killernick, user->nick, ac>1?av[1]:"");
+    log ("kill_user(): %s killed %s: %s", killernick, user->nick, REASON);
 
     /* notify mods+ that this user was killed */
-    notify_mods ("%s killed %s: %s", killernick, user->nick, ac>1?av[1]:"");
+    notify_mods ("%s killed %s: %s", killernick, user->nick, REASON);
 
     /* forcefully close the client connection if local, otherwise remove
        from global user list */
@@ -119,7 +121,7 @@ HANDLER (kill_user)
 	user->con->destroy = 1;
 	/* notify user they were killed */
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-		  "You have been killed by %s: %s", killernick, ac>1?av[1]:"");
+		  "You have been killed by %s: %s", killernick, REASON);
     }
     /* remote user, just remove from the global list */
     else
