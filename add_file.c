@@ -288,6 +288,7 @@ HANDLER (add_file)
 {
     char *av[6];
     DATUM *info;
+    int fsize;
 
     (void) tag;
     (void) len;
@@ -316,6 +317,14 @@ HANDLER (add_file)
 	return;
     }
 
+    /* ensure we have a valid byte count */
+    fsize = atoi(av[2]);
+    if(fsize<1)
+    {
+	send_cmd(con,MSG_SERVER_NOSUCH,"invalid file size");
+	return;
+    }
+
     /* make sure this isn't a duplicate */
     if (con->uopt->files && hash_lookup (con->uopt->files, av[0]))
     {
@@ -329,7 +338,7 @@ HANDLER (add_file)
     if (!(info = new_datum (av[0], av[1])))
 	return;
     info->user = con->user;
-    info->size = atoi (av[2]);
+    info->size = fsize;
     info->bitrate = atoi (av[3]);
     info->frequency = atoi (av[4]);
     info->duration = atoi (av[5]);
