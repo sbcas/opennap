@@ -399,27 +399,33 @@ HANDLER (register_nick)
 
     (void) tag;
     (void) len;
-    log ("register_nick(): attempting to register %s", pkt);
     ASSERT (validate_connection (con));
+    log ("register_nick(): attempting to register %s", pkt);
     snprintf (Buf, sizeof (Buf), "SELECT nick FROM accounts WHERE nick='%s'",
 	    pkt);
     if (mysql_query (Db, Buf) != 0)
     {
 	send_cmd (con, MSG_SERVER_ERROR, "db error");
 	sql_error ("register_nick", Buf);
+	return;
     }
     result = mysql_store_result (Db);
+    if (result == 0)
+    {
+	log ("register_nick(): NULL result from mysql_store_result()");
+	return;
+    }
     n = mysql_num_rows (result);
     if (n > 0)
     {
 	ASSERT (n == 1);
 	send_cmd (con, MSG_SERVER_REGISTER_FAIL, "");
-	log ("register_nick(): %s is already registered");
+	log ("register_nick(): %s is already registered", pkt);
     }
     else
     {
 	send_cmd (con, MSG_SERVER_REGISTER_OK, "");
-	log ("register_nick(): %s is not yet registered");
+	log ("register_nick(): %s is not yet registered", pkt);
     }
     mysql_free_result (result);
 }
