@@ -136,7 +136,7 @@ HANDLER (server_connect)
     }
 
     /* check to make sure this server is not already linked */
-    if (is_linked (con, fields[1]))
+    if (is_linked (con, fields[0]))
 	return;
 
     if (argc == 2 || (argc == 3 && !strcasecmp (fields[2], Server_Name)))
