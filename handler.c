@@ -406,13 +406,17 @@ handle_connection (CONNECTION * con)
 
 	if (Servers && ISUSER (con))
 	{
-	    /* check for end of shar/unshare sequence.  in order to avoid
+	    /* check for end of share/unshare sequence.  in order to avoid
 	       having to send a single message for each shared file,
 	       the add_file and remove_file commands set a flag noting the
 	       start of a possible series of commands.  this routine checks
 	       to see if the end of the sequence has been reached (a command
 	       other than share/unshare has been issued) and then relays
-	       the final result to the peer servers */
+	       the final result to the peer servers.
+               NOTE: the only issue with this is that if the user doesn't
+	       issue any commands after sharing files, the information will
+	       never get passed to the peer servers.  This is probably ok
+	       since this case will seldom happen */
 	    if (con->user->sharing)
 	    {
 		if (tag != MSG_CLIENT_ADD_FILE && tag != MSG_CLIENT_SHARE_FILE)

@@ -106,11 +106,13 @@ is invisible in all other ways).  It currently supports the following
 commands:
 
 	chanlevel
+	config
 	connect
 	disconnect
 	kick
 	killserver
 	links
+	reconfig
 	register
 	stats
 
