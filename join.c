@@ -60,7 +60,7 @@ HANDLER (join)
     }
     /* enforce a maximum channels per user */
     if (user->level < LEVEL_MODERATOR &&
-	    list_count (user->channels) > Max_User_Channels)
+	list_count (user->channels) > Max_User_Channels)
     {
 	log ("join(): %s reached max channel count (%d)", user->nick,
 	     Max_User_Channels);
@@ -76,71 +76,101 @@ HANDLER (join)
 		      "Muzzled users may not join chat rooms.");
 	return;
     }
-    chan = hash_lookup (Channels, pkt);
-    if (!chan)
+    do
     {
-	/* check if this server allows normals to create channels */
-	if (Server_Flags & OPTION_STRICT_CHANNELS)
-	{
-	    if (con->class == CLASS_USER)
-		permission_denied (con);
-	    return;
-	}
-	chan = new_channel ();
+	chan = hash_lookup (Channels, pkt);
 	if (!chan)
-	    return;		/* out of memory */
-	chan->name = STRDUP (pkt);
-	if (!chan->name)
 	{
-	    OUTOFMEMORY ("join");
-	    FREE (chan);
+	    /* check if this server allows normals to create channels */
+	    if (Server_Flags & OPTION_STRICT_CHANNELS)
+	    {
+		permission_denied (con);
+		return;
+	    }
+	    chan = new_channel ();
+	    if (!chan)
+		return;		/* out of memory */
+	    chan->name = STRDUP (pkt);
+	    if (!chan->name)
+	    {
+		OUTOFMEMORY ("join");
+		FREE (chan);
+		return;
+	    }
+	    /* set the default topic */
+	    snprintf (Buf, sizeof (Buf), "Welcome to the %s channel.",
+		      chan->name);
+	    chan->topic = STRDUP (Buf);
+	    if (!chan->topic)
+	    {
+		OUTOFMEMORY ("join");
+		FREE (chan->name);
+		FREE (chan);
+		return;
+	    }
+	    chan->limit = Channel_Limit;	/* default */
+	    chan->userCreated = 1;
+	    chan->level = LEVEL_USER;
+	    hash_add (Channels, chan->name, chan);
+	    log ("join(): creating channel %s", chan->name);
+	    break;
+	}
+	/* ensure that this user isn't already on this channel */
+	else if (list_find (user->channels, chan))
+	{
+	    log ("join(): user %s is already on channel %s", user->nick,
+		 chan->name);
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			  "You are already a member of channel %s",
+			  chan->name);
 	    return;
 	}
-	/* set the default topic */
-	snprintf (Buf, sizeof (Buf), "Welcome to the %s channel.",
-		  chan->name);
-	chan->topic = STRDUP (Buf);
-	if (!chan->topic)
+	/* check to make sure the user has privilege to join */
+	else if (user->level < chan->level)
 	{
-	    OUTOFMEMORY ("join");
-	    FREE (chan->name);
-	    FREE (chan);
-	    return;
-	}
-	chan->limit = Channel_Limit;	/* default */
-	chan->userCreated = 1;
-	chan->level = LEVEL_USER;
-	hash_add (Channels, chan->name, chan);
-	log ("join(): creating channel %s", chan->name);
-    }
-    /* ensure that this user isn't already on this channel */
-    else if (list_find (user->channels, chan))
-    {
-	log ("join(): user %s is already on channel %s", user->nick,
-	     chan->name);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "You are already a member of channel %s", chan->name);
-	return;
-    }
-    /* check to make sure the user has privilege to join */
-    else if (user->level < chan->level)
-    {
-	log ("join(): channel %s is set to level %s", chan->name,
-	     Levels[chan->level]);
-	if (ISUSER (con))
+	    log ("join(): channel %s is set to level %s", chan->name,
+		 Levels[chan->level]);
 	    permission_denied (con);
-	return;
+	    return;
+	}
+	else if (user->level < LEVEL_MODERATOR && chan->limit > 0 &&
+		 list_count (chan->users) >= chan->limit)
+	{
+	    log ("join(): channel %s is full (%d)", chan->name, chan->limit);
+	    if (chan->userCreated)
+	    {
+		if (ISUSER (con))
+		    send_cmd (con, MSG_SERVER_NOSUCH,
+			      "channel join failed: channel is full");
+		return;
+	    }
+	    /* for predefined channels, automatically create a rollover
+	       channel when full */
+	    else
+	    {
+		char *p;
+		int n = 1;
+
+		strncpy (Buf, chan->name, sizeof (Buf));
+		p = Buf + strlen (Buf);
+		while (p > Buf && isdigit (*(p - 1)))
+		    p--;
+		if (isdigit (*p))
+		{
+		    n = atoi (p);
+		    *p = 0;
+		}
+		snprintf (Buf + strlen (Buf), sizeof (Buf) - strlen (Buf),
+			  "%d", n);
+		pkt = Buf;
+		log ("join(): trying channel %s", pkt);
+	    }
+	}
+	else
+	    break;
     }
-    else if (user->level < LEVEL_MODERATOR && chan->limit > 0 &&
-	     list_count (chan->users) >= chan->limit)
-    {
-	log ("join(): channel %s is full (%d)", chan->name, chan->limit);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "channel join failed: channel is full");
-	return;
-    }
+    while (1);
 
     ASSERT (validate_channel (chan));
 
@@ -292,8 +322,8 @@ HANDLER (channel_level)
 	pass_message_args (con, tag, ":%s %s %s", sender, chan->name,
 			   Levels[level]);
 	chan->level = level;
-	notify_mods (CHANNELLOG_MODE, "%s set channel %s to level %s", 
-		sender, chan->name, Levels[level]);
+	notify_mods (CHANNELLOG_MODE, "%s set channel %s to level %s",
+		     sender, chan->name, Levels[level]);
     }
     else
     {
@@ -316,31 +346,31 @@ HANDLER (channel_limit)
 
     ASSERT (validate_connection (con));
     (void) len;
-    if(ISSERVER(con))
+    if (ISSERVER (con))
     {
-	if(*pkt!=':')
+	if (*pkt != ':')
 	{
-	    log("channel_limit(): malformed server command");
+	    log ("channel_limit(): malformed server command");
 	    return;
 	}
 	pkt++;
-	sender=next_arg(&pkt);
+	sender = next_arg (&pkt);
     }
     else
     {
-	ASSERT(ISUSER(con));
-	if(con->user->level < LEVEL_MODERATOR)
+	ASSERT (ISUSER (con));
+	if (con->user->level < LEVEL_MODERATOR)
 	{
 	    permission_denied (con);
 	    return;
 	}
-	sender=con->user->nick;
+	sender = con->user->nick;
     }
     chanName = next_arg (&pkt);
     if (!chanName || !pkt)
     {
 	log ("channel_limit(): too few parameters");
-	unparsable(con);
+	unparsable (con);
 	return;
     }
     limit = atoi (pkt);
@@ -354,16 +384,16 @@ HANDLER (channel_limit)
     if (!chan)
     {
 	if (ISUSER (con))
-	    nosuchchannel(con);
+	    nosuchchannel (con);
 	return;
     }
-    if (ISUSER(con) && list_find (con->user->channels, chan) == 0)
+    if (ISUSER (con) && list_find (con->user->channels, chan) == 0)
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "You are not on that channel");
 	return;
     }
     chan->limit = limit;
     pass_message_args (con, tag, ":%s %s %d", sender, chan->name, limit);
-    notify_mods (CHANNELLOG_MODE, "%s set limit on channel %s to %d", 
-    		sender, chan->name, limit);
+    notify_mods (CHANNELLOG_MODE, "%s set limit on channel %s to %d",
+		 sender, chan->name, limit);
 }
