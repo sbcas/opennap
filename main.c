@@ -358,6 +358,9 @@ main (int argc, char **argv)
 	exit (1);
     }
 
+    if (set_nonblocking (s))
+	exit (1);
+
     if (bind_interface (s, Interface, Server_Port) == -1)
 	exit (1);
 
