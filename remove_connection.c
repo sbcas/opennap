@@ -133,16 +133,9 @@ remove_connection (CONNECTION * con)
     if (con->host)
 	FREE (con->host);
     buffer_free (con->sendbuf);
-
-    /* don't use buffer_free() since this doesnt use the mempool */
-    if(con->recvbuf)
-    {
-	if(con->recvbuf->data)
-	    FREE(con->recvbuf->data);
-	FREE(con->recvbuf);
-    }
+    buffer_free (con->recvbuf);
 
     Clients[con->id] = 0;
     Num_Clients--;
-    mp_free (ConPool, con);
+    FREE (con);
 }

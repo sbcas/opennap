@@ -29,7 +29,7 @@ buffer_new (void)
 #if DEBUG
     r->magic = MAGIC_BUFFER;
 #endif
-    r->data = mp_alloc (BufPool, 0);
+    r->data = MALLOC (BUFFER_SIZE);
     if (!r->data)
     {
 	OUTOFMEMORY ("buffer_new");
@@ -83,7 +83,7 @@ buffer_consume (BUFFER * b, int n)
 	BUFFER *p = b;
 
 	b = b->next;
-	mp_free (BufPool, p->data);
+	FREE (p->data);
 	FREE (p);
     }
     return b;
@@ -125,7 +125,7 @@ buffer_free (BUFFER * b)
     {
 	p = b;
 	b = b->next;
-	mp_free (BufPool, p->data);
+	FREE (p->data);
 	FREE (p);
     }
 }
@@ -134,21 +134,14 @@ buffer_free (BUFFER * b)
 int
 buffer_validate (BUFFER * b)
 {
-#if 0
-    /* does not work with mempool */
     ASSERT_RETURN_IF_FAIL (VALID_LEN (b, sizeof (BUFFER)), 0);
-#endif
     ASSERT_RETURN_IF_FAIL (b->magic == MAGIC_BUFFER, 0);
     ASSERT_RETURN_IF_FAIL (b->datasize <= b->datamax, 0);
-#if 0
     ASSERT_RETURN_IF_FAIL (b->data == 0
 			   || VALID_LEN (b->data, b->datasize), 0);
-#endif
     ASSERT_RETURN_IF_FAIL (b->consumed == 0 || b->consumed < b->datasize, 0);
-#if 0
     ASSERT_RETURN_IF_FAIL (b->next == 0
 			   || VALID_LEN (b->next, sizeof (BUFFER *)), 0);
-#endif
     return 1;
 }
 #endif /* DEBUG */
@@ -214,7 +207,7 @@ buffer_compress (z_streamp zip, BUFFER ** b)
 	    ASSERT (r->next == 0);
 	    if (r->next != 0)
 		log ("buffer_compress(): ERROR! r->next was not NULL");
-	    mp_free (BufPool, r->data);
+	    FREE (r->data);
 	    FREE (r);
 	    r = 0;
 	}

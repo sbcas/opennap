@@ -60,5 +60,5 @@ free_user (USER * user)
     FREE (user->pass);
     FREE (user->clientinfo);
     FREE (user->server);
-    mp_free (UserPool, user);
+    FREE (user);
 }

@@ -228,7 +228,7 @@ free_datum (DATUM * d)
 #if RESUME
 	FREE (d->hash);
 #endif
-	mp_free (FilePool, d);
+	FREE (d);
     }
 }
 

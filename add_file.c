@@ -272,7 +272,7 @@ insert_datum (DATUM * info, char *av)
 static DATUM *
 new_datum (char *filename, char *hash)
 {
-    DATUM *info = mp_alloc(FilePool, 1);
+    DATUM *info = CALLOC(1,sizeof(DATUM));
 
     (void) hash;
     if (!info)
@@ -284,7 +284,7 @@ new_datum (char *filename, char *hash)
     if (!info->filename)
     {
 	OUTOFMEMORY ("new_datum");
-	mp_free (FilePool, info);
+	FREE (info);
 	return 0;
     }
 #if RESUME
@@ -293,7 +293,7 @@ new_datum (char *filename, char *hash)
     {
 	OUTOFMEMORY ("new_datum");
 	FREE (info->filename);
-	mp_free (FilePool, info);
+	FREE (info);
 	return 0;
     }
 #endif

@@ -231,11 +231,6 @@ init_server (const char *cf)
 #if RESUME
     MD5 = hash_init (2053, (hash_destroy) free_flist);
 #endif
-    FilePool = mp_init(sizeof(DATUM));
-    UserPool = mp_init(sizeof(USER));
-    ConPool = mp_init(sizeof(CONNECTION));
-    BufPool = mp_init(BUFFER_SIZE);
-
     load_channels ();
 
     init_random ();

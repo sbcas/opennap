@@ -344,7 +344,8 @@ HANDLER (login)
 		{
 		    /* the client we already know about is older, reject
 		       this login */
-		    log("login(): nick collision for user %s, rejected login from server %s", con->host);
+		    log("login(): nick collision for user %s, rejected login from server %s",
+			    user->nick, con->host);
 		    return;
 		}
 	    }
@@ -622,7 +623,7 @@ HANDLER (login)
 	    FREE (user->pass);
 	if (user->server)
 	    FREE (user->server);
-	mp_free (UserPool, user);
+	FREE (user);
     }
 }
 
