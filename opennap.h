@@ -271,7 +271,9 @@ typedef struct
 {
     USER *user;			/* user who possesses this file */
     char *filename;		/* the filename */
+#if RESUME
     char *hash;			/* the md5 hash of the file */
+#endif
     int size;			/* size of file in bytes */
     short bitrate;
     unsigned short duration;

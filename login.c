@@ -181,8 +181,9 @@ HANDLER (login)
 	    {
 		log ("login(): killing ghost for %s at %s",
 			user->nick, my_ntoa(user->host));
-		pass_message_args(NULL,MSG_CLIENT_KILL,":%s %s \"ghost\"",
-			Server_Name, user->nick);
+		pass_message_args(NULL,MSG_CLIENT_KILL,
+			":%s %s \"ghost (%s)\"",
+			Server_Name, user->nick, user->server);
 		/* remove the old entry */
 		if(ISUSER(user->con))
 		{
