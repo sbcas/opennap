@@ -54,6 +54,7 @@ HANDLER (remove_file)
 	fsize = atoi (row[0]) / 1024; /* kB */
 	user->libsize -= fsize;
 	Num_Gigs -= fsize;
+	ASSERT (Num_Files > 0);
 	Num_Files--;
 	user->shared--;
 
