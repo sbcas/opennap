@@ -279,7 +279,7 @@ typedef struct
     char *password;
     char *email;
     unsigned short level;
-    short nuked;
+    short muzzled;		/* set if user was muzzled when they quit */
     time_t created;
     time_t lastSeen;
 }

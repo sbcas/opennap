@@ -337,19 +337,41 @@ HANDLER (login)
     }
 
     /* this must come after the email ack or the win client gets confused */
-    if (db && db->level != LEVEL_USER)
+    if (db)
     {
-	/* do this before setting the user level so this user is not
-	   notified twice */
-	notify_mods (LEVELLOG_MODE, "%s set %s's user level to %s (%d)",
-		     Server_Name, user->nick, Levels[db->level], db->level);
-	user->level = db->level;
-	if (ISUSER (con))
+	if (db->level != LEVEL_USER)
 	{
-	    /* notify users of their change in level */
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "%s set your user level to %s (%d).",
-		      Server_Name, Levels[user->level], user->level);
+	    /* do this before setting the user level so this user is not
+	       notified twice */
+	    notify_mods (LEVELLOG_MODE, "%s set %s's user level to %s (%d)",
+		    Server_Name, user->nick, Levels[db->level], db->level);
+	    user->level = db->level;
+	    if (ISUSER (con))
+	    {
+		/* notify users of their change in level */
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			"%s set your user level to %s (%d).",
+			Server_Name, Levels[user->level], user->level);
+	    }
+	}
+
+	if (db->muzzled)
+	{
+	    /* user was muzzled when they quit, remuzzle */
+	    log("login(): user %s was muzzled upon quit", user->nick);
+	    user->muzzled = 1;
+	    /* this will result in duplicate messages for the same user from
+	       each server, but its the only way to guarantee that the user
+	       is muzzled upon login */
+	    pass_message_args(NULL,MSG_CLIENT_MUZZLE,
+		    ":%s %s \"quit while muzzled\"",
+		    Server_Name, user->nick);
+	    if (ISUSER (con))
+		send_cmd(con,MSG_SERVER_NOSUCH,
+			"You have been muzzled by %s: quit while muzzled",
+			Server_Name);
+	    notify_mods(MUZZLELOG_MODE,"%s muzzled %s: quit while muzzled",
+		    Server_Name, user->nick);
 	}
     }
 

@@ -5,6 +5,7 @@
    $Id$ */
 
 #include <string.h>
+#include <stdio.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -14,8 +15,8 @@ HANDLER (muzzle)
     USER *sender, *user;
     char *av[2];
     int ac = -1;
+    USERDB *db;
 
-    (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
 
@@ -38,8 +39,7 @@ HANDLER (muzzle)
     user = hash_lookup (Users, av[0]);
     if (!user)
     {
-	if (ISUSER (con))
-	    nosuchuser (con, av[0]);
+	nosuchuser (con, av[0]);
 	return;
     }
     ASSERT (validate_user (user));
@@ -47,8 +47,7 @@ HANDLER (muzzle)
     /* ensure that this user has privilege to execute the command */
     if (sender->level < LEVEL_ELITE && user->level >= sender->level)
     {
-	if (ISUSER (con))
-	    permission_denied (con);
+	permission_denied (con);
 	return;
     }
 
@@ -62,13 +61,44 @@ HANDLER (muzzle)
 
     /* relay to peer servers */
     if (ac > 1)
-	pass_message_args (con, MSG_CLIENT_MUZZLE, ":%s %s \"%s\"",
+	pass_message_args (con, tag, ":%s %s \"%s\"",
 			   sender->nick, user->nick, av[1]);
     else
-	pass_message_args (con, MSG_CLIENT_MUZZLE, ":%s %s",
+	pass_message_args (con, tag, ":%s %s",
 			   sender->nick, user->nick);
 
     user->muzzled = 1;
+
+    db = hash_lookup (User_Db, user->nick);
+    if (!db)
+    {
+	log("muzzle(): forcing registration of user %s", user->nick);
+	db=CALLOC(1,sizeof(USERDB));
+	if(db)
+	{
+	    db->nick=STRDUP(user->nick);
+	    db->password=generate_pass(user->pass);
+	    snprintf(Buf,sizeof(Buf),"anon@%s",Server_Name);
+	    db->email=STRDUP(Buf);
+	    db->level=user->level;
+	    db->created=Current_Time;
+	    db->lastSeen=Current_Time;
+	    if(db->nick && db->password && db->email)
+	    {
+		if(hash_add(User_Db,db->nick,db))
+		    userdb_free(db);
+	    }
+	    else
+	    {
+		OUTOFMEMORY("muzzle");
+		userdb_free(db);
+	    }
+	}
+	else
+		OUTOFMEMORY("muzzle");
+    }
+    if(db)	/* could be NULL if we ran out of memory */
+	db->muzzled = 1;
 
     /* notify the user they have been muzzled */
     if (user->local)

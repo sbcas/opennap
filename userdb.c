@@ -79,7 +79,7 @@ userdb_init (void)
     while (fgets (Buf, sizeof (Buf), fp))
     {
 	ac = split_line (av, FIELDS (av), Buf);
-	if (ac == 6)
+	if (ac >= 6)
 	{
 	    u = CALLOC (1, sizeof (USERDB));
 	    if (u)
@@ -108,6 +108,8 @@ userdb_init (void)
 	    u->level = level;
 	    u->created = atol (av[4]);
 	    u->lastSeen = atol (av[5]);
+	    if (ac > 6)
+		u->muzzled = atoi (av[6]);
 	    hash_add (User_Db, u->nick, u);
 	}
 	else
@@ -150,12 +152,12 @@ dump_userdb (USERDB * db, FILE * fp)
     fputc (' ', fp);
     fputs (Levels[db->level], fp);
     fputc (' ', fp);
+    fprintf (fp, "%d %d %d", (int) db->created, (int) db->lastSeen, db->muzzled);
 #ifdef WIN32
-#define FMT "%d %d\r\n"
+    fputs ("\r\n", fp);
 #else
-#define FMT "%d %d\n"
+    fputc ('\n', fp);
 #endif
-    fprintf (fp, FMT, (int) db->created, (int) db->lastSeen);
 }
 
 int

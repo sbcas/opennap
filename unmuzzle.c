@@ -13,8 +13,8 @@ HANDLER (unmuzzle)
     USER *sender, *user;
     int ac = -1;
     char *av[2];
+    USERDB *db;
 
-    (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
 
@@ -56,12 +56,17 @@ HANDLER (unmuzzle)
 
     user->muzzled = 0;
 
+    db=hash_lookup(User_Db,user->nick);
+    ASSERT (db != 0);	/* should have been created when muzzled */
+    if(db)
+	db->muzzled = 0;
+
     /* relay to peer servers */
     if (ac > 1)
-	pass_message_args (con, MSG_CLIENT_UNMUZZLE, ":%s %s \"%s\"",
+	pass_message_args (con, tag, ":%s %s \"%s\"",
 			   sender->nick, user->nick, av[1]);
     else
-	pass_message_args (con, MSG_CLIENT_UNMUZZLE, ":%s %s",
+	pass_message_args (con, tag, ":%s %s",
 			   sender->nick, user->nick);
 
     notify_mods (MUZZLELOG_MODE, "%s unmuzzled %s: %s", sender->nick,
