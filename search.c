@@ -22,9 +22,8 @@ typedef struct
     short count;		/* how many ACKS have been recieved? */
     short numServers;		/* how many servers were connected at the time
 				   this search was issued? */
-    short valid;		/* is the user that issued this search still
+    int valid;			/* is the user that issued this search still
 				   logged in? */
-    short local;		/* did this search originate on this server? */
 }
 DSEARCH;
 
@@ -628,8 +627,6 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 		FREE (dsearch);
 		goto done;
 	    }
-	    else
-		dsearch->local = 1;
 	    dsearch->con = con;
 	    dsearch->nick = STRDUP (user->nick);
 	    dsearch->numServers = list_count (Servers);
@@ -796,22 +793,16 @@ HANDLER (remote_search_end)
 	   find ack to the server that sent us this request, or deliver
 	   end of search to user */
 
-	/* can't use ISUSER(search->con) here because if the user was local
-	   and logged out, search->con will be an invalid pointer */
-	if (search->local)
-	{
-	    /* only send if the user is still logged in */
-	    if (search->valid)
-	    {
-		ASSERT (validate_connection (search->con));
-		send_cmd (search->con, MSG_SERVER_SEARCH_END, "");
-	    }
-	}
-	else
+	if (search->valid)
 	{
 	    ASSERT (validate_connection (search->con));
-	    send_cmd (search->con, MSG_SERVER_REMOTE_SEARCH_END, "%s",
-		      search->id);
+	    if (ISUSER (search->con))
+		send_cmd (search->con, MSG_SERVER_SEARCH_END, "");
+	    else
+	    {
+		ASSERT (ISSERVER (search->con));
+		send_cmd (search->con, tag, "%s", search->id);
+	    }
 	}
 	Remote_Search = list_delete (Remote_Search, search);
 	free_dsearch (search);
@@ -823,15 +814,27 @@ HANDLER (remote_search_end)
 void
 cancel_search (CONNECTION * con)
 {
-    LIST *list;
+    LIST **list, *tmpList;
     DSEARCH *d;
 
     ASSERT (validate_connection (con));
-    ASSERT (ISUSER (con));
-    for (list = Remote_Search; list; list = list->next)
+    list = &Remote_Search;
+    while (*list)
     {
-	d = list->data;
+	d = (*list)->data;
 	if (d->con == con)
+	{
 	    d->valid = 0;
+	    if (ISSERVER (con))
+	    {
+		/* remove the entry since we can't send the final ack */
+		tmpList = *list;
+		*list = (*list)->next;
+		FREE (tmpList);
+		free_dsearch (d);
+		continue;
+	    }
+	}
+	list = &(*list)->next;
     }
 }

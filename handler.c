@@ -6,6 +6,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 #ifndef WIN32
 #include <unistd.h>
 #endif
