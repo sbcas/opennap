@@ -221,7 +221,7 @@ HANDLER (join)
 		    else
 		    {
 			char *p;
-			int n = 2;
+			int n = 1;
 
 			if (pkt != chanbuf)
 			{
@@ -238,7 +238,7 @@ HANDLER (join)
 			    *p = 0;
 			}
 			snprintf (chanbuf + strlen (chanbuf),
-				  sizeof (chanbuf) - strlen (Buf), "%d", n);
+				  sizeof (chanbuf) - strlen (Buf), "%d", n+1);
 			log ("join(): trying channel %s", chanbuf);
 			continue;
 		    }

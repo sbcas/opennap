@@ -15,7 +15,7 @@
 HANDLER (server_usage)
 {
     USER *user;
-    int mem_used, numServers;
+    int mem_used, numServers, delta;
 
     (void) tag;
     (void) len;
@@ -24,17 +24,28 @@ HANDLER (server_usage)
     if (pop_user (con, &pkt, &user) != 0)
 	return;
 
+    delta = Current_Time - Last_Click;
+    if(delta==0)
+	delta=1;
     if (!*pkt || !strcasecmp (pkt, Server_Name))
     {
 	mem_used = MEMORY_USED;
 
 	numServers = list_count (Servers);
 	send_user (user, MSG_SERVER_USAGE_STATS,
-		  "%d %d %d %d %u %d %d %d %d %d %.2f %.2f",
-		  Num_Clients - numServers, numServers, Users->dbsize,
-		  Num_Files, Num_Gigs, Channels->dbsize, Server_Start,
-		  time (0) - Server_Start, mem_used, User_Db->dbsize,
-		  (float) Bytes_In / 1024., (float) Bytes_Out / 1024.);
+		  "%d %d %d %d %.0f %d %d %d %d %d %.2f %.2f",
+		  Num_Clients - numServers,
+		  numServers,
+		  Users->dbsize,
+		  Num_Files,
+		  Num_Gigs,
+		  Channels->dbsize,
+		  Server_Start,
+		  time (0) - Server_Start,
+		  mem_used,
+		  User_Db->dbsize,
+		  (float) Bytes_In / 1024. / delta,
+		  (float) Bytes_Out / 1024. / delta);
     }
     else
 	pass_message_args (con, tag, ":%s %s", user->nick, pkt);

@@ -370,6 +370,7 @@ extern int Compression_Level;
 extern char *Config_Dir;
 extern time_t Current_Time;
 extern unsigned int Interface;
+extern time_t Last_Click;
 extern char *Listen_Addr;
 extern int Local_Files;
 extern int Login_Timeout;
@@ -381,6 +382,7 @@ extern int Max_Search_Results;
 extern int Max_Shared;
 extern int Max_User_Channels;	/* # of channels is a user allowed to join */
 extern int Nick_Expire;
+extern int Search_Timeout;
 extern unsigned int Server_Flags;
 extern char *Server_Name;
 extern LIST *Server_Names;

@@ -23,6 +23,7 @@ typedef struct
     short count;		/* how many ACKS have been recieved? */
     short numServers;		/* how many servers were connected at the time
 				   this search was issued? */
+    time_t timestamp;		/* when the search request was issued */
 }
 DSEARCH;
 
@@ -655,6 +656,7 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    OUTOFMEMORY ("search_internal");
 	    goto done;
 	}
+	dsearch->timestamp = Current_Time;
 	if (id)
 	{
 	    if ((dsearch->id = STRDUP (id)) == 0)
@@ -740,13 +742,32 @@ HANDLER (search)
 static DSEARCH *
 find_search (const char *id)
 {
-    LIST *list;
+    LIST **list;
+    LIST *tmp;
+    DSEARCH *ds;
 
-    for (list = Remote_Search; list; list = list->next)
+    list = &Remote_Search;
+    while(*list)
     {
-	ASSERT (list->data != 0);
-	if (!strcmp (((DSEARCH *) list->data)->id, id))
-	    return list->data;
+	ASSERT ((*list)->data != 0);
+	ds=(*list)->data;
+	if (!strcmp (ds->id, id))
+	    return ds;
+	/* expire timed-out search requests */
+	if(ds->timestamp + Search_Timeout < Current_Time)
+	{
+	    log("find_search(): expiring request %d", ds->id);
+	    if(ISUSER(ds->con))
+		send_cmd(ds->con,MSG_SERVER_SEARCH_END, "");
+	    else
+		send_cmd(ds->con,MSG_SERVER_REMOTE_SEARCH_END, "%s", ds->id);
+	    tmp=*list;
+	    *list=(*list)->next;
+	    free_dsearch(ds);
+	    FREE(tmp);
+	    continue;
+	}
+	list = &(*list)->next;
     }
     return 0;
 }
@@ -891,7 +912,7 @@ cancel_search (CONNECTION * con)
 	d = (*list)->data;
 	if (isServer)
 	    d->numServers--;
-	if (d->con == con || d->count == d->numServers)
+	if (d->con == con || d->count >= d->numServers)
 	{
 	    if (d->con != con)
 	    {

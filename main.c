@@ -58,6 +58,7 @@ int Max_Topic;
 int Max_Client_String;
 int Max_Reason;
 int Max_Clones;
+int Search_Timeout;
 
 #ifndef WIN32
 int Uid;
@@ -107,7 +108,7 @@ char Buf[2048];			/* global scratch buffer */
 
 #define BACKLOG 50
 
-static time_t Last_Click = 0;
+time_t Last_Click = 0;
 
 static void
 update_stats (void)
@@ -127,6 +128,7 @@ update_stats (void)
     log ("update_stats(): File_Table contains %d entries",
 	 File_Table->dbsize);
     log ("update_stats(): User_Db contains %d entries", User_Db->dbsize);
+    log ("update_stats(): %d channels", Channels->dbsize);
     delta = Current_Time - Last_Click;
     log ("update_stats(): %.2f kbytes/sec in, %.2f kbytes/sec out",
 	 (float) Bytes_In / 1024. / delta, (float) Bytes_Out / 1024. / delta);

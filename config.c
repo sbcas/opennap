@@ -73,6 +73,7 @@ static struct config Vars[] = {
     {"max_client_string",VAR_TYPE_INT,UL&Max_Client_String,32},
     {"max_reason",VAR_TYPE_INT,UL&Max_Reason,64},
     {"max_clones",VAR_TYPE_INT,UL&Max_Clones,0},
+    {"search_timeout",VAR_TYPE_INT,UL&Search_Timeout,180},
 };
 
 static int Vars_Size = sizeof (Vars) / sizeof (struct config);
