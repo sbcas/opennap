@@ -59,7 +59,7 @@ fudge_path (const char *in, char *out)
 {
     while (*in)
     {
-	if(*in=='\\')
+	if(*in=='\\'||*in=='\'')
 	    *out++='\\';
 	*out++=*in++;
     }
