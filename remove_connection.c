@@ -40,6 +40,9 @@ remove_connection (CONNECTION * con)
     /* close socket */
     CLOSE (con->fd);
 
+    /* if this connection had any pending searches, cancel them */
+    cancel_search (con);
+
     if (ISUSER (con))
     {
 	LIST *u;
@@ -62,8 +65,6 @@ remove_connection (CONNECTION * con)
 	con->uopt.hotlist = 0;	/* need to set this to avoid asserting in
 				   cancel_search() */
 
-	/* if this user had any pending searches, cancel them */
-	cancel_search (con);
     }
     else if (ISSERVER (con))
     {

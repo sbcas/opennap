@@ -22,8 +22,6 @@ typedef struct
     short count;		/* how many ACKS have been recieved? */
     short numServers;		/* how many servers were connected at the time
 				   this search was issued? */
-    int valid;			/* is the user that issued this search still
-				   logged in? */
 }
 DSEARCH;
 
@@ -608,14 +606,13 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
     n = fdb_search (File_Table, tokens, max_results, search_callback, &parms);
 
     if ((n < max_results) &&
-	    ((ISSERVER (con) && list_count (Servers) > 1) ||
-	     (ISUSER (con) && Servers)))
+	((ISSERVER (con) && list_count (Servers) > 1) ||
+	 (ISUSER (con) && Servers)))
     {
 	char *request;
 	DSEARCH *dsearch;
 	LIST *ptr;
 
-	generate_request (Buf, sizeof (Buf), max_results - n, tokens, &parms);
 	/* generate a new request structure */
 	dsearch = CALLOC (1, sizeof (DSEARCH));
 	if (!dsearch)
@@ -625,7 +622,7 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	}
 	if (id)
 	{
-	    if ((dsearch->id = STRDUP (id))==0)
+	    if ((dsearch->id = STRDUP (id)) == 0)
 	    {
 		OUTOFMEMORY ("search_internal");
 		FREE (dsearch);
@@ -644,8 +641,11 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    free_dsearch (dsearch);
 	    goto done;
 	}
+	/* keep track of how many replies we expect back */
 	dsearch->numServers = list_count (Servers);
-	dsearch->valid = 1;
+	/* if we recieved this from a server, we expect 1 less reply since
+	   we don't send the search request back to the server that issued
+	   it */
 	if (ISSERVER (con))
 	    dsearch->numServers--;
 	ptr = CALLOC (1, sizeof (LIST));
@@ -657,16 +657,19 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	}
 	ptr->data = dsearch;
 	Remote_Search = list_append (Remote_Search, ptr);
+	/* reform the search request to send to the remote servers */
+	generate_request (Buf, sizeof (Buf), max_results - n, tokens, &parms);
+	/* make a copy since pass_message_args() uses Buf[] */
 	request = STRDUP (Buf);
 	/* pass this message to all servers EXCEPT the one we recieved
-	   it from (if this was a remote search */
+	   it from (if this was a remote search) */
 	pass_message_args (con, MSG_SERVER_REMOTE_SEARCH, "%s %s %s",
-		dsearch->nick, dsearch->id, request);
+			   dsearch->nick, dsearch->id, request);
 	FREE (request);
 	done = 0;		/* delay sending the end-of-search message */
     }
 
-done:
+  done:
 
     list_free (tokens, 0);
 
@@ -753,7 +756,8 @@ HANDLER (remote_search_result)
 
     if (ac != 8)
     {
-	log ("remote_match(): wrong number of args (%d)", ac);
+	log ("remote_match(): wrong number of args");
+	print_args (ac, av);
 	return;
     }
     search = find_search (av[0]);
@@ -764,21 +768,17 @@ HANDLER (remote_search_result)
     }
     if (ISUSER (search->con))
     {
-	/* only send if the user is still logged in */
-	if (search->valid)
+	/* deliver the match to the client */
+	user = hash_lookup (Users, av[1]);
+	if (!user)
 	{
-	    /* deliver the match to the client */
-	    user = hash_lookup (Users, av[1]);
-	    if (!user)
-	    {
-		log ("remote_match(): could not find user %s", av[1]);
-		return;
-	    }
-	    send_cmd (search->con, MSG_SERVER_SEARCH_RESULT,
-		      "\"%s\" %s %s %s %s %s %s %u %d",
-		      av[2], av[3], av[4], av[5], av[6], av[7], user->nick,
-		      user->host, user->speed);
+	    log ("remote_match(): could not find user %s", av[1]);
+	    return;
 	}
+	send_cmd (search->con, MSG_SERVER_SEARCH_RESULT,
+		"\"%s\" %s %s %s %s %s %s %u %d",
+		av[2], av[3], av[4], av[5], av[6], av[7], user->nick,
+		user->host, user->speed);
     }
 }
 
@@ -799,24 +799,20 @@ HANDLER (remote_search_end)
 	     search->id);
 	return;
     }
+    ASSERT (search->numServers <= list_count (Servers));
     search->count++;
-    if (search->count >= search->numServers ||
-	search->count >= list_count (Servers))
+    if (search->count == search->numServers)
     {
 	/* got the end of the search matches from all our peers, issue
-	   find ack to the server that sent us this request, or deliver
+	   final ack to the server that sent us this request, or deliver
 	   end of search to user */
-
-	if (search->valid)
+	ASSERT (validate_connection (search->con));
+	if (ISUSER (search->con))
+	    send_cmd (search->con, MSG_SERVER_SEARCH_END, "");
+	else
 	{
-	    ASSERT (validate_connection (search->con));
-	    if (ISUSER (search->con))
-		send_cmd (search->con, MSG_SERVER_SEARCH_END, "");
-	    else
-	    {
-		ASSERT (ISSERVER (search->con));
-		send_cmd (search->con, tag, "%s", search->id);
-	    }
+	    ASSERT (ISSERVER (search->con));
+	    send_cmd (search->con, tag, "%s", search->id);
 	}
 	Remote_Search = list_delete (Remote_Search, search);
 	free_dsearch (search);
@@ -830,25 +826,37 @@ cancel_search (CONNECTION * con)
 {
     LIST **list, *tmpList;
     DSEARCH *d;
+    int isServer = ISSERVER (con);
 
     ASSERT (validate_connection (con));
     list = &Remote_Search;
     while (*list)
     {
 	d = (*list)->data;
-	if (d->con == con)
+	if (isServer)
+	    d->numServers--;
+	if (d->con == con || d->count == d->numServers)
 	{
-	    d->valid = 0;
-	    if (ISSERVER (con))
+	    if (d->con != con)
 	    {
-		/* remove the entry since we can't send the final ack */
-		tmpList = *list;
-		*list = (*list)->next;
-		FREE (tmpList);
-		free_dsearch (d);
-		continue;
+		/* send the final ack */
+		log ("cancel_search(): sending find ACK for id %s", d->id);
+		if (ISUSER (d->con))
+		    send_cmd (d->con, MSG_SERVER_SEARCH_END, "");
+		else
+		    send_cmd (d->con, MSG_SERVER_REMOTE_SEARCH_END, d->id);
 	    }
+	    tmpList = *list;
+	    *list = (*list)->next;
+	    FREE (tmpList);
+	    free_dsearch (d);
+	    continue;
 	}
 	list = &(*list)->next;
+    }
+    if (Remote_Search)
+    {
+	log ("cancel_search(): %d pending search requests",
+		list_count (Remote_Search));
     }
 }

@@ -415,18 +415,26 @@ HANDLER (user_ip)
     user = hash_lookup (Users, field[0]);
     if (!user)
     {
-	log ("user_ip(): could not find struct for %s", field[0]);
+	log ("user_ip(): could not find %s", field[0]);
 	return;
     }
     ASSERT (validate_user (user));
-    ASSERT (user->local == 0);
-    pass_message_args (con, tag, "%s %s %s %s", user->nick,
-		       field[1], field[2], field[3]);
-    user->host = strtoul (field[1], 0, 10);
-    user->conport = atoi (field[2]);
-    ASSERT (user->server == 0);
-    if (!(user->server = STRDUP (field[3])))
-	OUTOFMEMORY ("user_ip");
+    if (!user->local)
+    {
+	pass_message_args (con, tag, "%s %s %s %s", user->nick,
+		field[1], field[2], field[3]);
+	user->host = strtoul (field[1], 0, 10);
+	user->conport = atoi (field[2]);
+	ASSERT (user->server == 0);
+	if (!(user->server = STRDUP (field[3])))
+	    OUTOFMEMORY ("user_ip");
+    }
+    else
+    {
+	/* nick collsion should have happened */
+	ASSERT (con->destroy == 1);
+	log ("user_ip(): ignoring info for local user (nick collision)");
+    }
 }
 
 /* check to see if a nick is already registered */

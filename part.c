@@ -45,7 +45,7 @@ HANDLER (part)
     {
 	chan = list->data;
 	ASSERT (validate_channel (chan));
-	if (!strcmp (pkt, chan->name))
+	if (!strcasecmp (pkt, chan->name))
 	    break;
     }
 
