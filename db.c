@@ -1,0 +1,61 @@
+/* Copyright (C) 1999 drscholl@hotmail.com
+   This is free software distributed under the terms of the
+   GNU Public License. */
+
+#include <mysql.h>
+#include <stdio.h>
+#include "opennap.h"
+
+MYSQL *Db = NULL;
+
+int
+init_db (void)
+{
+    Db = mysql_init (Db);
+    if (Db == NULL)
+    {
+	log ("unable to initialize sql api");
+	return -1;
+    }
+    Db = mysql_connect (Db, Db_Host, Db_User, Db_Pass);
+    if (Db == NULL)
+    {
+	log ("init_db(): unable to connect to mysqld");
+	return -1;
+    }
+    if (mysql_select_db (Db, Db_Name))
+    {
+	log ("init_db(): %s", mysql_error (Db));
+	return -1;
+    }
+
+    /* clear any existing tables */
+    snprintf (Buf, sizeof (Buf), "DROP TABLE IF EXISTS library");
+    if (mysql_query (Db, Buf) != 0)
+    {
+	log ("init_db(): %s", Buf);
+	log ("init_db(): %s", mysql_error (Db));
+	return -1;
+    }
+
+    /* create the library table */
+    snprintf (Buf, sizeof (Buf),
+	      "CREATE TABLE library (owner VARCHAR(255), filename VARCHAR(255), size INT UNSIGNED, md5 CHAR(32), bitrate INT UNSIGNED, freq INT UNSIGNED, time INT UNSIGNED, linespeed INT UNSIGNED)");
+
+    if (mysql_query (Db, Buf) != 0)
+    {
+	log ("init_db(): %s", Buf);
+	log ("init_db(): %s", mysql_error (Db));
+	return -1;
+    }
+
+    return 0;
+}
+
+/* generic error function to call when mysql_query() has failed. */
+void
+sql_error (const char *func, const char *query)
+{
+    log ("%s(): %s", func, query);
+    log ("%s(): %s", func, mysql_error (Db));
+}

@@ -1,0 +1,32 @@
+opennap v0.01 (ALPHA)
+=====================
+December 14, 1999
+
+opennap is an Open Source(TM) server implementation of the popular
+napster protocol.  It is written in ANSI C and was designed to run on Unix
+platforms and uses a MySQL (www.mysql.org) server to handle the search
+requests.  So far this server has only been tested on a Red Hat Linux 6.1 box
+running mysqld 3.23.  Minimal porting should be required for compilation on
+other Unix variants.
+
+Since napster is not an open specification, much of the internals of the
+servers are specific to this implementation.  In particular, I don't expect
+that this server will interoperate with the official napster servers once they
+are linked together.  Given that I can't run tcpdump between those servers,
+I can't see how they are communicating.  I'm hoping that with the proliferation
+of servers outside of napster.com, they might be willing to open up their
+specification to make sure all the clients can interoperate.  However, this
+server should be compliant with the several currently available Unix napster
+clients.
+
+Main differences from the official napster servers:
+* servers can be linked together
+* nickname registration is not supported
+* normal users can create channels
+* source code is freely available
+
+What's included?
+* opennap server
+* meta-server for directing clients to server groups
+* protocol specification
+* SOURCE CODE!

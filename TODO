@@ -1,0 +1,9 @@
+* break the sql query for searching into a separate thread?  so that we don't
+  hang the whole server whenever searching.  this will be important for
+  servers where the number of files to search is very large.
+
+* flood control
+
+  need some way to prevent the user from flooding the server.  this is a
+  problem since when the user first connects they will likely send a large
+  amount of valid information about the contents of their mp3 library

@@ -1,0 +1,799 @@
+napster messages
+================
+
+by drscholl@hotmail.com
+January 10, 2000
+
+0.  Forward
+
+This is meant to be an open specification.  If you find errors or know of
+additional functionality not described hereafter, please send me email.  It
+benefits the entire community to have a complete and accurate protocol
+specification.  Not only does it allow for clients to be developed for any
+platform, but also decreases the strain on the server having to parse out
+bad client messages.
+
+Disclaimer: the following information was gathered by analyzing the protocol
+between the linux nap client and may not resemble the official windows client
+protocol.
+
+1.  Client-Server protocol
+
+each message to/from the server is in the form of
+<length><type><data>
+where <length> and <type> are 2 bytes each.  <length> specifies the length in
+bytes of the <data> portion of the message.  Be aware that <length> and <type>
+appear to be in little-endian format (least significant byte goes first).  For
+example, in the C language you would encode the number 1 as
+	const unsigned char num[2] = { 0x01, 0x00 };
+and 256 would be encoded as
+	const unsigned char num[2] = { 0x00, 0x01 };
+[The above is for illustrative purposes only, there are much quicker ways to
+actually encode a number. -ed]
+
+Note that in many cases, strings are passed as double-quoted entries.  For
+example, filenames and client id strings are always sent as
+	"random band - generic cowboy song.mp3"
+or
+	"nap v0.8"
+Where required, double quotes are used in the description of the messages
+below.
+
+Some additional information about use of quotes inside of quotes:
+> The answer is, no, it doesn't do escaping of quotes.  If you try searching
+> for the phrase 'a "quoted" string' on the windows client, you get no songs
+> found, and "invalid search request" printed in yellow in your console
+> window.  (don't know what code that is, sorry.)
+>
+> and no wonder-- a little birdie told me that the client sends this:
+>
+> FILENAME CONTAINS "a "quoted" string" MAX_RESULTS 100
+
+[contributed by Ben Byer <bbyer@rice.edu>.  -ed]
+
+Note that unlike the IRC protocol, each line does NOT end in \r\n.  The
+<length> field specifies exactly how much data you should read.
+
+2.  Message Types
+
+The following section describes the format of the <data> section for each
+specific message type.  Each field is denoted with <>.  The fields in a
+message are separated by a single space character (ASCII 32).  Where
+appropriate, examples of the <data> section for each message are given.
+
+<type> can be one of the following (converted to big-endian):
+
+0	error message
+
+	<message>
+
+2	client login message [CLIENT]
+
+	<username> <password> <port> "<client-info>" <link-type>
+
+	<port> is the port the client is listening on for data transfer.  if
+		this value is 0, it means that the client is behind a firewall
+		and can only push files outward.  it is expected that requests
+		for downloads be made using the 500 message (see below)
+	<client-info> is a string containing the client version info
+	<link-type> is an integer indicating the client's bandwidth
+		0  unknown
+		1  14.4 kbps
+		2  28.8 kpbs
+		3  33.6 kbps
+		4  56.7 kbps
+		5  64K ISDN
+		6  128K ISDN
+		7  Cable
+		8  DSL
+		9  T1
+		10 T3 or greater
+		
+	Example:
+
+	foo badpass 6699 "nap v0.8" 3
+
+3	login ack [SERVER]
+
+	<email>
+
+	the server sends this message to the client after a succesful
+	login (2).  If the nick is registered, the <email> address given at
+	registration time is returned.  If the nick is not registered, a
+	dummy value is returned.
+
+6	alternate login format [CLIENT]
+
+	this message is used when logging in for the first time after
+	registering (0x07) a nick
+
+	<nick> <pass> <port> "<client-info>" <linkspeed> <email-address>
+
+	note: this message is similar to the 0x02 message, with the addition	
+	of <email-address> on the end
+
+	Example:
+
+	foo foo 6699 "nap v0.8" 3 email@here.com
+
+7	client registration message [CLIENT]
+
+	<nick>
+
+	this message is sent to create an account
+
+	response to this message is one of 8, 9 or 10
+
+8	registration success [SERVER]
+
+	the server sends this when the clients request to register a new
+	nickname has succeeded.
+
+9	nickname already registered [SERVER]
+
+	the server sends this message when the nickname the client has
+	requested has already been registered by another user
+
+10	invalid nickname [SERVER]
+
+	this server sends this message when the client attempts register
+	an invalid nickname [what defines an invalid nickname? -ed]
+
+13	login error [SERVER]
+
+	???
+
+14	login options
+
+	NAME:%s ADDRESS:%s CITY:%s STATE:%s PHONE:%s AGE:%s INCOME:%s EDUCATION:%s
+
+15	mstat
+
+	???
+
+89	request user speed
+
+	???
+
+95	send file
+
+	???
+
+100	client notification of shared file [CLIENT]
+
+	"<filename>" <md5> <size> <bitrate> <frequency> <time>
+
+	<md5> see section "MD5"
+	<size> is bytes
+	<bitrate> is kbps
+	<frequency> is hz
+	<time> is seconds
+	
+	Example:
+
+	"generic band - generic song.mp3" b92870e0d41bc8e698cf2f0a1ddfeac7 443332 128 44100 60
+
+102	remove file [CLIENT]
+
+	<filename>
+
+	client requests to remove file from shared library
+
+200	client search request [CLIENT]
+
+    [FILENAME CONTAINS "artist name"] MAX_RESULTS <max> [FILENAME CONTAINS
+"song"] [LINESPEED <compare> <link-type>] [BITRATE <compare> "<br>"] [FREQ
+<compare> "<freq>"]
+
+        The artist name and the song name are, obviously, treated
+                the same by the server; confirm this for yourself
+                on the windows client.
+
+        max is a number; if it is greater than 100, the server will
+                only return 100 results.
+
+        <compare> is one of the following:
+                "AT LEAST" "AT BEST" "EQUAL TO"
+
+        <link-type> see 0x02 (client login) for a description
+
+        <br> is a number, in kbps
+
+        <freq> is a sample frequency, in Hz
+
+        The windows client filters by ping time inside the client.
+                It pretty much has to, and it's easy to see the
+                result by setting ping time to at best 100 ms or
+                so, and max search terms to 50.  You'll get back
+                like 3 results, but the client will still tell you
+                that it found "50 results".
+
+        Examples:
+                FILENAME CONTAINS "Sneaker Pimps" MAX_RESULTS 75 FILENAME
+                         CONTAINS "tesko suicide" BITRATE "AT LEAST" "128"
+
+                MAX_RESULTS 100 FILENAME CONTAINS "Ventolin" LINESPEED
+                        "EQUAL TO" 10
+
+	[Thanks to Ben Byer <bbyer@rice.edu> for this contribution.  -ed]
+
+201	search response [SERVER]
+
+	"<filename>" <md5> <size> <bitrate> <frequency> <length> <nick> <ip> <link-type>
+
+	<md5> see secton "MD5"
+	<size> is file size in bytes
+	<bitrate> is mp3 bit rate in kbps
+	<frequency> is sample rate in hz
+	<length> is the play length of the mp3 in seconds
+	<nick> the person sharing the file
+	<ip> is an unsigned long integer representing the ip address of the
+		user with this file
+	<link-type> see message client login (2) message for a description
+
+	Example:
+
+	"random band - random song.mp3" 7d733c1e7419674744768db71bff8bcd 2558199 128 44100 159 lefty 3437166285 4
+
+202	end of search response from server [SERVER]
+
+	no data.
+
+203	download request [CLIENT]
+
+	<nick> "<filename>"
+
+	client requests to download <filename> from <nick>.  client expects
+	to make an outgoing connection to <nick> on their specified data
+	port.
+
+	Example:
+
+	mred "C:\Program Files\Napster\generic cowboy song.mp3"
+
+	SEE ALSO: 500 alternate download request
+
+204	download ack [SERVER]
+
+	<nick> <ip> <port> "<filename>" <md5> <linespeed>
+
+	server sends this message in response to a 203 request.
+
+	<nick> is the user who has the file
+	<ip> is an unsigned long integer representing the ip address
+	<port> is the port <nick> is listening on
+	<filename> is the file to retrieve
+	<md5> is the md5 sum
+	<linespeed> is the user's connection speed (see login(2))
+
+	Example:
+
+	lefty 4877911892 6699 "generic band - generic song.mp3" 10fe9e623b1962da85eea61df7ac1f69 3
+
+205	private message to/from another user [CLIENT, SERVER]
+
+	<nick> <message>
+
+	note the same type is used for a client sending a msg or recieving one
+
+	[Commentary: this message causes problems if you consider linking
+	servers together.  With the current one server situation, the server
+	just rewrites the message it receives with the name of the client that
+	sent it and passes it to the recipient client.  However, in the case
+	where the recipient and sender are not on the same server, there is
+	loss of information without encapsulating it.  It would have been
+	better to put both the sender and recipient because if the servers
+	are ever linked they will have to make a new message type for this
+	situation.  -ed]
+
+206	get error [SERVER]
+
+	<nick> <filename>
+
+	the server sends this message when the file that the user has
+	requested to download is unavailable (such as the user is not logged
+	in).
+
+207	add hotlist entry [CLIENT]
+
+	<user>
+
+	client is requesting notification when <user> logs in or out.
+
+209	user signon [SERVER]
+
+	<user> <speed>
+
+	server is notifying client that a user in their hotlist, <user>,
+	has signed on the server with link <speed>
+
+210	user signoff [SERVER]
+
+	<user>
+
+	server is notifying client that a user on their hotlist, <user>, has
+	signed off the server.
+
+	this message is also sent by the server when the client attempts to
+	browse a nonexistent client.  [why don't they just use 404 for
+	this? -ed]
+
+211	browse a user's files [CLIENT]
+
+	<nick>
+
+	the client sends this message when it wants to get a list of the files
+	shared by a specific client
+
+212	browse response [SERVER]
+
+	<nick> "<filename>" <md5> <size> <bitrate> <frequency> <time>
+
+	<nick> is the user contributing the file
+	<filename> is the mp3 file contributed
+	<md5> is the has of the mp3 file
+	<size> is the file size in bytes
+	<bitrate> is the mp3 bitrate in kbps
+	<frequence> is the sampling frequency in Hz
+	<time> is the play time in seconds
+
+	Example:
+
+	foouser "generic band - generic song.mp3" b92870e0d41bc8e698cf2f0a1ddfeac7 443332 128 44100 60
+
+213	end of browse list [SERVER]
+
+	<nick>
+
+	indicates no more entries in the browse list for <user>
+
+214	server stats [SERVER]
+
+	<users> <# files> <size>
+
+	<size> is approximate total library size in gigabytes
+	this message is sent by the server occasionaly without request
+
+	Example:
+
+	553 64692 254
+
+215	request resume [CLIENT]
+
+	<checksum> <filesize>
+
+	client is requesting a list of all users which have the file with
+	the characteristics.  the server responds with a list of 216 messages
+	for each match, followed by a 217 message to terminate the list
+
+216	resume search response [SERVER]
+
+	<user> <ip> <port> <filename> <checksum> <size> <speed>
+
+	this message contains the matches for the resume request (215).  the
+	list is terminated by a 217 message.
+
+217	end of resume search list [SERVER]
+
+	no data.
+
+	this messag terminates a list of 216 messages initiated by a 215
+	client request
+
+218	downloading file
+
+	no body.
+
+	client sends this message to the server to indicate they are in the
+	process of downloading a file
+
+219	download complete
+
+	no body.
+
+	client sends this message to the server to indicate they have
+	completed the file for which a prior 218 message was sent
+
+301	hotlist ack [SERVER]
+
+	<user>
+
+	server is notifying client that <user> has successfully be added to
+	their hotlist
+
+302	hotlist error [SERVER]
+
+	<user>
+
+	server is notifying client that it was unable to add <user> to their
+	hotlist.  [can you only add registered nicks to your hotlist? -ed]
+
+303	remove user from hotlist [CLIENT]
+
+	<user>
+
+	client is notifying the server that it no longer wishes to request
+	notifications about <user> when they sign on or off the server.
+
+400	join channel [CLIENT]
+
+	<channel-name>
+
+	the client sends this command to join a channel
+
+401	part channel [CLIENT]
+
+	<channel-name>
+
+	the client sends this command to part a channel
+
+402	send public message [CLIENT]
+
+	<channel> <message>
+
+403	public message [SERVER]
+
+	<channel> <nick> <text>
+
+	this message is sent by the server when a client sends a public message
+	to a channel.
+
+	Example:
+
+	80's espinozaf hello...hola
+
+404	user/channel does not exist [SERVER]
+
+	<error-message>
+
+	This message is sent to the client when the client has requested an
+	operation on another client or channel which is invalid.
+
+	Examples:
+
+	User nosuchuser is not currently online.
+	Channel #nosuchchannel does not exist!
+	permission denied
+
+405	join acknowledge [SERVER]
+
+	<channel>
+
+	the server sends this message to the client to acknowlege that it
+	has joined the requested channel (400)
+	
+406	join message [SERVER]
+
+	<channel> <user> <sharing> <link-type>
+
+	<user> has joined <channel>
+
+	Example:
+
+	80's WilmaFlinstone 12 2
+
+407	user parted channel [SERVER]
+
+	<channel> <nick> <sharing> <linespeed>
+
+	Example:
+
+	80's DLongley 23 7
+
+408	channel user list entry [SERVER]
+
+	this message is identical to the join (406) message.  the server will
+	send the list of users in the channel prior to the client join command
+	in this message.  joins that occur after the client has joined will
+	be noted by a 406 message.
+
+409	end of channel user list [SERVER]
+
+	<channel>
+
+	this message is sent by the server to indicate it has sent all informati	about the users in a channel
+
+410	channel topic [CLIENT, SERVER]
+
+	<channel> <topic>
+
+	sent when joining a channel or a new topic is set.  a client requesting
+	topic change also uses this message.
+
+	[why didn't they put a field to indicate WHO changed the topic?  as
+	it is now you can only tell that it was changed.  -ed]
+
+500	alternate download request
+
+	<nick> "<filename>"
+
+	requests that <nick> make an outgoing connection to the requesters
+	client and send <filename>.  this message is for use when the
+	person sharing the file can only make an outgoing tcp connection
+	because of firewalls blocking incoming messages.  this message should
+	be used to request files from users who have specified their data
+	port as 0 in their login message
+
+501	alternate download ack
+
+	???
+
+600	??? upload/download ack
+
+	<nick>
+
+	<nick> is the user we are uploading/downloading to/from
+
+	client request.
+
+	[it appears that a requesting client notifies the server that it
+	has accepted the transaction with <nick>.  -ed]
+
+601	??? end of download ack
+
+	<nick> <linespeed>
+
+	<nick> is the user we are requesting a file from
+
+	server response.
+
+	[it appears to be the response to a 600 client message notifying that
+	the transaction has completed.  -ed]
+
+603	whois request [CLIENT]
+
+	<nick>
+
+604	whois response [SERVER]
+
+	<nick> "<user-level>" <time> "<channels>" <status> <shared> <downloads> <uploads> <link-type> "<client-info>"
+
+	<user-level> is one of "User" or "Admin"
+	<time> is seconds this user has been connected
+	<channels> is the list of channels the client is a member of, each
+		separated by a space (ASCII 32)
+	<status> is one of "Active." or "Inactive." if they are on or offline
+	<shared> is number of files user has available for download
+	<downloads> is the current number of downloads in progress
+	<uploads> is the current number of uploads in progress
+	<link-type> see 0x02 (client login) above
+	<client-info> see 0x02 (client login) above
+
+	Example:
+
+	lefty "User" 1203 "80's " "Active" 0 0 0 3 "nap v0.8"
+
+605	whowas response [SERVER]
+
+	<user> <level> <last-seen>
+
+	if the user listed in a 603 request is not currently online, the
+	server sends this message.
+
+	<user> is the user for which information was requested
+	<level> is the user's last known userlevel (user/mod/admin)
+	<last-seen> is the last time at which this user was seen, measured
+		as seconds since 12:00am on January 1, 1970 (UNIX time_t).
+
+606	change user level [CLIENT]
+
+	<nick> <level>
+
+	changes the privileges for <nick> to <level>.  client must be admin
+	level to execute this request
+
+	[I have not verified this message since I don't have admin status
+	on any of the servers.  -ed]
+
+607	upload request [CLIENT]
+
+	<nick> "<filename>"
+
+	this message is used to notify the client that user <nick> has
+	requested upload of <filename>
+
+	Example:
+
+	lefty "generic band - generic song.mp3"
+
+608	upload finished [CLIENT]
+
+	<nick> "<filename>"
+
+	client is notifying server that upload of <filename> to <nick> is
+	complete
+
+	Example:
+
+	lefty "generic band - generic song.mp3"
+
+610	kill (disconnect) a user [CLIENT]
+
+	<nick>
+
+	client request to disconnect a user.  client must be "Admin" level to
+	execute this command
+
+611	nuke a user [CLIENT]
+
+	<nick>
+
+	client request to delete account for <nick>
+
+612	ban user
+
+613	set data port for user
+
+614	unban user
+
+615	show bans for server
+
+	client requests the list of banned ips for the current server
+
+617	list channels [CLIENT, SERVER]
+
+	no data.
+
+	client requests a list of channels on the server.  server responds
+	with 618/617
+
+	server indicates end of channel list using this message.
+
+618	channel list entry [SERVER]
+
+	<channel-name> <number-of-users> <topic>
+
+	this is the server response to a 617 client request, one for each
+	channel.
+
+	Example:
+
+	Help 50 OpenNap help channel
+
+621	message of the day.  sent after client login [SERVER]
+
+	<motd-text>
+
+	each 621 message contains a single line of text
+
+622	muzzle a user
+
+	<nick> <time>
+
+	client requests that <nick> not be allowed to send public messages
+	for <time> seconds
+
+	[the exact format of this message is unknown.  nap v0.8 just passes
+	whatever you type with /muzzle to the server.  -ed]
+
+623	unmuzzle a user
+
+	<nick>
+
+	client requests that the enforced silence on <nick> be lifted
+
+624	un-nuke a user
+
+625	change a user's linespeed
+
+626	data port error
+
+	<user>
+
+	client is informing server that it was unable to connect to the data
+	port for <user>
+
+627	operator message
+
+	<text>
+
+	client request to send a message to all admins/moderators
+
+628	global message
+
+	<text>
+
+	client request send a message to all users
+
+751	ping user [CLIENT, SERVER]
+
+	<user>
+
+	client is attempting to determine if <user>'s connection is alive
+
+752	pong response [CLIENT, SERVER]
+
+	<user>
+
+	this message is sent in response to the the 751 (PING) requeset
+
+753	???
+
+	[returns permission denied.  -ed]
+
+800	reload config
+
+	<config variable>
+
+	[what does this do?  -ed]
+
+801	server version
+
+	no data.
+
+	client request's a server's version
+
+810	set config
+
+	<config string>
+
+	[what does this do? -ed]
+
+820	clear channel
+
+	<channel>
+
+	[what does this do? -ed]
+
+821	???
+822	???
+823	???
+824	???
+
+825	user list entry [SERVER]
+
+	<channel> <user> <files shared> <speed>
+
+	an 825 message is sent for each user in the channel specified by the
+	830 message
+
+	Example:
+
+	Help testor3 0 3
+
+	[This appears to be exactly the same format as the 408 message.  -ed]
+
+826	???
+827	???
+
+830	list users in channel [CLIENT, SERVER]
+
+	<channel>
+
+	client requests a list of all users in <channel>.  server responds
+	with a 825 response for each user, followed by an 830 response with
+	no data [why didn't they just use the 409 message? -ed]
+
+3.  MD5
+
+The MD5 sum on the files for the upload list is computed against exactly
+300000 bytes at the beginning of the file.  I have verified this :)
+Hope this helps :).
+The cmdline client (nap v0.7) does do some validation that the file is
+consistant with what an MP3 should look like, so it looks like it's
+checking the mp3 header for the file (skipping over any ID3 tag at the
+beginning of the file).  You might or might not want to do similar
+checking in your client.  (I can probably provide you with code for this
+since I've dealt with mp3 decoding before).   I know this last bit because
+it refused to compute the md5 sum on any test file I created that wasn't
+made by pulling the first X bytes out of a valid MP3 (ie, sequential
+bytes, or random bytes or anything but valid mp3)
+
+[This section was contributed by JT <jtraub@dragoncat.net>.  -ed]
+
+4.  Where to get more help?
+
+Join the napdev mailing list by sending email to napdev-subscribe@onelist.com
+or by visiting the community page http://www.onelist.com/community/napdev/.
+This list is designed for open source napster developers to share information
+about the specification or applications.
+
+5.  Acknowledgements
+
+A big THANKS goes to the following people who contributed valuable information
+to this specification:
+
+Ben Byer <bbyer@rice.edu>
+JT <jtraub@dragoncat.net>
+Evan Martin <eeyem@u.washington.edu>
+Colten Edwards (aka panasync@efnet) <edwards@bitchx.dimension6.com>

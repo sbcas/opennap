@@ -1,0 +1,44 @@
+Changes from 0.04
+=================
+
+added support for resume searches (215, 216-217)
+
+Changes from 0.03
+=================
+added support for channel user list (825/830).
+
+added support for ping/pong (751/752).
+
+fixed broken channel list (618) message
+
+added channel list terminator message (617)
+
+Changes from 0.02
+=================
+added hotlist support.  clients can add entries with 207, and are notified
+about users logging in or out (209/210).
+
+added channel listing support (617/618)
+
+added generic array maniuplation routines arrary_add/array_remove
+
+Changes from 0.01
+=================
+send_cmd() modified to take the CONNECTION struct instead of a file descriptor
+
+modified send_cmd() and pass_message() to call new function queue_data()
+instead of write().  to avoid blocking on write() calls, the server now
+queues all messages it has to send for one pass on the event loop.  after all
+input has been processed, queued data is sent.  send_queued_data() takes note
+of how much data was actually sent and saves the rest for the next event
+loop.
+
+the server now requires mutual authentication for establishing a
+server<->server link.
+
+changed authentication such that the server passwords never travel over the net
+in the clear.  this will prevent bogus servers from trying to steal a server's
+password.  instead, we use a scheme similar to apop where one server issues
+a challenge for which the other use will hash their password with and send
+back the hash value.  except in this case both parties generate a random
+"nonce" value which seeds the hash.

@@ -1,0 +1,20 @@
+Frequently Asked Questions (FAQ) about opennap
+==============================================
+Last updated on Dec 14, 1999.
+
+Q:  What is opennap?
+A:  opennap is an open source server which speaks the napster protocol
+
+Q:  What is napster?
+A:  See www.napster.com for information.
+
+Q:  Is this project associated with napster.com?
+A:  No, this server was developed without any communication with napster.com
+
+Q:  Why isn't nick registration supported?
+
+A:  It is next to impossible to keep a group of distributed servers which
+    may connect/disconnect at will in sync with eachother.  Nick registration
+    needs to be handled as a centralized service ala NickServ on many
+    IRC networks.
+
