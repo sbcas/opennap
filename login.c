@@ -52,20 +52,34 @@ HANDLER (login)
     if (numfields < 5)
     {
 	log ("login(): too few fields in message");
+	if (con->class ==  CLASS_UNKNOWN)
+	{
+	    send_cmd (con, MSG_SERVER_ERROR, "too few fields for login command");
+	    con->destroy = 1;
+	}
 	return;
     }
     speed = atoi (field[4]);
     if (speed < 0 || speed > 10)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "%d is an invalid speed.", speed);
+	log ("login(): invalid speed %d from %s (%s)",
+		speed, field[0], field[4]);
+	if (con->class == CLASS_UNKNOWN)
+	{
+	    send_cmd (con, MSG_SERVER_ERROR, "%d is an invalid speed", speed);
+	    con->destroy = 1;
+	}
 	return;
     }
 
     if (invalid_nick (field[0]))
     {
-	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_BAD_NICK, "");
 	log ("login(): invalid nick: %s", field[0]);
+	if (con->class == CLASS_UNKNOWN)
+	{
+	    send_cmd (con, MSG_SERVER_BAD_NICK, "");
+	    con->destroy = 1;
+	}
 	return;
     }
 
@@ -154,6 +168,8 @@ HANDLER (login)
 	    {
 		/* this could happen if two clients simultaneously connect
 		   and register */
+		log ("login(): %s is already registered", field[0]);
+
 		send_cmd (con, MSG_SERVER_ERROR,
 			"that name is already registered");
 		con->destroy = 1;
@@ -376,6 +392,7 @@ HANDLER (register_nick)
 
     (void) tag;
     (void) len;
+    log ("register_nick(): attempting to register %s", pkt);
     ASSERT (validate_connection (con));
     snprintf (Buf, sizeof (Buf), "SELECT nick FROM accounts WHERE nick='%s'",
 	    pkt);
@@ -390,9 +407,13 @@ HANDLER (register_nick)
     {
 	ASSERT (n == 1);
 	send_cmd (con, MSG_SERVER_REGISTER_FAIL, "");
+	log ("register_nick(): %s is already registered");
     }
     else
+    {
 	send_cmd (con, MSG_SERVER_REGISTER_OK, "");
+	log ("register_nick(): %s is not yet registered");
+    }
     mysql_free_result (result);
 }
 
