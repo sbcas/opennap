@@ -410,6 +410,12 @@ HANDLER (add_directory)
 	}
     }
 
+    /* if the client passes a dir + file that is longer than 255 chars,
+     * strncpy() won't write a \0 at the end of the string, so ensure that
+     * this always happens
+     */
+    path[sizeof(path)-1]=0;
+
     while (pkt)
     {
 	if (Max_Shared && con->user->shared > Max_Shared)
@@ -432,7 +438,18 @@ HANDLER (add_directory)
 
 	strncpy(path,dirbuf,sizeof(path)-1);
 	strncpy(path+pathlen,basename,sizeof(path)-1-pathlen);
+
 	ASSERT(path[sizeof(path)-1]==0);
+
+	/* TODO: still seeing crashes here, we must be overwriting the
+	 * stack on occasion.  quit now if we detect this condition
+	 */
+	if(path[sizeof(path)-1] != 0)
+	{
+	    log("add_directory(): ERROR! buffer overflow detected");
+	    return;
+	}
+
 
 	if (con->uopt->files && hash_lookup (con->uopt->files, path))
 	{
