@@ -20,11 +20,12 @@ HANDLER (login)
     char *field[6];
     USER *user;
     HOTLIST *hotlist;
-    int i;
+    int i, numfields;
 
     ASSERT (validate_connection (con));
 
-    if (split_line (field, sizeof (field) / sizeof (char *), pkt) < 5)
+    numfields = split_line (field, sizeof (field) / sizeof (char *), pkt);
+    if (numfields < 5)
     {
 	log ("login(): too few fields in message");
 	return;
@@ -94,7 +95,7 @@ HANDLER (login)
     user->speed = atoi (field[4]);
     user->connected = time (0);
     user->level = LEVEL_USER;
-    if (field[5])
+    if (numfields > 5)
 	user->email = STRDUP (field[5]);
 
     hash_add (Users, user->nick, user);
