@@ -29,7 +29,7 @@ BLOCK;
 static BLOCK *Allocation = 0;
 static size_t Memory_Usage = 0;
 
-static void
+static int
 debug_overflow (BLOCK *block, const char *func)
 {
     if (*((unsigned char *) block->val + block->len) != END_BYTE)
@@ -37,7 +37,9 @@ debug_overflow (BLOCK *block, const char *func)
 	fprintf (stderr,
 		"debug_%s: buffer overflow detected in data allocated at %s:%d\n",
 		func, block->file, block->line);
+	return 1;
     }
+    return 0;
 }
 
 void *
@@ -264,7 +266,8 @@ debug_valid (void *ptr, size_t len)
 	fprintf (stderr, "debug_valid: invalid pointer\n");
 	return 0; /* not found */
     }
-    debug_overflow (block, "valid");
+    if (debug_overflow (block, "valid"))
+	return 0;
     /* ensure that there are at least `len' bytes available */
     return ((len <= block->len));
 }

@@ -48,16 +48,16 @@ HANDLER (login)
 
 	if (con->class == CLASS_UNKNOWN)
 	{
-	    log ("login(): user %s is already active", user->nick);
+	    log ("login: user %s is already active", user->nick);
 	    send_cmd (con, MSG_SERVER_ERROR, "user %s is already active",
 		user->nick);
-	    remove_connection (con);
+	    con->destroy = 1;
 	}
 	else
 	{
 	    ASSERT (con->class == CLASS_SERVER);
 
-	    log ("login(): nick collision detected for user %s", user->nick);
+	    log ("login: nick collision detected for user %s", user->nick);
 
 	    /* issue a KILL for this user if we have one of them locally
 	       connected */
@@ -66,7 +66,8 @@ HANDLER (login)
 		/* pass this message to everyone */
 		pass_message_args (NULL, MSG_CLIENT_KILL, ":%s %s",
 				   Server_Name, user->nick);
-		/* destroy the connection */
+		/* destroy the connection - ok to remove it here since
+		   con != user->con in this case */
 		remove_connection (user->con);
 	    }
 	    else
@@ -90,7 +91,7 @@ HANDLER (login)
 		send_cmd (con, MSG_SERVER_NOSUCH,
 			"You are banned from this server: %s",
 			Ban[i]->reason ? Ban[i]->reason : "banned");
-		remove_connection (con);
+		con->destroy = 1;
 	    }
 	    notify_mods ("Banned user %s attempted to log in", field[0]);
 	    return;
@@ -156,7 +157,7 @@ HANDLER (login)
 				user->nick);
 			    send_cmd (con, MSG_SERVER_NOSUCH,
 				"invalid password");
-			    remove_connection (con);
+			    con->destroy = 1;
 			    mysql_free_result (result);
 			    return;
 			}
@@ -195,7 +196,8 @@ HANDLER (login)
 		    break;
 		default:
 		    log ("login(): query returned >1 rows!");
-		    remove_connection (con);
+		    send_cmd (con, MSG_SERVER_ERROR, "sql error");
+		    con->destroy = 1;
 		    break;
 	    }
 

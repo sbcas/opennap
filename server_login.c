@@ -34,7 +34,7 @@ HANDLER (server_login)
 	log ("server_login(): %s tried to login, but is already registered",
 		con->host);
 	send_cmd (con, MSG_SERVER_NOSUCH, "reregistration is not supported");
-	remove_connection (con);
+	con->destroy = 1;
 	return;
     }
 
@@ -42,9 +42,9 @@ HANDLER (server_login)
 
     if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 3)
     {
-	log ("server_login(): wrong number of fields");
+	log ("server_login: wrong number of fields");
 	send_cmd (con, MSG_SERVER_ERROR, "wrong number of fields");
-	remove_connection (con);
+	con->destroy = 1;
 	return;
     }
 
@@ -58,7 +58,7 @@ HANDLER (server_login)
 		"your ip address does not match that name");
 	log ("server_login(): %s does not resolve to %s", fields[0],
 		my_ntoa (con->ip));
-	remove_connection (con);
+	con->destroy = 1;
 	return;
     }
 
@@ -73,7 +73,7 @@ HANDLER (server_login)
 	send_cmd (con, MSG_SERVER_NOSUCH, "invalid compression level %d",
 	    con->compress);
 	con->compress = 0;
-	remove_connection (con);
+	con->destroy = 1;
 	return;
     }
     /* take the minimum of the two values */
@@ -84,7 +84,8 @@ HANDLER (server_login)
     {
 	if ((con->nonce = generate_nonce()) == NULL)
 	{
-	    remove_connection (con);
+	    send_cmd (con, MSG_SERVER_ERROR, "unable to generate nonce");
+	    con->destroy = 1;
 	    return;
 	}
 
@@ -131,7 +132,7 @@ HANDLER (server_login_ack)
     {
 	send_cmd (con, MSG_SERVER_ERROR, "you must login first");
 	log ("server_login_ack(): received ACK with no LOGIN?");
-	remove_connection (con); /* FATAL */
+	con->destroy = 1;
 	return;
     }
 
@@ -142,7 +143,7 @@ HANDLER (server_login_ack)
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "sql error");
 	sql_error ("server_login",Buf);
-	remove_connection (con);
+	con->destroy = 1;
 	return;
     }
 
@@ -153,7 +154,7 @@ HANDLER (server_login_ack)
 	log ("server_login_ack(): expected 1 row returned from sql query");
 	permission_denied (con);
 	mysql_free_result (result);
-	remove_connection (con);
+	con->destroy = 1;
 	return;
     }
 
@@ -175,7 +176,7 @@ HANDLER (server_login_ack)
 	log ("server_login_ack(): incorrect response for server %s",
 		con->host);
 	permission_denied (con);
-	remove_connection (con);
+	con->destroy = 1;
 	return;
     }
 		

@@ -173,14 +173,14 @@ pop_user (CONNECTION *con, char **pkt, USER **user)
 
 	if (**pkt != ':')
 	{
-	    log ("pop_user(): server message did not contain nick");
+	    log ("pop_user(): server message did not contain nick: %s", *pkt);
 	    return -1;
 	}
 	ptr = *pkt + 1;
 	*pkt = strchr (ptr, ' ');
 	if (!*pkt)
 	{
-	    log ("pop_user(): too few fields in server message");
+	    log ("pop_user(): too few fields in server message: %s", *pkt);
 	    return -1;
 	}
 	*(*pkt)++ = 0;
@@ -209,225 +209,6 @@ pop_user (CONNECTION *con, char **pkt, USER **user)
     return 0;
 
 }
-
-/* how much uncompressed data we can fit in one packet */
-#if 1
-#define MAX_UNCOMPRESSED_SIZE	131070
-#else
-/* small value for testing purposes only!  this will force send_queued_data()
-   to fragment the packet */
-#define MAX_UNCOMPRESSED_SIZE	2000
-#endif
-
-#if 0
-static int
-calculate_chunk_length (CONNECTION *con)
-{
-    int offset;
-    unsigned short len;
-
-    ASSERT (validate_connection (con));
-
-    /* we start with the end of the already compressed data */
-    offset = con->sendbufcompressed;
-    while (offset + 4 <= con->sendbuflen)
-    {
-	/* read the packet length */
-	memcpy (&len, con->sendbuf + offset, 2);
-	len = BSWAP16 (len);
-
-	/* text compresses at around 50%, so make sure we dont try to
-	   send more than 131070 bytes in one packet */
-	if (offset - con->sendbufcompressed + len + 4 > MAX_UNCOMPRESSED_SIZE)
-	    break;
-
-	offset += len + 4; /* skip over the packet header and body */
-    }
-
-    return (offset - con->sendbufcompressed); /* number of bytes to compress */
-}
-
-void
-send_queued_data (CONNECTION *con)
-{
-    int l, qlen;
-    struct timeval t;
-    fd_set wfd;
-
-    ASSERT (validate_connection (con));
-    
-    if (con->sendbuflen == 0)
-	return; /* nothing to do */
-
-#if HAVE_LIBZ
-    /* see if there is any data we can compress
-       only compress if we have enough data to justify it */
-    if (con->class == CLASS_SERVER && Compression_Level > 0)
-    {
-	long datasize;
-	unsigned char *data = 0;
-	int compressed = 0; /* how many compressed packets so far */
-
-	/* we have to make sure that the size of the compressed packet is
-	   less than 65535 bytes, which is what fits in a 16-bit integer.
-	   so we loop here to compress the data.  we have to semi-parse
-	   the packets so that we make sure we compress on the boundaries,
-	   because the underlying packets can't be split between
-	   compressed packets.
-
-	   since we could have a lot of data to send on a server join,
-	   we keep track of how many compressed packets so far, and if
-	   we reach the threshold `Max_Compress' we stop to avoid blocking
-	   the rest of the server.  Administrators will have to tune this
-	   value so that it compresses data fast enough to keep up with
-	   what we can write, without blocking client connections */
-	while (con->sendbuflen - con->sendbufcompressed >= Compression_Threshold &&
-	    compressed < Max_Compress)
-	{
-	    datasize = calculate_chunk_length (con);
-	    data = REALLOC (data, datasize);
-	    l = datasize;
-	    log ("send_queued_data(): attempting to compress %d bytes", l);
-	    if (compress2 (data, (unsigned long *) &datasize,
-			(unsigned char *) con->sendbuf + con->sendbufcompressed,
-			l, Compression_Level) == Z_OK)
-	    {
-		/* save some information about the current state of the
-		   buffer */
-
-		/* end of uncompressed region */
-		int u_end = con->sendbufcompressed + l;
-		/* end of compressed region */
-		int c_end = con->sendbufcompressed + datasize + 8;
-		/* change in size */
-		int delta = u_end - c_end;
-
-		unsigned int len;
-
-		if (datasize > 65535)
-		{
-		    log ("send_queued_data(): compressed data is too large (%lu bytes)",
-			    datasize);
-		    break;
-		}
-
-		/* make sure there is enough room to hold the compressed
-		   packet */
-		if (con->sendbufcompressed + datasize + 8 > con->sendbufmax)
-		{
-		    log ("send_queued_data(): compressed packet is larger, not compressing");
-		    break;
-		}
-
-		/* compressed packet header */
-		set_val (con->sendbuf + con->sendbufcompressed, datasize + 4);
-		con->sendbufcompressed += 2;
-		set_val (con->sendbuf + con->sendbufcompressed,
-			MSG_SERVER_COMPRESSED_DATA);
-		con->sendbufcompressed += 2;
-
-		/* uncompressed size, 4 bytes */
-		ASSERT (sizeof (unsigned int) == 4);
-		len = BSWAP32 (l);
-		memcpy (con->sendbuf + con->sendbufcompressed, &len, 4);
-		con->sendbufcompressed += 4;
-
-		/* compressed data */
-		memcpy (con->sendbuf + con->sendbufcompressed, data, datasize);
-		con->sendbufcompressed += datasize;
-
-		ASSERT (con->sendbufcompressed == c_end);
-
-		log ("send_queued_data(): compressed %d bytes to %d (%d%%).",
-			l, datasize + 8, (100 * delta) / l);
-
-		/* if there were leftovers, we need to shift them down
-		   to the end of the compressed packet we just wrote */
-		if (u_end < con->sendbuflen)
-		{
-		    memmove (con->sendbuf + c_end,
-			    con->sendbuf + u_end,
-			    con->sendbuflen - u_end);
-		}
-
-		con->sendbuflen -= delta;
-
-		compressed++; /* keep track of what we've done so we
-				    don't block */
-		if (compressed == Max_Compress)
-		{
-		    log ("send_queued_data(): max_compress reached (%d) with %d bytes left",
-			Max_Compress, con->sendbuflen - con->sendbufcompressed);
-		}
-	    }
-	    else
-	    {
-		/* this should not happen under normal circumstances */
-		log ("send_queued_data(): error compressing data");
-		break;
-	    }
-	}
-	if (data)
-	    FREE (data);
-    }
-#endif /* HAVE_LIBZ */
-
-    /* see if we are ready for writing, with no wait */
-    t.tv_sec = 0;
-    t.tv_usec = 0;
-    FD_ZERO (&wfd);
-    FD_SET (con->fd, &wfd);
-    l = select (con->fd + 1, 0, &wfd, 0, &t);
-    if (l == -1)
-    {
-	log ("send_queued_data: select: %s (errno %d).", strerror (errno),
-	    errno);
-	con->sendbuflen = 0;
-	remove_connection (con);
-	return;
-    }
-    else if (l == 1)
-    {
-	/* write as much of the queued data as we can */
-	l = write (con->fd, con->sendbuf, con->sendbuflen);
-	if (l == -1)
-	{
-	    log ("send_queued_data: write: %s (errno %d).", strerror (errno), errno);
-	    con->sendbuflen = 0; /* avoid an infinite loop */
-	    remove_connection (con);
-	    return;
-	}
-	con->sendbuflen -= l;
-#if HAVE_LIBZ
-	if (con->sendbufcompressed >= l)
-	    con->sendbufcompressed -= l;
-	else
-	    con->sendbufcompressed = 0;
-#endif /* HAVE_LIBZ */
-
-	/* shift any data that was left down to the begin of the buf */
-	/* TODO: this should probably be implemented as a circular buffer to
-	   avoid having to move the memory after every write call */
-	if (con->sendbuflen)
-	{
-	    log ("send_queued_data: %d bytes remain in the queue for %s",
-		    con->sendbuflen, con->host);
-	    memmove (con->sendbuf, con->sendbuf + l, con->sendbuflen);
-	}
-    }
-
-    /* if there is more than 2kbytes left to send, close the connection
-       since the peer is likely dead */
-    qlen = (con->class == CLASS_USER) ? Client_Queue_Length : Server_Queue_Length;
-    if (con->sendbuflen > qlen)
-    {
-	log ("send_queued_data(): closing link for %s (sendq exceeded %d bytes)",
-	    con->host, qlen);
-	con->sendbuflen = 0; /* avoid an infinite loop */
-	remove_connection (con);
-    }
-}
-#endif /* 0 */
 
 static char hex[] = "0123456789ABCDEF";
 
@@ -523,10 +304,7 @@ array_add (void *list, int *listsize, void *ptr)
 {
     char **plist;
 
-#ifdef DEBUG
-    if (list)
-	ASSERT (VALID (list));
-#endif /* DEBUG */
+    ASSERT (list == 0 || VALID_LEN (list, *listsize * sizeof (char *)));
     ASSERT (VALID (ptr));
     list = REALLOC (list, sizeof (char *) * (*listsize + 1));
     plist = (char **) list;
@@ -550,7 +328,8 @@ array_remove (void *list, int *listsize, void *ptr)
 	if (ptr == plist[i])
 	{
 	    if (i < *listsize - 1)
-		memmove (&plist[i], &plist[i + 1], sizeof (char *) * (*listsize - i - 1));
+		memmove (&plist[i], &plist[i + 1],
+			sizeof (char *) * (*listsize - i - 1));
 	    --*listsize;
 	    list = REALLOC (list, *listsize * sizeof (char *));
 	    break;

@@ -270,8 +270,9 @@ buffer_uncompress (z_streamp zip, BUFFER **b)
     zip->avail_in = (*b)->datasize;
     while (zip->avail_in > 0)
     {
-	/* allocate 2 times the compressed data for output */
-	cur->data = REALLOC (cur->data, cur->datasize + 2 * zip->avail_in);
+	/* allocate 2 times the compressed data for output, plus one extra
+	   byte to terminate the string with a nul (\0) */
+	cur->data = REALLOC (cur->data, cur->datasize + 2 * zip->avail_in + 1);
 	zip->next_out = (uchar *) cur->data + cur->datasize;
 	zip->avail_out = 2 * zip->avail_in;
 	cur->datasize += 2 * zip->avail_in;
@@ -300,6 +301,11 @@ buffer_uncompress (z_streamp zip, BUFFER **b)
 	FREE (cur);
 	return 0;
     }
+
+    /* we allocate one extra byte above for this nul char.  the
+       handle_connection() routine expects this to be here since it needs
+       to send only a portion of the string to the handler routines */
+    *(cur->data + cur->datasize) = 0;
 
     log ("buffer_uncompress: uncompression ratio is %d%%",
 	    (100 * (zip->total_out - zip->total_in)) / zip->total_in);
@@ -383,7 +389,7 @@ send_queued_data (CONNECTION *con)
     {
 	log ("send_queued_data: write: %s (errno %d)", strerror (errno),
 	    errno);
-	remove_connection (con);
+	con->destroy = 1;
 	return;
     }
 
@@ -397,7 +403,8 @@ send_queued_data (CONNECTION *con)
     if (buffer_size (con->sendbuf) > n)
     {
 	log ("send_queued_data: output buffer for %s exceeded %d bytes", n);
-	remove_connection (con);
+	con->destroy = 1;
+	return;
     }
 
     if (con->sendbuf)

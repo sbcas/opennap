@@ -275,13 +275,20 @@ handle_connection (CONNECTION *con)
        with, and an error message from a peer server */
     if (con->class == CLASS_SERVER && tag != MSG_SERVER_LOGIN_ACK &&
 	    tag != MSG_SERVER_NOSUCH && Num_Servers)
-	pass_message (con, con->recvbuf->data + con->recvbuf->consumed, 4 + len);
+	pass_message (con, con->recvbuf->data + con->recvbuf->consumed,
+		4 + len);
 
     dispatch_command (con, tag, len,
 	con->recvbuf->data + con->recvbuf->consumed + 4);
 
-    /* mark that we read this data and it is ok to free it */
-    con->recvbuf = buffer_consume (con->recvbuf, len + 4);
+    if (con->destroy)
+    {
+	log ("handle_connection: closing connection to %s", con->host);
+	remove_connection (con);
+    }
+    else
+	/* mark that we read this data and it is ok to free it */
+	con->recvbuf = buffer_consume (con->recvbuf, len + 4);
 }
 
 static void
@@ -635,6 +642,8 @@ main (int argc, char **argv)
 	/* write out data for our clients now */
 	for (i = 0; !SigCaught && i < Num_Clients; i++)
 	{
+	    /* test for existence since it may have disappeared in the
+	       handle_connection() call */
 	    if (Clients[i])
 	    {
 		if (Clients[i]->zip)

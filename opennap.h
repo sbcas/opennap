@@ -141,9 +141,20 @@ struct _connection
 				   connection, if CLASS_USER */
 
     BUFFER *sendbuf;		/* output buffer */
+
+    /* the next three fields make up 4 bytes and should be grouped together
+       to keep memory alignment correct */
+
     short compress;		/* compression level for this connection */
-    short incomplete;		/* not enough data present to form a complete
+    char destroy;		/* connection should be destoyed in
+				   handle_connection().  because h_c() caches
+				   a copy of the CONNECTION pointer, we can't
+				   remove it from inside a handler, so we mark
+				   it here and have it removed at a later time 
+				   when it is safe */
+    char incomplete;		/* not enough data present to form a complete
 				   packet */
+
     ZIP *zip;			/* compression stream state */
 
     BUFFER *recvbuf;		/* input buffer */

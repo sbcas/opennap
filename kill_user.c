@@ -95,26 +95,31 @@ HANDLER (kill_user)
     {
 	if (Num_Servers)
 	    pass_message_args (con, MSG_CLIENT_KILL, ":%s %s %s",
-		con->user->nick, user->nick, reason ? reason : "");
+		con->user->nick, user->nick, NONULL (reason));
     }
 
     /* notify mods+ that this user was killed */
-    notify_mods ("%s killed user %s: %s", killernick, user->nick,
-	    reason ? reason : "");
+    notify_mods ("%s killed user %s: %s", killernick, user->nick, NONULL (reason));
 
     /* notify user they were killed */
     if (user->con)
     {
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-		"you have been killed by %s: %s", killernick,
-		reason ? reason : "");
+		"you have been killed by %s: %s", killernick, NONULL (reason));
     }
 
     /* forcefully close the client connection if local, otherwise remove
        from global user list */
     if (user->con)
-	remove_connection (user->con);
+    {
+	if (user->con == con)
+	    con->destroy = 1; /* elite killed themself? */
+	else
+	    /* this is an exception to the rule where we don't want to set
+	       user->con->destroy=1 and wait.  since the handler doesn't have
+	       a copy of this pointer we can safely destroy this here */
+	    remove_connection (user->con);
+    }
     else
 	hash_remove (Users, user->nick);
-
 }
