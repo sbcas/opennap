@@ -514,7 +514,10 @@ HANDLER (register_nick)
 	send_cmd (con, MSG_SERVER_REGISTER_FAIL, "");
 	return;
     }
-    send_cmd (con, MSG_SERVER_REGISTER_OK, "");
+    if(invalid_nick(pkt))
+	send_cmd(con, MSG_SERVER_BAD_NICK,"");
+    else
+	send_cmd (con, MSG_SERVER_REGISTER_OK, "");
 }
 
 /* 10114 :<server> <nick> <password> <level> <email> <created> <lastseen> */
@@ -623,7 +626,16 @@ HANDLER (register_user)
 	return;
     }
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
-
+    if(ac < 3)
+    {
+	unparsable(con);
+	return;
+    }
+    if(invalid_nick(av[0]))
+    {
+	send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+	return;
+    }
     /* if the user level was specified do some security checks */
     if (ac > 3)
     {
@@ -638,10 +650,7 @@ HANDLER (register_user)
 	/* check that the user has permission to create a user of this level */
 	if (sender->level < LEVEL_ELITE && level >= sender->level)
 	{
-	    log ("register_user(): %s has no privilege to create %s accounts",
-		 sender->nick, Levels[level]);
-	    if (ISUSER (con))
-		permission_denied (con);
+	    permission_denied (con);
 	    return;
 	}
     }
