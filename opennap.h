@@ -171,6 +171,8 @@ struct _hotlist
 #define MSG_SERVER_MOTD			621
 #define MSG_CLIENT_MUZZLE		622
 #define MSG_CLIENT_UNMUZZLE		623
+#define MSG_CLIENT_DATA_PORT_ERROR	626
+#define MSG_SERVER_DATA_PORT_ERROR	626 /* same as client message */
 #define MSG_CLIENT_WALLOP		627
 #define MSG_CLIENT_ANNOUNCE		628
 #define MSG_CLIENT_CHANGE_DATA_PORT	703
@@ -273,6 +275,7 @@ HANDLER (announce);
 HANDLER (browse);
 HANDLER (change_data_port);
 HANDLER (client_quit);
+HANDLER (data_port_error);
 HANDLER (download);
 HANDLER (download_end);
 HANDLER (download_start);

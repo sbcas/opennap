@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-January 16, 2000
+January 19, 2000
 
 0.  Forward
 
@@ -63,7 +63,7 @@ appropriate, examples of the <data> section for each message are given.
 
 <type> can be one of the following (converted to big-endian):
 
-0	error message
+0	error message [SERVER]
 
 	<message>
 
@@ -139,25 +139,13 @@ appropriate, examples of the <data> section for each message are given.
 	this server sends this message when the client attempts register
 	an invalid nickname [what defines an invalid nickname? -ed]
 
-13	login error [SERVER]
+11	??? [CLIENT]
 
-	???
+	[returns "parameters are unparsable" -ed]
 
-14	login options
+14	login options [CLIENT]
 
 	NAME:%s ADDRESS:%s CITY:%s STATE:%s PHONE:%s AGE:%s INCOME:%s EDUCATION:%s
-
-15	mstat
-
-	???
-
-89	request user speed
-
-	???
-
-95	send file
-
-	???
 
 100	client notification of shared file [CLIENT]
 

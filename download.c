@@ -122,3 +122,25 @@ HANDLER(user_speed)
     send_cmd(con,MSG_SERVER_USER_SPEED /* 601 */, "%s %d",
 	    user->nick,user->speed);
 }
+
+/* 626 <user> */
+/* client is notifying other party of a failure to connect to their data
+   port */
+HANDLER (data_port_error)
+{
+    USER *user;
+
+    ASSERT (VALID (con));
+    user = hash_lookup (Users, pkt);
+    if (!user)
+    {
+	log ("data_port_error(): no such user %s", pkt);
+	return;
+    }
+    /* TODO: should this report /who/ notified the error, or who the
+       error is directed to? */
+    if (user->con)
+	send_cmd (user->con, MSG_SERVER_DATA_PORT_ERROR, "%s", user->nick);
+    else if (con->class == CLASS_USER)
+	send_cmd (user->serv, MSG_SERVER_DATA_PORT_ERROR, "%s", user->nick);
+}

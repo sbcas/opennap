@@ -142,6 +142,7 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_MUZZLE, muzzle },
     { MSG_CLIENT_UNMUZZLE, unmuzzle },
     { MSG_CLIENT_LIST_CHANNELS, list_channels }, /* 618 */
+    { MSG_CLIENT_DATA_PORT_ERROR, data_port_error }, /* 626 */
     { MSG_CLIENT_SETUSERLEVEL, level },
     { MSG_CLIENT_PING, ping }, /* 751 */
     { MSG_CLIENT_PONG, pong }, /* 752 */
