@@ -41,11 +41,11 @@ HANDLER (upload_ok)
     if (sender->port == 0 || recip->con)
     {
 	/* pull the hash from the data base */
-	info = hash_lookup (recip->files, av[1]);
+	info = hash_lookup (sender->files, av[1]);
 	if (!info)
 	{
 	    log ("upload_ok(): user %s does not have file %s",
-		    recip->nick, av[1]);
+		    sender->nick, av[1]);
 	    return;
 	}
     }
