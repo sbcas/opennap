@@ -266,13 +266,13 @@ HANDLER (login)
     user->port = atoi (av[2]);
     user->speed = speed;
     user->connected = Current_Time;
-    user->level = db ? db->level : LEVEL_USER;	/* default */
     user->con = con;
     if (hash_add (Users, user->nick, user))
     {
 	log ("login(): hash_add failed (fatal)");
 	goto failed;
     }
+    user->level = LEVEL_USER;	/* default */
 
     /* if this is a locally connected user, update our information */
     if (con->class == CLASS_UNKNOWN)
@@ -300,15 +300,21 @@ HANDLER (login)
 	    send_cmd (con, MSG_SERVER_EMAIL, "anon@%s", Server_Name);
 	show_motd (con, 0, 0, NULL);
 	server_stats (con, 0, 0, NULL);
+    }
 
-	/* we do this after sending the login/email ack (7) to avoid confusing
-	   the win32 client */
-	if (user->level != LEVEL_USER)
+    if (db && db->level != LEVEL_USER)
+    {
+	/* do this before setting the user level so this user is not
+	   notified twice */
+	notify_mods ("%s set %s's user level to %s (%d)", Server_Name,
+		     user->nick, Levels[db->level], db->level);
+	user->level = db->level;
+	if (ISUSER (con))
 	{
 	    /* notify users of their change in level */
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		"%s set your user level to %s (%d).",
-		Server_Name, Levels[user->level], user->level);
+		      "%s set your user level to %s (%d).",
+		      Server_Name, Levels[user->level], user->level);
 	}
     }
 
@@ -342,13 +348,6 @@ HANDLER (login)
 	    send_cmd (u->data, MSG_SERVER_USER_SIGNON, "%s %d",
 		      user->nick, user->speed);
 	}
-    }
-
-    if (user->level != LEVEL_USER)
-    {
-	log ("login(): set %s to level %s", user->nick, Levels[user->level]);
-	notify_mods ("%s set %s's user level to %s (%d)",
-		     Server_Name, user->nick, Levels[user->level], user->level);
     }
 
     return;
