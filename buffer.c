@@ -329,7 +329,7 @@ init_compress (CONNECTION * con, int level)
 	     NONULL (con->sopt->zout->msg), n);
     }
 
-    log ("init_compress: compressing server stream at level %d", level);
+    log ("init_compress(): compressing server stream at level %d", level);
 }
 
 void
@@ -408,10 +408,17 @@ void
 queue_data (CONNECTION * con, char *s, int ssize)
 {
     ASSERT (validate_connection (con));
-    if (ISSERVER (con))
+    if(ISSERVER(con))
     {
 	/* for a server connection, allocate chunks of 16k bytes */
-	con->sopt->outbuf = buffer_queue (con->sopt->outbuf, s, ssize, 16384);
+#if HAVE_LIBZ
+	/* if using compression, accumulate in the compressor's queue */
+	if(con->compress>0)
+	    con->sopt->outbuf = buffer_queue (con->sopt->outbuf, s, ssize, 16384);
+	else
+#endif
+	    /* otherwise just queue for send */
+	    con->sendbuf = buffer_queue (con->sendbuf, s, ssize, 16384);
     }
     else
 	/* for a client connection, allocate chunks of 1k bytes */

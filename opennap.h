@@ -135,15 +135,15 @@ enum
 #define ISUSER(c)	((c)->class == CLASS_USER)
 #define ISUNKNOWN(c)	((c)->class==CLASS_UNKNOWN)
 
+#if HAVE_LIBZ
 typedef struct
 {
-#if HAVE_LIBZ
     z_streamp zin;		/* input stream decompressor */
     z_streamp zout;		/* output stream compressor */
-#endif
     BUFFER *outbuf;		/* compressed output buffer */
 }
 SERVER;
+#endif
 
 typedef struct
 {
@@ -190,8 +190,10 @@ struct _connection
 #define uopt opt.useropt
 	USEROPT *useropt;
 	/* parameters for server->server connection */
+#if HAVE_LIBZ
 #define sopt opt.server
 	SERVER *server;
+#endif
 	/* this field is used for the authentication phase of server links */
 	AUTH *auth;
     }
@@ -574,7 +576,9 @@ void config_defaults (void);
 void exec_timers (time_t);
 void expand_hex (char *, int);
 void fdb_garbage_collect (HASH *);
+#if HAVE_LIBZ
 void finalize_compress (SERVER *);
+#endif
 CHANNEL *find_channel (LIST *, const char *);
 int form_message (char *, int, int, const char *, ...);
 void free_ban (BAN *);

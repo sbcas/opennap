@@ -141,6 +141,8 @@ HANDLER (server_login)
 	log ("server_login(): no entry for server %s", con->host);
 	send_cmd (con, MSG_SERVER_ERROR, "Permission Denied");
 	con->destroy = 1;
+	if(localPass)
+	    FREE(localPass);
 	return;
     }
     FREE (pass);
@@ -209,6 +211,8 @@ HANDLER (server_login)
 
     /* now we wait for the peers ACK */
     log ("server_login(): sent login ACK");
+
+    FREE(localPass);
 }
 
 HANDLER (server_login_ack)
@@ -294,10 +298,13 @@ HANDLER (server_login_ack)
     Servers = list_append (Servers, list);
 
     con->class = CLASS_SERVER;
-    con->opt.server = CALLOC (1, sizeof (SERVER));
 #if HAVE_LIBZ
-    /* set up the compression handlers for this connection */
-    init_compress (con, con->compress);
+    if(con->compress > 0)
+    {
+	con->opt.server = CALLOC (1, sizeof (SERVER));
+	/* set up the compression handlers for this connection */
+	init_compress (con, con->compress);
+    }
 #endif
 
     log ("server_login(): server %s has joined", con->host);

@@ -69,7 +69,7 @@ opennap_SOURCES = opennap.h main.c add_file.c search.c 	motd.c hash.h hash.c pri
 mkpass_SOURCES = mkpass.c md5.c debug.c util.c
 metaserver_SOURCES = metaserver.c
 setup_SOURCES = setup.c
-EXTRA_DIST = sample.conf sample.motd napster.txt .indent.pro 	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp 	opennap.opt sample.users sample.servers opennap.spec 	getopt.c mkpass.dsp sample.channels 	napchk logchk
+EXTRA_DIST = sample.conf sample.motd napster.txt .indent.pro 	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp 	opennap.opt sample.users sample.servers opennap.spec 	getopt.c mkpass.dsp sample.channels 	napchk logchk setup.dsp
 
 INCLUDES = -DSHAREDIR=\"$(pkgdatadir)\"
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -285,7 +285,7 @@ distdir: $(DISTFILES)
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
-	    cp -pr $$/$$file $(distdir)/$$file; \
+	    cp -pr $$d/$$file $(distdir)/$$file; \
 	  else \
 	    test -f $(distdir)/$$file \
 	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \

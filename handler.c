@@ -275,10 +275,6 @@ HANDLER (dispatch_command)
 	    fputc(isprint(ch)?ch:'.',stdout);
 	}
 	fputc('\n',stdout);
-#if 0
-	log ("dispatch_command(): shutting down server link");
-	con->destroy = 1;
-#endif
     }
 #endif /* DEBUG */
 done:
@@ -310,27 +306,32 @@ handle_connection (CONNECTION * con)
 	}
 	Bytes_In += n;
 #if HAVE_LIBZ
-	if (buffer_decompress (con->recvbuf, con->sopt->zin, Buf, n))
+	if(con->compress > 0)
 	{
-	    con->destroy = 1;
-	    return;
-	}
-#else
-	if (con->recvbuf->datasize + n > con->recvbuf->datamax)
-	{
-	    if (safe_realloc ((void **) &con->recvbuf->data,
-		    con->recvbuf->datasize + n + 1))
+	    if (buffer_decompress (con->recvbuf, con->sopt->zin, Buf, n))
 	    {
-		OUTOFMEMORY ("handle_connection");
 		con->destroy = 1;
 		return;
 	    }
-	    con->recvbuf->datamax = con->recvbuf->datasize + n;
-	    *(con->recvbuf->data + con->recvbuf->datamax) = 0;
 	}
-	memcpy (con->recvbuf->data + con->recvbuf->datasize, Buf, n);
-	con->recvbuf->datasize += n;
+	else
 #endif
+	{
+	    if (con->recvbuf->datasize + n > con->recvbuf->datamax)
+	    {
+		if (safe_realloc ((void **) &con->recvbuf->data,
+				  con->recvbuf->datasize + n + 1))
+		{
+		    OUTOFMEMORY ("handle_connection");
+		    con->destroy = 1;
+		    return;
+		}
+		con->recvbuf->datamax = con->recvbuf->datasize + n;
+		*(con->recvbuf->data + con->recvbuf->datamax) = 0;
+	    }
+	    memcpy (con->recvbuf->data + con->recvbuf->datasize, Buf, n);
+	    con->recvbuf->datasize += n;
+	}
     }
     else
     {
@@ -360,7 +361,7 @@ handle_connection (CONNECTION * con)
 	while (con->recvbuf->datasize < 4)
 	{
 	    n = READ (con->fd, con->recvbuf->data + con->recvbuf->datasize,
-		4 - con->recvbuf->datasize);
+		      4 - con->recvbuf->datasize);
 	    if (n == -1)
 	    {
 		if (N_ERRNO != EWOULDBLOCK)

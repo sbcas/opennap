@@ -51,9 +51,9 @@ int User_Db_Interval;		/* how often to save the user database */
 int Channel_Limit;
 int Login_Timeout;
 int Max_Command_Length;
+int Compression_Level = 0;
 
 #ifndef WIN32
-int Compression_Level;
 int Uid;
 int Gid;
 int Connection_Hard_Limit;
@@ -470,8 +470,12 @@ main (int argc, char **argv)
 		if (Clients[i]->fd > maxfd)
 		    maxfd = Clients[i]->fd;
 		/* check sockets for writing */
-		if (Clients[i]->connecting || Clients[i]->sendbuf ||
-		    (ISSERVER (Clients[i]) && Clients[i]->sopt->outbuf))
+#if HAVE_LIBZ
+#define CheckWrite(p) (p->sendbuf || (ISSERVER(p) && p->sopt->outbuf))
+#else
+#define CheckWrite(p) p->sendbuf
+#endif
+		if (Clients[i]->connecting || CheckWrite(Clients[i]))
 		    FD_SET (Clients[i]->fd, &wset);
 	    }
 	}

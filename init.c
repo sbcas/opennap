@@ -111,6 +111,7 @@ init_server (const char *cf)
     /* load the config file */
     config (cf ? cf : SHAREDIR "/config");
 
+#ifndef WIN32
     /* if running in daemon mode, reopen stdout as a log file */
     if (Server_Flags & ON_BACKGROUND)
     {
@@ -135,6 +136,7 @@ init_server (const char *cf)
 	    return -1;
 	}
     }
+#endif
 
     log ("init_server(): version %s starting", VERSION);
     dump_pid ();

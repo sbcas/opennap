@@ -155,20 +155,25 @@ make_tcp_connection (const char *host, int port, unsigned int *ip)
 
     /* turn on TCP/IP keepalive messages */
     set_keepalive (f, 1);
-    log ("make_tcp_connection: connecting to %s:%hu",
+    log ("make_tcp_connection(): connecting to %s:%hu",
 	    inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
     if (connect (f, (struct sockaddr*) &sin, sizeof (sin)) < 0)
     {
-	if (N_ERRNO != EINPROGRESS)
+	if (N_ERRNO != EINPROGRESS
+#ifdef WIN32
+	    /* winsock returns EWOULDBLOCK even in nonblocking mode! ugh!!! */
+	    && N_ERRNO != EWOULDBLOCK
+#endif
+	    )
 	{
 	    nlogerr("make_tcp_connection","connect");
 	    CLOSE (f);
 	    return -1;
 	}
-	log ("make_tcp_connection: connection to %s in progress", host);
+	log ("make_tcp_connection(): connection to %s in progress", host);
     }
     else
-	log ("make_tcp_connection: connection established to %s", host);
+	log ("make_tcp_connection(): connection established to %s", host);
     return f;
 }
 

@@ -48,6 +48,7 @@ HANDLER (list_users)
 #define ON_ELITE 1
 #define ON_ADMIN 2
 #define ON_MODERATOR 4
+#define ON_LEECH 8
 
 struct guldata {
     int flags;
@@ -60,12 +61,15 @@ global_user_list_cb (USER * user, struct guldata *data)
 {
     ASSERT (validate_user (user));
     ASSERT (data != 0);
-    if((data->flags & ON_ADMIN) && user->level != LEVEL_ADMIN)
-	return;
-    if((data->flags & ON_ELITE) && user->level != LEVEL_ELITE)
-	return;
-    if((data->flags & ON_MODERATOR) && user->level != LEVEL_MODERATOR)
-	return;
+    if(data->flags)
+    {
+	/* selectively display users based on user level */
+	if (!(((data->flags & ON_ADMIN) && user->level == LEVEL_ADMIN) ||
+	    ((data->flags & ON_ELITE) && user->level == LEVEL_ELITE) ||
+	    ((data->flags & ON_MODERATOR) && user->level == LEVEL_MODERATOR) ||
+	    ((data->flags & ON_LEECH) && user->level == LEVEL_LEECH)))
+	    return;
+    }
     if(data->server && strcasecmp(data->server,user->server)!=0)
 	return;	/* no match */
     send_cmd (data->con, MSG_SERVER_GLOBAL_USER_LIST, "%s %s", user->nick,
@@ -102,6 +106,9 @@ HANDLER (global_user_list)
 		    break;
 		case 'm':
 		    data.flags|=ON_MODERATOR;
+		    break;
+		case 'l':
+		    data.flags|=ON_LEECH;
 		    break;
 	    }
 	    pkt++;
