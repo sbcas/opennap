@@ -50,6 +50,9 @@ search_callback (DATUM * match, SEARCH * parms)
     /* don't return matches for a user's own files */
     if (match->user == parms->user)
 	return 0;
+    /* ignore match if both parties are firewalled */
+    if (parms->user->port == 0 && match->user->port == 0)
+	return 0;
     if (match->bitrate < parms->minbitrate)
 	return 0;
     if (match->bitrate > parms->maxbitrate)
@@ -723,7 +726,7 @@ HANDLER (remote_search)
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("remote_search");
-    nick = next_arg (&pkt);
+    nick = next_arg (&pkt);	/* user that issued the search */
     id = next_arg (&pkt);
     if (!nick || !id || !pkt)
     {
