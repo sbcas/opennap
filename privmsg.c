@@ -12,6 +12,46 @@
 #include "opennap.h"
 #include "debug.h"
 
+/* loopback command for allowing mods using the windows client to execute
+   opennap comamnds */
+static void
+operserv (CONNECTION * con, char *pkt)
+{
+    char *cmd = next_arg (&pkt);
+    unsigned short tag, len;
+    char ch = 0;
+
+    if (!strcasecmp ("chanlevel", cmd))
+	tag = MSG_CLIENT_CHANNEL_LEVEL;
+    else if (!strcasecmp ("links", cmd))
+	tag = MSG_CLIENT_LINKS;
+    else if (!strcasecmp ("stats", cmd))
+	tag = MSG_CLIENT_USAGE_STATS;
+    else if (!strcasecmp ("connect", cmd))
+	tag = MSG_CLIENT_CONNECT;
+    else if (!strcasecmp ("disconnect", cmd))
+	tag = MSG_CLIENT_DISCONNECT;
+    else if (!strcasecmp ("killserver", cmd))
+	tag = MSG_CLIENT_KILL_SERVER;
+    else if (!strcasecmp ("register", cmd))
+	tag = MSG_CLIENT_REGISTER_USER;
+    else
+    {
+	send_cmd (con, MSG_SERVER_NOSUCH, "Unknown OperServ command: %s", cmd);
+	return;
+    }
+    if (pkt)
+	len = strlen (pkt);
+    else
+    {
+	/* most of the handler routines expect `pkt' to be non-NULL so pass
+	   a dummy value here */
+	pkt=&ch;
+	len=0;
+    }
+    dispatch_command (con, tag, len, pkt);
+}
+
 /* handles private message commands */
 /* [ :<nick> ] <user> <text> */
 HANDLER (privmsg)
@@ -40,6 +80,13 @@ HANDLER (privmsg)
     if (!pkt)
     {
 	log ("privmsg(): malformed message from %s", sender->nick);
+	return;
+    }
+
+    if (ISUSER (con) && sender->level > LEVEL_USER &&
+	    !strcasecmp(ptr,"operserv"))
+    {
+	operserv(con,pkt);
 	return;
     }
 
