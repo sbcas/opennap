@@ -41,6 +41,7 @@ char *Db_User = 0;
 char *Db_Pass = 0;
 char *Db_Host = 0;
 char *Db_Name = 0;
+char *Listen_Addr = 0;
 char *Server_Name = 0;
 char *Server_Pass = 0;
 unsigned int Server_Ip = 0;
@@ -526,7 +527,7 @@ main (int argc, char **argv)
     int s;			/* server socket */
     int i;			/* generic counter */
     int n;			/* number of ready sockets */
-    int f, pending = 0, port = 0;
+    int f, pending = 0, port = 0, iface = INADDR_ANY;
 #if HAVE_POLL
     struct pollfd *ufd = 0;
     int ufdsize = 0;		/* real number of pollfd structs allocated */
@@ -550,7 +551,7 @@ main (int argc, char **argv)
 		config_file = optarg;
 		break;
 	    case 'l':
-		Interface = inet_addr (optarg);
+		iface = inet_addr (optarg);
 		break;
 	    case 'p':
 		port = atoi (optarg);
@@ -581,6 +582,12 @@ main (int argc, char **argv)
 
     /* load the config file */
     config (config_file ? config_file : SHAREDIR "/config");
+
+    Interface = inet_addr (Listen_Addr);
+    /* if the interface was specified on the command line, override the
+       value from the config file */
+    if (iface != INADDR_ANY)
+	Interface = iface;
 
     /* if a port was specified on the command line, override the value
        specified in the config file */
@@ -623,7 +630,7 @@ main (int argc, char **argv)
 	exit (1);
     }
 
-    log ("listening on port %d", Server_Port);
+    log ("listening on %s port %d", my_ntoa (Interface), Server_Port);
 
 #ifndef HAVE_DEV_RANDOM
     init_random ();

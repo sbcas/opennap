@@ -206,6 +206,7 @@ extern char *Db_Host;
 extern char *Db_User;
 extern char *Db_Pass;
 extern char *Db_Name;
+extern char *Listen_Addr;
 extern char *Server_Name;
 extern char *Server_Pass;
 extern int Server_Port;
