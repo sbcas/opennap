@@ -203,21 +203,29 @@ share_common (USER * user, int fsize /* file size in kbytes */ )
 static void
 insert_datum (DATUM * info, char *av)
 {
-    LIST *tok;
+    LIST *tokens, *ptr;
 
     ASSERT (info != 0);
     ASSERT (av != 0);
 
     /* split the filename into words */
-    info->tokens = tokenize (av);
+    tokens = tokenize (av);
 
     /* add this entry to the hash table for this user's files */
     hash_add (info->user->files, info->filename, info);
     info->refcount++;
 
     /* add this entry to the global file list */
-    for (tok = info->tokens; tok; tok = tok->next)
-	fdb_add (File_Table, tok->data, info);
+    for (ptr = tokens; ptr; ptr = ptr->next)
+	fdb_add (File_Table, ptr->data, info);
+
+#ifdef LESSMEMORY
+    /* we will regenerate this list when we need to compare files in order
+       to reduce memory usage */
+    list_free (tokens, 0);
+#else
+    info->tokens = tokens;
+#endif /* LESSMEMORY */
 
     /* index by md5 hash */
     fdb_add (MD5, info->hash, info);

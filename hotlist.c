@@ -16,6 +16,7 @@ HANDLER (add_hotlist)
     USER *user;
     int i;
 
+    (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("add_hotlist");

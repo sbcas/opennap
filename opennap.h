@@ -225,7 +225,9 @@ typedef struct
     char *filename;	/* the filename */
     char *hash;		/* the md5 hash of the file */
     int size;		/* size of file in bytes */
+#ifndef LESSMEMORY
     LIST *tokens;	/* list of words in the filename */
+#endif /* LESSMEMORY */
 
     short bitrate;
     unsigned short duration;

@@ -27,8 +27,11 @@ typedef struct {
 static int
 search_callback (DATUM *match, SEARCH *parms)
 {
+#if 1
+    /* don't return matches for a user's own files */
     if (match->user == parms->con->user)
         return 0;
+#endif
     if (match->bitrate < parms->minbitrate)
         return 0;
     if (match->bitrate > parms->maxbitrate)
@@ -144,7 +147,11 @@ tokenize (char *s)
             ptr++;
         if (*ptr)
             *ptr++ = 0;
+#ifdef LESSMEMORY
+	t = s; /* don't copy, just reference the string */
+#else
 	t = STRDUP (s);
+#endif
 	if (!t)
 	{
 	    log ("tokenize(): OUT OF MEMORY");
@@ -176,11 +183,13 @@ tokenize (char *s)
     return r;
 }
 
+#ifndef LESSMEMORY
 static void
 free_token (char *ptr)
 {
     FREE (ptr);
 }
+#endif
 
 void
 free_datum (DATUM *d)
@@ -194,7 +203,9 @@ free_datum (DATUM *d)
 	/* no more references, we can free this memory */
 	FREE (d->filename);
 	FREE (d->hash);
+#ifndef LESSMEMORY
 	list_free (d->tokens, (list_destroy_t) free_token);
+#endif
 	FREE (d);
     }
 }
@@ -290,7 +301,7 @@ fdb_search (HASH *table,
 	int (*cb) (DATUM *, SEARCH *),
 	SEARCH *cbdata)
 {
-    LIST *ptok, *last = 0;
+    LIST *ptok;
     FLIST *flist = 0, *tmp;
     DATUM *d;
     int hits = 0;
@@ -312,24 +323,42 @@ fdb_search (HASH *table,
 	return 0;	/* no matches */
     log ("fdb_search(): bin contains %d files", flist->count);
     /* find the list of files which contain all search tokens */
-    ptok = flist->list;
-    while (ptok)
+    for (ptok = flist->list;ptok;ptok=ptok->next)
     {
 	d = (DATUM *) ptok->data;
-	/* see if this entry is still valid */
-	if (d->valid && token_compare (tokens, d->tokens))
-        {
-            /* found match, invoke callback */
-            if (cb (d, cbdata))
-            {
+#ifdef LESSMEMORY
+	if (d->valid)
+	{
+	    /* make a copy since tokenize() destroys the string */
+	    char *filename = STRDUP (d->filename);
+	    LIST *ftok;
+	    int n;
+
+	    /* regenerate the token list for this file */
+	    ftok = tokenize (filename);
+	    n = token_compare (tokens, ftok);
+	    /* cleanup */
+	    list_free (ftok, 0);
+	    FREE (filename);
+	    if (n && cb (d, cbdata))
+	    {
                 /* callback accepted match */
 		hits++;
 		if (hits == maxhits)
                     break;              /* finished */
-            }
-        }
-	last = ptok;
-	ptok = ptok->next;
+	    }
+	}
+#else
+	if (d->valid && token_compare (tokens, d->tokens) &&
+		/* found match, invoke callback */
+		cb (d, cbdata))
+	{
+	    /* callback accepted match */
+	    hits++;
+	    if (hits == maxhits)
+		break;              /* finished */
+	}
+#endif
     }
     return hits;
 }
@@ -476,7 +505,11 @@ HANDLER (search)
 
 done:
 
+#ifdef LESSMEMORY
+    list_free (tokens, 0);
+#else
     list_free (tokens, (list_destroy_t) free_token);
+#endif
 
     /* send end of search result message */
     send_cmd (con, MSG_SERVER_SEARCH_END, "");
