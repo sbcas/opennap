@@ -313,40 +313,62 @@ HANDLER (login)
 	else
 	{
 	    ASSERT (ISSERVER (con));
-	    /* check the timestamp to see which client is older.  the last
-	       one to connect gets killed. when the timestamp is not
-	       available, both clients are killed. */
-	    if (ac >= 10 && (atoi (av[6]) < user->connected))
+	    if(ac>=10)
 	    {
-		/* the user we see logged in after the same user on another
-		   server, so we want to kill the existing user.  we don't
-		   pass this back to the server that we received the login
-		   from because that will kill the legitimate user */
-		pass_message_args (con, MSG_CLIENT_KILL,
-				   ":%s %s \"nick collision\"",
-				   Server_Name, user->nick);
-		notify_mods (KILLLOG_MODE, "%s killed %s: nick collision",
-			     Server_Name, user->nick);
+		/* check the timestamp to see which client is older.  the last
+		   one to connect gets killed. when the timestamp is not
+		   available, both clients are killed. */
+		if (atoi (av[6]) < user->connected)
+		{
+		    /* reject the client that was already logged in since has
+		     an older timestamp */
 
-		if (ISUSER (user->con))
-		    zap_local_user (user->con, "nick collision");
+		    /* the user we see logged in after the same user on another
+		       server, so we want to kill the existing user.  we don't
+		       pass this back to the server that we received the login
+		       from because that will kill the legitimate user */
+		    pass_message_args (con, MSG_CLIENT_KILL,
+			    ":%s %s \"nick collision (%s %s)\"",
+			    Server_Name, user->nick, av[8], user->server);
+		    notify_mods (KILLLOG_MODE,
+			    "%s killed %s: nick collision (%s %s)",
+			    Server_Name, user->nick, av[8], user->server);
+
+		    if (ISUSER (user->con))
+			zap_local_user (user->con, "nick collision");
+		    else
+			hash_remove (Users, user->nick);
+		    /* proceed with login normally */
+		}
 		else
-		    hash_remove (Users, user->nick);
-		/* proceed with login normally */
+		{
+		    /* the client we already know about is older, reject
+		       this login */
+		    log("login(): nick collision for user %s, rejected login from server %s", con->host);
+		    return;
+		}
 	    }
 	    else
 	    {
-		/* ignore the login, local user was connected first */
-		if (ac < 10)
+		/* no timestamp available, reject both clients */
+		notify_mods (KILLLOG_MODE,
+			"%s killed %s: nick collision (no TS from %s)",
+			Server_Name, user->nick, con->host);
+		/* notify other servers of the kill. we don't send the kill
+		   to the server we received the login request from */
+		pass_message_args(con,MSG_CLIENT_KILL,
+			":%s %s \"nick collision (no TS from %s)\"",
+			Server_Name,user->nick,con->host);
+		if(ISUSER(user->con))
 		{
-		    /* ensure the remote client gets killed */
-		    /* TODO: this will go away once everyone upgrades */
-		    send_cmd (con, MSG_CLIENT_KILL,
-			      ":%s %s \"nick collision\"", Server_Name,
-			      user->nick);
-		    notify_mods (KILLLOG_MODE, "%s killed %s: nick collision (%s)",
-				 Server_Name, user->nick, con->host);
+		    user->con->killed = 1;
+		    user->con->destroy = 1;
+		    send_cmd(user->con, MSG_SERVER_NOSUCH,
+			    "You were killed by %s: nick collision",
+			    Server_Name);
 		}
+		else
+		    hash_remove(Users,user->nick);
 		return;
 	    }
 	}
@@ -496,7 +518,8 @@ HANDLER (login)
 	/* only generate this message for local users */
 	if (ISUSER (con))
 	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %u %hu %s",
-			       av[0], user->host, user->conport, Server_Name);
+			       user->nick, user->host, user->conport,
+			       Server_Name);
 #endif
     }
 

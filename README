@@ -176,22 +176,16 @@ specifying what input it expects.
 
 * Extensions to messages
 
-200	search [CLIENT] (deprecated)
-
-	SOUNDEX CONTAINS "..."
-
-		soundex is a way of (loosely) hashing words to find words
-		that "sound" similar.  opennap supports searching for files
-		in this manner
+200	search [CLIENT]
 
 	TYPE <mime-type>
 
-		opennap supports other media types besides mp3.  by default,
-		searches will only match mp3 files.  a client can however
-		search for other media typs by specify either a full or
-		partial MIME content-type, such as "video" or "image/jpeg"
-		(see message 10300 for adding media to the database).  The
-		special keyword `any' will match any media type in the
+		OpenNap supports other media types besides mp3.  By default,
+		searches will only match mp3 files.  A client can however
+		search for other media types by specifying a
+		partial MIME content-type (audio, video, text, application,
+		image).  (See message 10300 for adding media to the database).
+		The special keyword `any' will match any media type in the
 		database.
 
 		The results of the search are returned as with mp3, except
@@ -232,7 +226,7 @@ are implemented as additional functionality in the opennap server.
 	using the MD5 algorithm.  this allows the servers to mutually
 	authenticate without the plaintext passwords traversing the network
 
-10013	user ip [SERVER]
+10013	user ip [SERVER] (deprecated, this info is now appended to msg 2)
 
 	<user> <ip> <port> <server>
 
@@ -331,7 +325,9 @@ are implemented as additional functionality in the opennap server.
 
 10115	show server stats [CLIENT, SERVER]
 
-	server: <clients> <servers> <files> <gigs> <channels> <time> <uptime> <memory>
+	client: no data
+	server: <clients> <servers> <files> <gigs> <channels> <time>
+	<uptime> <memory> <numusers>
 
 	This command is used by administrators to get information about the
 	state of the server.
@@ -346,10 +342,11 @@ are implemented as additional functionality in the opennap server.
 	<uptime>	number of seconds of uptime
 	<memory>	if debugging is enabled, this will show the memory
 			currently in use, otherwise it will be -1
+	<numusers>	number of registered users		
 
 10201	set channel level [CLIENT]
 
-	<channel> <level>
+	Format: <channel> <level>
 
 	sets the minimum user level required to enter <channel> to <level>.
 
@@ -366,19 +363,19 @@ are implemented as additional functionality in the opennap server.
 
 10204	set channel op [CLIENT]
 
-	<channel> <user> [user ...]
+	Format: <channel> <user> [user ...]
 
 	enable <user> to kick/ban users on <channel>
 
 10205	remove channel op [CLIENT]
 
-	<channel> <user> [user ...]
+	Format: <channel> <user> [user ...]
 
 	remove <user> as operator on <channel>
 
 10206	channel op list
 
-	<channel>
+	Format: <channel>
 
 	returns the list of defined channel operators for the given channel
 
@@ -392,7 +389,7 @@ are implemented as additional functionality in the opennap server.
 
 10300	share generic media file [CLIENT]
 
-	"<filename>" <size> <md5> <content-type>
+	Format: "<filename>" <size> <md5> <content-type>
 
 	<content-type> is the MIME type defined for what the data is.  This
 			should be of the form TYPE/SUBTYPE, where TYPE is
