@@ -101,17 +101,14 @@ HANDLER (kill_user)
     /* notify mods+ that this user was killed */
     notify_mods ("%s killed user %s: %s", killernick, user->nick, NONULL (pkt));
 
-    /* notify user they were killed */
-    if (user->con)
-    {
-	send_cmd (user->con, MSG_SERVER_NOSUCH,
-		"you have been killed by %s: %s", killernick, NONULL (pkt));
-    }
-
     /* forcefully close the client connection if local, otherwise remove
        from global user list */
     if (user->con)
     {
+	/* notify user they were killed */
+	send_cmd (user->con, MSG_SERVER_NOSUCH,
+	    "you have been killed by %s: %s", killernick, NONULL (pkt));
+
 	if (user->con == con)
 	    con->destroy = 1; /* elite killed themself? */
 	else

@@ -24,7 +24,8 @@ HANDLER (client_quit)
 	return;
     }
     ASSERT (validate_user (user));
-    ASSERT (user->con == 0);	/* we should never get this message for a
-				   local user */
-    hash_remove (Users, user->nick);
+    if (user->con == 0)
+	hash_remove (Users, user->nick);
+    else
+	log ("client_quit(): recieved QUIT for local user %s!", user->nick);
 }

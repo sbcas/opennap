@@ -63,7 +63,7 @@ HANDLER (download)
 
     /* send a message to the requestee */
     log ("download(): REQEST \"%s\" %s => %s",
-	fields[1], fields[0], user->nick);
+	fields[1], fields[0], con->user->nick);
 
     /* if the client holding the file is a local user, send the request
        directly */

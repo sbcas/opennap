@@ -155,6 +155,10 @@ appropriate, examples of the <data> section for each message are given.
 
 	NAME:%s ADDRESS:%s CITY:%s STATE:%s PHONE:%s AGE:%s INCOME:%s EDUCATION:%s
 
+	Example:
+
+	NAME: kev  ADDRESS:  CITY: ephrata  STATE: pa  PHONE:  AGE: 60 or older INCOME: $100,000 or more        EDUCATION: Graduate Degree
+
 100	client notification of shared file [CLIENT]
 
 	"<filename>" <md5> <size> <bitrate> <frequency> <time>
