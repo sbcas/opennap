@@ -21,7 +21,7 @@ HANDLER (list_users)
     chan = hash_lookup (Channels, pkt);
     if (!chan)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "channel %s does not exist", pkt);
+	nosuchchannel(con);
 	return;
     }
     ASSERT (validate_channel (chan));
@@ -37,7 +37,8 @@ HANDLER (list_users)
     {
 	chanUser = list->data;
 	send_cmd (con, MSG_SERVER_NAMES_LIST /* 825 */, "%s %s %d %d",
-		chan->name, chanUser->nick, chanUser->shared, chanUser->speed);
+		  chan->name, chanUser->nick, chanUser->shared,
+		  chanUser->speed);
     }
 
     send_cmd (con, MSG_SERVER_NAMES_LIST_END /* 830 */, "");

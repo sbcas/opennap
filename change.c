@@ -395,21 +395,11 @@ HANDLER (cloak)
 	permission_denied (con);
 	return;
     }
-    sender->cloaked = !sender->cloaked;
-    if (ISUSER (con))
-    {
-	/* TODO: the strings output from nap indicates that the server should
-	   send the current state back the to client.  however, i don't know
-	   what the numeric is, nor the format */
-	send_cmd (con, 650, "yes");
-	send_cmd (con, 651, "yes");
-	send_cmd (con, 652, "yes");
-	send_cmd (con, 653, "yes");
-	send_cmd (con, 654, "yes");
-	send_cmd (con, 655, "yes");
-	send_cmd (con, 656, "yes");
-	send_cmd (con, 657, "yes");
-	send_cmd (con, 658, "yes");
-    }
+    sender->cloaked = !sender->cloaked;	/* toggle cloak state */
     pass_message_args (con, tag, ":%s", sender->nick);
+    notify_mods(CHANGELOG_MODE,"%s has %scloaked", sender->nick,
+		sender->cloaked ? "" : "de");
+    if (ISUSER (con))
+	send_cmd(con,MSG_SERVER_NOSUCH,"You are %s cloaked",
+		 sender->cloaked ? "now" : "no longer");
 }

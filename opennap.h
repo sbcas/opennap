@@ -573,6 +573,7 @@ int invalid_channel (const char *);
 int ip_glob_match (const char *pattern, const char *ip);
 int is_ip (const char *);
 int is_linked (CONNECTION *, const char *);
+int is_server (const char *);
 int load_bans (void);
 void load_channels (void);
 void log (const char *fmt, ...);

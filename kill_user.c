@@ -68,14 +68,22 @@ HANDLER (kill_user)
 	    log ("kill_user(): too few arguments in server message");
 	    return;
 	}
+	if(!is_server(killernick))
+	{
+	    killer=hash_lookup(Users,killernick);
+	    if(!killer)
+	    {
+		log("kill_user(): could not find user %s",killernick);
+		return;
+	    }
+	}
     }
 
     ac = split_line (av, FIELDS (av), pkt);
     if (ac < 1)
     {
 	log ("kill_user(): missing target user");
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Too few parameters");
+	unparsable(con);
 	return;
     }
 
@@ -84,8 +92,7 @@ HANDLER (kill_user)
     if (!user)
     {
 	log ("kill_user(): could not locate user %s", av[0]);
-	if (ISUSER (con))
-	    nosuchuser (con, av[0]);
+	nosuchuser (con, av[0]);
 	return;
     }
     ASSERT (validate_user (user));
@@ -95,19 +102,14 @@ HANDLER (kill_user)
     {
 	log ("kill_user(): %s has no privilege to kill %s",
 	    killer->nick, user->nick);
-	if (ISUSER (con))
-	    permission_denied (con);
+	permission_denied (con);
 	return;
     }
 
-    if (ac > 1)
-	pass_message_args (con, MSG_CLIENT_KILL, ":%s %s \"%s\"",
-		killernick, user->nick, av[1]);
-    else
-	pass_message_args (con, MSG_CLIENT_KILL, ":%s %s",
-		killernick, user->nick);
-
 #define REASON ((ac > 1) ? av[1] : "")
+
+    pass_message_args (con, MSG_CLIENT_KILL, ":%s %s \"%s\"",
+		       killernick, user->nick, REASON);
 
     /* log this action */
     log ("kill_user(): %s killed %s: %s", killernick, user->nick, REASON);
@@ -122,7 +124,9 @@ HANDLER (kill_user)
 	user->con->destroy = 1;
 	/* notify user they were killed */
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-		  "You have been killed by %s: %s", killernick, REASON);
+		  "You have been killed%s%s: %s",
+		  killer&&killer->cloaked?"":" by ",
+		  killer&&killer->cloaked?"":killernick, REASON);
     }
     /* remote user, just remove from the global list */
     else

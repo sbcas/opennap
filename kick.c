@@ -78,8 +78,11 @@ HANDLER (kick)
     {
 	send_cmd (user->con, MSG_CLIENT_PART, chan->name);
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-		  "You were kicked from channel %s by %s: %s",
-		  chan->name, sender->nick, ac == 3 ? av[2] : "");
+		  "You were kicked from channel %s%s%s: %s",
+		  chan->name,
+		  sender->cloaked?"":" by ",
+		  sender->cloaked?"": sender->nick,
+		  ac == 3 ? av[2] : "");
     }
 
     user->channels = list_delete (user->channels, chan);

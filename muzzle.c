@@ -13,8 +13,8 @@
 /* [ :<nick> ] <user-to-muzzle> [ "<reason>" ] */
 HANDLER (muzzle)
 {
-    USER *user;
-    char *av[2], *sender;
+    USER *user, *sender = 0;
+    char *av[2], *senderName;
     int ac = -1;
     USERDB *db;
 
@@ -30,10 +30,23 @@ HANDLER (muzzle)
 	    return;
 	}
 	pkt++;
-	sender = next_arg (&pkt);
+	senderName = next_arg (&pkt);
+	/* check to see if this was issued by a real user */
+	if(!is_server(senderName))
+	{
+	    sender=hash_lookup(Users,senderName);
+	    if(!sender)
+	    {
+		log("muzzle(): could not find user %s",senderName);
+		return;
+	    }
+	}
     }
     else
-	sender = con->user->nick;
+    {
+	sender = con->user;
+	senderName = sender->nick;
+    }
 
     if (pkt)
 	ac = split_line (av, FIELDS (av), pkt);
@@ -54,9 +67,8 @@ HANDLER (muzzle)
     }
     ASSERT (validate_user (user));
 
-    /* if a local user issued this command, check for privilege to execute */
-    if (ISUSER (con) && con->user->level < LEVEL_ELITE &&
-	user->level >= con->user->level)
+    /* check for privilege to execute */
+    if (sender && sender->level < LEVEL_ELITE && user->level >= sender->level)
     {
 	permission_denied (con);
 	return;
@@ -72,14 +84,13 @@ HANDLER (muzzle)
     }
 
     /* relay to peer servers */
-    if (ac > 1)
-	pass_message_args (con, tag, ":%s %s \"%s\"", sender, user->nick,
-			   av[1]);
-    else
-	pass_message_args (con, tag, ":%s %s", sender, user->nick);
+    pass_message_args (con, tag, ":%s %s \"%s\"", senderName, user->nick,
+			   (ac>1)?av[1]:"");
 
     user->muzzled = 1;
 
+    /* store this permanently in the user db, forcing registration if the
+       user is not already registered */
     db = hash_lookup (User_Db, user->nick);
     if (!db)
     {
@@ -114,10 +125,12 @@ HANDLER (muzzle)
     /* notify the user they have been muzzled */
     if (user->local)
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-		  "You have been muzzled by %s: %s", sender,
+		  "You have been muzzled%s%s: %s",
+		  sender&&sender->cloaked?"":" by ",
+		  sender&&sender->cloaked?"":senderName,
 		  ac > 1 ? av[1] : "");
 
     /* notify mods+ of this action */
-    notify_mods (MUZZLELOG_MODE, "%s has muzzled %s: %s", sender,
+    notify_mods (MUZZLELOG_MODE, "%s has muzzled %s: %s", senderName,
 		 user->nick, ac > 1 ? av[1] : "");
 }

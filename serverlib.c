@@ -286,3 +286,26 @@ nosuchchannel(CONNECTION*con)
     if(ISUSER(con))
 	send_cmd(con,MSG_SERVER_NOSUCH,"no such channel");
 }
+
+/* returns nonzero if `s' is the name of a server */
+int
+is_server (const char *s)
+{
+    LIST *list;
+    CONNECTION *con;
+    LINK *link;
+
+    for(list=Servers;list;list=list->next)
+    {
+	con=list->data;
+	if(!strcasecmp(s,con->host))
+	    return 1;
+    }
+    for(list=Server_Links;list;list=list->next)
+    {
+	link=list->data;
+	if(!strcasecmp(s,link->server) || !strcasecmp(s,link->peer))
+	    return 1;
+    }
+    return 0;
+}

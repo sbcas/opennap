@@ -62,19 +62,17 @@ HANDLER (unmuzzle)
 	db->muzzled = 0;
 
     /* relay to peer servers */
-    if (ac > 1)
-	pass_message_args (con, tag, ":%s %s \"%s\"",
-			   sender->nick, user->nick, av[1]);
-    else
-	pass_message_args (con, tag, ":%s %s",
-			   sender->nick, user->nick);
+    pass_message_args (con, tag, ":%s %s \"%s\"",
+		       sender->nick, user->nick, (ac>1)?av[1]:"");
 
     notify_mods (MUZZLELOG_MODE, "%s unmuzzled %s: %s", sender->nick,
 		 user->nick, ac > 1 ? av[1] : "");
 
-    /* notify the user they have been unmuzzled */
-    if (user->local)
+    /* notify the user they have been unmuzzled if local */
+    if (ISUSER (user->con))
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-		  "You have been unmuzzled by %s: %s", sender->nick,
+		  "You have been unmuzzled%s%s: %s",
+		  sender->cloaked?"":" by ",
+		  sender->cloaked?"":sender->nick,
 		  ac > 1 ? av[1] : "");
 }
