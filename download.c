@@ -6,10 +6,15 @@
 
 #ifndef WIN32
 #include <unistd.h>
+#else
+#include <windows.h>
 #endif /* !WIN32 */
 #include <stdio.h>
+#include <mysql.h>
 #include "opennap.h"
 #include "debug.h"
+
+extern MYSQL *Db;
 
 /* 203 <nick> <filename> */
 /* 500 <nick> <filename> */
@@ -242,6 +247,9 @@ HANDLER (queue_limit)
 {
     char *av[3];
     USER *sender, *recip;
+    MYSQL_RES	*result;
+    MYSQL_ROW	row;
+    char path[256];
 
     (void) tag;
     (void) len;
@@ -271,9 +279,28 @@ HANDLER (queue_limit)
     if (recip->con)
     {
 	/* locally connected, deliver final message */
+
+	/* look up the filesize in the db */
+	fudge_path(av[1],path,sizeof(path));
+	snprintf (Buf, sizeof (Buf),
+		"SELECT size FROM library WHERE owner='%s' && filename='%s'",
+		sender->nick, path);
+	if (mysql_query (Db, Buf) != 0)
+	{
+	    sql_error ("queue_limit", Buf);
+	    if (con->class == CLASS_USER)
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			"could not locate \"%s\" in the db", av[1]);
+	    return;
+	}
+	result = mysql_store_result (Db);
+	ASSERT (result != 0);
+	row = mysql_fetch_row (result);
+	ASSERT (row != 0);
 	ASSERT (validate_connection (recip->con));
-	send_cmd (recip->con, MSG_SERVER_LIMIT, "%s \"%s\" %s",
-		sender->nick, av[1], av[2]);
+	send_cmd (recip->con, MSG_SERVER_LIMIT, "%s \"%s\" %s %s",
+		sender->nick, av[1], row[0], av[2]);
+	mysql_free_result (result);
     }
     else if (Num_Servers && con->class == CLASS_USER)
     {

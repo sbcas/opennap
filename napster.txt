@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-February 11, 2000
+February 16, 2000
 
 0.  Forward
 
@@ -682,13 +682,38 @@ appropriate, examples of the <data> section for each message are given.
 
 	Help 50 OpenNap help channel
 
-619	??? [CLIENT]
+619	queue limit [CLIENT]
 
 	<nick> "<filename>" <n>
 
-620	??? [SERVER]
+	a client may limit the number of downloads from a particular client.
+	once the limit for a particular user has been reached, the uploading
+	client can send this message to notify the downloader that they
+	have hit the limit and can't have any more simultaneous downloads.
+	<nick> is the user who hit the limit, <filename> is the file they
+	were trying to download when they hit the limit, and <n> is the
+	number of simultaneous downloads allowed.
+
+	Example:
+
+	joebob "C:\MP3\Generic Band - Generic Song.mp3" 3
+
+620	queue limit [SERVER]
 
 	<nick> "<filename>" <filesize> <digit>
+
+	This message is sent by the server in response to the 619 client
+	request, when one user needs to notify another that they have
+	reached the maximum allowed simultaneous downloads.  When the server
+	recieves the 619 request from the uploading client, it sends the 620
+	message to the downloading client.  The only difference in format is
+	the addition of the <nick> field in the 620 message which specifies
+	the username of the uploading agent which is notifying the
+	downloader that the queue is full.
+
+	Example:
+
+	joebob "C:\MP3\Generic Band - Generic Song.mp3" 1234567 3
 
 621	message of the day [CLIENT, SERVER]
 
