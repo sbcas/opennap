@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-May 8, 2000
+May 24, 2000
 
 0.  Foreward
 
@@ -65,11 +65,11 @@ appropriate, examples of the <data> section for each message are given.
 
 0	error message [SERVER]
 
-	<message>
+	Format: <message>
 
-2	client login message [CLIENT]
+2	login [CLIENT]
 
-	<username> <password> <port> "<client-info>" <link-type> [ <num> ]
+	Format: <nick> <password> <port> "<client-info>" <link-type> [ <num> ]
 
 	<port> is the port the client is listening on for data transfer.  if
 		this value is 0, it means that the client is behind a firewall
@@ -96,7 +96,7 @@ appropriate, examples of the <data> section for each message are given.
 
 3	login ack [SERVER]
 
-	<email>
+	Format: <email>
 
 	the server sends this message to the client after a succesful
 	login (2).  If the nick is registered, the <email> address given at
@@ -105,7 +105,7 @@ appropriate, examples of the <data> section for each message are given.
 
 4       version check [CLIENT]
 
-        <version>
+        Format: <version>
 
 	Server sends [5] if an update is needed. All other responses are
 	ignored.
@@ -152,12 +152,15 @@ appropriate, examples of the <data> section for each message are given.
 	[This section was contributed by Thomas van der Heijden <thom@bart.nl>
 	-ed]
 
-6	alternate login format [CLIENT]
+6	new user login [CLIENT]
 
-	this message is used when logging in for the first time after
-	registering (0x07) a nick
+	Format: <nick> <pass> <port> "<client-info>" <speed> <email-address>
 
-	<nick> <pass> <port> "<client-info>" <linkspeed> <email-address>
+	This message is used when logging in for the first time to register
+	a new nickname.  The client normally checks for an unused nick using
+	the "check nickname" (7) message and upon receipt of a "nickname not
+	registered" (8) from the server will proceceed to log in with this
+	command.
 
 	note: this message is similar to the 0x02 message, with the addition	
 	of <email-address> on the end
@@ -166,38 +169,48 @@ appropriate, examples of the <data> section for each message are given.
 
 	foo foo 6699 "nap v0.8" 3 email@here.com
 
-7	client registration message [CLIENT]
+7	nick check [CLIENT]
 
-	<nick>
+	Format: <nick>
 
-	this message is sent to create an account
+	Queries the server to see if <nick> is already registered.  This
+	message is typically used prior to logging in for the first time to
+	check for a valid nickname.
 
-	response to this message is one of 8, 9 or 10
+	Response to this message is one of 8, 9 or 10
 
-8	registration success [SERVER]
+8	nickname not registered [SERVER]
 
-	the server sends this when the clients request to register a new
-	nickname has succeeded.
+	Format: (empty)
+
+	The server sends this message in response to the "nick check" (7)
+	message to indicate that the specified nickname is not already
+	registered and is ok to use.
 
 9	nickname already registered [SERVER]
 
-	the server sends this message when the nickname the client has
+	Format: (empty)
+
+	The server sends this message when the nickname the client has
 	requested has already been registered by another user
 
 10	invalid nickname [SERVER]
 
-	this server sends this message when the client attempts register
-	an invalid nickname [what defines an invalid nickname? -ed]
+	Format: (empty)
+
+	This server sends this message in response to the "check nickname"
+	(7) messages when the specified nickname is invalid, usually due to
+	bad characters such as spaces or other non-printable characters.
 
 11	??? [CLIENT]
 
-	<nick> <pass>
+	Format: <nick> <pass>
 
 	[returns "parameters are unparsable" -ed]
 
 12	??? [SERVER]
 
-	no data.
+	Format: (empty)
 
 	this message is returned in response to message 11 from the client
 
