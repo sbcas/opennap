@@ -73,6 +73,14 @@ compute_soundex (char *d, int dsize, const char *s)
     }
     dsize--; /* save room for the terminatin nul (\0) */
 
+    while (*s && !isalpha(*s))
+	s++;
+    if (!*s)
+    {
+	*d = 0;
+	return;
+    }
+
     *d++ = toupper (*s);
     dsize--;
     s++;
@@ -219,6 +227,8 @@ HANDLER (add_file)
     p = strrchr (field[0], '\\');
     if (!p)
 	p = field[0];
+    else
+	p++; /* skip the backslash */
     compute_soundex (soundex, sizeof (soundex), p);
 
     /* form the SQL request */
