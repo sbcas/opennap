@@ -124,7 +124,8 @@ HANDLER (level)
 	char email[64];
 
 	/* no local user db entry.  this nick probably should be registered */
-	log ("level(): %s is not locally registered, creating entry");
+	log ("level(): %s is not locally registered, creating entry",
+		user->nick);
 	db = CALLOC (1, sizeof (USERDB));
 	if (!db)
 	{
