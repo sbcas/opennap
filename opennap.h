@@ -356,6 +356,7 @@ size_t read_bytes (int, char *, size_t);
 void remove_connection (CONNECTION *);
 void remove_user (CONNECTION *);
 void send_cmd (CONNECTION *, unsigned long msgtype, const char *fmt, ...);
+int set_keepalive (int, int);
 int set_nonblocking (int);
 int split_line (char **template, int templatecount, char *pkt);
 void show_motd (CONNECTION * con);

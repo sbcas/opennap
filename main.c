@@ -587,6 +587,7 @@ main (int argc, char **argv)
 		add_client (cli);
 
 		set_nonblocking (f);
+		set_keepalive (f, 1); /* enable tcp keepalive messages */
 
 		/* make sure this ip is not banned */
 		for (i = 0; i < Ban_Size; i++)

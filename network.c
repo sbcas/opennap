@@ -59,6 +59,18 @@ new_tcp_socket (void)
 }
 
 int
+set_keepalive (int f, int on)
+{
+    if (setsockopt (f, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof (on)) == -1)
+    {
+	log ("set_keepalive(): setsockopt: %s (errno %d).",
+		strerror (errno), errno);
+	return -1;
+    }
+    return 0;
+}
+
+int
 make_tcp_connection (const char *host, int port, unsigned long *ip)
 {
     struct sockaddr_in sin;
@@ -75,6 +87,8 @@ make_tcp_connection (const char *host, int port, unsigned long *ip)
 	return -1;
     if (set_nonblocking (f) == -1)
 	return -1;
+    /* turn on TCP/IP keepalive messages */
+    set_keepalive (f, 1);
     log ("make_tcp_connection(): connecting to %s:%hu...",
 	    inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
     if (connect (f, (struct sockaddr*) &sin, sizeof (sin)) < 0)

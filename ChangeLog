@@ -50,6 +50,8 @@ if a 404 message is received from another server, it is sent to all mods+
 
 fixed kill_user() so elites can kill other elites
 
+enabled tcp keepalive messages for client connections
+
 Changes from 0.08
 =================
 
