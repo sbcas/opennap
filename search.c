@@ -12,6 +12,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include "opennap.h"
+#include "debug.h"
 
 extern MYSQL *Db;
 
@@ -58,6 +59,8 @@ HANDLER (search)
     size_t l;
     USER *user;
     char quoted[128];
+
+    ASSERT (validate_connection (con));
 
     CHECK_USER_CLASS ("search");
 
@@ -187,7 +190,7 @@ HANDLER (search)
 	}
 
 	send_cmd (con, MSG_SERVER_SEARCH_RESULT,
-		  "\"%s\" %s %s %s %s %s %s %d %d", row[IDX_FILENAME],	/* filename */
+		  "\"%s\" %s %s %s %s %s %s %lu %d", row[IDX_FILENAME],	/* filename */
 		  row[IDX_MD5],	/* md5 */
 		  row[IDX_SIZE],	/* size */
 		  row[IDX_BITRATE],	/* bitrate */

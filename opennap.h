@@ -232,6 +232,7 @@ typedef struct _ban {
 #define MSG_SERVER_PING			751
 #define MSG_CLIENT_PONG			752
 #define MSG_SERVER_PONG			752
+#define MSG_CLIENT_SERVER_CONFIG	810
 #define MSG_SERVER_NAMES_LIST		825
 #define MSG_SERVER_NAMES_LIST_END	830
 #define MSG_CLIENT_NAMES_LIST		830
@@ -266,6 +267,7 @@ extern char *Server_Pass;
 extern int Server_Port;
 extern int SigCaught;	/* flag to control main loop */
 extern int Max_User_Channels;	/* # of channels is a user allowed to join */
+extern int Stat_Click;
 
 extern unsigned long Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
@@ -298,15 +300,17 @@ void set_val (char *d, unsigned short val);
 void add_client (CONNECTION *);
 void add_server (CONNECTION *);
 void *array_add (void *, int *, void *);
-int array_remove (void *, int *, void *);
+void *array_remove (void *, int *, void *);
 void close_db (void);
 void config (const char *);
+void config_defaults (void);
 void expand_hex (char *, int);
 void free_ban (BAN *);
 void free_channel (CHANNEL *);
+void free_config (void);
 void free_hotlist (HOTLIST *);
 void free_user (USER *);
-void fudge_path (const char *, char *);
+void fudge_path (const char *, char *, int);
 char *generate_nonce (void);
 int init_db (void);
 void log (const char *fmt, ...);
@@ -372,6 +376,7 @@ HANDLER (remove_hotlist);
 HANDLER (remove_server);
 HANDLER (resume);
 HANDLER (search);
+HANDLER (server_config);
 HANDLER (server_connect);
 HANDLER (server_disconnect);
 HANDLER (server_login);

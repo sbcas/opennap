@@ -16,11 +16,9 @@ HANDLER (resume)
     MYSQL_ROW row;
     USER *user;
 
-    if (con->class != CLASS_USER)
-    {
-	log ("resume(): not USER class");
-	return;
-    }
+    ASSERT (validate_connection (con));
+
+    CHECK_USER_CLASS ("resume");
 
     if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 2)
     {

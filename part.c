@@ -15,16 +15,16 @@ HANDLER (part)
     CHANNEL *chan = 0;
     USER *user;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &user) != 0)
 	return;
-    ASSERT(VALID(user));
+    ASSERT (validate_user (user));
 
     /* find the requested channel in the user's  list */
     for (i = 0; i < user->numchannels; i++)
     {
-	ASSERT (VALID (user->channels[i]));
+	ASSERT (validate_channel (user->channels[i]));
 	if (strcmp (pkt, user->channels[i]->name) == 0)
 	{
 	    chan = user->channels[i];
@@ -39,7 +39,7 @@ HANDLER (part)
 	return;
     }
 
-    array_remove (user->channels, &user->numchannels, chan);
+    user->channels = array_remove (user->channels, &user->numchannels, chan);
 
     /* if local, notify our peer servers that this client has parted */
     if (con->class == CLASS_USER && Num_Servers)

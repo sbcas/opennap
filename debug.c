@@ -241,7 +241,12 @@ debug_strdup (const char *s, const char *file, int line)
 
 /* check to see if a pointer is valid */
 int
-debug_valid (void *ptr)
+debug_valid (void *ptr, size_t len)
 {
-    return (find_block (ptr) != 0);
+    BLOCK * block = find_block (ptr);
+
+    if (!block)
+	return 0; /* not found */
+    /* ensure that there are at least `len' bytes available */
+    return ((len <= block->len));
 }

@@ -19,7 +19,7 @@ HANDLER (whois)
     char *chanlist;
     time_t online;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("whois");
     user = hash_lookup (Users, pkt);
     if (!user)

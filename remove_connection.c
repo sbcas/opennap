@@ -41,8 +41,8 @@ remove_connection (CONNECTION *con)
 	/* if this user had hotlist entries, remove them from the lists */
 	for (i = 0; i < con->hotlistsize; i++)
 	{
-	    array_remove (con->hotlist[i]->users, &con->hotlist[i]->numusers,
-		con);
+	    con->hotlist[i]->users = array_remove (con->hotlist[i]->users,
+		    &con->hotlist[i]->numusers, con);
 	    if (con->hotlist[i]->numusers == 0)
 		hash_remove (Hotlist, con->hotlist[i]->nick);
 	}
@@ -65,7 +65,7 @@ remove_connection (CONNECTION *con)
 	log ("remove_connection(): server split detected (%s)", con->host);
 	notify_mods ("server %s has split.", con->host);
 
-	array_remove (Servers, &Num_Servers, con);
+	Servers = array_remove (Servers, &Num_Servers, con);
 
 	/* remove all users that were behind this server from the hash table.
 	   this should be an infrequent enough occurance than iterating the

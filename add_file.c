@@ -81,7 +81,7 @@ HANDLER (add_file)
 
     /* sql will take DOS path names with backslashes to mean the escape
        char, so we have to escape them here */
-    fudge_path (field[0], path);
+    fudge_path (field[0], path, sizeof (path));
 
     /* form the SQL request */
     snprintf (Buf, sizeof (Buf),
@@ -95,7 +95,9 @@ HANDLER (add_file)
 	return;
     }
 
+#if 0
     log ("add_file(): user %s added file %s", user->nick, path);
+#endif
 
     user->shared++;
 

@@ -319,7 +319,7 @@ array_add (void *list, int *listsize, void *ptr)
 
 /* removes `ptr' from the array `list'.  note that this does not reclaim
    the space left over, it just shifts down the remaining entries */
-int
+void *
 array_remove (void *list, int *listsize, void *ptr)
 {
     int i;
@@ -334,68 +334,79 @@ array_remove (void *list, int *listsize, void *ptr)
 	    if (i < *listsize - 1)
 		memmove (&plist[i], &plist[i + 1], sizeof (char *) * (*listsize - i - 1));
 	    --*listsize;
-	    return 0;
+	    break;
 	}
     }
-    return -1; /* not found */
+    list = REALLOC (list, *listsize * sizeof (char *));
+    return list;
 }
 
 void
-fudge_path (const char *in, char *out)
+fudge_path (const char *in, char *out, int outsize)
 {
-    while (*in)
+    while (*in && outsize > 1)
     {
-	if(*in=='\\'||*in=='\'')
-	    *out++='\\';
-	*out++=*in++;
+	if (*in == '\\' || *in=='\'')
+	{
+	    *out++ = '\\';
+	    outsize--;
+	}
+	*out++ = *in++;
+	outsize--;
     }
-    *out=0;
+    *out = 0;
 }
 
 #ifdef DEBUG
 int
 validate_connection (CONNECTION *con)
 {
-    if (! VALID (con))
-	return 0;
-    if (con->magic != MAGIC_CONNECTION)
-	return 0;
-#if 0
-    if (! VALID (con->host))
-	return 0;
-    if (con->sendbuf && ! VALID (con->sendbuf))
-	return 0;
-#endif
+    ASSERT_RETURN_IF_FAIL (VALID_LEN (con, sizeof (CONNECTION)), 0);
+    ASSERT_RETURN_IF_FAIL (con->magic == MAGIC_CONNECTION, 0);
+    ASSERT_RETURN_IF_FAIL ((con->class == CLASS_USER) ^ (con->user == 0), 0);
+    ASSERT_RETURN_IF_FAIL (VALID (con->host), 0);
+    ASSERT_RETURN_IF_FAIL ((con->recvdata != 0) ^ (con->recvdatamax == 0), 0);
+    ASSERT_RETURN_IF_FAIL (con->recvdatamax == 0 || VALID_LEN (con->recvdata, con->recvdatamax), 0);
+    ASSERT_RETURN_IF_FAIL (con->recvbytes <= con->recvdatamax, 0);
+    ASSERT_RETURN_IF_FAIL ((con->sendbuf != 0) ^ (con->sendbufmax == 0), 0);
+    ASSERT_RETURN_IF_FAIL (con->sendbufmax == 0 || VALID_LEN (con->sendbuf, con->sendbufmax), 0);
+    ASSERT_RETURN_IF_FAIL (con->sendbuflen <= con->sendbufmax, 0);
+    ASSERT_RETURN_IF_FAIL (con->hotlistsize == 0 || VALID_LEN (con->hotlist, sizeof (HOTLIST *) * con->hotlistsize), 0);
     return 1;
 }
 
 int
 validate_user (USER *user)
 {
-    if (!VALID(user))
-	return 0;
-    if (user->magic != MAGIC_USER)
-	return 0;
+    ASSERT_RETURN_IF_FAIL (VALID_LEN (user, sizeof (USER)), 0);
+    ASSERT_RETURN_IF_FAIL (user->magic == MAGIC_USER, 0);
+    ASSERT_RETURN_IF_FAIL (VALID (user->nick), 0);
+    ASSERT_RETURN_IF_FAIL (VALID (user->clientinfo), 0);
+    ASSERT_RETURN_IF_FAIL (user->email == 0 || VALID (user->email), 0);
+    ASSERT_RETURN_IF_FAIL ((user->channels != 0) ^ (user->numchannels == 0), 0);
+    ASSERT_RETURN_IF_FAIL (user->numchannels == 0 || VALID_LEN (user->channels, sizeof (USER *) * user->numchannels), 0);
     return 1;
 }
 
 int
 validate_channel (CHANNEL *chan)
 {
-    if (!VALID(chan))
-	return 0;
-    if (chan->magic != MAGIC_CHANNEL)
-	return 0;
+    ASSERT_RETURN_IF_FAIL (VALID_LEN (chan, sizeof (CHANNEL)), 0);
+    ASSERT_RETURN_IF_FAIL (chan->magic == MAGIC_CHANNEL, 0)
+    ASSERT_RETURN_IF_FAIL (VALID (chan->name), 0);
+    ASSERT_RETURN_IF_FAIL ((chan->users != 0) ^ (chan->numusers == 0), 0);
+    ASSERT_RETURN_IF_FAIL (chan->numusers == 0 || VALID_LEN (chan->users, sizeof (USER *) * chan->numusers), 0);
     return 1;
 }
 
 int
 validate_hotlist (HOTLIST *h)
 {
-    if (!VALID(h))
-	return 0;
-    if (h->magic != MAGIC_HOTLIST)
-	return 0;
+    ASSERT_RETURN_IF_FAIL (VALID_LEN (h, sizeof (HOTLIST)), 0);
+    ASSERT_RETURN_IF_FAIL (h->magic == MAGIC_HOTLIST, 0);
+    ASSERT_RETURN_IF_FAIL (VALID (h->nick), 0);
+    ASSERT_RETURN_IF_FAIL ((h->users != 0) ^ (h->numusers == 0), 0);
+    ASSERT_RETURN_IF_FAIL (h->numusers == 0 || VALID_LEN (h->users, sizeof (CONNECTION *) * h->numusers), 0);
     return 1;
 }
 #endif
@@ -404,6 +415,7 @@ USER *
 new_user (void)
 {
     USER *u = CALLOC (1, sizeof (USER));
+
 #ifdef DEBUG
     u->magic = MAGIC_USER;
 #endif
@@ -414,6 +426,7 @@ CHANNEL *
 new_channel (void)
 {
     CHANNEL *c = CALLOC (1, sizeof (CHANNEL));
+
 #ifdef DEBUG
     c->magic = MAGIC_CHANNEL;
 #endif
@@ -424,6 +437,7 @@ HOTLIST *
 new_hotlist (void)
 {
     HOTLIST *h = CALLOC (1, sizeof (HOTLIST));
+
 #ifdef DEBUG
     h->magic = MAGIC_HOTLIST;
 #endif
@@ -434,6 +448,7 @@ CONNECTION *
 new_connection (void)
 {
     CONNECTION *c = CALLOC (1, sizeof (CONNECTION));
+
 #ifdef DEBUG
     c->magic = MAGIC_CONNECTION;
 #endif
@@ -444,7 +459,8 @@ char *
 my_ntoa (unsigned long ip)
 {
     struct in_addr a;
-    memset(&a,0,sizeof(a));
+
+    memset (&a, 0, sizeof (a));
     a.s_addr = ip;
     return (inet_ntoa (a));
 }

@@ -11,7 +11,7 @@ ping_wrapper (CONNECTION *con, char *pkt, int msg)
 {
     USER *orig, *user;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &orig) != 0)
 	return;
@@ -26,27 +26,22 @@ ping_wrapper (CONNECTION *con, char *pkt, int msg)
 	}
 	return;
     }
+    ASSERT (validate_user (user));
 
-    if (user->con)
-    {
-	/* local user */
+    if (user->con) /* local user */
 	send_cmd (user->con, msg, "%s", orig->nick);
-    }
-    else if (con->class == CLASS_USER)
-    {
-	/* remote user */
+    else if (con->class == CLASS_USER) /* remote user */
 	send_cmd (user->serv, msg, ":%s %s", orig->nick, user->nick);
-    }
 }
 
 HANDLER (ping)
 {
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
     ping_wrapper (con, pkt, MSG_SERVER_PING);
 }
 
 HANDLER (pong)
 {
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
     ping_wrapper (con, pkt, MSG_SERVER_PONG);
 }

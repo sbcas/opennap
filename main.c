@@ -20,9 +20,6 @@
 #include "opennap.h"
 #include "debug.h"
 
-/* interval at which we send server stats to our clients (in seconds) */
-#define UPDATE_CLICK 60
-
 /*
 ** Global Variables
 */
@@ -35,7 +32,9 @@ char *Db_Name = 0;
 char *Server_Name = 0;
 char *Server_Pass = 0;
 unsigned long Server_Flags = 0;
-int Max_User_Channels = 5;	/* default, can be changed in config */
+int Max_User_Channels;		/* default, can be changed in config */
+int Stat_Click;			/* interval (in seconds) to send server stats */
+int Server_Port;		/* which port to listen on for connections */
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;
@@ -55,7 +54,6 @@ int Num_Servers = 0;
 
 int Num_Files = 0;
 int Num_Gigs = 0;		/* in kB */
-int Server_Port = 8888;		/* default */
 int SigCaught = 0;
 char Buf[1024];			/* global scratch buffer */
 
@@ -141,6 +139,7 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_SETUSERLEVEL, level },
     { MSG_CLIENT_PING, ping }, /* 751 */
     { MSG_CLIENT_PONG, pong }, /* 752 */
+    { MSG_CLIENT_SERVER_CONFIG, server_config }, /* 810 */
     { MSG_CLIENT_NAMES_LIST, list_users }, /* 830 */
 
     /* non-standard messages */
@@ -297,7 +296,7 @@ handle_connection (CONNECTION *con)
 }
 
 static void
-defaults (void)
+lookup_hostname (void)
 {
     struct hostent *he;
 
@@ -312,12 +311,6 @@ defaults (void)
 	Server_Name = STRDUP (Buf);
     }
     endhostent();
-
-    Motd_Path = STRDUP (SHAREDIR "/motd");
-    Db_Host = STRDUP ("localhost");
-    Db_User = STRDUP ("mp3");
-    Db_Name = STRDUP ("mp3");
-    Db_Pass = STRDUP ("passtest");
 }
 
 static void
@@ -395,7 +388,7 @@ main (int argc, char **argv)
     char *config_file = 0;
     socklen_t sinsize;
     time_t next_update = 0;
-    struct timeval t = { UPDATE_CLICK, 0 };
+    struct timeval t;
 
     while ((n = getopt (argc, argv, "c:hp:v")) != EOF)
     {
@@ -422,7 +415,8 @@ main (int argc, char **argv)
     log ("version %s starting", VERSION);
 
     /* load default configuration values */
-    defaults();
+    config_defaults ();
+    lookup_hostname ();
 
     memset (&sa, 0, sizeof (sa));
     sa.sa_handler = sighandler;
@@ -518,14 +512,8 @@ main (int argc, char **argv)
 
 	Num_Clients = n; /* actual number of clients */
 
-#ifdef linux
-	/* under linux, select() modifies this to return the amount of time
-	   not slept, so we have to reset the value.  for some strange
-           reason, signals get blocked if you don't reset this value
-	   anyone know why? */
-	t.tv_sec = UPDATE_CLICK;
+	t.tv_sec = Stat_Click;
 	t.tv_usec = 0;
-#endif /* linux */
 
 	n = select (maxfd + 1, &set, NULL, NULL, &t);
 
@@ -600,7 +588,7 @@ main (int argc, char **argv)
 	if (next_update < time (0))
 	{
 	    update_stats ();
-	    next_update = time (0) + UPDATE_CLICK;
+	    next_update = time (0) + Stat_Click;
 	}
 
 	/* write out data for our clients now */
@@ -647,14 +635,8 @@ main (int argc, char **argv)
     if (Ban)
 	FREE (Ban);
 
-    FREE (Db_Host);
-    FREE (Db_User);
-    FREE (Db_Pass);
-    FREE (Db_Name);
-    FREE (Motd_Path);
-    FREE (Server_Name);
-    if (Server_Pass)
-	FREE (Server_Pass);
+    /* free up memory associated with global configuration variables */
+    free_config ();
 
     /* this displays a list of leaked memory.  pay attention to this. */
     CLEANUP ();

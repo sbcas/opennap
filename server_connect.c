@@ -176,7 +176,7 @@ HANDLER (server_disconnect)
     notify_mods ("%s disconnected server %s: %s", user->nick,
 	reason ? reason : "");
     serv = Servers[i];
-    array_remove (Servers, &Num_Servers, Servers[i]);
+    Servers = array_remove (Servers, &Num_Servers, Servers[i]);
     remove_connection (serv);
 }
 

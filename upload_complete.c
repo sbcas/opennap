@@ -42,7 +42,7 @@ HANDLER (upload_ok)
     if (con->class == CLASS_USER || recip->con)
     {
 	/* pull the has from the data base */
-	fudge_path(field[1],path);
+	fudge_path(field[1],path, sizeof (path));
 	snprintf (Buf, sizeof (Buf), "SELECT md5 FROM library WHERE owner = '%s' && filename = '%s'",
 		sender->nick, path);
 	if(mysql_query(Db,Buf)!=0)

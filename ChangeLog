@@ -3,6 +3,16 @@ Changes from 0.09
 
 added `max_user_channels' as a configuration option
 
+added additional integrity checking to the validate_*() functions in
+debug mode
+
+server variables can be dynamically changed using the 810 client message
+(colten edwards)
+
+login() should ensure that the given speed is in the 0-10 range
+
+search() was sending the host using %d instead of %lu
+
 Changes from 0.08
 =================
 

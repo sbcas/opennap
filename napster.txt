@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-January 19, 2000
+January 24, 2000
 
 0.  Forward
 
@@ -675,6 +675,10 @@ appropriate, examples of the <data> section for each message are given.
 	Example:
 
 	Help 50 OpenNap help channel
+
+620	??? [SERVER]
+
+	<nick> "<filename>" <filesize> <digit>
 
 621	message of the day.  sent after client login [SERVER]
 

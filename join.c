@@ -23,12 +23,12 @@ HANDLER (join)
 	return;
     ASSERT (validate_user (user));
 
-    /* enforce a maximum of 5 channels per user */
-    if (user->numchannels > 4)
+    /* enforce a maximum channels per user */
+    if (user->numchannels > Max_User_Channels)
     {
 	if (con->class == CLASS_USER)
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		"maximum number of channels is 5.");
+		"maximum number of channels is %d.", Max_User_Channels);
 	return;
     }
 

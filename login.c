@@ -20,7 +20,7 @@ HANDLER (login)
     char *field[6];
     USER *user;
     HOTLIST *hotlist;
-    int i, numfields;
+    int i, numfields, speed;
 
     ASSERT (validate_connection (con));
 
@@ -28,6 +28,12 @@ HANDLER (login)
     if (numfields < 5)
     {
 	log ("login(): too few fields in message");
+	return;
+    }
+    speed = atoi (field[4]);
+    if (speed < 0 || speed > 10)
+    {
+	send_cmd (con, MSG_SERVER_NOSUCH, "%d is an invalid speed.", speed);
 	return;
     }
 
@@ -92,7 +98,7 @@ HANDLER (login)
     user->nick = STRDUP (field[0]);
     user->port = atoi (field[2]);
     user->clientinfo = STRDUP (field[3]);
-    user->speed = atoi (field[4]);
+    user->speed = speed;
     user->connected = time (0);
     user->level = LEVEL_USER;
     if (numfields > 5)

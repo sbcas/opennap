@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #define ASSERT(x) {if(!(x)){printf("assertion failed in %s, line %d: %s\n",__FILE__,__LINE__,#x);}}
+#define ASSERT_RETURN_IF_FAIL(x,r) {if(!(x)){printf("assertion failed in %s, line %d: %s\n",__FILE__,__LINE__,#x);return(r);}}
 
 #include <sys/types.h>
 
@@ -18,7 +19,8 @@
 #define CALLOC(n,s) debug_calloc(n,s,__FILE__,__LINE__)
 #define STRDUP(s) debug_strdup(s,__FILE__,__LINE__)
 #define CLEANUP debug_cleanup
-#define VALID debug_valid
+#define VALID(p) debug_valid(p,1)
+#define VALID_LEN debug_valid
 
 /* internal functions, DO NOT CALL DIRECTLY -- use the above macros */
 void debug_free (void *, const char *, int);
@@ -27,7 +29,7 @@ void *debug_calloc (size_t, size_t, const char *, int);
 void *debug_realloc (void *, size_t, const char *, int);
 char *debug_strdup (const char *, const char *, int);
 void debug_cleanup (void);
-int debug_valid (void *);
+int debug_valid (void *, size_t);
 
 #else
 
@@ -37,7 +39,8 @@ int debug_valid (void *);
 #define REALLOC realloc
 #define STRDUP strdup
 #define CLEANUP
-#define VALID
+#define VALID(p)
+#define VALID_LEN(p,l)
 
 #endif /* DEBUG */
 

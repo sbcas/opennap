@@ -108,17 +108,6 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = gtar
 GZIP_ENV = --best
-DEP_FILES =  .deps/add_file.P .deps/announce.P .deps/ban.P \
-.deps/browse.P .deps/change.P .deps/client_quit.P .deps/config.P \
-.deps/db.P .deps/debug.P .deps/download.P .deps/free_user.P \
-.deps/hash.P .deps/hotlist.P .deps/join.P .deps/kill_user.P \
-.deps/level.P .deps/list_channels.P .deps/list_users.P .deps/login.P \
-.deps/main.P .deps/md5c.P .deps/metaserver.P .deps/motd.P \
-.deps/muzzle.P .deps/part.P .deps/part_channel.P .deps/ping.P \
-.deps/privmsg.P .deps/public.P .deps/remove_connection.P \
-.deps/remove_file.P .deps/resume.P .deps/search.P \
-.deps/server_connect.P .deps/server_login.P .deps/synch.P .deps/topic.P \
-.deps/unmuzzle.P .deps/upload_complete.P .deps/util.P .deps/whois.P
 SOURCES = $(opennap_SOURCES) $(metaserver_SOURCES)
 OBJECTS = $(opennap_OBJECTS) $(metaserver_OBJECTS)
 
@@ -126,9 +115,9 @@ all: all-redirect
 .SUFFIXES:
 .SUFFIXES: .S .c .o .s
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu Makefile
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps Makefile
 
-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
@@ -164,6 +153,9 @@ uninstall-binPROGRAMS:
 	list='$(bin_PROGRAMS)'; for p in $$list; do \
 	  rm -f $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
 	done
+
+.c.o:
+	$(COMPILE) -c $<
 
 .s.o:
 	$(COMPILE) -c $<
@@ -256,11 +248,6 @@ distdir: $(DISTFILES)
 	-rm -rf $(distdir)
 	mkdir $(distdir)
 	-chmod 777 $(distdir)
-	here=`cd $(top_builddir) && pwd`; \
-	top_distdir=`cd $(distdir) && pwd`; \
-	distdir=`cd $(distdir) && pwd`; \
-	cd $(top_srcdir) \
-	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu Makefile
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
@@ -271,38 +258,48 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
+add_file.o: add_file.c opennap.h hash.h debug.h
+announce.o: announce.c opennap.h hash.h debug.h
+ban.o: ban.c opennap.h hash.h debug.h
+browse.o: browse.c opennap.h hash.h debug.h
+change.o: change.c opennap.h hash.h debug.h
+client_quit.o: client_quit.c opennap.h hash.h debug.h
+config.o: config.c opennap.h hash.h debug.h
+db.o: db.c opennap.h hash.h
+debug.o: debug.c debug.h
+download.o: download.c opennap.h hash.h debug.h
+free_user.o: free_user.c opennap.h hash.h debug.h
+hash.o: hash.c hash.h debug.h
+hotlist.o: hotlist.c opennap.h hash.h debug.h
+join.o: join.c opennap.h hash.h debug.h
+kill_user.o: kill_user.c opennap.h hash.h debug.h
+level.o: level.c opennap.h hash.h debug.h
+list_channels.o: list_channels.c opennap.h hash.h debug.h
+list_users.o: list_users.c opennap.h hash.h debug.h
+login.o: login.c opennap.h hash.h debug.h
+main.o: main.c opennap.h hash.h debug.h
+md5c.o: md5c.c global.h md5.h
+metaserver.o: metaserver.c
+motd.o: motd.c opennap.h hash.h debug.h
+muzzle.o: muzzle.c opennap.h hash.h debug.h
+part.o: part.c opennap.h hash.h debug.h
+part_channel.o: part_channel.c opennap.h hash.h debug.h
+ping.o: ping.c opennap.h hash.h debug.h
+privmsg.o: privmsg.c opennap.h hash.h debug.h
+public.o: public.c opennap.h hash.h debug.h
+remove_connection.o: remove_connection.c opennap.h hash.h debug.h
+remove_file.o: remove_file.c opennap.h hash.h debug.h
+resume.o: resume.c opennap.h hash.h debug.h
+search.o: search.c opennap.h hash.h
+server_connect.o: server_connect.c opennap.h hash.h debug.h
+server_login.o: server_login.c opennap.h hash.h debug.h global.h md5.h
+synch.o: synch.c opennap.h hash.h debug.h
+topic.o: topic.c opennap.h hash.h debug.h
+unmuzzle.o: unmuzzle.c opennap.h hash.h debug.h
+upload_complete.o: upload_complete.c opennap.h hash.h debug.h
+util.o: util.c opennap.h hash.h debug.h
+whois.o: whois.c opennap.h hash.h debug.h
 
-DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
-
--include $(DEP_FILES)
-
-mostlyclean-depend:
-
-clean-depend:
-
-distclean-depend:
-	-rm -rf .deps
-
-maintainer-clean-depend:
-
-%.o: %.c
-	@echo '$(COMPILE) -c $<'; \
-	$(COMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
-	@-cp .deps/$(*F).pp .deps/$(*F).P; \
-	tr ' ' '\012' < .deps/$(*F).pp \
-	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
-	    >> .deps/$(*F).P; \
-	rm .deps/$(*F).pp
-
-%.lo: %.c
-	@echo '$(LTCOMPILE) -c $<'; \
-	$(LTCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
-	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
-	  < .deps/$(*F).pp > .deps/$(*F).P; \
-	tr ' ' '\012' < .deps/$(*F).pp \
-	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
-	    >> .deps/$(*F).P; \
-	rm -f .deps/$(*F).pp
 info-am:
 info: info-am
 dvi-am:
@@ -340,25 +337,24 @@ distclean-generic:
 
 maintainer-clean-generic:
 mostlyclean-am:  mostlyclean-binPROGRAMS mostlyclean-compile \
-		mostlyclean-tags mostlyclean-depend mostlyclean-generic
+		mostlyclean-tags mostlyclean-generic
 
 mostlyclean: mostlyclean-am
 
-clean-am:  clean-binPROGRAMS clean-compile clean-tags clean-depend \
-		clean-generic mostlyclean-am
+clean-am:  clean-binPROGRAMS clean-compile clean-tags clean-generic \
+		mostlyclean-am
 
 clean: clean-am
 
 distclean-am:  distclean-binPROGRAMS distclean-compile distclean-tags \
-		distclean-depend distclean-generic clean-am
+		distclean-generic clean-am
 
 distclean: distclean-am
 	-rm -f config.status
 
 maintainer-clean-am:  maintainer-clean-binPROGRAMS \
 		maintainer-clean-compile maintainer-clean-tags \
-		maintainer-clean-depend maintainer-clean-generic \
-		distclean-am
+		maintainer-clean-generic distclean-am
 	@echo "This command is intended for maintainers to use;"
 	@echo "it deletes files that may require special tools to rebuild."
 
@@ -369,13 +365,12 @@ maintainer-clean: maintainer-clean-am
 maintainer-clean-binPROGRAMS uninstall-binPROGRAMS install-binPROGRAMS \
 mostlyclean-compile distclean-compile clean-compile \
 maintainer-clean-compile tags mostlyclean-tags distclean-tags \
-clean-tags maintainer-clean-tags distdir mostlyclean-depend \
-distclean-depend clean-depend maintainer-clean-depend info-am info \
-dvi-am dvi check check-am installcheck-am installcheck install-exec-am \
-install-exec install-data-am install-data install-am install \
-uninstall-am uninstall all-redirect all-am all installdirs \
-mostlyclean-generic distclean-generic clean-generic \
-maintainer-clean-generic clean mostlyclean distclean maintainer-clean
+clean-tags maintainer-clean-tags distdir info-am info dvi-am dvi check \
+check-am installcheck-am installcheck install-exec-am install-exec \
+install-data-am install-data install-am install uninstall-am uninstall \
+all-redirect all-am all installdirs mostlyclean-generic \
+distclean-generic clean-generic maintainer-clean-generic clean \
+mostlyclean distclean maintainer-clean
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

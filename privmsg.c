@@ -15,16 +15,17 @@ HANDLER (privmsg)
     char *ptr;
     USER *sender, *user /* recip */;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &sender) != 0)
 	return;
+    ASSERT (validate_user (sender));
 
     /* check to see if the recipient of the message is local */
     ptr = strchr (pkt, ' ');
     if (ptr == 0)
     {
-	/* malformed message, just drop it silently */
+	log ("privmsg(): malformed message from %s: %s", sender->nick, pkt);
 	return;
     }
     *ptr++ = 0;			/* kill the rest of the line */
@@ -37,19 +38,15 @@ HANDLER (privmsg)
 	    nosuchuser (con, pkt);
 	return;
     }
-    ASSERT (VALID (user));
+    ASSERT (validate_user (user));
 
     /*  locally connected user */
     if (user->con)
     {
+	ASSERT (validate_connection (user->con));
+
 	/*reconsitute the msg */
 	send_cmd (user->con, MSG_CLIENT_PRIVMSG, "%s %s", sender->nick, ptr);
-
-#if 0
-	/* stupid hack until we can get proper support in clients */
-	if (con->class == CLASS_USER && strncmp (".CONNECT", ptr, 8) == 0)
-	    try_connect_privmsg (ptr + 8);
-#endif
     }
     else if (con->class == CLASS_USER)
     {

@@ -79,10 +79,10 @@ HANDLER (remove_hotlist)
     }
 
     /* remove target user from issuing user's list */
-    array_remove (con->hotlist, &con->hotlistsize, h);
+    con->hotlist = array_remove (con->hotlist, &con->hotlistsize, h);
 
     /* remove issuing user from the global list to notify */
-    array_remove (h->users, &h->numusers, con);
+    h->users = array_remove (h->users, &h->numusers, con);
 
     /* if no more users are waiting for notification, destroy the entry */
     if (h->numusers == 0)
