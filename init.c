@@ -79,7 +79,7 @@ dump_pid (void)
 	logerr ("dump_pid", path);
 	return;
     }
-    fprintf (f, "%d\n", getpid ());
+    fprintf (f, "%d\n", (int)getpid ());
     fclose (f);
 }
 

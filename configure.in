@@ -12,8 +12,15 @@ AC_EGREP_HEADER(socklen_t, /usr/include/sys/socket.h,
 AC_C_BIGENDIAN
 AC_CHECK_SIZEOF(long)
 
+dnl check for zlib installed in /usr/local
+if test -f /usr/local/lib/libz.a; then
+	LIBS="$LIBS -L/usr/local/lib -lz"
+	CFLAGS="$CFLAGS -I/usr/local/include"
+else
 AC_CHECK_LIB(z, compress2,[LIBS="$LIBS -lz"],
 	[AC_MSG_ERROR(you must install zlib first)])
+fi
+
 AC_CHECK_LIB(xnet,gethostbyname)
 AC_CHECK_LIB(nsl,socket)
 AC_CHECK_LIB(socket,gethostbyname)

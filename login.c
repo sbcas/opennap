@@ -103,6 +103,34 @@ count_clones (unsigned int ip)
     return clones;
 }
 
+/* if the server is full, try to find the client connected to the server
+ * the longest that isn't sharing any files.  expell that client to make
+ * room for other (possibly sharing) clients.
+ */
+static int
+eject_client (CONNECTION *con)
+{
+    int i, loser = -1;
+    time_t when = Current_Time;
+
+    for(i=0;i<Max_Clients;i++)
+    {
+	if(Clients[i] && ISUSER(Clients[i]) && Clients[i] != con &&
+		Clients[i]->user->sharing == 0 &&
+		Clients[i]->user->connected < when)
+	{
+	    loser = i;
+	    when = Clients[i]->user->connected;
+	}
+    }
+    if(loser == -1)
+	return 0;	/* no client to eject, reject current login */
+    kill_client(Clients[loser]->user->nick, "server full, not sharing");
+    Clients[loser]->killed = 1;
+    Clients[loser]->destroy = 1;
+    return 1;	/* ok for current login to proceed despite being full */
+}
+
 /* find the server name in the cache, or add it if it doesn't yet exist.
  * this allows one copy of the server name in memory rather than copying it
  * 1000 times for each user
@@ -214,15 +242,6 @@ HANDLER (login)
     {
 	if(ISUNKNOWN(con))
 	{
-	    /* enforce maximum local users */
-	    if(Num_Clients >= Max_Connections)
-	    {
-		log ("login(): max_connections (%d) reached", Max_Connections);
-		send_cmd (con, MSG_SERVER_ERROR,
-			"This server is full (%d connections)", Max_Connections);
-		con->destroy = 1;
-		return;
-	    }
 	    /* check for max clones on one server */
 	    if (Max_Clones > 0 && count_clones (con->ip) >= Max_Clones)
 	    {
@@ -231,6 +250,22 @@ HANDLER (login)
 			"Exceeded max connections to this server");
 		con->destroy = 1;
 		return;
+	    }
+
+	    /* enforce maximum local users */
+	    if(Num_Clients >= Max_Connections)
+	    {
+		/* check if another client can be ejected */
+		if (!eject_client(con))
+		{
+		    log ("login(): max_connections (%d) reached",
+			    Max_Connections);
+		    send_cmd (con, MSG_SERVER_ERROR,
+			    "This server is full (%d connections)",
+			    Max_Connections);
+		    con->destroy = 1;
+		    return;
+		}
 	    }
 	}
 
