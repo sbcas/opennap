@@ -345,7 +345,10 @@ static void
 update_stats (void)
 {
     int i, l;
+    time_t t;
 
+    t = time (0);
+    log ("update_stats(): current time is %s", ctime (&t));
     log
 	("update_stats(): library is %d kilobytes (%d gigabytes), %d files, %d users",
 	 Num_Gigs, Num_Gigs / (1024 * 1024), Num_Files, Users->dbsize);
