@@ -174,7 +174,7 @@ tokenize (char *s)
 	/* don't add duplicate tokens to the list.  this will cause searches
 	   on files that have the same token more than once to show up how
 	   ever many times the token appears in the filename */
-	if (duplicate (s))
+	if (duplicate (r, s))
 	{
 	    s = ptr;
 	    continue;
