@@ -86,6 +86,10 @@ struct _chanuser
     USER *user;
 };
 
+/* bitmask values for the channel flags */
+#define ON_CHANNEL_USER		1	/* user created channel */
+#define ON_CHANNEL_PRIVATE	2	/* private (hidden) channel */
+
 struct _channel
 {
 #ifdef DEBUG
@@ -96,7 +100,7 @@ struct _channel
     LIST *ops;			/* list of operators for the channel */
     LIST *users;		/* list of users on the channel */
     short limit;		/* max number of users allowed */
-    unsigned char userCreated;	/* true if a user created channel */
+    unsigned char flags;	/* true if a user created channel */
     unsigned char level;	/* minimum level to enter channel */
     LIST *bans;			/* channel specific bans */
     time_t timestamp;		/* used to sync servers */
@@ -585,6 +589,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_OP_LIST		10206
 #define MSG_CLIENT_DROP_CHANNEL		10207
 #define MSG_CLIENT_CHANNEL_WALLOP	10208
+#define MSG_CLIENT_CHANNEL_MODE		10209
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
 
 /* utility routines */
@@ -722,6 +727,7 @@ HANDLER (channel_clear_bans);
 HANDLER (channel_drop);
 HANDLER (channel_level);
 HANDLER (channel_limit);
+HANDLER (channel_mode);
 HANDLER (channel_op);
 HANDLER (channel_op_list);
 HANDLER (channel_unban);

@@ -96,7 +96,7 @@ static void
 dump_channel_cb (CHANNEL * chan, FILE * fp)
 {
     /* only save non-user created channels */
-    if (!chan->userCreated)
+    if ((chan->flags & ON_CHANNEL_USER) == 0)
     {
 	fprintf (fp, "%s %d %s \"%s\"", chan->name, chan->limit,
 		 Levels[chan->level], chan->topic);
@@ -528,7 +528,7 @@ HANDLER (channel_op)
 		    chanUser->flags |= ON_OPERATOR;
 	    }
 	    /* make sure we dump this channel to disk */
-	    chan->userCreated = 0;
+	    chan->flags &= ~ON_CHANNEL_USER;
 	}
     }
 }
@@ -613,7 +613,7 @@ HANDLER (channel_drop)
 	nosuchchannel (con);
 	return;
     }
-    if (!chan->userCreated)
+    if ((chan->flags & ON_CHANNEL_USER) == 0)
     {
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "channel %s is not registered",
@@ -637,7 +637,10 @@ HANDLER (channel_drop)
     if (!chan->users)
 	hash_remove (Channels, chan->name);
     else
-	chan->userCreated = 1;	/* otherwise just set as a normal channel */
+    {
+	/* otherwise just set as a normal channel */
+	chan->flags |= ON_CHANNEL_USER;
+    }
 }
 
 /* 10208 [ :<sender> ] <channel> <text>
@@ -687,5 +690,129 @@ HANDLER (channel_wallop)
 	    (chanUser->user->level > LEVEL_USER ||
 	     (chanUser->flags & ON_OPERATOR)))
 	    queue_data (chanUser->user->con, Buf, len);
+    }
+}
+
+/* 10209 [ :<sender> ] <channel> [mode]
+   change/display channel mode */
+HANDLER (channel_mode)
+{
+    char *senderName, *chanName;
+    USER *sender;
+    CHANNEL *chan;
+    int onmask = 0, offmask = 0, bit;
+
+    (void) len;
+    ASSERT (validate_connection (con));
+    if (ISSERVER (con))
+    {
+	if (*pkt != ':')
+	{
+	    log ("channel_mode(): invalid server message from %s", con->host);
+	    return;
+	}
+	pkt++;
+	senderName = next_arg (&pkt);
+	if (!is_server (senderName))
+	{
+	    sender = hash_lookup (Users, senderName);
+	    if (!sender)
+	    {
+		log ("channel_mode(): unknown user %s", senderName);
+		return;
+	    }
+	}
+	else
+	    sender = 0;		/*server */
+    }
+    else
+    {
+	ASSERT (ISUSER (con));
+	senderName = con->user->nick;
+	sender = con->user;
+    }
+    chanName = next_arg (&pkt);
+    if (!chanName)
+    {
+	unparsable (con);
+	return;
+    }
+    chan = hash_lookup (Channels, chanName);
+    if (!chan)
+    {
+	nosuchchannel (con);
+	return;
+    }
+    if (sender && sender->level < LEVEL_MODERATOR
+	&& !is_chanop (chan, sender))
+    {
+	permission_denied (con);
+	return;
+    }
+    if (!pkt)
+    {
+	/* TODO: evenutally this can be extended for whatever flags are
+	   added */
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "mode for channel %s: %s",
+		      chan->name,
+		      (chan->flags & ON_CHANNEL_PRIVATE) ? "+PRIVATE" : "NONE");
+	return;
+    }
+    while (pkt)
+    {
+	char *arg = next_arg (&pkt);
+
+	ASSERT (arg != 0);
+	if (!strcasecmp ("PRIVATE", arg + 1))
+	    bit = ON_CHANNEL_PRIVATE;
+	else
+	{
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH, "invalid channel mode: %s",
+			  arg + 1);
+	    continue;		/* unknown flag */
+	}
+	if (*arg == '+')
+	{
+	    onmask |= bit;
+	    offmask &= ~bit;
+	    if ((chan->flags & bit) == 0)
+		chan->flags |= bit;
+	    else
+		onmask &= ~bit;	/* already set */
+	}
+	else if (*arg == '-')
+	{
+	    offmask |= bit;
+	    onmask &= ~bit;
+	    if (chan->flags & bit)
+		chan->flags &= ~bit;
+	    else
+		offmask &= ~bit;	/* not set */
+	}
+	else
+	{
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			  "invalid prefix for channel mode %s: %c", arg + 1,
+			  *arg);
+	    continue;
+	}
+    }
+
+    /* only take action if something actually changed */
+    if (onmask || offmask)
+    {
+	/* right now we only support +/-PRIVATE */
+	notify_ops (chan, "%s changed mode on channel %s: %cPRIVATE",
+		    senderName, chan->name,
+		    (onmask & ON_CHANNEL_PRIVATE) ? '+' : '-');
+	notify_mods (CHANGELOG_MODE,
+		     "%s changed mode on channel %s: %cPRIVATE", senderName,
+		     chan->name, (onmask & ON_CHANNEL_PRIVATE) ? '+' : '-');
+	pass_message_args (con, tag, ":%s %s %cPRIVATE", senderName,
+			   chan->name,
+			   (onmask & ON_CHANNEL_PRIVATE) ? '+' : '-');
     }
 }

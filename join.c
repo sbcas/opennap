@@ -154,7 +154,7 @@ HANDLER (join)
 		return;
 	    }
 	    chan->limit = Channel_Limit;	/* default */
-	    chan->userCreated = 1;
+	    chan->flags = ON_CHANNEL_USER;
 	    chan->level = LEVEL_USER;
 	    hash_add (Channels, chan->name, chan);
 	    log ("join(): creating channel %s", chan->name);
@@ -185,7 +185,7 @@ HANDLER (join)
 		 list_count (chan->users) >= chan->limit)
 	{
 	    log ("join(): channel %s is full (%d)", chan->name, chan->limit);
-	    if (chan->userCreated)
+	    if (chan->flags & ON_CHANNEL_USER)
 	    {
 		if (ISUSER (con))
 		    send_cmd (con, MSG_SERVER_NOSUCH,

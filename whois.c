@@ -72,7 +72,10 @@ HANDLER (whois)
     if (!user->cloaked || sender->level > LEVEL_USER)
     {
 	for (chan = user->channels; chan; chan = chan->next)
-	    rsp = append_string (rsp, "%s ", ((CHANNEL *) chan->data)->name);
+	{
+	    if((((CHANNEL*)chan->data)->flags & ON_CHANNEL_PRIVATE)==0)
+		rsp = append_string (rsp, "%s ", ((CHANNEL *) chan->data)->name);
+	}
     }
     rsp = append_string (rsp, "\"");	/* terminate the channel list */
 

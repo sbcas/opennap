@@ -72,7 +72,7 @@ part_channel (CHANNEL * chan, USER * user)
 	}
     }
     /* if there are no users left in this channel, destroy it */
-    else if (chan->userCreated)
+    else if (chan->flags & ON_CHANNEL_USER)
     {
 	log ("part_channel(): destroying channel %s", chan->name);
 	hash_remove (Channels, chan->name);

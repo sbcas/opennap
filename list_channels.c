@@ -14,8 +14,9 @@ channel_info (void *elem, void *data)
 
     ASSERT (VALID (elem));
     ASSERT (VALID (data));
-    send_cmd ((CONNECTION *) data, MSG_SERVER_CHANNEL_LIST /* 618 */ ,
-	      "%s %d %s", chan->name, list_count (chan->users), chan->topic);
+    if ((chan->flags & ON_CHANNEL_PRIVATE) == 0)
+	send_cmd ((CONNECTION *) data, MSG_SERVER_CHANNEL_LIST /* 618 */ ,
+		"%s %d %s", chan->name, list_count (chan->users), chan->topic);
 }
 
 /* send a list of channels we know about to the user */
@@ -38,9 +39,11 @@ full_channel_info (CHANNEL * chan, CONNECTION * con)
     ASSERT (validate_channel (chan));
     ASSERT (validate_connection (con));
     ASSERT (chan->topic != 0);
-    send_cmd (con, MSG_SERVER_FULL_CHANNEL_INFO, "%s %d %d %d %d \"%s\"",
-	      chan->name, list_count (chan->users), chan->userCreated,
-	      chan->level, chan->limit, chan->topic);
+    if((chan->flags & ON_CHANNEL_PRIVATE) == 0)
+	send_cmd (con, MSG_SERVER_FULL_CHANNEL_INFO, "%s %d %d %d %d \"%s\"",
+		chan->name, list_count (chan->users),
+		(chan->flags & ON_CHANNEL_USER) != 0,
+		chan->level, chan->limit, chan->topic);
 }
 
 /* 827 */
