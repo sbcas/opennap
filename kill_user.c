@@ -34,7 +34,7 @@ notify_mods (const char *fmt, ...)
 HANDLER (kill_user)
 {
     USER *killer = 0, *user;
-    char *killernick, *reason;
+    char *killernick, *target;
 
     (void) tag;
     (void) len;
@@ -57,29 +57,25 @@ HANDLER (kill_user)
 	    log ("kill_user(): malformed server message");
 	    return;
 	}
-	killernick = pkt + 1;
-	pkt = strchr (killernick, ' ');
+	pkt++;
+	killernick = next_arg (&pkt);
 	if (!pkt)
 	{
 	    log ("kill_user(): too few arguments in server message");
 	    return;
 	}
-	*pkt++ = 0;
     }
 
-    /* extract the reason */
-    reason = strchr (pkt, ' ');
-    if (reason)
-	*reason++ = 0;
+    /* extract the target of the kill */
+    target = next_arg (&pkt);
 
     /* find the user to kill*/
-    user = hash_lookup (Users, pkt);
+    user = hash_lookup (Users, target);
     if (!user)
     {
+	log ("kill_user(): could not locate user %s", target);
 	if (con->class == CLASS_USER)
-	    nosuchuser (con, pkt);
-	else
-	    log ("kill_user(): could not locate user %s", pkt);
+	    nosuchuser (con, target);
 	return;
     }
     ASSERT (validate_user (user));
@@ -96,17 +92,18 @@ HANDLER (kill_user)
     {
 	if (Num_Servers)
 	    pass_message_args (con, MSG_CLIENT_KILL, ":%s %s %s",
-		con->user->nick, user->nick, NONULL (reason));
+		con->user->nick, user->nick, NONULL (pkt));
     }
 
     /* notify mods+ that this user was killed */
-    notify_mods ("%s killed user %s: %s", killernick, user->nick, NONULL (reason));
+    notify_mods ("%s killed user %s: %s", killernick, user->nick,
+	    NONULL (pkt));
 
     /* notify user they were killed */
     if (user->con)
     {
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-		"you have been killed by %s: %s", killernick, NONULL (reason));
+		"you have been killed by %s: %s", killernick, NONULL (pkt));
     }
 
     /* forcefully close the client connection if local, otherwise remove

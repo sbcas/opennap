@@ -41,7 +41,7 @@ HANDLER (download)
 	nosuchuser (con, fields[0]);
 	return;
     }
-    ASSERT (VALID (user));
+    ASSERT (validate_user (user));
 
     /* make sure both parties are not firewalled
        -and-
@@ -160,21 +160,22 @@ HANDLER(download_end)
 
 /* 600 <user> */
 /* client is requesting the link speed of <user> */
-HANDLER(user_speed)
+HANDLER (user_speed)
 {
     USER *user;
     (void) tag;
     (void) len;
     CHECK_USER_CLASS("user_speed");
-    user=hash_lookup(Users,pkt);
+    user = hash_lookup (Users, pkt);
     if(!user)
     {
 	/* TODO: what error does the server return here? */
 	log("user_speed():no such user %s", pkt);
 	return;
     }
-    send_cmd(con,MSG_SERVER_USER_SPEED /* 601 */, "%s %d",
-	    user->nick,user->speed);
+    ASSERT (validate_user (user));
+    send_cmd (con, MSG_SERVER_USER_SPEED /* 601 */, "%s %d",
+	    user->nick, user->speed);
 }
 
 /* 626 [ :<nick> ] <user> */
