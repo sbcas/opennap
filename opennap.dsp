@@ -112,6 +112,10 @@ SOURCE=.\change.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\channel.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\client_quit.c
 # End Source File
 # Begin Source File
@@ -285,6 +289,10 @@ SOURCE=.\upload_complete.c
 # Begin Source File
 
 SOURCE=.\userdb.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\usermode.c
 # End Source File
 # Begin Source File
 
