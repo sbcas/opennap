@@ -228,6 +228,33 @@ queue_data (CONNECTION *con, char *s, int ssize)
     con->sendbuflen += ssize;
 }
 
+static int
+calculate_chunk_length (CONNECTION *con)
+{
+    int offset;
+    unsigned short len;
+
+    ASSERT (validate_connection (con));
+
+    /* we start with the end of the already compressed data */
+    offset = con->sendbufcompressed;
+    while (offset + 4 <= con->sendbuflen)
+    {
+	/* read the packet length */
+	memcpy (&len, con->sendbuf + offset, 2);
+	len = BSWAP16 (len);
+
+	/* text compresses at around 50%, so make sure we dont try to
+	   send more than 131070 bytes in one packet */
+	if (offset - con->sendbufcompressed + len + 4 > 131070)
+	    break;
+
+	offset += len + 4; /* skip over the packet header and body */
+    }
+
+    return (offset);
+}
+
 void
 send_queued_data (CONNECTION *con)
 {
@@ -243,50 +270,73 @@ send_queued_data (CONNECTION *con)
 #if HAVE_LIBZ
     /* see if there is any data we can compress
        only compress if we have enough data to justify it */
-    l = con->sendbuflen - con->sendbufcompressed;
-    if (con->class == CLASS_SERVER &&
-	    Compression_Level > 0 &&
-	    l >= Compression_Threshold)
+    if (con->class == CLASS_SERVER && Compression_Level > 0)
     {
 	long datasize;
-	unsigned char *data;
+	unsigned char *data = 0;
 
-	datasize = l;
-	data = MALLOC (datasize);
-	if (compress2 (data, (unsigned long *) &datasize,
-		    (unsigned char *) con->sendbuf + con->sendbufcompressed, l,
-		    Compression_Level) == Z_OK)
+	/* we have to make sure that the size of the compressed packet is
+	   less than 65535 bytes, which is what fits in a 16-bit integer.
+	   so we loop here to compress the data.  we have to semi-parse
+	   the packets so that we make sure we compress on the boundaries,
+	   because the underlying packets can't be split between
+	   compressed packets */
+	while (con->sendbuflen - con->sendbufcompressed >= Compression_Threshold)
 	{
-	    /* make sure there is enough room to hold the compressed
-	       packet */
-	    if (con->sendbufcompressed + datasize + 6 < con->sendbufmax)
+	    datasize = calculate_chunk_length (con);
+	    data = REALLOC (data, datasize);
+	    l = datasize;
+	    if (compress2 (data, (unsigned long *) &datasize,
+			(unsigned char *) con->sendbuf + con->sendbufcompressed,
+			datasize, Compression_Level) == Z_OK)
 	    {
-		con->sendbuflen -= l; /* pop the uncompressed packet */
+		int delta = datasize + 6 - l;	/* net change */
 
-		set_val (con->sendbuf + con->sendbuflen, datasize + 2);
-		con->sendbuflen += 2;
-		set_val (con->sendbuf + con->sendbuflen,
+		/* make sure there is enough room to hold the compressed
+		   packet */
+		if (con->sendbufcompressed + datasize + 6 > con->sendbufmax)
+		{
+		    log ("send_queued_data(): compressed packet is larger, not compressing");
+		    break;
+		}
+
+		/* compressed packet header */
+		set_val (con->sendbuf + con->sendbufcompressed, datasize + 2);
+		con->sendbufcompressed += 2;
+		set_val (con->sendbuf + con->sendbufcompressed,
 			MSG_SERVER_COMPRESSED_DATA);
-		con->sendbuflen += 2;
-		ASSERT (l < 65535);
-		set_val (con->sendbuf + con->sendbuflen, l); /* uncompressed size */
-		con->sendbuflen += 2;
+		con->sendbufcompressed += 2;
 
-		memcpy (con->sendbuf + con->sendbuflen, data, datasize);
-		con->sendbuflen += datasize;
-		con->sendbufcompressed = con->sendbuflen;
+		/* uncompressed size */
+		ASSERT (l <= 65535);
+		set_val (con->sendbuf + con->sendbufcompressed, l);
+		con->sendbufcompressed += 2;
+
+		/* compressed data */
+		memcpy (con->sendbuf + con->sendbufcompressed, data, datasize);
+		con->sendbufcompressed += datasize;
 
 		log ("send_queued_data(): compressed %d bytes into %d (%d%%).",
-			l, datasize, (100 * (datasize - l)) / l);
+			l, datasize, (100 * delta) / l);
+
+		/* if there were leftovers, we need to shift them down
+		   to the end of the compressed packet we just wrote */
+		if (l < con->sendbuflen)
+		{
+		    memmove (con->sendbuf + con->sendbufcompressed,
+			    con->sendbuf + con->sendbufcompressed + delta,
+			    con->sendbuflen - l);
+		    log ("send_queued_data(): %d uncompressed bytes remain in the queue",
+			    con->sendbuflen - l);
+		}
+		con->sendbuflen -= delta;
 	    }
 	    else
 	    {
-		log ("send_queued_data(): compressed packet is larger, not compressing");
+		/* this should not happen under normal circumstances */
+		log ("send_queued_data(): error compressing data");
+		break;
 	    }
-	}
-	else
-	{
-	    log ("send_queued_data(): error compressing data");
 	}
 	FREE (data);
     }
