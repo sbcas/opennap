@@ -53,17 +53,17 @@ search_callback (DATUM * match, SEARCH * parms)
     /* ignore match if both parties are firewalled */
     if (parms->user->port == 0 && match->user->port == 0)
 	return 0;
-    if (match->bitrate < parms->minbitrate)
+    if (BitRate[match->bitrate] < parms->minbitrate)
 	return 0;
-    if (match->bitrate > parms->maxbitrate)
+    if (BitRate[match->bitrate] > parms->maxbitrate)
 	return 0;
     if (match->user->speed < parms->minspeed)
 	return 0;
     if (match->user->speed > parms->maxspeed)
 	return 0;
-    if (match->frequency < parms->minfreq)
+    if (SampleRate[match->frequency] < parms->minfreq)
 	return 0;
-    if (match->frequency > parms->maxfreq)
+    if (SampleRate[match->frequency] > parms->maxfreq)
 	return 0;
     if (parms->type != -1 && parms->type != match->type)
 	return 0;		/* wrong content type */
