@@ -227,7 +227,7 @@ queue_data (CONNECTION *con, char *s, int ssize)
 }
 
 /* how much uncompressed data we can fit in one packet */
-#if 0
+#if 1
 #define MAX_UNCOMPRESSED_SIZE	131070
 #else
 /* small value for testing purposes only!  this will force send_queued_data()
