@@ -136,7 +136,9 @@ nosuchuser (CONNECTION * con, char *nick)
 void
 permission_denied (CONNECTION * con)
 {
-    send_cmd (con, MSG_SERVER_NOSUCH, "permission denied");
+    ASSERT (validate_connection (con));
+    if (ISUSER (con))
+	send_cmd (con, MSG_SERVER_NOSUCH, "permission denied");
 }
 
 /* send a message to all peer servers.  `con' is the connection the message
@@ -265,12 +267,14 @@ void
 unparsable(CONNECTION*con)
 {
     ASSERT(validate_connection(con));
-    send_cmd(con,MSG_SERVER_NOSUCH,"parameters are unparsable");
+    if(ISUSER(con))
+	send_cmd(con,MSG_SERVER_NOSUCH,"parameters are unparsable");
 }
 
 void
 nosuchchannel(CONNECTION*con)
 {
     ASSERT(validate_connection(con));
-    send_cmd(con,MSG_SERVER_NOSUCH,"no such channel");
+    if(ISUSER(con))
+	send_cmd(con,MSG_SERVER_NOSUCH,"no such channel");
 }

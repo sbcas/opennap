@@ -92,7 +92,7 @@ HANDLER (change_email)
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;
-    pass_message_args (con, tag, "%s", pkt);
+    pass_message_args (con, tag, ":%s %s", user->nick, pkt);
     db = hash_lookup (User_Db, user->nick);
     if (!db)
     {
@@ -132,8 +132,7 @@ HANDLER (alter_port)
     if (!nick || !port)
     {
 	log ("alter_port(): too few arguments");
-	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "too few arguments");
+	unparsable(con);
 	return;
     }
     user = hash_lookup (Users, nick);
@@ -148,7 +147,7 @@ HANDLER (alter_port)
     if (p < 0 || p > 65535)
     {
 	log ("alter_port(): %d is an invalid port", p);
-	if (con->class == CLASS_USER)
+	if (ISUSER(con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "%d is an invalid port", p);
 	return;
     }
@@ -188,13 +187,13 @@ HANDLER (alter_pass)
     if (sender->level < LEVEL_ADMIN)
     {
 	log ("alter_pass(): %s has no privilege", sender->nick);
-	if (ISUSER (con))
-	    permission_denied (con);
+	permission_denied (con);
 	return;
     }
     if (!pkt)
     {
 	log ("alter_pass(): missing arguments");
+	unparsable(con);
 	return;
     }
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
@@ -203,8 +202,7 @@ HANDLER (alter_pass)
     {
 	log ("alter_pass(): wrong number of arguments");
 	print_args (ac, av);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Wrong number of arguments.");
+	unparsable(con);
 	return;
     }
     db = hash_lookup (User_Db, av[0]);
@@ -248,14 +246,12 @@ HANDLER (alter_speed)
     {
 	log ("alter_speed(): wrong number of parameters");
 	print_args (ac, av);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Wrong number of parameters");
+	unparsable(con);
 	return;
     }
     if (sender->level < LEVEL_MODERATOR)
     {
-	if (ISUSER (con))
-	    permission_denied (con);
+	permission_denied (con);
 	return;
     }
     speed = atoi (av[1]);
@@ -263,7 +259,7 @@ HANDLER (alter_speed)
     {
 	log ("alter_speed(): invalid speed %d", speed);
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid speed.");
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid speed");
 	return;
     }
     user = hash_lookup (Users, av[0]);
