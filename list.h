@@ -17,23 +17,14 @@ struct list {
 /* prototype for list_free() callback function */
 typedef void (*list_destroy_t) (void *);
 
-/* create a new list element */
-LIST *list_new (void *);
-
 /* removes the specified element from the list */
-void list_remove (LIST **l);
-
-/* remove the element matching `data' from the list */
-LIST * list_delete (LIST *list, void *data);
+LIST *list_delete (LIST *, void *);
 
 /* append an element to the list */
-LIST *list_append (LIST *, void *);
+LIST *list_append (LIST *, LIST *);
 
 /* free a list element */
 void list_free (LIST *, list_destroy_t);
-
-/* concatenate two lists */
-LIST * list_concat (LIST *a, LIST *b);
 
 /* return the number of items in a list */
 int list_count (LIST *);

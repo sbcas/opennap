@@ -102,7 +102,14 @@ HANDLER (join)
     }
 
     /* add this channel to the USER channel list */
-    user->channels = list_append (user->channels, chan);
+    list = CALLOC (1, sizeof (LIST));
+    if (!list)
+    {
+	OUTOFMEMORY ("join");
+	return;
+    }
+    list->data = chan;
+    user->channels = list_append (user->channels, list);
 
     if (ISUSER (con))
     {
@@ -119,7 +126,14 @@ HANDLER (join)
     }
 
     /* add this user to the members list */
-    chan->users = list_append (chan->users, user);
+    list = CALLOC (1, sizeof (LIST));
+    if (!list)
+    {
+	OUTOFMEMORY ("join");
+	return;
+    }
+    list->data = user;
+    chan->users = list_append (chan->users, list);
 
     /* notify other members of the channel that this user has joined */
     for (list = chan->users; list; list = list->next)

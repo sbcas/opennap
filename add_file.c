@@ -160,6 +160,7 @@ static void
 fdb_add (HASH * table, char *key, DATUM * d)
 {
     FLIST *files;
+    LIST *list;
 
     ASSERT (table != 0);
     ASSERT (key != 0);
@@ -188,7 +189,15 @@ fdb_add (HASH * table, char *key, DATUM * d)
 	    return;
 	}
     }
-    files->list = list_append (files->list, d);
+    list = CALLOC (1, sizeof (LIST));
+    if (!list)
+    {
+	OUTOFMEMORY ("list");
+	if (!files->list)
+	    hash_remove (table, files->key);
+	return;
+    }
+    files->list = list_append (files->list, list);
     files->count++;
     d->refcount++;
 }

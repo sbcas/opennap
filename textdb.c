@@ -110,6 +110,7 @@ textdb_fetch (TEXTDB * db, const char *key)
     TEXTDB_RES *result;
     char *arg;
     long offset;
+    LIST *list;
 
     ASSERT (db->stream != 0);
     offset = textdb_find_key (db, key, 0);
@@ -122,8 +123,11 @@ textdb_fetch (TEXTDB * db, const char *key)
 	result->db = db;
 	arg = Buf;
 	while (arg)
-	    result->columns =
-		list_append (result->columns, STRDUP (next_arg (&arg)));
+	{
+	    list = CALLOC (1, sizeof (LIST));
+	    list->data = STRDUP (next_arg (&arg));
+	    result->columns = list_append (result->columns, list);
+	}
     }
     else
 	OUTOFMEMORY ("textdb_fetch");

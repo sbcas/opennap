@@ -8,35 +8,11 @@
 #include "list.h"
 #include "debug.h"
 
-LIST *
-list_new (void *data)
-{
-    LIST *ptr = CALLOC (1, sizeof (LIST));
-
-    ASSERT (data != 0);
-    ASSERT (ptr != 0);
-    if (ptr)
-	ptr->data = data;
-    return ptr;
-}
-
-/* removes the specified element from the list */
-void
-list_remove (LIST **l)
-{
-    LIST *ptr;
-
-    ASSERT (*l != 0);
-    ptr = *l;
-    *l = (*l)->next;
-    FREE (ptr);
-}
-
 /* remove the element matching `data' from the list */
 LIST *
 list_delete (LIST *list, void *data)
 {
-    LIST **ptr;
+    LIST **ptr, *tmp;
 
     ASSERT (list != 0);
     ASSERT (data != 0);
@@ -44,7 +20,9 @@ list_delete (LIST *list, void *data)
     {
 	if ((*ptr)->data == data)
 	{
-	    list_remove (ptr);
+	    tmp = *ptr;
+	    *ptr = (*ptr)->next;
+	    FREE (ptr);
 	    break;
 	}
     }
@@ -52,35 +30,14 @@ list_delete (LIST *list, void *data)
 }
 
 LIST *
-list_append (LIST * l, void *data)
+list_append (LIST * l, LIST *b)
 {
-    LIST *r = l;
+    LIST **r = &l;
 
-    ASSERT (data != 0);
-    if (!l)
-    {
-        r = list_new (data);
-	ASSERT (r != 0);
-    }
-    else
-    {
-        while (l->next)
-            l = l->next;
-        l->next = list_new (data);
-	ASSERT (l->next != 0);
-    }
-    return r;
-}
-
-LIST *
-list_concat (LIST *a, LIST *b)
-{
-    if (!a)
-	return b;
-    while (a && a->next)
-	a = a->next;
-    a->next = b;
-    return a;
+    while (*r)
+	r = &(*r)->next;
+    *r = b;
+    return l;
 }
 
 void

@@ -183,17 +183,24 @@ tokenize (char *s)
 	}
 	if (cur)
 	{
-	    cur->next = list_new (s);
+	    cur->next = CALLOC (1, sizeof (LIST));
 	    if (!cur->next)
+	    {
+		OUTOFMEMORY ("tokenize");
 		return r;
+	    }
 	    cur = cur->next;
 	}
 	else
 	{
-	    cur = r = list_new (s);
+	    cur = r = CALLOC (1, sizeof (LIST));
 	    if (!cur)
+	    {
+		OUTOFMEMORY ("tokenize");
 		return 0;
+	    }
 	}
+	cur->data = s;
 	s = ptr;
     }
     return r;
@@ -427,6 +434,19 @@ generate_search_id (void)
     return id;
 }
 
+static void
+free_dsearch (DSEARCH * d)
+{
+    if (d)
+    {
+	if (d->id)
+	    FREE (d->id);
+	if (d->nick)
+	    FREE (d->nick);
+	FREE (d);
+    }
+}
+
 /* common code for local and remote searching */
 static void
 search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
@@ -473,7 +493,7 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    i++;
 	    /* do an implicit AND operation if multiple FILENAME CONTAINS
 	       clauses are specified */
-	    tokens = list_concat (tokens, tokenize (av[i]));
+	    tokens = list_append (tokens, tokenize (av[i]));
 	}
 	else if (strcasecmp ("max_results", av[i]) == 0)
 	{
@@ -606,6 +626,7 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	{
 	    char *request;
 	    DSEARCH *dsearch;
+	    LIST *ptr;
 
 	    log ("search_internal(): relaying request to peer servers");
 	    generate_request (Buf, sizeof (Buf), max_results - n, tokens,
@@ -625,7 +646,15 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    dsearch->valid = 1;
 	    if (ISSERVER (con))
 		dsearch->numServers--;
-	    Remote_Search = list_append (Remote_Search, dsearch);
+	    ptr = CALLOC (1, sizeof (LIST));
+	    if (!ptr)
+	    {
+		OUTOFMEMORY ("search_internal");
+		free_dsearch (dsearch);
+		goto done;
+	    }
+	    ptr->data = dsearch;
+	    Remote_Search = list_append (Remote_Search, ptr);
 	    request = STRDUP (Buf);
 	    /* pass this message to all servers EXCEPT the one we recieved
 	       it from (if this was a remote search */
@@ -681,19 +710,6 @@ find_search (const char *id)
 	    return list->data;
     }
     return 0;
-}
-
-static void
-free_dsearch (DSEARCH * d)
-{
-    if (d)
-    {
-	if (d->id)
-	    FREE (d->id);
-	if (d->nick)
-	    FREE (d->nick);
-	FREE (d);
-    }
 }
 
 /* 10015 <sender> <id> ...

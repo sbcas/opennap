@@ -107,19 +107,37 @@ userdb_fetch (const char *nick)
 int
 userdb_store (USERDB * db)
 {
-    LIST *list;
+    LIST *list, *tmp;
     char create[16], last[16];
     int err = 0;
     TEXTDB_RES *result;
 
-    list = list_append (0, db->nick);
-    list = list_append (list, db->password);
-    list = list_append (list, db->email);
-    list = list_append (list, Levels[db->level]);
+    tmp=CALLOC(1,sizeof(LIST));
+    tmp->data = db->nick;
+    list = list_append (0, tmp);
+
+    tmp=CALLOC(1,sizeof(LIST));
+    tmp->data = db->password;
+    list = list_append (list, tmp);
+
+    tmp=CALLOC(1,sizeof(LIST));
+    tmp->data = db->email;
+    list = list_append (list, tmp);
+
+    tmp=CALLOC(1,sizeof(LIST));
+    tmp->data = Levels[db->level];
+    list = list_append (list, tmp);
+
     snprintf (create, sizeof (create), "%d", (int) db->created);
-    list = list_append (list, create);
+    tmp=CALLOC(1,sizeof(LIST));
+    tmp->data = create;
+    list = list_append (list, tmp);
+
     snprintf (last, sizeof (last), "%d", (int) db->lastSeen);
-    list = list_append (list, last);
+    tmp=CALLOC(1,sizeof(LIST));
+    tmp->data = last;
+    list = list_append (list, tmp);
+
     if ((result = textdb_new_result (User_Db, list)) == 0)
     {
 	list_free (list, 0);

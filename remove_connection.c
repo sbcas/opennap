@@ -41,7 +41,7 @@ remove_connection (CONNECTION *con)
 
     if (ISUSER (con))
     {
-	LIST *u, **h;
+	LIST *u, **h, *t;
 
 	/* remove user from global list, calls free_user() indirectly */
 	ASSERT (validate_user (con->user));
@@ -54,7 +54,9 @@ remove_connection (CONNECTION *con)
 	    {
 		if ((*h)->data == con)
 		{
-		    list_remove (h);
+		    t = *h;
+		    *h = (*h)->next;
+		    FREE (t);
 		    break;
 		}
 	    }

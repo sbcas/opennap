@@ -27,38 +27,46 @@ HANDLER (add_hotlist)
     if (!hotlist)
     {
 	/* no hotlist, create one */
-	hotlist = new_hotlist ();
-	if (!hotlist)
-	    return;	/* no memory */
-	hotlist->nick = STRDUP (pkt);
-	if (!hotlist->nick)
+	hotlist = CALLOC (1, sizeof (HOTLIST));
+	if(hotlist)
+	    hotlist->nick = STRDUP (pkt);
+	if (!hotlist || !hotlist->nick)
 	{
 	    OUTOFMEMORY ("add_hotlist");
+	    return;	/* no memory */
+	}
+	if (hash_add (Hotlist, hotlist->nick, hotlist))
+	{
+	    FREE (hotlist->nick);
 	    FREE (hotlist);
 	    return;
 	}
-	hash_add (Hotlist, hotlist->nick, hotlist);
     }
     ASSERT (validate_hotlist (hotlist));
 
     /* make sure this user isn't already listed */
-    for (list = hotlist->users; list; list = list->next)
-    {
-	if (list->data == con)
-	{
-#if 0
-	    log ("add_hotlist(): %s is already on %s's hotlist (%d)",
-		    hotlist->nick, con->user->nick, tag);
-#endif
-	    return; /* already present */
-	}
-    }
+    if (list_find (hotlist->users, con))
+	return;
 
     /* add this user to the list of users waiting for notification */
-    hotlist->users = list_append (hotlist->users, con);
+    list = CALLOC (1, sizeof (LIST));
+    if (!list)
+    {
+	OUTOFMEMORY ("add_hotlist");
+	return;
+    }
+    list->data = con;
+    hotlist->users = list_append (hotlist->users, list);
 
     /* add the hotlist entry to this particular users list */
-    con->uopt.hotlist = list_append (con->uopt.hotlist, hotlist);
+    list = CALLOC (1, sizeof (LIST));
+    if (!list)
+    {
+	OUTOFMEMORY ("add_hotlist");
+	return;
+    }
+    list->data = hotlist;
+    con->uopt.hotlist = list_append (con->uopt.hotlist, list);
 
     /* ack the user who requested this */
     /* this seems unnecessary, but its what the official server does... */
@@ -79,7 +87,7 @@ HANDLER (add_hotlist)
 HANDLER (remove_hotlist)
 {
     HOTLIST *h = 0;
-    LIST **list;
+    LIST **list, *tmp;
 
     (void) tag;
     (void) len;
@@ -87,12 +95,17 @@ HANDLER (remove_hotlist)
     CHECK_USER_CLASS ("remove_hotlist");
 
     /* find the user in this user's hotlist */
+    ASSERT (con->opt.hotlist != 0);
     for (list = &con->uopt.hotlist; *list; list = &(*list)->next)
     {
 	h = (*list)->data;
+	ASSERT (validate_hotlist (h));
 	if (!strcasecmp (pkt, h->nick))
 	{
-	    list_remove (list);
+	    tmp = *list;
+	    *list = (*list)->next;
+	    FREE (tmp);
+
 	    /* remove issuing user from the global list to notify */
 	    h->users = list_delete (h->users, con);
 	    /* if no more users are waiting for notification, destroy
