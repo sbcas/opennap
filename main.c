@@ -97,7 +97,7 @@ LIST *Server_Links = 0;
 
 int Local_Files = 0;		/* number of files shared by local users */
 int Num_Files = 0;
-unsigned int Num_Gigs = 0;	/* in kB */
+double Num_Gigs = 0;	/* in kB */
 int SigCaught = 0;
 char Buf[2048];			/* global scratch buffer */
 
@@ -115,8 +115,8 @@ update_stats (void)
     strcpy (Buf, ctime (&Current_Time));
     Buf[strlen (Buf) - 1] = 0;
     log ("update_stats(): current time is %s", Buf);
-    log ("update_stats(): library is %u KB (%u GB), %d files, %d users",
-	 Num_Gigs, Num_Gigs / (1024 * 1024), Num_Files, Users->dbsize);
+    log ("update_stats(): library is %.0f GB, %d files, %d users",
+	 Num_Gigs / 1048576., Num_Files, Users->dbsize);
     log ("update_stats(): %d local clients, %d linked servers",
 	 Num_Clients - numServers, numServers);
     log ("update_stats(): %d local files", Local_Files);
@@ -132,8 +132,8 @@ update_stats (void)
 
     /* since we send the same data to many people, optimize by forming
        the message once then writing it out */
-    snprintf (Buf + 4, sizeof (Buf) - 4, "%d %d %u", Users->dbsize, Num_Files,
-	      Num_Gigs / (1024 * 1024));
+    snprintf (Buf + 4, sizeof (Buf) - 4, "%d %d %.0f", Users->dbsize,
+	    Num_Files, Num_Gigs / 1048576.);
     set_tag (Buf, MSG_SERVER_STATS);
     l = strlen (Buf + 4);
     set_len (Buf, l);
@@ -244,7 +244,7 @@ report_stats (int fd)
     }
 #endif /* linux */
     snprintf (Buf, sizeof (Buf), "%d %d %.2f %.0f 0\n", Users->dbsize,
-	      Num_Files, loadavg, ((double) Num_Gigs) * 1024.0);
+	      Num_Files, loadavg, Num_Gigs * 1024.);
     WRITE (n, Buf, strlen (Buf));
     CLOSE (n);
 }

@@ -409,7 +409,7 @@ extern int Num_Clients;
 extern int Max_Clients;
 
 extern int Num_Files;		/* total number of available files */
-extern unsigned int Num_Gigs;	/* total size of files available (in kB) */
+extern double Num_Gigs;		/* total size of files available (in kB) */
 
 extern LIST *Bans;
 extern LIST *Servers;		/* peer servers */
