@@ -19,10 +19,10 @@ HANDLER (remove_file)
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("remove_file");
     user = con->user;
-    if (user->shared == 0)
+    if (!user->shared)
     {
-	log ("remove_file(): user %s is not sharing any files", user->nick);
-	send_cmd (con, MSG_SERVER_NOSUCH, "you aren't sharing any files");
+	log ("remove_file(): %s is not sharing any files", user->nick);
+	send_cmd (con, MSG_SERVER_NOSUCH, "you are not sharing any files");
 	return;
     }
 
@@ -30,7 +30,7 @@ HANDLER (remove_file)
     info = hash_lookup (user->files, pkt);
     if (!info)
     {
-	log ("remove_file(): user %s is not sharing %s", user->nick, pkt);
+	log ("remove_file(): %s is not sharing %s", user->nick, pkt);
 	send_cmd (con, MSG_SERVER_NOSUCH, "you are not sharing that file");
 	return;
     }

@@ -73,8 +73,7 @@ HANDLER (login)
 	print_args (ac, av);
 	if (con->class == CLASS_UNKNOWN)
 	{
-	    send_cmd (con, MSG_SERVER_ERROR,
-		      "Too few parameters for command");
+	    unparsable(con);
 	    con->destroy = 1;
 	}
 	return;
@@ -113,7 +112,7 @@ HANDLER (login)
 	log ("login(): invalid speed %d from %s (%s)", speed, av[0], av[3]);
 	if (con->class == CLASS_UNKNOWN)
 	{
-	    send_cmd (con, MSG_SERVER_ERROR, "%d is an invalid speed", speed);
+	    send_cmd (con, MSG_SERVER_ERROR, "invalid speed");
 	    con->destroy = 1;
 	}
 	return;
@@ -124,7 +123,7 @@ HANDLER (login)
     {
 	log ("login(): invalid port %d", port);
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_ERROR, "Invalid port");
+	    send_cmd (con, MSG_SERVER_ERROR, "invalid port");
 	return;
     }
 
@@ -136,15 +135,14 @@ HANDLER (login)
 	{
 	    /* this could happen if two clients simultaneously connect
 	       and register */
-	    send_cmd (con, MSG_SERVER_ERROR, "%s is already registered",
-		      av[0]);
+	    send_cmd (con, MSG_SERVER_ERROR, "already registered");
 	}
 	else
 	{
 	    ASSERT (con->class == CLASS_SERVER);
 	    /* need to issue a kill and send the registration info
 	       we have on this server */
-	    log ("login(): sending KILL for user %s", av[0]);
+	    log ("login(): sending KILL for %s", av[0]);
 	    pass_message_args (NULL, MSG_CLIENT_KILL,
 			       ":%s %s \"account is already registered\"",
 			       Server_Name, av[0]);
@@ -316,7 +314,7 @@ HANDLER (login)
 	con->class = CLASS_USER;
 	con->user = user;
 	/* send the login ack */
-	send_cmd (con, MSG_SERVER_EMAIL, user->email);
+	send_cmd (con, MSG_SERVER_EMAIL, "%s", user->email);
 	show_motd (con, 0, 0, NULL);
 	server_stats (con, 0, 0, NULL);
     }
@@ -632,7 +630,7 @@ HANDLER (check_password)
     if (!pkt)
     {
 	log ("check_password(): too few parameters");
-	send_cmd (con, MSG_SERVER_NOSUCH, "parameters are unparsable");
+	unparsable(con);
 	return;
     }
     db = hash_lookup (User_Db, nick);

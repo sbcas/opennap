@@ -438,7 +438,7 @@ main (int argc, char **argv)
 	t.tv_usec = 0;
 	if ((numReady = select (maxfd + 1, &set, &wset, NULL, &t)) < 0)
 	{
-	    perror ("opennap: main(): select");
+	    perror ("main(): select");
 	    continue;
 	}
 

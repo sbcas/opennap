@@ -69,6 +69,9 @@ sync_chan (CHANNEL *chan, CONNECTION *con)
     if (chan->level != LEVEL_USER)
 	send_cmd (con, MSG_CLIENT_CHANNEL_LEVEL, ":%s %s %s",
 		Server_Name, chan->name, Levels[chan->level]);
+    if (chan->limit != Channel_Limit)
+	send_cmd (con, MSG_CLIENT_CHANNEL_LIMIT, ":%s %s %d",
+		  Server_Name, chan->name, chan->limit);
 }
 
 static void

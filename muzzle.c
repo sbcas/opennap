@@ -8,11 +8,12 @@
 #include "opennap.h"
 #include "debug.h"
 
-/* [ :<nick> ] <user-to-muzzle> [ <reason> ] */
+/* [ :<nick> ] <user-to-muzzle> [ "<reason>" ] */
 HANDLER (muzzle)
 {
     USER *sender, *user;
-    char *nick;
+    char *av[2];
+    int ac;
 
     (void) tag;
     (void) len;
@@ -23,14 +24,22 @@ HANDLER (muzzle)
 
     ASSERT (validate_user (sender));
 
-    nick = next_arg (&pkt);
+    ac=split_line(av,FIELDS(av),pkt);
+    if(ac<1)
+    {
+	log("muzzle(): too few parameters");
+	print_args(ac,av);
+	if(ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"parameters are unparsable");
+	return;
+    }
 
     /* find the user to be muzzled */
-    user = hash_lookup (Users, nick);
+    user = hash_lookup (Users, av[0]);
     if (!user)
     {
 	if (ISUSER (con))
-	    nosuchuser (con, nick);
+	    nosuchuser (con, av[0]);
 	return;
     }
     ASSERT (validate_user (user));
@@ -44,8 +53,12 @@ HANDLER (muzzle)
     }
 
     /* relay to peer servers */
-    pass_message_args (con, MSG_CLIENT_MUZZLE, ":%s %s %s",
-		       sender->nick, user->nick, NONULL (pkt));
+    if(ac==2)
+	pass_message_args (con, MSG_CLIENT_MUZZLE, ":%s %s \"%s\"",
+			   sender->nick, user->nick, av[1]);
+    else
+	pass_message_args (con, MSG_CLIENT_MUZZLE, ":%s %s",
+			   sender->nick, user->nick);
 
     user->muzzled = 1;
 
@@ -53,9 +66,9 @@ HANDLER (muzzle)
     if (user->local)
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
 		  "You have been muzzled by %s: %s", sender->nick,
-		  NONULL (pkt));
+		  ac==2?av[1]:"");
 
     /* notify mods+ of this action */
     notify_mods ("%s has muzzled %s: %s", sender->nick, user->nick,
-		 NONULL (pkt));
+		 ac==2?av[1]:"");
 }

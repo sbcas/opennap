@@ -7,10 +7,11 @@
 #include "opennap.h"
 #include "debug.h"
 
-/* 10202 [ :<sender> ] <channel> <user> [ <reason> ] */
+/* 10202 [ :<sender> ] <channel> <user> [ "<reason>" ] */
 HANDLER (kick)
 {
-    char *nick, *chanName;
+    char *av[3];
+    int ac;
     USER *user, *sender;
     CHANNEL *chan;
 
@@ -18,21 +19,20 @@ HANDLER (kick)
     (void) len;
     if (pop_user (con, &pkt, &sender))
 	return;
-    chanName = next_arg (&pkt);
-    nick = next_arg (&pkt);
-    if (!chanName || !nick)
+    ac=split_line(av,FIELDS(av),pkt);
+    if(ac<2)
     {
-	log ("kick(): too few parameters");
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "parameters are unparsable");
+	log("kick(): too few parameters");
+	if(ISUSER(con))
+	    unparsable(con);
 	return;
     }
-    chan = hash_lookup (Channels, chanName);
+    chan = hash_lookup (Channels, av[0]);
     if (!chan)
     {
-	log ("kick(): no such channel %s", chanName);
+	log ("kick(): no such channel %s", av[0]);
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "No such channel");
+	    nosuchchannel(con);
 	return;
     }
     if (list_find (sender->channels, chan) == 0)
@@ -42,12 +42,12 @@ HANDLER (kick)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "You are not on that channel");
 	return;
     }
-    user = hash_lookup (Users, nick);
+    user = hash_lookup (Users, av[1]);
     if (!user)
     {
-	log ("kick(): no such user %s", nick);
+	log ("kick(): no such user %s", av[1]);
 	if (ISUSER (con))
-	    nosuchuser (con, nick);
+	    nosuchuser (con, av[1]);
 	return;
     }
     if (sender->level < LEVEL_ELITE && sender->level <= user->level)
@@ -67,14 +67,19 @@ HANDLER (kick)
 	return;
     }
 
-    pass_message_args (con, tag, ":%s %s %s %s", sender->nick, chan->name,
-		       user->nick, NONULL (pkt));
+    if(ac==3)
+	pass_message_args (con, tag, ":%s %s %s \"%s\"", sender->nick,
+			   chan->name, user->nick, av[2]);
+    else
+	pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name,
+			   user->nick);
+
     if (ISUSER (user->con))
     {
 	send_cmd (user->con, MSG_CLIENT_PART, chan->name);
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
 		  "You were kicked from channel %s by %s: %s",
-		  chan->name, sender->nick, NONULL (pkt));
+		  chan->name, sender->nick, ac==3?av[2]:"");
     }
 
     user->channels = list_delete (user->channels, chan);
@@ -82,5 +87,5 @@ HANDLER (kick)
     part_channel (chan, user);
 
     notify_mods ("%s kicked %s out of channel %s: %s", sender->nick,
-		 user->nick, chan->name, NONULL (pkt));
+		 user->nick, chan->name, ac==3?av[2]:"");
 }

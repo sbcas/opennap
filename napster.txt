@@ -835,7 +835,7 @@ appropriate, examples of the <data> section for each message are given.
 
 622	muzzle a user [CLIENT]
 
-	<nick> [ <reason> ]
+	<nick> [ "<reason>" ]
 
 	client requests that <nick> not be allowed to send public messages
 

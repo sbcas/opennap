@@ -284,7 +284,7 @@ new_datum (char *filename, char *hash)
     return info;
 }
 
-/* 100 [ :<nick> ] <filename> <md5sum> <size> <bitrate> <frequency> <time>
+/* 100 [ :<nick> ] "<filename>" <md5sum> <size> <bitrate> <frequency> <time>
    client adding file to the shared database */
 HANDLER (add_file)
 {
@@ -303,18 +303,18 @@ HANDLER (add_file)
 
     if (Max_Shared && user->shared > Max_Shared)
     {
-	log ("add_file(): %s is already sharing %d files", user->nick,
+	log ("add_file(): %s is sharing %d files", user->nick,
 	     user->shared);
 	if (con->class == CLASS_USER)
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "You may only share %d files.", Max_Shared);
+		      "You may only share %d files", Max_Shared);
 	return;
     }
 
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 6)
     {
 	log ("add_file: wrong number of fields in message");
-	if (con->class == CLASS_USER)
+	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
 		      "invalid parameter data to add a file");
 	return;
@@ -323,7 +323,7 @@ HANDLER (add_file)
     /* make sure this isn't a duplicate */
     if (user->files && hash_lookup (user->files, av[0]))
     {
-	log ("add_file(): duplicate for user %s: %s", user->nick, av[0]);
+	log ("add_file(): duplicate for %s: %s", user->nick, av[0]);
 	if (con->class == CLASS_USER)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
 	return;
@@ -344,7 +344,7 @@ HANDLER (add_file)
 }
 
 char *Content_Types[] = {
-    "mp3",			/* not a real type, but what we use for audio/mp3 */
+    "mp3",		/* not a real type, but what we use for audio/mp3 */
     "audio",
     "video",
     "application",
@@ -374,15 +374,15 @@ HANDLER (share_file)
 	     user->shared);
 	if (con->class == CLASS_USER)
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "You may only share %d files.", Max_Shared);
+		      "You may only share %d files", Max_Shared);
 	return;
     }
 
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 4)
     {
 	log ("share_file(): wrong number of fields");
-	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of fields");
+	if(ISUSER(con))
+	    unparsable(con);
 	return;
     }
 
@@ -400,8 +400,7 @@ HANDLER (share_file)
     {
 	log ("share_file(): not a valid type: %s", av[3]);
 	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not a valid type",
-		      av[3]);
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not a valid type", av[3]);
 	return;
     }
 
@@ -425,6 +424,7 @@ HANDLER (user_sharing)
 
     (void) len;
     ASSERT (validate_connection (con));
+    CHECK_SERVER_CLASS("user_sharing");
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 3)
     {
 	log ("user_sharing(): wrong number of arguments");

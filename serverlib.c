@@ -260,3 +260,17 @@ pop_user (CONNECTION * con, char **pkt, USER ** user)
     return 0;
 
 }
+
+void
+unparsable(CONNECTION*con)
+{
+    ASSERT(validate_connection(con));
+    send_cmd(con,MSG_SERVER_NOSUCH,"parameters are unparsable");
+}
+
+void
+nosuchchannel(CONNECTION*con)
+{
+    ASSERT(validate_connection(con));
+    send_cmd(con,MSG_SERVER_NOSUCH,"no such channel");
+}

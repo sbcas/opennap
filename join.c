@@ -312,26 +312,37 @@ HANDLER (channel_level)
 /* 826 [ :<sender> ] <channel> <limit> */
 HANDLER (channel_limit)
 {
-    char *chanName;
-    USER *user;
+    char *chanName, *sender;
     int limit;
     CHANNEL *chan;
 
     ASSERT (validate_connection (con));
     (void) len;
-    if (pop_user (con, &pkt, &user))
-	return;
-    if (user->level < LEVEL_MODERATOR)
+    if(ISSERVER(con))
     {
-	if (ISUSER (con))
+	if(*pkt!=':')
+	{
+	    log("channel_limit(): malformed server command");
+	    return;
+	}
+	pkt++;
+	sender=next_arg(&pkt);
+    }
+    else
+    {
+	ASSERT(ISUSER(con));
+	if(con->user->level < LEVEL_MODERATOR)
+	{
 	    permission_denied (con);
-	return;
+	    return;
+	}
+	sender=con->user->nick;
     }
     chanName = next_arg (&pkt);
     if (!chanName || !pkt)
     {
 	log ("channel_limit(): too few parameters");
-	send_cmd (con, MSG_SERVER_NOSUCH, "parameters are unparsable");
+	unparsable(con);
 	return;
     }
     limit = atoi (pkt);
@@ -345,17 +356,16 @@ HANDLER (channel_limit)
     if (!chan)
     {
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "No such channel");
+	    nosuchchannel(con);
 	return;
     }
-    if (list_find (user->channels, chan) == 0)
+    if (ISUSER(con) && list_find (con->user->channels, chan) == 0)
     {
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "You are not on that channel");
+	send_cmd (con, MSG_SERVER_NOSUCH, "You are not on that channel");
 	return;
     }
     chan->limit = limit;
-    pass_message_args (con, tag, ":%s %s %d", user->nick, chan->name, limit);
-    notify_mods ("%s set limit on channel %s to %d", user->nick, chan->name,
+    pass_message_args (con, tag, ":%s %s %d", sender, chan->name, limit);
+    notify_mods ("%s set limit on channel %s to %d", sender, chan->name,
 		 limit);
 }
