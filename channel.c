@@ -157,7 +157,7 @@ HANDLER (channel_ban)
 		       b->target, ac > 2 ? " \"" : "", ac > 2 ? av[2] : "",
 		       ac > 2 ? "\"" : "");
     notify_mods (BANLOG_MODE, "%s banned %s from %s: %s", sender, b->target,
-		 NONULL (b->reason));
+	    chan->name, NONULL (b->reason));
 }
 
 /* 10205 [ :<sender> ] <channel> <user|ip> [ "<reason>" ] */
@@ -215,7 +215,7 @@ HANDLER (channel_unban)
 			       ac > 2 ? " \"" : "",
 			       ac > 2 ? av[2] : "", ac > 2 ? "\"" : "");
 	    notify_mods (BANLOG_MODE, "%s unbanned %s from %s: %s",
-			 sender, b->target, (ac > 2) ? av[2] : "");
+			 sender, b->target, chan->name, (ac > 2) ? av[2] : "");
 	    free_ban (b);
 	    tmpList = *list;
 	    *list = (*list)->next;
