@@ -41,6 +41,28 @@ void user_input (char *s)
 	    Quit = 1;
 	    return;
 	}
+	else if (!strncmp("search", s, 6))
+	{
+	    s+=6;
+	    type=200;
+	    snprintf (Buf, sizeof (Buf), "FILENAME CONTAINS \"%s\" MAX_RESULTS 100", s);
+	    s = Buf;
+	}
+	else if (!strncmp("browse", s, 5))
+	{
+	    s+=5;
+	    type=211;
+	}
+	else if (!strncmp("get", s, 3))
+	{
+	    s += 3;
+	    type = 203;
+	}
+	else
+	{
+	    puts("\runknown command[K");
+	    return;
+	}
 	while (isspace (*s))
 	    s++;
 	p = s;
