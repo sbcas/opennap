@@ -348,6 +348,8 @@ HANDLER (register_nick)
     int n;
     MYSQL_RES *result;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
     snprintf (Buf, sizeof (Buf), "SELECT nick FROM accounts WHERE nick='%s'",
 	    pkt);
