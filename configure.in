@@ -1,6 +1,7 @@
 dnl $Id$
 AC_INIT(opennap.h)
 AM_INIT_AUTOMAKE(opennap,0.12)
+AM_MAINTAINER_MODE
 AM_PROG_CC_STDC
 AC_HEADER_STDC
 AC_MSG_CHECKING(for socklen_t)

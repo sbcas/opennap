@@ -34,6 +34,9 @@ added support for the sharing limit messages (619/620)
 modified level() to update the db for registered accounts so that level
 changes are persistent across logins
 
+added AM_MAINTAINER_MODE macro to configure.in to disable the maintener
+rules in the genereate Makefile
+
 Changes from 0.10
 =================
 added max_connections config variable
