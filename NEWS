@@ -1,3 +1,18 @@
+[opennap 0.25]
+
+added a new configuration variable `config_dir' which controls the location
+where opennap looks for its config files (users, servers, bans, motd,
+channels), and removed the file-specific configuration variables:
+user_db_path, server_db_path and motd_path.
+
+added persistent channel configuration file: channels.  This file allows
+creation of channels which always exist even if no users are in them, along
+with the default level and limit.  See sample.channels for an example.
+
+added the OperServ `usermode' command to allow privileged users (Moderator
+or higher) to selectively turn off server notifications about things such as
+kills, muzzles and bans.  See the README file for details.
+
 [opennap 0.24]
 
 md5 passwords are now used to store user passwords on disk.  A new utility

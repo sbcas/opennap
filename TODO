@@ -4,14 +4,10 @@
   problem since when the user first connects they will likely send a large
   amount of valid information about the contents of their mp3 library
 
-* only local mods are notified when banned ip/users attempt to connect
-
 * add a list users command
 
 * server linking is still blocking for some reason, even thought the socket
   is set nonblocking before the connect() call
-
-* automatic purging of old accounts
 
 * add a timeout to check for blocked server connect() call
 

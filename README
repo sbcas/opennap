@@ -120,6 +120,19 @@ commands:
 	reconfig
 	register
 	stats
+	usermode
+		this is a `bitmask' of the following modes:
+			error, ban, change, channel, kill, level, server,
+			muzzle, port, topic
+		by default they are an enabled, but you can turn selective
+		ones off by using the command:
+			msg operserv usermode -kill -level
+		to turn off kill and user level change notifications.  Note
+		that if you specify any mods without a minus prefix, only
+		those modes listed will be enabled, and the others turned
+		off.  To reenable all mods specify `all'.  To display your
+		current usermode, simply use the usermode command with no
+		parameters
 
 See below in the section `Non-standard messages' for a descripton of the
 syntax for these commands.
