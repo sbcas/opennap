@@ -52,7 +52,7 @@ void
 buffer_group (BUFFER *b, int n)
 {
     ASSERT (buffer_validate (b));
-    if (b->datasize - b->consumed < n)
+    if (b->consumed + n > b->datasize)
     {
 	int l = n - b->datasize + b->consumed;
 
@@ -264,10 +264,9 @@ buffer_uncompress (z_streamp zip, BUFFER **b)
     BUFFER *cur = 0;
 
     ASSERT (buffer_validate (*b));
-    ASSERT ((*b)->consumed == 0);
     cur = buffer_new ();
-    zip->next_in = (uchar *) (*b)->data;
-    zip->avail_in = (*b)->datasize;
+    zip->next_in = (uchar *) (*b)->data + (*b)->consumed;
+    zip->avail_in = (*b)->datasize - (*b)->consumed;
     while (zip->avail_in > 0)
     {
 	/* allocate 2 times the compressed data for output, plus one extra
@@ -307,8 +306,10 @@ buffer_uncompress (z_streamp zip, BUFFER **b)
        to send only a portion of the string to the handler routines */
     *(cur->data + cur->datasize) = 0;
 
+#if 0
     log ("buffer_uncompress: uncompression ratio is %d%%",
 	    (100 * (zip->total_out - zip->total_in)) / zip->total_in);
+#endif
 
     return cur;
 }
