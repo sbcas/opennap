@@ -40,6 +40,7 @@ HANDLER (resume)
 	    d = (DATUM *) ptr->data;
 	    if (d->size == fsize)
 	    {
+		ASSERT (validate_connection (d->user));
 		send_cmd (con, MSG_SERVER_RESUME_MATCH,
 			"%s %lu %d \"%s\" %s %d %hu",
 			d->user->nick, d->user->host, d->user->port,

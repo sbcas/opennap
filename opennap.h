@@ -227,13 +227,13 @@ typedef struct
     int size;		/* size of file in bytes */
     LIST *tokens;	/* list of words in the filename */
 
-    /* next 5 entries make up 64 bits */
-    unsigned short bitrate;
+    short bitrate;
     unsigned short duration;
     unsigned short frequency;
-    unsigned int refcount : 8;	/* how many references to this structure? */
-    unsigned int valid : 1;	/* is this a valid file? */
-    unsigned int type : 7;
+    short type;	/* content type */
+
+    short refcount;	/* how many references to this structure? */
+    short valid;	/* is this a valid file? */
 } DATUM;
 
 typedef enum {
