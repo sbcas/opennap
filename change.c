@@ -156,7 +156,7 @@ HANDLER (alter_port)
     {
 	/* only log when the port value is actually changed, not resets */
 	notify_mods ("%s changed %s's data port to %d: %s", sender->nick,
-	    user->nick, p, NONULL (pkt));
+		     user->nick, p, NONULL (pkt));
 	user->port = p;
     }
 
@@ -166,7 +166,8 @@ HANDLER (alter_port)
 
     pass_message_args (con, tag, ":%s %s %d", sender->nick, user->nick, p);
 
-    log("alter_port(): %s set %s's data port to %d", sender->nick,user->nick,p);
+    log ("alter_port(): %s set %s's data port to %d", sender->nick,
+	 user->nick, p);
 }
 
 /* 753 [ :<sender> ] <nick> <pass> "<reason>"
@@ -278,4 +279,91 @@ HANDLER (alter_speed)
 		       speed);
     notify_mods ("%s changed %s's speed to %d.", sender->nick, user->nick,
 		 speed);
+}
+
+/* 611 [ :<sender> ] <user>
+   nuke a user's account */
+HANDLER (nuke)
+{
+    USER *sender;
+    USERDB *db;
+
+    ASSERT (validate_connection (con));
+    (void) len;
+    if (pop_user (con, &pkt, &sender))
+	return;
+    if (sender->level < LEVEL_MODERATOR)
+    {
+	if (ISUSER (con))
+	    permission_denied (con);
+	return;
+    }
+    if (!pkt)
+    {
+	log ("nuke(): missing user name");
+	ASSERT (ISSERVER (con));
+	return;
+    }
+    db = hash_lookup (User_Db, pkt);
+    if (!db)
+    {
+	log ("nuke(): %s is not registered", pkt);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not registered", pkt);
+	return;
+    }
+    if (sender->level < LEVEL_ELITE && sender->level <= db->level)
+    {
+	log ("nuke(): %s has no privilege to revoke %s's account",
+	     sender->nick, db->nick);
+	if (ISUSER (con))
+	    permission_denied (con);
+	return;
+    }
+    db->nuked = 1;
+    pass_message_args (con, tag, ":%s %s", sender->nick, pkt);
+    notify_mods ("%s nuked %s's account", sender->nick, pkt);
+}
+
+/* 624 [ :<sender> ] <user>
+   un-nuke a user's account */
+HANDLER (unnuke)
+{
+    USER *sender;
+    USERDB *db;
+
+    ASSERT (validate_connection (con));
+    (void) len;
+    if (pop_user (con, &pkt, &sender))
+	return;
+    if (sender->level < LEVEL_MODERATOR)
+    {
+	permission_denied (con);
+	return;
+    }
+    if (!pkt)
+    {
+	ASSERT (ISSERVER (con));
+	log ("unnuke(): missing user name");
+	return;
+    }
+    db = hash_lookup (User_Db, pkt);
+    if (!db)
+    {
+	log ("unnuke(): %s is not registered", pkt);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not registered", pkt);
+	return;
+    }
+    if (sender->level <= db->level)
+    {
+	log ("unnuke(): %s has no privilege to unnuke %s's account",
+	     sender->nick, pkt);
+	if (ISUSER (con))
+	    permission_denied (con);
+	return;
+    }
+    db->nuked = 0;
+    pass_message_args (con, tag, ":%s %s", sender->nick, pkt);
+    notify_mods ("%s restored %s's account", sender->nick, pkt);
 }

@@ -263,7 +263,8 @@ typedef struct
     char *nick;
     char *password;
     char *email;
-    int level;
+    short level;
+    short nuked;
     time_t created;
     time_t lastSeen;
 }
@@ -410,7 +411,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_UPLOAD_REQUEST	607
 #define MSG_CLIENT_UPLOAD_OK		608
 #define MSG_CLIENT_KILL			610
-#define MSG_CLIENT_NUKE			611	/* not implemented */
+#define MSG_CLIENT_NUKE			611
 #define MSG_CLIENT_BAN			612
 #define MSG_CLIENT_ALTER_PORT		613
 #define MSG_CLIENT_UNBAN		614
@@ -425,6 +426,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_MOTD			621
 #define MSG_CLIENT_MUZZLE		622
 #define MSG_CLIENT_UNMUZZLE		623
+#define MSG_CLIENT_UNNUKE		624
 #define MSG_CLIENT_ALTER_SPEED		625
 #define MSG_CLIENT_DATA_PORT_ERROR	626
 #define MSG_SERVER_DATA_PORT_ERROR	626	/* same as client message */
@@ -620,7 +622,7 @@ HANDLER (list_channels);
 HANDLER (list_users);
 HANDLER (login);
 HANDLER (muzzle);
-HANDLER (nuke_user);
+HANDLER (nuke);
 HANDLER (part);
 HANDLER (ping);
 HANDLER (privmsg);
@@ -657,6 +659,7 @@ HANDLER (upload_start);
 HANDLER (upload_end);
 HANDLER (topic);
 HANDLER (unban);
+HANDLER (unnuke);
 HANDLER (upload_request);
 HANDLER (user_ip);
 HANDLER (user_sharing);

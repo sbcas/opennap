@@ -107,6 +107,7 @@ static HANDLER Protocol[] = {
     {MSG_SERVER_UPLOAD_REQUEST, upload_request},/* 607 */
     {MSG_CLIENT_UPLOAD_OK, upload_ok},		/* 608 */
     {MSG_CLIENT_KILL, kill_user},		/* 610 */
+    {MSG_CLIENT_NUKE, nuke},			/* 611 */
     {MSG_CLIENT_BAN, ban},			/* 612 */
     {MSG_CLIENT_ALTER_PORT, alter_port},	/* 613 */
     {MSG_CLIENT_UNBAN, unban},			/* 614 */
@@ -116,6 +117,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_MOTD, show_motd},		/* 621 */
     {MSG_CLIENT_MUZZLE, muzzle},		/* 622 */
     {MSG_CLIENT_UNMUZZLE, unmuzzle},		/* 623 */
+    {MSG_CLIENT_UNNUKE, unnuke},		/* 624 */
     {MSG_CLIENT_ALTER_SPEED, alter_speed},	/* 625 */
     {MSG_CLIENT_DATA_PORT_ERROR, data_port_error},	/* 626 */
     {MSG_CLIENT_WALLOP, wallop},		/* 627 */
