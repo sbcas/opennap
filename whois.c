@@ -11,16 +11,34 @@
 #include "opennap.h"
 #include "debug.h"
 
+/* this is nasty but a necessary evil to avoid using a static buffer */
+static char *
+append_string(char *in, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap,fmt);
+    vsnprintf(Buf,sizeof(Buf),fmt,ap);
+    va_end(ap);
+    if(!in)
+	return STRDUP(Buf);
+    else
+    {
+	int len=strlen(in);
+	in=REALLOC(in,len + strlen(Buf) + 1);
+	strcpy(in+len,Buf);
+	return in;
+    }
+}
+
 /* 604 <user> */
 HANDLER (whois)
 {
     USER *sender, *user;
-    int l;
-    char *chanlist;
     time_t online;
     LIST *chan;
     USERDB *db;
-    char cmd[256], *cap;
+    char *cap;
+    char *rsp = 0;
 
     (void) tag;
     (void) len;
@@ -36,35 +54,25 @@ HANDLER (whois)
 	    send_cmd (con, MSG_SERVER_WHOWAS, "%s %s %d", db->nick,
 		      Levels[db->level], db->lastSeen);
 	else
-	    nosuchuser (con, pkt);
+	    nosuchuser (con);
 	return;
     }
 
     ASSERT (validate_user (user));
 
-    /* build the channel list this user belongs to */
-    Buf[0] = 0;
+    online = (int) (Current_Time - user->connected);
+
+    rsp = append_string(rsp,"%s",user->nick);
+    rsp = append_string(rsp," \"%s\"",Levels[user->level]);
+    rsp = append_string(rsp," %d",(int)online);
+    rsp = append_string(rsp," \" ");
     /* always show channel membership to privileged users */
     if (!user->cloaked || sender->level > LEVEL_USER)
     {
 	for (chan = user->channels; chan; chan = chan->next)
-	{
-	    l = strlen (Buf);
-	    snprintf (Buf + l, sizeof (Buf) - l, " %s",
-		    ((CHANNEL *) chan->data)->name);
-	}
+	    rsp=append_string(rsp,"%s ", ((CHANNEL *) chan->data)->name);
     }
-    if (!Buf[0])
-    {
-	/* the windows client doesn't seem to be able to parse an empty
-	   string so we ensure that there is always one space in the string
-	   returned to the client */
-	Buf[0] = ' ';
-	Buf[1] = 0;
-    }
-    chanlist = STRDUP (Buf);
-
-    online = (int) (Current_Time - user->connected);
+    rsp = append_string(rsp,"\"");/* terminate the channel list */
 
     if(user->muzzled)
 	cap="Muzzled";
@@ -72,31 +80,28 @@ HANDLER (whois)
 	cap="Cloaked";	/* show cloaked state to privileged users */
     else
 	cap="Active";
+    rsp=append_string(rsp," \"%s\"", cap);
+    rsp=append_string(rsp," %d %d %d %d",user->shared, user->downloads,
+	                  user->uploads, user->speed);
+    rsp=append_string(rsp," \"%s\"", user->clientinfo);
 
-    snprintf (cmd, sizeof (cmd),
-	      "%s \"%s\" %d \"%s\" \"%s\" %d %d %d %d \"%s\"",
-	      user->nick, Levels[user->level],
-	      (int) online, chanlist, cap,
-	      user->shared, user->downloads,
-	      user->uploads, user->speed, user->clientinfo);
     /* moderators and above see some additional information */
     if (sender->level > LEVEL_USER)
     {
 	db = hash_lookup (User_Db, user->nick);
-	snprintf (cmd + strlen (cmd), sizeof (cmd) - strlen (cmd),
-		  " %d %d %s %d %d %s", user->totaldown, user->totalup,
-		  my_ntoa (user->host), user->conport, user->port,
-		  db ? db->email : "unknown");
+	rsp=append_string(rsp," %d %d %s %d %d",
+		user->totaldown, user->totalup,
+		                  my_ntoa (user->host), user->conport, user->port);
+	rsp=append_string(rsp, " %s", db ? db->email : "unknown");
     }
     /* admins and above see the server the user is connected to.  this is
        only admin+ since the windows client would likely barf if present.
        i assume that admin+ will use another client such as BWap which
        understands the extra field */
     if (sender->level > LEVEL_MODERATOR)
-	snprintf (cmd + strlen (cmd), sizeof (cmd) - strlen (cmd), " %s",
-		  user->server ? user->server : Server_Name);
-    send_user (sender, MSG_SERVER_WHOIS_RESPONSE, "%s", cmd);
-    FREE (chanlist);
+	rsp=append_string(rsp," %s", user->server ? user->server : Server_Name);
+    send_user (sender, MSG_SERVER_WHOIS_RESPONSE, "%s", rsp);
+    FREE(rsp);
 
     /* notify privileged users when someone requests their info */
     if (user->level >= LEVEL_MODERATOR && sender != user)

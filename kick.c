@@ -78,9 +78,7 @@ HANDLER (kick)
     user = hash_lookup (Users, av[1]);
     if (!user)
     {
-	log ("kick(): no such user %s", av[1]);
-	if (ISUSER (con))
-	    nosuchuser (con, av[1]);
+	nosuchuser (con);
 	return;
     }
     if(sender->level < chan->level || !can_kick(chan,sender,user))
@@ -93,7 +91,7 @@ HANDLER (kick)
 	log ("kick(): %s is not on channel %s", user->nick, chan->name);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not on that channel",
-		      user->nick);
+		    user->nick);
 	return;
     }
 

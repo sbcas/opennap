@@ -127,12 +127,11 @@ add_client (CONNECTION * cli)
 
 /* no such user */
 void
-nosuchuser (CONNECTION * con, char *nick)
+nosuchuser (CONNECTION * con)
 {
     ASSERT (validate_connection (con));
     if (ISUSER (con))
-	send_cmd (con, MSG_SERVER_NOSUCH, "User %s is not currently online.",
-		  nick);
+	send_cmd (con, MSG_SERVER_NOSUCH, "User is not currently online.");
 }
 
 void

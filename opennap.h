@@ -633,7 +633,7 @@ int new_tcp_socket (int);
 char *next_arg (char **);
 char *next_arg_noskip (char **);
 time_t next_timer (void);
-void nosuchuser (CONNECTION *, char *);
+void nosuchuser (CONNECTION *);
 void nosuchchannel (CONNECTION*);
 void notify_mods (unsigned int, const char *, ...);
 void notify_ops (CHANNEL *, const char *, ...);

@@ -91,8 +91,7 @@ HANDLER (kill_user)
     user = hash_lookup (Users, av[0]);
     if (!user)
     {
-	log ("kill_user(): could not locate user %s", av[0]);
-	nosuchuser (con, av[0]);
+	nosuchuser (con);
 	return;
     }
     ASSERT (validate_user (user));

@@ -210,8 +210,7 @@ HANDLER (privmsg)
     user = hash_lookup (Users, ptr);
     if (!user)
     {
-	if (ISUSER (con))
-	    nosuchuser (con, ptr);
+	nosuchuser (con);
 	return;
     }
 

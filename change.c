@@ -151,8 +151,7 @@ HANDLER (alter_port)
     if (!user)
     {
 	log ("alter_port(): no such user %s", nick);
-	if (con->class == CLASS_USER)
-	    nosuchuser (con, nick);
+	nosuchuser (con);
 	return;
     }
     p = atoi (port);
@@ -272,7 +271,7 @@ HANDLER (alter_speed)
     user = hash_lookup (Users, av[0]);
     if (!user)
     {
-	nosuchuser(con, av[0]);
+	nosuchuser(con);
 	return;
     }
     ASSERT (validate_user (user));

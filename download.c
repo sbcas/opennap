@@ -313,8 +313,7 @@ HANDLER (queue_limit)
     recip = hash_lookup (Users, av[0]);
     if (!recip)
     {
-	log ("queue_limit(): unable to find user %s", av[0]);
-	nosuchuser (con, av[0]);
+	nosuchuser (con);
 	return;
     }
     ASSERT (validate_user (recip));
