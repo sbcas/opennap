@@ -413,32 +413,8 @@ HANDLER (channel_op)
 
     ASSERT (validate_connection (con));
     (void) len;
-    if (ISSERVER (con))
-    {
-	if (*pkt != ':')
-	{
-	    log ("channel_op(): missing sender from server message");
-	    return;
-	}
-	pkt++;
-	sender = next_arg (&pkt);
-	ASSERT (sender != 0);
-	if (!is_server (sender))
-	{
-	    senderUser = hash_lookup (Users, sender);
-	    if (!senderUser)
-	    {
-		log ("channel_op(): could not find user %s", sender);
-		return;
-	    }
-	}
-    }
-    else
-    {
-	ASSERT (ISUSER (con));
-	sender = con->user->nick;
-	senderUser = con->user;
-    }
+    if (pop_user_server (con, tag, &pkt, &sender, &senderUser))
+	return;
     /* check for permission */
     if (senderUser && senderUser->level < LEVEL_MODERATOR)
     {
@@ -484,12 +460,12 @@ HANDLER (channel_op)
 			{
 			    if (ISUSER (user->con))
 				send_cmd (user->con, MSG_SERVER_NOSUCH,
-					"%s removed you as operator on channel %s",
-					sender, chan->name);
+					  "%s removed you as operator on channel %s",
+					  sender, chan->name);
 			    chanUser->flags &= ~ON_OPERATOR;
 			    notify_ops (chan,
-				    "%s removed %s as operator on channel %s",
-				    sender, user->nick, chan->name);
+					"%s removed %s as operator on channel %s",
+					sender, user->nick, chan->name);
 			}
 		    }
 		}
@@ -504,14 +480,14 @@ HANDLER (channel_op)
 	    if (user)
 	    {
 		chanUser = find_chanuser (chan->users, user);
-		if(chanUser)
+		if (chanUser)
 		{
 		    if (ISUSER (user->con))
 			send_cmd (user->con, MSG_SERVER_NOSUCH,
-				"%s set you as operator on channel %s",
-				sender, chan->name);
+				  "%s set you as operator on channel %s",
+				  sender, chan->name);
 		    notify_ops (chan, "%s set %s as operator on channel %s",
-			    sender, suser, chan->name);
+				sender, suser, chan->name);
 		    /* do this here so the user doesn't get the message twice */
 		    chanUser->flags |= ON_OPERATOR;
 		}
@@ -543,8 +519,8 @@ notify_ops (CHANNEL * chan, const char *fmt, ...)
 	chanUser = list->data;
 	ASSERT (chanUser->magic == MAGIC_CHANUSER);
 	if (ISUSER (chanUser->user->con) &&
-		((chanUser->flags & ON_OPERATOR) ||
-		 chanUser->user->level > LEVEL_USER))
+	    ((chanUser->flags & ON_OPERATOR) ||
+	     chanUser->user->level > LEVEL_USER))
 	    queue_data (chanUser->user->con, buf, 4 + len);
     }
 }
@@ -666,7 +642,7 @@ HANDLER (channel_wallop)
        status otherwise, and is_chanop() will fail).  mods+ are assumed to
        be trusted enough that the check for membership is not required. */
     pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name, pkt);
-    notify_ops(chan, "%s [ops/%s]: %s", sender->nick, chan->name, pkt);
+    notify_ops (chan, "%s [ops/%s]: %s", sender->nick, chan->name, pkt);
 }
 
 static void
@@ -692,33 +668,8 @@ HANDLER (channel_mode)
 
     (void) len;
     ASSERT (validate_connection (con));
-    if (ISSERVER (con))
-    {
-	if (*pkt != ':')
-	{
-	    log ("channel_mode(): invalid server message from %s", con->host);
-	    return;
-	}
-	pkt++;
-	senderName = next_arg (&pkt);
-	if (!is_server (senderName))
-	{
-	    sender = hash_lookup (Users, senderName);
-	    if (!sender)
-	    {
-		log ("channel_mode(): unknown user %s", senderName);
-		return;
-	    }
-	}
-	else
-	    sender = 0;		/*server */
-    }
-    else
-    {
-	ASSERT (ISUSER (con));
-	senderName = con->user->nick;
-	sender = con->user;
-    }
+    if (pop_user_server (con, tag, &pkt, &senderName, &sender))
+	return;
     chanName = next_arg (&pkt);
     if (!chanName)
     {
@@ -742,10 +693,10 @@ HANDLER (channel_mode)
 	if (ISUSER (con))
 	    send_cmd_pre (con, tag, "mode for channel ", "%s%s%s%s",
 			  chan->name,
-			  (chan->
-			   flags & ON_CHANNEL_PRIVATE) ? " +PRIVATE" : "",
-			  (chan->
-			   flags & ON_CHANNEL_MODERATED) ? " +MODERATED" : "",
+			  (chan->flags & ON_CHANNEL_PRIVATE) ? " +PRIVATE" :
+			  "",
+			  (chan->flags & ON_CHANNEL_MODERATED) ? " +MODERATED"
+			  : "",
 			  (chan->flags & ON_CHANNEL_INVITE) ? " +INVITE" : "",
 			  (chan->flags & ON_CHANNEL_TOPIC) ? " +TOPIC" : "");
 	return;
@@ -919,6 +870,186 @@ HANDLER (channel_invite)
 		      chan->name);
     }
 
-    notify_ops(chan,"%s invited %s to channel %s",sender->nick,user->nick,
-	    chan->name);
+    notify_ops (chan, "%s invited %s to channel %s", sender->nick, user->nick,
+		chan->name);
+}
+
+/* 10211/10212 [:sender] <channel> [user [user ...]]
+   voice/devoice users in a channel */
+HANDLER (channel_voice)
+{
+    char *senderName;
+    char *chanName;
+    char *nick;
+    USER *sender = 0, *user;
+    CHANUSER *chanUser;
+    LIST *list;
+    CHANNEL *chan;
+
+    (void) len;
+    ASSERT (validate_connection (con));
+    if (pop_user_server (con, tag, &pkt, &senderName, &sender))
+	return;
+    chanName = next_arg (&pkt);
+    if (!chanName)
+    {
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		      "channel voice failed: missing channel name");
+	return;
+    }
+    chan = hash_lookup (Channels, chanName);
+    if (!chan)
+    {
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		      "channel voice failed: no such channel");
+	return;
+    }
+    if (!pkt)
+    {
+	if (ISUSER (con))
+	{
+	    /* return a list of voiced users */
+	    send_cmd (con, MSG_CLIENT_PRIVMSG,
+		      "ChanServ Voiced users on channel %s", chan->name);
+	    for (list = chan->users; list; list = list->next)
+	    {
+		chanUser = list->data;
+		if (chanUser->flags & ON_CHANNEL_VOICE)
+		    send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ %s",
+			      chanUser->user->nick);
+	    }
+	    send_cmd (con, MSG_CLIENT_PRIVMSG,
+		      "ChanServ End of voiced users on channel %s",
+		      chan->name);
+	}
+	return;
+    }
+    pass_message_args (con, tag, ":%s %s %s", senderName, chan->name, pkt);
+    while (pkt)
+    {
+	nick = next_arg (&pkt);
+	user = hash_lookup (Users, nick);
+	if (!user)
+	{
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			  "channel voice: %s is not online", nick);
+	    continue;
+	}
+	for (list = chan->users; list; list = list->next)
+	{
+	    chanUser = list->data;
+	    if (chanUser->user == user)
+	    {
+		if (tag == MSG_CLIENT_CHANNEL_UNVOICE)
+		    chanUser->flags &= ~ON_CHANNEL_VOICE;
+		else
+		{
+		    chanUser->flags |= ON_CHANNEL_VOICE;
+		    chanUser->flags &= ~ON_CHANNEL_MUZZLED;
+		}
+		if (ISUSER (chanUser->user->con))
+		{
+		    send_cmd (chanUser->user->con, MSG_SERVER_NOSUCH,
+			      "%s %s voice on channel %s",
+			      (sender
+			       && sender->cloaked) ? "Operator" : senderName,
+			      (chanUser->flags & ON_CHANNEL_VOICE) ?
+			      "gave you" : "removed your", chan->name);
+		}
+		notify_ops (chan, "%s %s voice %s %s on channel %s",
+			    senderName,
+			    (tag ==
+			     MSG_CLIENT_CHANNEL_VOICE) ? "gave" : "removed",
+			    (tag == MSG_CLIENT_CHANNEL_VOICE) ? "to" : "from",
+			    user->nick, chan->name);
+		break;
+	    }
+	}
+	if (!list)
+	{
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			  "channel voice: %s is not on channel %s",
+			  user->nick, chan->name);
+	}
+    }
+}
+
+/* 10213/10214 [:sender] <channel> <user> ["reason"]
+   channel muzzle/unmuzzle */
+HANDLER (channel_muzzle)
+{
+    char *senderName;
+    USER *sender, *user;
+    CHANNEL *chan;
+    LIST *list;
+    CHANUSER *chanUser;
+    int ac = -1;
+    char *av[3];
+
+    (void) len;
+    ASSERT (validate_connection (con));
+    if (pop_user_server (con, tag, &pkt, &senderName, &sender))
+	return;
+    if (pkt)
+	ac = split_line (av, FIELDS (av), pkt);
+    if (ac < 2)
+    {
+	unparsable (con);
+	return;
+    }
+    chan = hash_lookup (Channels, av[0]);
+    if (!chan)
+    {
+	nosuchchannel (con);
+	return;
+    }
+    if (sender
+	&& (sender->level < LEVEL_MODERATOR && !is_chanop (chan, sender)))
+    {
+	permission_denied (con);
+	return;
+    }
+    user = hash_lookup (Users, av[1]);
+    if (!user)
+    {
+	nosuchuser (con);
+	return;
+    }
+    /* don't allow ops to muzzle mods+ */
+    if (sender->level != LEVEL_ELITE && sender->level < user->level)
+    {
+	permission_denied (con);
+	return;
+    }
+    for (list = chan->users; list; list = list->next)
+    {
+	chanUser = list->data;
+	if (chanUser->user == user)
+	{
+	    if (tag == MSG_CLIENT_CHANNEL_MUZZLE)
+	    {
+		chanUser->flags |= ON_CHANNEL_MUZZLED;
+		chanUser->flags &= ~ON_CHANNEL_VOICE;
+	    }
+	    else
+		chanUser->flags &= ~ON_CHANNEL_MUZZLED;
+	    if (ISUSER (chanUser->user->con))
+		send_cmd (chanUser->user->con, MSG_SERVER_NOSUCH,
+			  "%s %smuzzled you on channel %s: %s",
+			  (sender
+			   && sender->cloaked) ? "Operator" : senderName,
+			  (chanUser->flags & ON_CHANNEL_MUZZLED) ? "" : "un",
+			  chan->name, (ac > 2) ? av[2] : "");
+	    notify_ops (chan, "%s %smuzzled %s on channel %s: %s", senderName,
+			(chanUser->flags & ON_CHANNEL_MUZZLED) ? "" : "un",
+			user->nick, chan->name, (ac > 2) ? av[2] : "");
+	    break;
+	}
+    }
+    pass_message_args (con, tag, ":%s %s %s \"%s\"", senderName, chan->name,
+		       user->nick, (ac > 2) ? av[2] : "");
 }

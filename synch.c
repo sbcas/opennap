@@ -35,10 +35,10 @@ sync_user (USER * user, CONNECTION * con)
     }
 
     /* send a login message for this user */
-    send_cmd (con, MSG_CLIENT_LOGIN, "%s %s %d \"%s\" %d unknown %d %u %s %hu",
-	      user->nick, user->pass, user->port, user->clientinfo,
-	      user->speed, user->connected, user->host, user->server,
-	      user->conport);
+    send_cmd (con, MSG_CLIENT_LOGIN,
+	      "%s %s %d \"%s\" %d unknown %d %u %s %hu", user->nick,
+	      user->pass, user->port, user->clientinfo, user->speed,
+	      user->connected, user->host, user->server, user->conport);
 
     /* TODO: will be deprecated in 0.34 */
 #if 1
@@ -51,15 +51,16 @@ sync_user (USER * user, CONNECTION * con)
     if (user->level != LEVEL_USER)
     {
 	/* get the timestamp from the user db entry */
-	USERDB *db = hash_lookup(User_Db, user->nick);
-	ASSERT (db!=0);
+	USERDB *db = hash_lookup (User_Db, user->nick);
+
+	ASSERT (db != 0);
 	send_cmd (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s %d",
 		  Server_Name, user->nick, Levels[user->level],
 		  db->timestamp);
     }
 
     if (user->cloaked)
-	send_cmd(con,MSG_CLIENT_CLOAK,":%s 1",user->nick);
+	send_cmd (con, MSG_CLIENT_CLOAK, ":%s 1", user->nick);
 
     /* do this before the joins so the user's already in the channel see
        the real file count */
@@ -82,9 +83,13 @@ sync_user (USER * user, CONNECTION * con)
 static void
 sync_chan (CHANNEL * chan, CONNECTION * con)
 {
+    CHANUSER *chanUser;
+    LIST *list;
+
     if (chan->level != LEVEL_USER)
 	send_cmd (con, MSG_CLIENT_CHANNEL_LEVEL, ":%s %s %s %d",
-		  Server_Name, chan->name, Levels[chan->level], chan->timestamp);
+		  Server_Name, chan->name, Levels[chan->level],
+		  chan->timestamp);
     if (chan->limit != Channel_Limit)
 	send_cmd (con, MSG_CLIENT_CHANNEL_LIMIT, ":%s %s %d %d",
 		  Server_Name, chan->name, chan->limit, chan->timestamp);
@@ -103,16 +108,28 @@ sync_chan (CHANNEL * chan, CONNECTION * con)
 	    snprintf (buf + len, sizeof (buf) - len, " %s",
 		      (char *) list->data);
 	}
-	send_cmd (con, MSG_CLIENT_OP, ":%s %s%s", Server_Name, chan->name, buf);
+	send_cmd (con, MSG_CLIENT_OP, ":%s %s%s", Server_Name, chan->name,
+		  buf);
     }
 
-    if (chan->flags & (ON_CHANNEL_PRIVATE|ON_CHANNEL_MODERATED))
-	send_cmd(con,MSG_CLIENT_CHANNEL_MODE,":%s %s%s%s",
-		Server_Name, chan->name,
-		(chan->flags & ON_CHANNEL_PRIVATE) ? " +PRIVATE" : "",
-		(chan->flags & ON_CHANNEL_MODERATED) ? " +MODERATED" : "",
-		(chan->flags & ON_CHANNEL_INVITE) ? " +INVITE" : "",
-		(chan->flags & ON_CHANNEL_TOPIC) ? " +TOPIC" : "");
+    if (chan->flags & (ON_CHANNEL_PRIVATE | ON_CHANNEL_MODERATED))
+	send_cmd (con, MSG_CLIENT_CHANNEL_MODE, ":%s %s%s%s",
+		  Server_Name, chan->name,
+		  (chan->flags & ON_CHANNEL_PRIVATE) ? " +PRIVATE" : "",
+		  (chan->flags & ON_CHANNEL_MODERATED) ? " +MODERATED" : "",
+		  (chan->flags & ON_CHANNEL_INVITE) ? " +INVITE" : "",
+		  (chan->flags & ON_CHANNEL_TOPIC) ? " +TOPIC" : "");
+
+    for (list = chan->users; list; list = list->next)
+    {
+	chanUser = list->data;
+	if (chanUser->flags & ON_CHANNEL_VOICE)
+	    send_cmd (con, MSG_CLIENT_CHANNEL_VOICE, ":%s %s %s",
+		      Server_Name, chan->name, chanUser->user->nick);
+	else if (chanUser->flags & ON_CHANNEL_MUZZLED)
+	    send_cmd (con, MSG_CLIENT_CHANNEL_MUZZLE, ":%s %s %s",
+		      Server_Name, chan->name, chanUser->user->nick);
+    }
 }
 
 static void

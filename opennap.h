@@ -75,7 +75,8 @@ typedef struct _chanuser CHANUSER;
 
 /* bitmasks for the `flags' member of struct _chanuser */
 #define ON_OPERATOR	1
-#define ON_VOICE	2
+#define ON_CHANNEL_VOICE	(1<<1)
+#define ON_CHANNEL_MUZZLED	(1<<2)
 
 struct _chanuser
 {
@@ -597,6 +598,10 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_CHANNEL_WALLOP	10208
 #define MSG_CLIENT_CHANNEL_MODE		10209
 #define MSG_CLIENT_CHANNEL_INVITE	10210
+#define MSG_CLIENT_CHANNEL_VOICE	10211
+#define MSG_CLIENT_CHANNEL_UNVOICE	10212
+#define MSG_CLIENT_CHANNEL_MUZZLE	10213
+#define MSG_CLIENT_CHANNEL_UNMUZZLE	10214
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
 #define MSG_CLIENT_BROWSE_NEW		10301
 #define MSG_SERVER_BROWSE_RESULT_NEW	10302
@@ -682,6 +687,7 @@ void pass_message_args (CONNECTION * con, unsigned int msgtype,
 			const char *fmt, ...);
 void permission_denied (CONNECTION * con);
 int pop_user (CONNECTION * con, char **pkt, USER ** user);
+int pop_user_server (CONNECTION * con, int tag, char **pkt, char **nick, USER ** user);
 void print_args (int, char **);
 void queue_data (CONNECTION *, char *, int);
 void remove_connection (CONNECTION *);
@@ -741,9 +747,11 @@ HANDLER (channel_invite);
 HANDLER (channel_level);
 HANDLER (channel_limit);
 HANDLER (channel_mode);
+HANDLER (channel_muzzle);
 HANDLER (channel_op);
 HANDLER (channel_op_list);
 HANDLER (channel_unban);
+HANDLER (channel_voice);
 HANDLER (channel_wallop);
 HANDLER (check_password);
 HANDLER (check_port);

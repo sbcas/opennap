@@ -17,6 +17,51 @@
    being called from eachother or used elsewhere so this is safe */
 static char PublicBuf[2048];
 
+/* determine if `sender' has permission to send to channel `chan' */
+static int
+check_permission (CHANNEL * chan, USER * sender)
+{
+    LIST *list;
+    CHANUSER *chanUser;
+
+    for (list = chan->users; list; list = list->next)
+    {
+	chanUser = list->data;
+	if (chanUser->user == sender)
+	    break;
+    }
+
+    if (!list)
+    {
+	log ("check_permission(): fatal error, could not find %s on channel %s",
+	     sender->nick, chan->name);
+	return -1;
+    }
+
+    if (sender->level < LEVEL_MODERATOR
+	&& (chanUser->flags & ON_OPERATOR) == 0)
+    {
+	if (chan->flags & ON_CHANNEL_MODERATED)
+	{
+	    if ((chanUser->flags & ON_CHANNEL_VOICE) == 0)
+	    {
+		if (ISUSER (sender->con))
+		    send_cmd (sender->con, MSG_SERVER_NOSUCH,
+			      "permission denied: channel is moderated");
+		return -1;
+	    }
+	}
+	else if (chanUser->flags & ON_CHANNEL_MUZZLED)
+	{
+	    if (ISUSER (sender->con))
+		send_cmd (sender->con, MSG_SERVER_NOSUCH,
+			  "permission denied: muzzled on channel");
+	    return -1;
+	}
+    }
+    return 0;
+}
+
 /* [ :<sender> ] <channel> <text> */
 /*  public message to a channel */
 HANDLER (public)
@@ -69,24 +114,17 @@ HANDLER (public)
 	return;
     }
 
-    if ((chan->flags & ON_CHANNEL_MODERATED) && sender->level < LEVEL_MODERATOR && !is_chanop(chan,sender))
-    {
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,
-		    "permission denied: channel %s is moderated",
-		    chan->name);
+    if (check_permission (chan, sender))
 	return;
-    }
 
     /* relay this message to peer servers */
     pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name, pkt);
 
     /* the majority of the users in the channel will see this message, so
        form it one time */
-    len = form_message (PublicBuf, sizeof(PublicBuf), MSG_SERVER_PUBLIC,
+    len = form_message (PublicBuf, sizeof (PublicBuf), MSG_SERVER_PUBLIC,
 			"%s %s %s", chan->name,
-			sender->cloaked ? "Operator" : sender->nick,
-			pkt);
+			sender->cloaked ? "Operator" : sender->nick, pkt);
 
     /* send this message to everyone in the channel */
     for (list = chan->users; list; list = list->next)
@@ -95,11 +133,11 @@ HANDLER (public)
 	ASSERT (chanUser->magic == MAGIC_CHANUSER);
 	if (ISUSER (chanUser->user->con))
 	{
-	    if(sender->cloaked && chanUser->user->level > LEVEL_USER)
-		send_cmd(chanUser->user->con,MSG_SERVER_PUBLIC,"%s %s %s",
-			 chan->name, sender->nick, pkt);
+	    if (sender->cloaked && chanUser->user->level > LEVEL_USER)
+		send_cmd (chanUser->user->con, MSG_SERVER_PUBLIC, "%s %s %s",
+			  chan->name, sender->nick, pkt);
 	    else
-		queue_data(chanUser->user->con,PublicBuf,len);
+		queue_data (chanUser->user->con, PublicBuf, len);
 	}
     }
 }
@@ -151,24 +189,17 @@ HANDLER (emote)
 	return;
     }
 
-    if ((chan->flags & ON_CHANNEL_MODERATED) &&
-	    user->level < LEVEL_MODERATOR && !is_chanop(chan,user))
-    {
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,
-		    "permission denied: channel %s is moderated",
-		    chan->name);
+    if (check_permission (chan, user))
 	return;
-    }
+
     /* relay to peer servers */
     pass_message_args (con, tag, ":%s %s \"%s\"", user->nick, chan->name,
 		       av[1]);
 
     /* majority of the users see the same message, so form it once */
-    len=form_message(PublicBuf,sizeof(PublicBuf),tag,"%s %s \"%s\"",
-		     chan->name,
-		     user->cloaked ? "Operator" : user->nick,
-		     av[1]);
+    len = form_message (PublicBuf, sizeof (PublicBuf), tag, "%s %s \"%s\"",
+			chan->name,
+			user->cloaked ? "Operator" : user->nick, av[1]);
 
     /* send this message to all channel members */
     for (list = chan->users; list; list = list->next)
@@ -177,11 +208,11 @@ HANDLER (emote)
 	ASSERT (chanUser->magic == MAGIC_CHANUSER);
 	if (ISUSER (chanUser->user->con))
 	{
-	    if(user->cloaked && chanUser->user->level > LEVEL_USER)
+	    if (user->cloaked && chanUser->user->level > LEVEL_USER)
 		send_cmd (chanUser->user->con, tag, "%s %s \"%s\"",
 			  chan->name, user->nick, av[1]);
 	    else
-		queue_data(chanUser->user->con,PublicBuf,len);
+		queue_data (chanUser->user->con, PublicBuf, len);
 	}
     }
 }

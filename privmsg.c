@@ -137,6 +137,14 @@ chanserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_CHANNEL_INVITE;
     else if (!strcasecmp ("mode", cmd))
 	tag = MSG_CLIENT_CHANNEL_MODE;
+    else if (!strcasecmp ("muzzle",cmd))
+	tag = MSG_CLIENT_CHANNEL_MUZZLE;
+    else if (!strcasecmp ("unmuzzle",cmd))
+	tag = MSG_CLIENT_CHANNEL_UNMUZZLE;
+    else if (!strcasecmp ("unvoice",cmd))
+	tag = MSG_CLIENT_CHANNEL_UNVOICE;
+    else if (!strcasecmp ("voice",cmd))
+	tag = MSG_CLIENT_CHANNEL_VOICE;
     else if (!strcasecmp ("help", cmd))
     {
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
@@ -156,12 +164,16 @@ chanserv (CONNECTION * con, char *pkt)
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
 		  "ChanServ limit <channel> <number>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ mode <channel> [mode]");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ muzzle <channel> <user>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
 		"ChanServ op <channel> <user> [user ...]");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ oplist <channel>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
 		  "ChanServ topic <channel> [topic]");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ unban <channel>");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ unmuzzle <channel> <user>");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ unvoice <channel> [user [user ...]]");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ voice <channel> [user [user ...]]");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ wallop <channel> <text>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ END of ChanServ HELP");
 	return;

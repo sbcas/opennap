@@ -243,6 +243,41 @@ validate_hotlist (HOTLIST * h)
 }
 #endif
 
+/* like pop_user(), but allows `nick' to be another server */
+int
+pop_user_server (CONNECTION *con, int tag, char **pkt, char **nick, USER **user)
+{
+    if(ISSERVER(con))
+    {
+	if(**pkt!=':')
+	{
+	    log("pop_user_server(): (tag %d) server message is missing sender",
+		tag);
+	    return -1;
+	}
+	(*pkt)++;
+	*nick = next_arg(pkt);
+	if(!is_server(*nick))
+	{
+	    *user=hash_lookup(Users,*nick);
+	    if(!*user)
+	    {
+		log("pop_user_server(): (tag %d) could not find user %s", *user);
+		return -1;
+	    }
+	}
+	else
+	    *user=0;
+    }
+    else
+    {
+	ASSERT(ISUSER(con));
+	*user=con->user;
+	*nick=(*user)->nick;
+    }
+    return 0;
+}
+
 int
 pop_user (CONNECTION * con, char **pkt, USER ** user)
 {

@@ -197,6 +197,10 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_CHANNEL_WALLOP, channel_wallop},	/* 10208 */
     {MSG_CLIENT_CHANNEL_MODE, channel_mode},	/* 10209 */
     {MSG_CLIENT_CHANNEL_INVITE, channel_invite},/* 10210 */
+    {MSG_CLIENT_CHANNEL_VOICE, channel_voice},	/* 10211 */
+    {MSG_CLIENT_CHANNEL_UNVOICE, channel_voice},/* 10212 */
+    {MSG_CLIENT_CHANNEL_MUZZLE, channel_muzzle},/* 10213 */
+    {MSG_CLIENT_CHANNEL_UNMUZZLE, channel_muzzle},/* 10214 */
     {MSG_CLIENT_SHARE_FILE, share_file},	/* 10300 */
     {MSG_CLIENT_BROWSE_NEW, browse_new},	/* 10301 */
 };

@@ -1,7 +1,7 @@
-opennap v0.32 (ALPHA)
+opennap v0.34 (ALPHA)
 the open source (TM) napster server
 ===================================
-June 8, 2000
+June 22, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -415,6 +415,22 @@ are implemented as additional functionality in the opennap server.
 	when a channel is +INVITE, this sends an invitation to a user to
 	join the specified channel.  the user issuing the invite must be
 	a member of the channel.
+
+10211	give voice to speak in moderated channel [CLIENT]
+
+	Format: <channel> [user [user ...]]
+
+10212	remove voice to speak in moderated channel [CLIENT]
+
+	Format: <channel> [user [user ...]]
+
+10213	muzzle a user in a specific channel [CLIENT]
+
+	Format: <channel> <user> ["reason"]
+
+10214	unmuzzle a user in specific channel [CLIENT]
+
+	Format: <channel> <user> ["reason"]
 
 10300	share generic media file [CLIENT]
 
