@@ -222,6 +222,7 @@ send_queued_data (CONNECTION *con)
 {
     int l;
 
+    ASSERT (VALID (con));
     /* write as much of the queued data as we can */
     l = write (con->fd, con->sendbuf, con->sendbuflen);
     if (l == -1)

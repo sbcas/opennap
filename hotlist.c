@@ -33,8 +33,7 @@ HANDLER (add_hotlist)
     }
 
     /* add this user to the list of users waiting for notification */
-    hotlist->users = array_add (hotlist->users, &hotlist->numusers,
-	con->user);
+    hotlist->users = array_add (hotlist->users, &hotlist->numusers, con);
 
     /* add the hotlist entry to this particular users list */
     con->hotlist = array_add (con->hotlist, &con->hotlistsize, hotlist);

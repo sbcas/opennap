@@ -79,9 +79,9 @@ log (const char *fmt, ...)
     fputc ('\n', stdout);
 }
 
-void
-send_stats (CONNECTION * con)
+HANDLER (server_stats)
 {
+    (void) pkt;
     send_cmd (con, MSG_SERVER_STATS, "%d %d %d", Users->dbsize, Num_Files,
 	      Num_Gigs);
 }
@@ -121,6 +121,7 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_ADD_HOTLIST, add_hotlist }, /* 207 */
     { MSG_CLIENT_ADD_HOTLIST_SEQ, add_hotlist }, /* 208 */
     { MSG_CLIENT_BROWSE, browse }, /* 211 */
+    { MSG_SERVER_STATS, server_stats }, /* 214 */
     { MSG_CLIENT_RESUME_REQUEST, resume }, /* 215 */
     { MSG_CLIENT_DOWNLOAD_START, download_start }, /* 218 */
     { MSG_CLIENT_DOWNLOAD_END, download_end }, /* 219 */

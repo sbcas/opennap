@@ -30,7 +30,6 @@ struct search {
     char *file;
     int speed;
     int bitrate;
-    int port;
 };
 
 struct search *Search = 0;
@@ -254,6 +253,11 @@ void user_input (char *s)
 	    }
 	    return;
 	}
+	else if (!strncmp("speed", s, 5))
+	{
+	    s += 5;
+	    type = 700;
+	}
 	else
 	{
 	    do_output("unknown command");
@@ -366,45 +370,66 @@ server_output (void)
 	/* download ack */
 	if(split_line(argv,sizeof(argv)/sizeof(char*),Buf)==6)
 	{
-	    struct sockaddr_in sin;
-
-	    /* make a connection to the uploader */
-	    memset(&sin,0,sizeof(sin));
-	    sin.sin_family=AF_INET;
-	    sin.sin_port=htons(atoi(argv[2]));
-	    sin.sin_addr.s_addr=strtoul(argv[1],NULL,10);
-	    newfd=socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
-	    if(newfd<0)
+	    if (atoi (argv[2]) > 0)
 	    {
-		perror("socket");
-		return 0;
+		struct sockaddr_in sin;
+
+		/* make a connection to the uploader */
+		memset(&sin,0,sizeof(sin));
+		sin.sin_family=AF_INET;
+		sin.sin_port=htons(atoi(argv[2]));
+		sin.sin_addr.s_addr=strtoul(argv[1],NULL,10);
+		newfd=socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
+		if(newfd<0)
+		{
+		    perror("socket");
+		    return 0;
+		}
+		do_output("connecting to %s, port %hd", inet_ntoa(sin.sin_addr),
+			ntohs(sin.sin_port));
+		if(connect(newfd,(struct sockaddr*)&sin,sizeof(sin))==-1)
+		{
+		    perror("connect");
+		    close(newfd);
+		    /*notify the client we could not connect them */
+		    snprintf(Buf+4,sizeof(Buf)-4,"%s",argv[0]);
+		    len=strlen(argv[0]);
+		    msg=626;
+		    memcpy(Buf,&len,2);
+		    memcpy(Buf+2,&msg,2);
+		    write(Fd,Buf,len+4);
+		    return 0;
+		}
+		xmit=new_xmit(newfd);
+		xmit->filename = strdup(argv[3]);
+		xmit->nick=strdup(argv[0]);
+		xmit->download = 1;
+
+		/*notify the server we are downloading */
+		msg=218;
+		len=0;
+		memcpy(Buf,&len,2);
+		memcpy(Buf+2,&msg,2);
+		write(Fd,Buf,4);
+
+		/* request the file from the uploader */
+		write(xmit->fd,"GET",3);
+		snprintf(Buf,sizeof(Buf),"%s \"%s\" 0", Nick, xmit->filename);
+		write(xmit->fd,Buf,strlen(Buf));
+
+		/* we wait for the client response so we don't block */
 	    }
-	    do_output("connecting to %s, port %hd", inet_ntoa(sin.sin_addr),
-		    ntohs(sin.sin_port));
-	    if(connect(newfd,(struct sockaddr*)&sin,sizeof(sin))==-1)
+	    else
 	    {
-		perror("connect");
-		close(newfd);
-		return 0;
+		/* uploader is firewalled, send a 500 request */
+		do_output("%s is firewalled, sending request...", argv[0]);
+		snprintf(Buf+4,sizeof(Buf)-4,"%s \"%s\"", argv[0], argv[3]);
+		len=strlen(Buf+4);
+		msg=500;
+		memcpy(Buf,&len,2);
+		memcpy(Buf+2,&msg,2);
+		write(Fd,Buf,len+4);
 	    }
-	    xmit=new_xmit(newfd);
-	    xmit->filename = strdup(argv[3]);
-	    xmit->nick=strdup(argv[0]);
-	    xmit->download = 1;
-
-	    /*notify the server we are downloading */
-	    msg=218;
-	    len=0;
-	    memcpy(Buf,&len,2);
-	    memcpy(Buf+2,&msg,2);
-	    write(Fd,Buf,4);
-
-	    /* request the file from the uploader */
-	    write(xmit->fd,"GET",3);
-	    snprintf(Buf,sizeof(Buf),"%s \"%s\" 0", Nick, xmit->filename);
-	    write(xmit->fd,Buf,strlen(Buf));
-
-	    /* we wait for the client response so we don't block */
 	}
     }
     /*browse*/
@@ -547,13 +572,13 @@ static void
 usage (void)
 {
     printf ("usage: %s [ -rhv ] [ -s SERVER ] [ -p PORT ] [ -u USER ] [ -d DATAPORT ]\n", PACKAGE);
-puts   ("  -d DATAPORT  specify the local data port to listen on");
-puts   ("  -h		display this help message");
-puts   ("  -r		auto reconnect to server");
-puts   ("  -s SERVER	connect to SERVER");
-puts   ("  -p PORT	connect to PORT");
-puts   ("  -u USER	log in as USER");
-puts   ("  -v		display version information");
+    puts   ("  -d DATAPORT  specify the local data port to listen on");
+    puts   ("  -h		display this help message");
+    puts   ("  -r		auto reconnect to server");
+    puts   ("  -s SERVER	connect to SERVER");
+    puts   ("  -p PORT	connect to PORT");
+    puts   ("  -u USER	log in as USER");
+    puts   ("  -v		display version information");
     exit (0);
 }
 

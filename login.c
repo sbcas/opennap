@@ -100,7 +100,7 @@ HANDLER (login)
 	send_cmd (con, MSG_SERVER_EMAIL, "anon@%s", Server_Name);
 
 	show_motd (con);
-	send_stats (con);
+	server_stats (con, NULL);
 
 	/* query our local accounts database for mod/admin privileges */
 	snprintf (Buf, sizeof (Buf),

@@ -264,7 +264,6 @@ void send_cmd (CONNECTION *, unsigned long msgtype, const char *fmt, ...);
 int split_line (char **template, int templatecount, char *pkt);
 void show_motd (CONNECTION * con);
 void send_queued_data (CONNECTION *con);
-void send_stats (CONNECTION * con);
 void sql_error (const char *function, const char *query);
 void synch_server (CONNECTION *);
 
@@ -301,6 +300,7 @@ HANDLER (search);
 HANDLER (server_connect);
 HANDLER (server_login);
 HANDLER (server_login_ack);
+HANDLER (server_stats);
 HANDLER (unmuzzle);
 HANDLER (upload_ok);
 HANDLER (upload_start);

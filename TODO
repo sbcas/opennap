@@ -14,3 +14,6 @@
   that anyone would want to run a for pay napster server, but to be
   politically correct opennap should at least have support for the open
   source alternative as well
+
+* need a magic number at the beginning of various structs to check in a
+  struct validation routine

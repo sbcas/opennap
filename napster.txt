@@ -335,9 +335,10 @@ appropriate, examples of the <data> section for each message are given.
 
 	indicates no more entries in the browse list for <user>
 
-214	server stats [SERVER]
+214	server stats [CLIENT, SERVER]
 
-	<users> <# files> <size>
+	client: no data
+	server: <users> <# files> <size>
 
 	<size> is approximate total library size in gigabytes
 	this message is sent by the server occasionaly without request

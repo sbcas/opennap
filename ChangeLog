@@ -1,8 +1,11 @@
 Changes from 0.08
 =================
+
 added support for the data port error (626) command
 
 added support for the change speed command (700)
+
+added support for client initiated 214 stats request
 
 Changes from 0.07
 =================
