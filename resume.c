@@ -48,7 +48,12 @@ HANDLER (resume)
     while ((row = mysql_fetch_row (result)) != NULL)
     {
 	user = hash_lookup (Users, row[IDX_NICK]);
-	ASSERT (user != 0);
+	if (!user)
+	{
+	    log ("resume(): could not find user %s, db is out of sync!",
+		    row[IDX_NICK]);
+	    continue;
+	}
 	send_cmd (con, MSG_SERVER_RESUME_MATCH, "%s %lu %d %s %s %s %hu",
 	    row[IDX_NICK], user->host, user->port, row[IDX_FILENAME],
 	    row[IDX_MD5], row[IDX_SIZE], user->speed);

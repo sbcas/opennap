@@ -38,6 +38,11 @@ HANDLER (browse)
 
     snprintf (Buf, sizeof (Buf), "SELECT * FROM library WHERE owner = '%s'",
 	      user->nick);
+    if (Max_Browse_Result)
+    {
+	int l = strlen (Buf);
+	snprintf (Buf + l, sizeof (Buf) - l, " LIMIT %d", Max_Browse_Result);
+    }
     if (mysql_query (Db, Buf) != 0)
     {
 	sql_error ("browse", Buf);

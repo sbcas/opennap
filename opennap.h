@@ -224,6 +224,7 @@ extern int Max_Shared;
 extern int Max_Connections;
 extern int Nick_Expire;
 extern int Check_Expire;
+extern int Max_Browse_Result;
 extern unsigned int Interface;
 
 extern unsigned int Server_Flags;

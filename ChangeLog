@@ -12,6 +12,19 @@ longer than that seems to cause MySQL 3.22.32 to die unexpectedly.
 fixed to missed calls to close() which should use CLOSE() as a wrapper for
 closing sockets (needed for win32)
 
+calls to write() should check for EWOULDBLOCK to avoid closing the
+connection unnecessarily
+
+fixed mising quotes around md5 string in SQL query in resume() 
+
+reordered code in login() so that no messages get sent to a client prior to
+the login/email ack being sent to avoid confusing the win32 client
+
+added max_browse_result config variable to control the maxium number of
+entries returned on a /browse command (default 1500)
+
+allow max_search_result to be 0 to allow for arbitrary size searches
+
 Changes from 0.11
 =================
 

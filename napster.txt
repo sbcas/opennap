@@ -147,6 +147,8 @@ appropriate, examples of the <data> section for each message are given.
 
 11	??? [CLIENT]
 
+	<nick> <num>
+
 	[returns "parameters are unparsable" -ed]
 
 14	login options [CLIENT]

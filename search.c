@@ -129,7 +129,7 @@ HANDLER (search)
 	       processing */
 	    i++;
 	    max_results = atoi (fields[i]);
-	    if (max_results > Max_Search_Results)
+	    if (Max_Search_Results && max_results > Max_Search_Results)
 	    {
 		log ("search(): client requested a maximum of %d results",
 			max_results);

@@ -52,6 +52,7 @@ static CONFIG Vars[] = {
     { "nick_expire", VAR_TYPE_INT, UL &Nick_Expire, 7776000 /* 90 days */ },
     { "check_expire", VAR_TYPE_INT, UL &Check_Expire, 86400 /* 1 day */ },
     { "listen_addr", VAR_TYPE_STR, UL &Listen_Addr, UL "0.0.0.0" },
+    { "max_browse_result", VAR_TYPE_INT, UL &Max_Browse_Result, 1500 },
 };
 
 static int Vars_Size = sizeof (Vars) / sizeof (CONFIG);

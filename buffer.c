@@ -405,15 +405,14 @@ send_queued_data (CONNECTION *con)
 	con->sendbuf->datasize - con->sendbuf->consumed);
     if (n == -1)
     {
-	log ("send_queued_data: write: %s (errno %d)", strerror (errno),
-	    errno);
-	con->destroy = 1;
+	if (errno != EWOULDBLOCK)
+	{
+	    log ("send_queued_data: write: %s (errno %d)", strerror (errno),
+		    errno);
+	    con->destroy = 1;
+	}
 	return;
     }
-
-#if 0
-    log ("send_queued_data: wrote %d bytes", n);
-#endif
 
     if (n > 0)
 	con->sendbuf = buffer_consume (con->sendbuf, n);
