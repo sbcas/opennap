@@ -84,6 +84,8 @@ init_server (const char *cf)
 	return -1;
     }
 
+    load_bans ();
+
 #if !defined(WIN32) && !defined(__EMX__)
     if (set_max_connections (Connection_Hard_Limit))
 	return -1;

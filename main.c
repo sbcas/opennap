@@ -492,6 +492,8 @@ main (int argc, char **argv)
     /* write out the user database */
     userdb_dump ();
 
+    save_bans ();
+
     /* close all client connections */
     for (i = 0; i < Max_Clients; i++)
 	if (Clients[i])
