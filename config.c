@@ -57,7 +57,7 @@ static struct config Vars[] = {
     {"max_rss_size", VAR_TYPE_INT, UL & Max_Rss_Size, -1},
     {"lock_memory", VAR_TYPE_BOOL, ON_LOCK_MEMORY, 0},
 #endif
-    {"max_nick_length", VAR_TYPE_INT, UL & Max_Nick_Length, 32},
+    {"max_nick_length", VAR_TYPE_INT, UL & Max_Nick_Length, 19},
     {"user_db_interval", VAR_TYPE_INT, UL & User_Db_Interval, 1800},
     {"channel_limit", VAR_TYPE_INT, UL & Channel_Limit, 200},
     {"login_timeout", VAR_TYPE_INT, UL & Login_Timeout, 60},
