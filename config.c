@@ -70,6 +70,7 @@ static struct config Vars[] = {
     {"max_hotlist",VAR_TYPE_INT,UL&Max_Hotlist,32},
     {"max_topic",VAR_TYPE_INT,UL&Max_Topic,64},
     {"max_client_string",VAR_TYPE_INT,UL&Max_Client_String,32},
+    {"max_reason",VAR_TYPE_INT,UL&Max_Reason,64},
 };
 
 static int Vars_Size = sizeof (Vars) / sizeof (struct config);

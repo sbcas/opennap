@@ -64,7 +64,6 @@ HANDLER (ban)
 	ac = split_line (av, FIELDS (av), pkt);
     if (ac < 1)
     {
-	log ("ban(): too few parameters");
 	unparsable (con);
 	return;
     }
@@ -74,14 +73,11 @@ HANDLER (ban)
 	b = list->data;
 	if (!strcasecmp (av[0], b->target))
 	{
-	    log ("ban(): %s is already banned", av[0]);
 	    if (ISUSER (con))
-		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already banned",
-			  av[0]);
+		send_cmd (con, MSG_SERVER_NOSUCH, "already banned");
 	    return;
 	}
     }
-
     if(!is_ip(av[0]) && invalid_nick(av[0]))
     {
 	if(ISUSER(con))
@@ -89,7 +85,10 @@ HANDLER (ban)
 	return;
     }
     if (ac > 1)
+    {
+	truncate_reason(av[1]);
 	pass_message_args (con, tag, ":%s %s \"%s\"", sender, av[0], av[1]);
+    }
     else
 	pass_message_args (con, tag, ":%s %s", sender, av[0]);
 
@@ -154,6 +153,8 @@ HANDLER (unban)
 	    permission_denied (con);
 	return;
     }
+    if(ac>1)
+	truncate_reason(av[1]);
     for (list = &Bans; *list; list = &(*list)->next)
     {
 	b = (*list)->data;
@@ -326,6 +327,7 @@ load_bans (void)
 		b->type = BAN_IP;
 		b->setby = STRDUP (av[1]);
 		b->when = atol (av[2]);
+		truncate_reason(av[3]);
 		b->reason = STRDUP (av[3]);
 	    }
 	    else

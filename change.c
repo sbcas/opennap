@@ -159,6 +159,9 @@ HANDLER (alter_port)
 	return;
     }
 
+    if(pkt)
+	truncate_reason(pkt);
+
     if (user->port != p)
     {
 	/* only log when the port value is actually changed, not resets */
@@ -215,6 +218,7 @@ HANDLER (alter_pass)
 	send_cmd (con, MSG_SERVER_NOSUCH, "invalid nickname");
 	return;
     }
+    truncate_reason(av[2]);
     /* send this now since the account might not be locally registered */
     pass_message_args (con, tag, ":%s %s %s \"%s\"", sender->nick, av[0],
 		       av[1], av[2]);
@@ -318,6 +322,8 @@ HANDLER (nuke)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "invalid nickname");
 	return;
     }
+    if(pkt)
+	truncate_reason(pkt);
     /* pass the message in case its not locally registered */
     pass_message_args (con, tag, ":%s %s %s", sender->nick, nick,
 		       NONULL (pkt));
@@ -326,16 +332,13 @@ HANDLER (nuke)
     {
 	if (sender->level < LEVEL_ELITE && sender->level <= db->level)
 	{
-	    log ("nuke(): %s has no privilege to revoke %s's account",
-		 sender->nick, db->nick);
-	    if (ISUSER (con))
-		permission_denied (con);
+	    permission_denied (con);
 	    return;
 	}
 	hash_remove (User_Db, db->nick);
     }
     notify_mods (CHANGELOG_MODE, "%s nuked %s's account: %s",
-		 sender->nick, nick, NONULL (pkt));
+	    sender->nick, nick, NONULL (pkt));
 }
 
 #if 0

@@ -366,6 +366,7 @@ extern int Max_Ignore;
 extern int Max_Hotlist;
 extern int Max_Topic;
 extern int Max_Client_String;
+extern int Max_Reason;
 
 #ifndef WIN32
 extern int Uid;
@@ -668,6 +669,7 @@ int split_line (char **template, int templatecount, char *pkt);
 char *strlower (char *);
 void synch_server (CONNECTION *);
 LIST *tokenize (char *);
+void truncate_reason (char *);
 void unparsable(CONNECTION *);
 int userdb_dump (void);
 int userdb_init (void);

@@ -90,6 +90,9 @@ HANDLER (muzzle)
 	return;
     }
 
+    if (ac>1)
+	truncate_reason(av[1]);
+
     if (tag == MSG_CLIENT_MUZZLE)
     {
 	if (!db)

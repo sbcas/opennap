@@ -330,3 +330,10 @@ invalid_channel_msg (CONNECTION * con)
     if (ISUSER (con))
 	send_cmd (con, MSG_SERVER_NOSUCH, "invalid channel");
 }
+
+void
+truncate_reason(char *s)
+{
+    if(Max_Reason > 0 && strlen (s) > (unsigned) Max_Reason)
+	*(s + Max_Reason) = 0;
+}

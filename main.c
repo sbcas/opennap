@@ -56,6 +56,7 @@ int Max_Ignore;
 int Max_Hotlist;
 int Max_Topic;
 int Max_Client_String;
+int Max_Reason;
 
 #ifndef WIN32
 int Uid;

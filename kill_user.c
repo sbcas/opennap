@@ -82,7 +82,6 @@ HANDLER (kill_user)
     ac = split_line (av, FIELDS (av), pkt);
     if (ac < 1)
     {
-	log ("kill_user(): missing target user");
 	unparsable (con);
 	return;
     }
@@ -97,15 +96,14 @@ HANDLER (kill_user)
     ASSERT (validate_user (user));
 
     /* check for permission */
-    if (killer && user->level >= killer->level
-	&& killer->level != LEVEL_ELITE)
+    if (killer && user->level >= killer->level && killer->level != LEVEL_ELITE)
     {
-	log ("kill_user(): %s has no privilege to kill %s",
-	     killer->nick, user->nick);
 	permission_denied (con);
 	return;
     }
 
+    if(ac>1)
+	truncate_reason(av[1]);
 #define REASON ((ac > 1) ? av[1] : "")
 
     pass_message_args (con, MSG_CLIENT_KILL, ":%s %s \"%s\"",
