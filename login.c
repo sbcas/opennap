@@ -180,10 +180,12 @@ HANDLER (login)
 	    {
 		log ("login(): killing ghost for %s at %s",
 			user->nick, my_ntoa(user->host));
+		pass_message_args(NULL,MSG_CLIENT_KILL,":%s %s \"ghost\"",
+			Server_Name, user->nick);
 		if(ISUSER(user->con))
 		{
 		    /* TODO: there is a numeric for this somewhere */
-		    send_cmd(user->con,MSG_SERVER_NOSUCH,"you are a ghost");
+		    send_cmd(user->con,MSG_SERVER_NOSUCH,"You were killed by %s: ghost",Server_Name);
 		    user->con->destroy=1;
 		}
 		/* notify the user to log back in */
