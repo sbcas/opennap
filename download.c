@@ -229,14 +229,14 @@ HANDLER (upload_request)
 HANDLER (queue_limit)
 {
     int ac;
-    char av[3];
+    char *av[3];
     USER *sender, *recip;
 
     (void) tag;
     (void) len;
     if (pop_user (con, &pkt, &sender) != 0)
 	return;
-    ac = split_line (av, sizeof (av) / sizeof (char *), &pkt);
+    ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
     if (ac < 3)
     {
 	log ("queue_limit(): too few arguments");
