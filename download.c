@@ -4,22 +4,15 @@
 
 #include <unistd.h>
 #include <stdio.h>
-#include <mysql.h>
 #include "opennap.h"
 #include "debug.h"
 
-extern MYSQL *Db;
-
+/* 203 <nick> <filename> */
 /* handle client request for download of a file */
-/* <nick> <filename> */
 HANDLER (download)
 {
     char *fields[2];
     USER *user;
-    MYSQL_RES *result;
-    MYSQL_ROW row;
-    int numrows;
-    char path[256];
 
     ASSERT (VALID (con));
 
@@ -38,45 +31,6 @@ HANDLER (download)
     }
     ASSERT (VALID (user));
 
-    fudge_path(fields[1], path);
-
-    /* retrieve file info from the database */
-    snprintf (Buf, sizeof (Buf),
-	      "SELECT * FROM library WHERE owner = '%s' && filename = '%s'",
-	      user->nick, path);
-    if (mysql_query (Db, Buf) != 0)
-    {
-	sql_error ("download", Buf);
-	return;
-    }
-    result = mysql_store_result (Db);
-    numrows = mysql_num_rows (result);
-    if (numrows != 1)
-    {
-	log ("download(): fatal error, query returned more than 1 row");
-	mysql_free_result (result);
-	return;
-    }
-
-    row = mysql_fetch_row (result);
-    ASSERT (row != 0);
-
-    /* send the requestor an ACK */
-    send_cmd (con, MSG_SERVER_DOWNLOAD_ACK, "%s %lu %d \"%s\" %s %d",
-	      user->nick, user->host, user->port, row[IDX_FILENAME],
-	      row[IDX_MD5], user->speed);
-
-    /* look up the target user */
-    user = hash_lookup (Users, row[IDX_NICK]);
-    if (!user)
-    {
-	log ("download(): could not find user %s", row[IDX_NICK]);
-	mysql_free_result (result);
-	return;
-    }
-
-    mysql_free_result (result);
-
     /* send a message to the requestee */
     log ("download(): sending upload request to %s", user->nick);
 
@@ -92,10 +46,36 @@ HANDLER (download)
 	send_cmd (user->serv, MSG_SERVER_UPLOAD_REQUEST, ":%s %s \"%s\"",
 		con->user->nick, fields[0], fields[1]);
     }
+}
 
-    /* this should probably be done when the clients ack the download request
-       instead, since the uploader could conceivable not allow the connection */
+HANDLER(upload_start)
+{
+    (void)pkt;
+    ASSERT(VALID(con));
+    CHECK_USER_CLASS("upload_start");
+    con->user->uploads++;
+}
 
-    user->uploads++;
+HANDLER(upload_end)
+{
+    (void)pkt;
+    ASSERT(VALID(con));
+    CHECK_USER_CLASS("upload_end");
+    con->user->uploads--;
+}
+
+HANDLER(download_start)
+{
+    (void)pkt;
+    ASSERT(VALID(con));
+    CHECK_USER_CLASS("download_start");
     con->user->downloads++;
+}
+
+HANDLER(download_end)
+{
+    (void)pkt;
+    ASSERT(VALID(con));
+    CHECK_USER_CLASS("download_end");
+    con->user->downloads--;
 }

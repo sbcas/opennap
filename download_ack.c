@@ -5,12 +5,18 @@
 #include <unistd.h>
 #include "opennap.h"
 
+/* 600 <user> */
+/* client is requesting the line speed of <user> */
 HANDLER (download_ack)
 {
-    (void) con;
-    (void) pkt;
+    USER *user;
 
-    /* if this message is in response to an upload request, we don't
-       do anything except note that the upload is in progress */
-    log ("download_ack(): entering");
+    CHECK_USER_CLASS("download_ack");
+    user=hash_lookup(Users,pkt);
+    if(!user)
+    {
+	log("download_ack():no such user %s", pkt);
+	return;
+    }
+    send_cmd(con,601,"%s %d",user->nick,user->speed);
 }

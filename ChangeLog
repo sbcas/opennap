@@ -1,3 +1,14 @@
+Changes from 0.07
+=================
+
+added support for the 218-221 numerics
+
+DOS filenames need to be quoted when submitting sql queries
+
+set SO_REUSEADDR on the main server socket
+
+fixed off-by-1 error in patchnap.c
+
 Changes from 0.06
 =================
 

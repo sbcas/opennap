@@ -123,8 +123,9 @@ struct _hotlist
 #define MSG_SERVER_SEARCH_RESULT	201
 #define MSG_SERVER_SEARCH_END		202
 #define MSG_CLIENT_DOWNLOAD		203
-#define MSG_SERVER_DOWNLOAD_ACK		204
+#define MSG_SERVER_FILE_READY		204
 #define MSG_CLIENT_PRIVMSG		205
+#define MSG_SERVER_SEND_ERROR		206
 #define MSG_CLIENT_ADD_HOTLIST		207
 #define MSG_CLIENT_ADD_HOTLIST_SEQ	208
 #define MSG_SERVER_USER_SIGNON		209
@@ -136,6 +137,10 @@ struct _hotlist
 #define MSG_CLIENT_RESUME_REQUEST	215
 #define MSG_SERVER_RESUME_MATCH		216
 #define MSG_SERVER_RESUME_MATCH_END	217
+#define MSG_CLIENT_DOWNLOAD_START	218
+#define MSG_CLIENT_DOWNLOAD_END		219
+#define MSG_CLIENT_UPLOAD_START		220
+#define MSG_CLIENT_UPLOAD_END		221
 #define MSG_SERVER_HOTLIST_ACK		301
 #define MSG_CLIENT_REMOVE_HOTLIST	303
 #define MSG_CLIENT_JOIN			400
@@ -155,7 +160,7 @@ struct _hotlist
 #define MSG_SERVER_WHOIS_RESPONSE	604
 #define MSG_CLIENT_SETUSERLEVEL		606
 #define MSG_SERVER_UPLOAD_REQUEST	607
-#define MSG_CLIENT_UPLOAD_COMPLETE	608
+#define MSG_CLIENT_UPLOAD_OK		608
 #define MSG_CLIENT_KILL			610
 #define MSG_CLIENT_NUKE			611	/* not implemented */
 #define MSG_CLIENT_LIST_CHANNELS	617
@@ -267,6 +272,8 @@ HANDLER (change_data_port);
 HANDLER (client_quit);
 HANDLER (download);
 HANDLER (download_ack);
+HANDLER (download_start);
+HANDLER (download_end);
 HANDLER (join);
 HANDLER (kill_user);
 HANDLER (level);
@@ -288,7 +295,9 @@ HANDLER (server_connect);
 HANDLER (server_login);
 HANDLER (server_login_ack);
 HANDLER (unmuzzle);
-HANDLER (upload_complete);
+HANDLER (upload_ok);
+HANDLER (upload_start);
+HANDLER (upload_end);
 HANDLER (topic);
 HANDLER (whois);
 

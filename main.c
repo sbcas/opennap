@@ -122,17 +122,21 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_ADD_HOTLIST_SEQ, add_hotlist }, /* 208 */
     { MSG_CLIENT_BROWSE, browse }, /* 211 */
     { MSG_CLIENT_RESUME_REQUEST, resume }, /* 215 */
+    { MSG_CLIENT_DOWNLOAD_START, download_start }, /* 218 */
+    { MSG_CLIENT_DOWNLOAD_START, download_end }, /* 219 */
+    { MSG_CLIENT_UPLOAD_START, upload_start }, /* 220 */
+    { MSG_CLIENT_UPLOAD_END, upload_end }, /* 220 */
     { MSG_CLIENT_REMOVE_HOTLIST, remove_hotlist }, /* 303 */
     { MSG_CLIENT_WHOIS, whois },
     { MSG_CLIENT_JOIN, join },
     { MSG_CLIENT_PART, part },
     { MSG_CLIENT_PUBLIC, public },
     { MSG_SERVER_PUBLIC, public },
+    { MSG_CLIENT_DOWNLOAD_ACK, download_ack }, /* 600 */
     { MSG_CLIENT_ANNOUNCE, announce },
     { MSG_CLIENT_KILL, kill_user },
     { MSG_CLIENT_DOWNLOAD, download },
-    { MSG_CLIENT_DOWNLOAD_ACK, download_ack },
-    { MSG_CLIENT_UPLOAD_COMPLETE, upload_complete },
+    { MSG_CLIENT_UPLOAD_OK, upload_ok },
     { MSG_SERVER_TOPIC, topic },
     { MSG_CLIENT_MUZZLE, muzzle },
     { MSG_CLIENT_UNMUZZLE, unmuzzle },
