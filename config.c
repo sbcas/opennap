@@ -134,7 +134,7 @@ config (const char *path)
 	    *ptr = 0;
 	line++;
 	ptr = Buf;
-	while (isspace ((unsigned char) *ptr))
+	while (ISSPACE (*ptr))
 	    ptr++;
 	if (*ptr == '#' || *ptr == 0)
 	    continue;
@@ -142,7 +142,7 @@ config (const char *path)
 	if (val)
 	{
 	    *val++ = 0;
-	    while (isspace (*val))
+	    while (ISSPACE (*val))
 		val++;
 	}
 

@@ -29,7 +29,7 @@ format_request (const char *s, char *d, int dsize)
 	if (*s == ' ')
 	{
 	    *d++ = '%';
-	    while (isspace (*(s + 1)))
+	    while (ISSPACE (*(s + 1)))
 		s++;
 	}
 	else if (*s == '\'' || *s == '%' || *s == '_' || *s == '\\')
@@ -61,7 +61,7 @@ strlower (char *s)
 {
     char *r = s;
     while (*s)
-    	*s++ = tolower (*s);
+    	*s++ = tolower ((unsigned char)*s);
     return r;
 }
 
@@ -110,7 +110,7 @@ HANDLER (search)
 	    p = fields[i] + strlen (fields[i]);
 	    if (p > fields[i])
 		p--;
-	    while (isspace (*p))
+	    while (ISSPACE (*p))
 	    {
 		*p = 0;
 		if (p == fields[i])

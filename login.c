@@ -25,7 +25,7 @@ invalid_nick (const char *s)
 {
     while (*s)
     {
-	if (*s & 0x80 || isspace (*s) || iscntrl (*s) || !isprint(*s) ||
+	if (*s & 0x80 || ISSPACE (*s) || iscntrl (*s) || !isprint((uchar)*s) ||
 		*s == ':')
 	    return 1;
 	s++;

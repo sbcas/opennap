@@ -19,6 +19,10 @@
 #include <sys/poll.h>
 #endif /* HAVE_POLL */
 
+#ifndef HAVE_SOCKLEN_T
+typedef unsigned int socklen_t;
+#endif
+
 static void
 handler (int sig)
 {

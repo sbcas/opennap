@@ -32,6 +32,8 @@
 #define BSWAP32(c) c
 #endif
 
+#define ISSPACE(c) isspace((unsigned char)c)
+
 typedef unsigned char uchar;
 
 typedef struct _buffer BUFFER;
@@ -519,8 +521,19 @@ HANDLER (whois);
 #define NONULL(p) (p!=0?p:"")
 
 #ifndef HAVE_SOCKLEN_T
+#ifdef __sun__
+/* solaris 2.6 uses a signed int for the 4th arg to accept() */
+typedef int socklen_t;
+#else
 typedef unsigned int socklen_t;
 #endif
+#endif
+
+#ifdef __sun__
+#define SOCKOPTCAST (char*)
+#else
+#define SOCKOPTCAST
+#endif /* __sun__ */
 
 /*
 ** Macros to use to aid in porting code to Win32

@@ -1,6 +1,6 @@
 dnl $Id$
 AC_INIT(opennap.h)
-AM_INIT_AUTOMAKE(opennap,0.12)
+AM_INIT_AUTOMAKE(opennap,0.13)
 AM_MAINTAINER_MODE
 AM_PROG_CC_STDC
 AC_HEADER_STDC
@@ -11,7 +11,10 @@ AC_EGREP_HEADER(socklen_t, /usr/include/sys/socket.h,
 	[AC_MSG_RESULT(no)])
 AC_C_BIGENDIAN
 
-if test -d /usr/local/lib/mysql; then
+AC_ARG_WITH(mysql, [  --with-mysql=DIR	MySQL is in DIR/lib/mysql and DIR/include/mysql],
+[MYSQLLIBDIR=$withval/lib/mysql
+MYSQLINCDIR=$withval/include/mysql],
+[if test -d /usr/local/lib/mysql; then
 	MYSQLLIBDIR=/usr/local/lib/mysql
 	MYSQLINCDIR=/usr/local/include/mysql
 elif test -d /usr/lib/mysql; then
@@ -19,7 +22,7 @@ elif test -d /usr/lib/mysql; then
 	MYSQLINCDIR=/usr/include/mysql
 else
 	AC_MSG_ERROR(could not locate MySQL installation)
-fi
+fi])
 AC_MSG_RESULT(MySQL header files are in $MYSQLINCDIR)
 AC_MSG_RESULT(MySQL library files are in $MYSQLLIBDIR)
 AC_SUBST(MYSQLINCDIR)

@@ -33,7 +33,7 @@ compute_soundex (char *d, int dsize, const char *s)
     }
     dsize--;			/* save room for the terminatin nul (\0) */
 
-    while (*s && !isalpha (*s))
+    while (*s && !isalpha ((unsigned char)*s))
 	s++;
     if (!*s)
     {
@@ -41,13 +41,13 @@ compute_soundex (char *d, int dsize, const char *s)
 	return;
     }
 
-    *d++ = toupper (*s);
+    *d++ = toupper ((unsigned char)*s);
     dsize--;
     s++;
 
     while (*s && dsize > 0)
     {
-	switch (tolower (*s))
+	switch (tolower ((unsigned char)*s))
 	{
 	case 'b':
 	case 'p':
@@ -110,7 +110,7 @@ compute_soundex (char *d, int dsize, const char *s)
 	    }
 	    break;
 	default:
-	    if (!isalpha (*s))
+	    if (!isalpha ((unsigned char)*s))
 	    {
 		/* pad short words with 0's */
 		while (n < 3 && dsize > 0)
@@ -122,7 +122,7 @@ compute_soundex (char *d, int dsize, const char *s)
 		n = 0;		/* reset */
 		/* skip forward until we find the next word */
 		s++;
-		while (*s && !isalpha (*s))
+		while (*s && !isalpha ((unsigned char)*s))
 		    s++;
 		if (!*s)
 		{
@@ -135,7 +135,7 @@ compute_soundex (char *d, int dsize, const char *s)
 		    dsize--;
 		    if (dsize > 0)
 		    {
-			*d++ = toupper (*s);
+			*d++ = toupper ((unsigned char)*s);
 			dsize--;
 		    }
 		}

@@ -71,7 +71,7 @@ new_tcp_socket (void)
 int
 set_keepalive (int f, int on)
 {
-    if (setsockopt (f, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof (on)) == -1)
+    if (setsockopt (f, SOL_SOCKET, SO_KEEPALIVE, SOCKOPTCAST &on, sizeof (on)) == -1)
     {
 	log ("set_keepalive(): setsockopt: %s (errno %d).",
 		strerror (errno), errno);
@@ -151,7 +151,7 @@ check_connect_status (int f)
 
     len = sizeof (err);
 
-    if (getsockopt (f, SOL_SOCKET, SO_ERROR, &err, &len) != 0)
+    if (getsockopt (f, SOL_SOCKET, SO_ERROR, SOCKOPTCAST &err, &len) != 0)
     {
 	log ("check_connect_status: getsockopt: %s (errno %d).",
 		strerror (errno), errno);

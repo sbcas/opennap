@@ -273,6 +273,8 @@ handle_connection (CONNECTION * con)
     if (buffer_size (con->recvbuf) < 4 + len)
     {
 	/* nope, wait until more data arrives */
+	log ("handle_connection(): waiting for %d bytes from client (tag=%d)",
+		len, tag);
 	con->incomplete = 1;
 	return;
     }
@@ -616,7 +618,7 @@ main (int argc, char **argv)
 	exit (1);
 
     n = 1;
-    if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, &n, sizeof (n)) != 0)
+    if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST &n, sizeof (n)) != 0)
     {
 	perror ("setsockopt");
 	exit (1);
