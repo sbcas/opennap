@@ -1,7 +1,30 @@
 [opennap 0.27]
 
 changed `server_port' variable to `server_ports'.  it can now take a space
-separated list of ports for the server to listen on
+separated list of ports for the server to listen on for incoming
+connections.
+
+added global user list command (831).  the arguments to the command are
+	[server [flags]]
+where `server' is the particular server to search (can be `*' for all) and
+`flags' is one of `l', `e', `a', `m' (leech, elite, admin, mod,
+respectively).
+
+Server linking now works correctly under Win32 platforms.
+
+Added logchk and napchk BASH utility scripts from WoLF
+
+Added -b command line argument to run OpenNap in the background on Unix
+platforms.
+
+OpenNap will now write its process id in the `pid' file in the OpenNap
+configuration directory.
+
+Server support for resume is now disabled by default (can be renabled with
+configure --enable-resume)
+
+The character `$' is no longer allowed in nicknames since many clients use
+this to denote a variable.
 
 [opennap 0.26]
 

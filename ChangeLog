@@ -1,4 +1,249 @@
+2000-05-25  drscholl  <drscholl@users.sourceforge.net>
+
+	* config.c, privmsg.c:
+	fixes to compile cleanly with debugging off
+
+2000-05-24  drscholl  <drscholl@users.sourceforge.net>
+
+	* napster.txt:
+	updated spec wrt to the login messages
+
+	* README, TODO, handler.c, opennap.h, usermode.c:
+	changed user_mode() to user_mode_cmd() to avoid conflict with the
+	user_mode macro defined in <asm/ptrace.h> under Linux.  This was causing
+	problems under LinuxPPC.
+
+	* list_users.c:
+	allow * to be specified for the server in global_user_list() to match users
+	on all servers (for use with the optional flags)
+
+	* Makefile.am, Makefile.in, buffer.c, config.c, handler.c, init.c, list_users.c, main.c, network.c, opennap.h, remove_connection.c, server_login.c:
+	added `l' flag to global_user_list() to match leeches
+
+	rewrote global_user_list_cb() because it did not work for multiple flags
+
+	fixed connect() failure under win32 (linking now works!)
+
+	fixed to bypass calls to zlib when the compression level is 0 since the
+	windows version is not complied with zlib at all.
+
+	* Makefile.am, Makefile.in:
+	fixed makefile.am to add logchk and remove README.WIN32 and README.UNIX
+
+	* logchk: added logchk script
+
+	* README.WIN32, TODO:
+	removed README.WIN32
+
+	MISSING LOG ENTRIES:
+
+	fixed bug in public() where the server should not use `tag' to send the
+	message to the cl ients since the server uses 403 instead of 402
+
+	added napchk script from wolf
+
+	added -b command line option to run opennap in the background.
+	$config_dir/log is opened as stdout to catch output from the process.
+
+	the pid is now stored in $config_dir/pid when opennap starts up to
+	facilitate external scripts to restart it when it dies
+
+	configure now checks for mlockall()
+
+	split Win32 and Unix installation notes into separate files for clarity
+
+	updated TODO file
+
+	the global MD5 hash table should not be compiled in when RESUME is
+	undefined, and the garbage collection should not be scheduled (was causing a
+	crash in the win32 build)
+
+	ignore search matches when both parties are firewalled
+
+	added README.WIN32 and README.UNIX to EXTRA_DIST
+
+	check for valid (>0) file size when adding files
+
+	privileged users should see who send publics and emotes even when other
+	users are cloaked.
+
+	Current_Time needs to be set in mkpass.c prior to calling init_random()
+
+	corrected mispelling of 'Foreward' in napster.txt
+
+	* join.c, login.c:
+	added $ to the list of characters not allowed in nick or channel names.
+	many clients use this character to denote a variable
+
+	* README.WIN32, init.c:
+	need <limits.h> for _POSIX_PATH_MAX
+
+	* README, README.UNIX, README.WIN32:
+	rewrote installation instructions to reflect the new setup utility
+
+	* Makefile.am, Makefile.in, opennap.dsw, opennap.opt, setup.c, setup.dsp:
+	added setup utility
+
+2000-05-23  drscholl  <drscholl@users.sourceforge.net>
+
+	* Makefile.in, NEWS, public.c:
+	fixed bug in public() where the server should not use `tag' to send the
+	message to the cl ients since the server uses 403 instead of 402
+
+	MISSING LOG ENTRIES:
+
+	added napchk script from wolf
+
+	added -b command line option to run opennap in the background.
+	$config_dir/log is opened as stdout to catch output from the process.
+
+	the pid is now stored in $config_dir/pid when opennap starts up to
+	facilitate external scripts to restart it when it dies
+
+	configure now checks for mlockall()
+
+	split Win32 and Unix installation notes into separate files for clarity
+
+	updated TODO file
+
+	the global MD5 hash table should not be compiled in when RESUME is
+	undefined, and the garbage collection should not be scheduled (was causing a
+	crash in the win32 build)
+
+	ignore search matches when both parties are firewalled
+
+	added README.WIN32 and README.UNIX to EXTRA_DIST
+
+	check for valid (>0) file size when adding files
+
+	privileged users should see who send publics and emotes even when other
+	users are cloaked.
+
+	Current_Time needs to be set in mkpass.c prior to calling init_random()
+
+	corrected mispelling of 'Foreward' in napster.txt
+
+	* Makefile.am, napchk:
+	added napchk script from wolf
+
+	MISSING LOG ENTRIES:
+
+	added -b command line option to run opennap in the background.
+	$config_dir/log is opened as stdout to catch output from the process.
+
+	the pid is now stored in $config_dir/pid when opennap starts up to
+	facilitate external scripts to restart it when it dies
+
+	configure now checks for mlockall()
+
+	split Win32 and Unix installation notes into separate files for clarity
+
+	updated TODO file
+
+	the global MD5 hash table should not be compiled in when RESUME is
+	undefined, and the garbage collection should not be scheduled (was causing a
+	crash in the win32 build)
+
+	ignore search matches when both parties are firewalled
+
+	added README.WIN32 and README.UNIX to EXTRA_DIST
+
+	check for valid (>0) file size when adding files
+
+	privileged users should see who send publics and emotes even when other
+	users are cloaked.
+
+	Current_Time needs to be set in mkpass.c prior to calling init_random()
+
+	corrected mispelling of 'Foreward' in napster.txt
+
+	* login.c:
+	fixed bug in login.c where it should have tested for
+	MSG_CLIENT_LOGIN_REGISTER instead of MSG_CLIENT_REGISTER.  this was causing
+	automatic registration of all users who weren't already registered.
+
+	* Makefile.am, Makefile.in:
+	added README.WIN32 and README.UNIX to EXTRA_DIST
+
+	* Makefile.in, list_users.c, opennap.h, whois.c:
+	added support for the global user list (831) command
+
+2000-05-22  drscholl  <drscholl@users.sourceforge.net>
+
+	* sample.conf:
+	updated sample configuration file with new `server_ports' variable
+
+	* config.c, configure, configure.in, main.c, network.c, opennap.h, resume.c:
+	support for resume is now turned off by default, use configure
+	--enable-resume to turn it back on
+
+	added support for a list type configuration variable
+
+	boolean config vars could not be set by default or reset via the client
+
+	removed server_port configuration variable
+
+	created new list configuration variable `server_ports' which contains a
+	space separated list of ports to listen on for incoming connections
+
+	* server_connect.c, serverlib.c:
+	need to check for null return from next_arg() in kill_server() to prevent
+	segfault
+
+	* add_file.c:
+	check for valid (>0) file size when adding files
+
+	* public.c:
+	privileged users should see who send publics and emotes even when other
+	users are cloaked.
+
+2000-05-21  drscholl  <drscholl@users.sourceforge.net>
+
+	* public.c:
+	fixed problem with emote() not working over server links
+
+	* init.c, main.c:
+	fixes to compile under os/2
+
+	* README, README.UNIX, README.WIN32:
+	split Win32 and Unix installation notes into separate files for clarity
+
+	* README, mkpass.c, napster.txt:
+	Current_Time needs to be set in mkpass.c prior to calling init_random()
+
+	corrected mispelling of 'Foreward' in napster.txt
+
+2000-05-19  drscholl  <drscholl@users.sourceforge.net>
+
+	* TODO, util.c:
+	print_args() should not print to stderr so that when in background mode it
+	will get saved in the log file
+
+	* Makefile.in, config.c, configure, configure.in, init.c, main.c, opennap.h, util.c:
+	added -b command line option to run opennap in the background.
+	$config_dir/log is opened as stdout to catch output from the process.
+
+	the pid is now stored in $config_dir/pid when opennap starts up to
+	facilitate external scripts to restart it when it dies
+
+	configure now checks for mlockall()
+
+2000-05-18  drscholl  <drscholl@users.sourceforge.net>
+
+	* TODO, main.c:
+	updated TODO file
+
+	the global MD5 hash table should not be compiled in when RESUME is
+	undefined, and the garbage collection should not be scheduled (was causing a
+	crash in the win32 build)
+
+	* search.c:
+	ignore search matches when both parties are firewalled
+
 2000-05-15  drscholl  <drscholl@users.sourceforge.net>
+
+	* ChangeLog, NEWS, README, login.c, opennap.dsp, opennap.h, opennap.opt:
+	updated build for Win32 platforms
 
 	* Makefile.in, kick.c:
 	the reason in clear_channel() is not quoted from the client, so use

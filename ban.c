@@ -223,7 +223,7 @@ check_ban (CONNECTION * con, const char *target, ban_t type)
 			  "You are banned from this server: %s",
 			  NONULL (ban->reason));
 	    notify_mods (BANLOG_MODE,
-			 "Connnection from banned %s %s (%s): %s",
+			 "Connection from banned %s %s (%s): %s",
 			 (type == BAN_IP) ? "host" : "user", target,
 			 (type == BAN_IP) ? ban->target : my_ntoa (con->ip),
 			 NONULL (ban->reason));
