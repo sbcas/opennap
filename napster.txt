@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-April 5, 2000
+April 12, 2000
 
 0.  Forward
 
@@ -731,7 +731,7 @@ appropriate, examples of the <data> section for each message are given.
 
 612	ban user [CLIENT]
 
-	<nick | ip>
+	<nick | ip> [ "<reason>" ]
 
 	client request to place a ban on either a specific nickname or
 	an ip address
@@ -748,6 +748,8 @@ appropriate, examples of the <data> section for each message are given.
 	whatever it wishes using the 703 command.
 
 614	unban user [CLIENT]
+
+	<nick | ip> [ "<reason>" ]
 
 615	show bans for server [CLIENT]
 
@@ -841,7 +843,7 @@ appropriate, examples of the <data> section for each message are given.
 
 623	unmuzzle a user [CLIENT]
 
-	<nick>
+	<nick> [ "<reason>" ]
 
 	client requests that the enforced silence on <nick> be lifted
 

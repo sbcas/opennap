@@ -126,14 +126,20 @@ HANDLER (clear_channel)
     else
 	pass_message_args (con, tag, ":%s %s \"%s\"", sender->nick,
 			   chan->name, av[1]);
-    for (list = chan->users; list; list = list->next)
+    list = chan->users;
+    while (list)
     {
+	ASSERT (VALID_LEN (list, sizeof (LIST)));
 	user = list->data;
+	ASSERT (validate_user (user));
+	/* part_channel() may free the current `list' pointer so we advance
+	   it here prior to calling it */
+	list = list->next;
 	if (user != sender &&
 	    (sender->level == LEVEL_ELITE || user->level < sender->level))
 	{
 	    user->channels = list_delete (user->channels, chan);
-	    if (user->local)
+	    if (ISUSER (user->con))
 	    {
 		send_cmd (user->con, MSG_CLIENT_PART, "%s", chan->name);
 		send_cmd (user->con, MSG_SERVER_NOSUCH,
