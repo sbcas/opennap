@@ -151,6 +151,7 @@ dump_userdb (USERDB * db, FILE * fp)
 	    Buf[strlen (Buf) - 1] = 0;
 	    log ("dump_userdb(): %s has expired (last seen %s)", db->nick,
 		 Buf);
+	    hash_remove(User_Db,db->nick);
 	    return;
 	}
 	/* warn, but dont nuke expired accounts for privileged users */
