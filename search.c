@@ -54,7 +54,14 @@ search_callback (DATUM * match, SEARCH * parms)
     if (parms->user->port == 0 && match->user->port == 0)
 	return 0;
     if (BitRate[match->bitrate] < parms->minbitrate)
+    {
+	/* TODO: remove this once testing is done.  for some reason its
+	   not working correctly */
+	log("search_callback(): %s => %s, %s, bitrate %d < minbitrate %d",
+		parms->user->nick, match->user->nick, match->filename,
+		BitRate[match->bitrate], parms->minbitrate);
 	return 0;
+    }
     if (BitRate[match->bitrate] > parms->maxbitrate)
 	return 0;
     if (match->user->speed < parms->minspeed)
