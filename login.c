@@ -144,7 +144,8 @@ HANDLER (login)
 			{
 			    log ("login(): bad password for user %s",
 				user->nick);
-			    send_cmd (con, MSG_SERVER_NOSUCH, "invalid password");
+			    send_cmd (con, MSG_SERVER_NOSUCH,
+				"invalid password");
 			    remove_connection (con);
 			    mysql_free_result (result);
 			    return;
@@ -173,7 +174,7 @@ HANDLER (login)
 					user->nick, row[2]);
 				/* notify users of their change in level */
 				send_cmd (con, MSG_SERVER_NOSUCH,
-				    "server set your level to %s (%s).",
+				    "server set your level to %s (%d).",
 				    Levels[user->level], user->level);
 			    }
 

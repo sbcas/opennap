@@ -103,7 +103,6 @@ HANDLER (kill_user)
     {
 	send_cmd (user->con, MSG_SERVER_NOSUCH, "you have been killed by %s",
 	    killernick);
-	send_queued_data (user->con); /* flush now so message is not lost */
     }
 
     /* forcefully close the client connection if local, otherwise remove

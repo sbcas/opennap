@@ -28,7 +28,7 @@ HANDLER (whois)
 	return;
     }
 
-    ASSERT (VALID (user));
+    ASSERT (validate_user (user));
 
     chanlist = STRDUP (" ");
 
@@ -42,7 +42,7 @@ HANDLER (whois)
     }
 
     online = (int) (time (0) - user->connected);
-    if (user->level < LEVEL_MODERATOR)
+    if (con->user->level < LEVEL_MODERATOR)
     {
 	send_cmd (con, MSG_SERVER_WHOIS_RESPONSE,
 		WHOIS_FMT, user->nick, Levels[user->level],
@@ -53,7 +53,7 @@ HANDLER (whois)
     else
     {
 	send_cmd (con, MSG_SERVER_WHOIS_RESPONSE,
-		"%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %d %d %d %s",
+		"%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %lu %d %d %s",
 		user->nick, Levels[user->level], online, chanlist, user->shared,
 		user->downloads, user->uploads, user->speed, user->clientinfo,
 		user->totalup, user->totaldown, user->host, user->conport,

@@ -228,6 +228,7 @@ send_queued_data (CONNECTION *con)
     if (l == -1)
     {
 	log ("flush_queued_data(): write: %s", strerror (errno));
+	con->sendbuflen = 0; /* avoid an infinite loop */
 	remove_connection (con);
 	return;
     }
@@ -242,6 +243,7 @@ send_queued_data (CONNECTION *con)
     {
 	log ("send_queued_data(): closing link for %s (sendq exceeded)",
 		con->host);
+	con->sendbuflen = 0; /* avoid an infinite loop */
 	remove_connection (con);
     }
 }
