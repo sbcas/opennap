@@ -160,5 +160,7 @@ init_server (const char *cf)
     File_Table = hash_init (2053, (hash_destroy) free_flist);
     MD5 = hash_init (2053, (hash_destroy) free_flist);
 
+    load_channels ();
+
     return 0;
 }

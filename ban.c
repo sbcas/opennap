@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <limits.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -274,10 +275,12 @@ save_bans (void)
     FILE *fp;
     LIST *list;
     BAN *b;
+    char path[_POSIX_PATH_MAX];
 
-    if ((fp = fopen (SHAREDIR "/bans", "w")) == 0)
+    snprintf (path, sizeof (path), "%s/bans", Config_Dir);
+    if ((fp = fopen (path, "w")) == 0)
     {
-	logerr ("save_bans", "fopen");
+	log ("save_bans(): %s: %s (errno %d)", path, strerror (errno), errno);
 	return -1;
     }
     for (list = Bans; list; list = list->next)
@@ -304,11 +307,12 @@ load_bans (void)
     LIST *list;
     BAN *b;
     int ac;
-    char *av[4];
+    char *av[4], path[_POSIX_PATH_MAX];
 
-    if (!(fp = fopen (SHAREDIR "/bans", "r")))
+    snprintf (path, sizeof (path), "%s/bans", Config_Dir);
+    if (!(fp = fopen (path, "r")))
     {
-	logerr ("load_bans", "fopen");
+	log ("load_bans(): %s: %s (errno %d)", path, strerror (errno), errno);
 	return -1;
     }
     while (fgets (Buf, sizeof (Buf) - 1, fp))

@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <limits.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -17,6 +18,7 @@ HANDLER (show_motd)
 {
     FILE *f;
     size_t l;
+    char path[_POSIX_PATH_MAX];
 
     (void) tag;
     (void) len;
@@ -30,10 +32,11 @@ HANDLER (show_motd)
        client */
     send_cmd (con, MSG_SERVER_MOTD, "VERSION %s %s", PACKAGE, VERSION);
 
-    f = fopen (Motd_Path, "r");
+    snprintf(path,sizeof(path),"%s/motd",Config_Dir);
+    f = fopen (path, "r");
     if (!f)
     {
-	log ("show_motd(): %s: %s", Motd_Path, strerror (errno));
+	log ("show_motd(): %s: %s", path, strerror (errno));
 	return;
     }
 

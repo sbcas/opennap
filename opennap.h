@@ -296,33 +296,35 @@ typedef struct link
 
 typedef void (*timer_cb_t) (void *);
 
-extern char *Motd_Path;
+extern unsigned int Bytes_In;
+extern unsigned int Bytes_Out;
+extern int Channel_Limit;
+extern int Client_Queue_Length;
+extern int Collect_Interval;
+extern int Compression_Level;
+extern char *Config_Dir;
+extern time_t Current_Time;
+extern unsigned int Interface;
 extern char *Listen_Addr;
+extern int Local_Files;
+extern int Login_Timeout;
+extern int Max_Browse_Result;
+extern int Max_Command_Length;
+extern int Max_Connections;
+extern int Max_Nick_Length;
+extern int Max_Search_Results;
+extern int Max_Shared;
+extern int Max_User_Channels;	/* # of channels is a user allowed to join */
+extern int Nick_Expire;
+extern unsigned int Server_Flags;
 extern char *Server_Name;
 extern char *Server_Pass;
 extern int Server_Port;
-extern int SigCaught;		/* flag to control main loop */
-extern int Max_User_Channels;	/* # of channels is a user allowed to join */
-extern int Stat_Click;
 extern int Server_Queue_Length;
-extern int Client_Queue_Length;
-extern int Max_Search_Results;
-extern int Compression_Level;
-extern int Max_Shared;
-extern int Max_Connections;
-extern int Nick_Expire;
-extern int Max_Browse_Result;
-extern unsigned int Interface;
+extern int SigCaught;		/* flag to control main loop */
+extern int Stat_Click;
 extern time_t Server_Start;
-extern int Collect_Interval;
-extern unsigned int Bytes_In;
-extern unsigned int Bytes_Out;
 extern int User_Db_Interval;
-extern int Channel_Limit;
-extern int Login_Timeout;
-extern int Local_Files;
-extern int Max_Nick_Length;
-extern int Max_Command_Length;
 
 #ifndef WIN32
 extern int Uid;
@@ -331,11 +333,6 @@ extern int Connection_Hard_Limit;
 extern int Max_Data_Size;
 extern int Max_Rss_Size;
 #endif
-extern time_t Current_Time;
-extern char *User_Db_Path;
-extern char *Server_Db_Path;
-
-extern unsigned int Server_Flags;
 
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
 
@@ -565,6 +562,7 @@ int init_server (const char *);
 int invalid_channel (const char *);
 int is_linked (CONNECTION *, const char *);
 int load_bans (void);
+void load_channels (void);
 void log (const char *fmt, ...);
 unsigned int lookup_ip (const char *host);
 int make_tcp_connection (const char *host, int port, unsigned int *ip);

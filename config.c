@@ -19,28 +19,26 @@ typedef enum
 }
 VAR_TYPE;
 
-typedef struct config
+struct config
 {
     char *name;
     VAR_TYPE type;
     unsigned long val;
     unsigned long def;	/* default value */
-}
-CONFIG;
+};
 
 #define UL (unsigned long)
 
-static CONFIG Vars[] = {
+static struct config Vars[] = {
+    { "client_queue_length", VAR_TYPE_INT, UL &Client_Queue_Length, 102400 },
+    { "max_results", VAR_TYPE_INT, UL &Max_Search_Results, 100 },
     { "max_user_channels", VAR_TYPE_INT, UL &Max_User_Channels, 5 },
-    { "motd_path", VAR_TYPE_STR, UL &Motd_Path, UL SHAREDIR "/motd" },
     { "server_name", VAR_TYPE_STR, UL &Server_Name, 0 },
     { "server_password", VAR_TYPE_STR, UL &Server_Pass, UL "opensource" },
     { "server_port", VAR_TYPE_INT, UL &Server_Port, 8888 },
+    { "server_queue_length", VAR_TYPE_INT, UL &Server_Queue_Length, 1048576 },
     { "stat_click", VAR_TYPE_INT, UL &Stat_Click, 60 },
     { "strict_channels", VAR_TYPE_BOOL, OPTION_STRICT_CHANNELS, 0 },
-    { "server_queue_length", VAR_TYPE_INT, UL &Server_Queue_Length, 1048576 },
-    { "client_queue_length", VAR_TYPE_INT, UL &Client_Queue_Length, 102400 },
-    { "max_results", VAR_TYPE_INT, UL &Max_Search_Results, 100 },
     { "compression_level", VAR_TYPE_INT, UL &Compression_Level, 1 },
     { "max_shared", VAR_TYPE_INT, UL &Max_Shared, 5000 },
     { "max_connections", VAR_TYPE_INT, UL &Max_Connections, FD_SETSIZE },
@@ -56,25 +54,24 @@ static CONFIG Vars[] = {
     { "max_rss_size", VAR_TYPE_INT, UL &Max_Rss_Size, -1 },
 #endif
     { "max_nick_length", VAR_TYPE_INT, UL &Max_Nick_Length, 32 },
-    { "user_db_path", VAR_TYPE_STR, UL &User_Db_Path, UL SHAREDIR "/users" },
-    { "server_db_path", VAR_TYPE_STR, UL &Server_Db_Path, UL SHAREDIR "/servers" },
     { "user_db_interval", VAR_TYPE_INT, UL &User_Db_Interval, 1800 },
     { "channel_limit", VAR_TYPE_INT, UL &Channel_Limit, 200 },
     { "login_timeout",	VAR_TYPE_INT, UL &Login_Timeout, 60 },
-    { "max_command_length", VAR_TYPE_INT, UL &Max_Command_Length, 2048 }
+    { "max_command_length", VAR_TYPE_INT, UL &Max_Command_Length, 2048 },
+    { "config_dir", VAR_TYPE_STR, UL &Config_Dir, UL SHAREDIR },
 };
 
-static int Vars_Size = sizeof (Vars) / sizeof (CONFIG);
+static int Vars_Size = sizeof (Vars) / sizeof (struct config);
 
 static void
-set_int_var (CONFIG *v, int val)
+set_int_var (struct config *v, int val)
 {
     ASSERT (v->type == VAR_TYPE_INT);
     *(int*)v->val = val;
 }
 
 static void
-set_str_var (CONFIG *v, const char *s)
+set_str_var (struct config *v, const char *s)
 {
     char **ptr;
     ASSERT (v->type == VAR_TYPE_STR);

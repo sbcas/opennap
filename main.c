@@ -27,7 +27,6 @@
 ** Global Variables
 */
 
-char *Motd_Path = 0;
 char *Listen_Addr = 0;
 char *Server_Name = 0;
 char *Server_Pass = 0;
@@ -63,8 +62,7 @@ int Max_Rss_Size;
 #endif
 time_t Current_Time;
 int Max_Nick_Length;
-char *User_Db_Path;
-char *Server_Db_Path;
+char *Config_Dir;
 
 /* bans on ip addresses / users */
 LIST *Bans = 0;

@@ -8,6 +8,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <limits.h>
 #include "opennap.h"
 #include "debug.h"
 #include "md5.h"
@@ -20,9 +21,10 @@ get_server_pass (const char *host)
 {
     TEXTDB *db;
     TEXTDB_RES *result;
-    char *pass = 0;
+    char *pass = 0, path[_POSIX_PATH_MAX];
 
-    db = textdb_init (Server_Db_Path);
+    snprintf(path,sizeof(path),"%s/servers",Config_Dir);
+    db = textdb_init (path);
     if (db)
     {
 	result = textdb_fetch (db, host);

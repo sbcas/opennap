@@ -14,6 +14,7 @@
 #ifndef WIN32
 #include <unistd.h>
 #endif
+#include <limits.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -55,17 +56,18 @@ userdb_init (void)
 {
     FILE *fp;
     int ac, regen = 0;
-    char *av[6];
+    char *av[6], path[_POSIX_PATH_MAX];
     USERDB *u;
 
-    fp = fopen (User_Db_Path, "r");
+    snprintf(path,sizeof(path),"%s/users",Config_Dir);
+    fp = fopen (path, "r");
     if (!fp)
     {
-	logerr ("userdb_init", User_Db_Path);
+	logerr ("userdb_init", path);
 	return -1;
     }
     User_Db = hash_init (257, (hash_destroy) userdb_free);
-    log ("userdb_init(): reading %s", User_Db_Path);
+    log ("userdb_init(): reading %s", path);
     if (fgets (Buf, sizeof (Buf), fp))
     {
 	if (strncmp (":version 1", Buf, 10))
@@ -154,14 +156,14 @@ int
 userdb_dump (void)
 {
     FILE *fp;
-    char path[_POSIX_PATH_MAX];
+    char path[_POSIX_PATH_MAX], tmppath[_POSIX_PATH_MAX];
 
     log ("userdb_dump(): dumping user database");
-    snprintf (path, sizeof (path), "%s.tmp", User_Db_Path);
-    fp = fopen (path, "w");
+    snprintf (tmppath, sizeof (tmppath), "%s/users.tmp", Config_Dir);
+    fp = fopen (tmppath, "w");
     if (!fp)
     {
-	logerr ("userdb_dump", path);
+	logerr ("userdb_dump", tmppath);
 	return -1;
     }
 #ifdef WIN32
@@ -181,9 +183,10 @@ userdb_dump (void)
 	logerr ("userdb_dump", "fclose");
 	return -1;
     }
-    if (unlink (User_Db_Path))
+    snprintf(path,sizeof(path),"%s/users",Config_Dir);
+    if (unlink (path))
 	logerr ("userdb_dump", "unlink");	/* not fatal, may not exist */
-    if (rename (path, User_Db_Path))
+    if (rename (tmppath, path))
     {
 	logerr ("userdb_dump", "rename");
 	return -1;
