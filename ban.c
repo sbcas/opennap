@@ -71,13 +71,10 @@ HANDLER (ban)
     b->when = time (0);
     /* determine if this ban is on an ip or a user */
     b->type = (is_ip (ban)) ? BAN_IP : BAN_USER;
-    if (pkt)
-	b->reason = STRDUP (pkt);
-    else
-	b->reason = STRDUP ("");
+    b->reason = STRDUP (NONULL (pkt));
     Ban = array_add (Ban, &Ban_Size, b);
 
-    notify_mods ("%s banned %s: %s", sender->nick, ban, pkt ? pkt : "");
+    notify_mods ("%s banned %s: %s", sender->nick, ban, NONULL (pkt));
 }
 
 /* 614 [ :<sender> ] <nick|ip> */

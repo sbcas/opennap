@@ -26,6 +26,20 @@ char Buf[512];
 int Quit = 0;
 char *Nick;
 int Output = 0;
+int Show_Numerics = 0;
+char *Speed[] = {
+    "unknown",
+    "14.4",
+    "28.8",
+    "33.6",
+    "56.7",
+    "64K ISDN",
+    "128K ISDN",
+    "Cable",
+    "DSL",
+    "T1",
+    "T3"
+};
 
 struct search {
     char *user;
@@ -248,6 +262,11 @@ user_input (char *s)
 	    type=211;
 	    clear_search();
 	}
+	else if (!strncmp("say", s, 3))
+	{
+	    s+=3;
+	    type=402;
+	}
 	else if (!strncmp("whois", s, 5))
 	{
 	    s += 5;
@@ -373,6 +392,11 @@ user_input (char *s)
 	    s++;
 	p = s;
     }
+    else if (!isdigit (*s))
+    {
+	do_output ("syntax is: /<command>");
+	do_output ("       or: <message number> <data>");
+    }
     else
     {
 	p = strchr (s, ' ');
@@ -397,6 +421,17 @@ new_xmit (int fd)
     Transfer[Transfer_Size]->fd = fd;
     Transfer_Size++;
     return Transfer[Transfer_Size-1];
+}
+
+char *
+numeric (int n)
+{
+    static char buf[8];
+    if (Show_Numerics)
+    snprintf(buf,sizeof(buf),"[%d] ",n);
+    else
+	buf[0]=0;
+    return buf;
 }
 
 int
@@ -448,7 +483,7 @@ server_output (void)
     /* login ack */
     else if (msg == 3)
     {
-	do_output ("[3] email address is %s", Buf);
+	do_output ("%semail address is %s", numeric(msg),Buf);
     }
     /*search*/
     else if (msg == 201)
@@ -476,7 +511,7 @@ server_output (void)
 	int newfd;
 	struct xmit *xmit;
 
-	do_output("[204] GET accepted");
+	do_output("%sGET accepted",numeric(msg));
 
 	/* download ack */
 	if(split_line(argv,sizeof(argv)/sizeof(char*),Buf)==6)
@@ -543,6 +578,12 @@ server_output (void)
 	    }
 	}
     }
+    /*private message*/
+    else if (msg==205)
+    {
+	argc=split_line(argv,sizeof(argv)/sizeof(char*),Buf);
+	do_output("%s*%s* %s", numeric(msg),argv[0],argv[1]);
+    }
     /*browse*/
     else if (msg == 212)
     {
@@ -551,24 +592,53 @@ server_output (void)
 	Search[Search_Size].user = strdup (argv[0]);
 	Search[Search_Size].file = strdup (argv[1]);
 	Search_Size++;
-	do_output("[212] %d) %s %s %s %s %s", Search_Size,
+	do_output("%s%d) %s %s %s %s %s", numeric(msg),Search_Size,
 		argv[0],argv[1],argv[3],argv[4],argv[6]);
     }
     /* stats */
     else if (msg == 214)
     {
 	argc=split_line(argv,sizeof(argv)/sizeof(char*),Buf);
-	do_output ("[214] %d users, %d files, %d gigs.",
+	do_output ("%s%d users, %d files, %d gigs.", numeric(msg),
 		atoi (argv[0]), atoi(argv[1]), atoi(argv[2]));
     }
+    else if (msg == 403)
+    {
+	argc=split_line(argv,sizeof(argv)/sizeof(char*),Buf);
+	do_output ("%s<%s/%s> %s", numeric(msg),
+	    argv[1], argv[0], argv[2]);
+    }
+
     /* error message */
     else if (msg == 404)
     {
-	do_output ("[404] %s", Buf);
+	do_output ("%s%s", numeric(msg), Buf);
+    }
+    /* join mesggage */
+    else if (msg == 406)
+    {
+	argc=split_line(argv,sizeof(argv)/sizeof(char*),Buf);
+	do_output ("%sjoin/%s: %s [%s shared] (%s)", numeric(msg),
+	    argv[0],argv[1],argv[2],Speed[atoi(argv[3])]);
+    }
+    /* part */
+    else if (msg == 407)
+    {
+	argc=split_line(argv,sizeof(argv)/sizeof(char*),Buf);
+	do_output ("%spart/%s: %s [%s shared] (%s)",numeric(msg),
+	    argv[0],argv[1],argv[2],Speed[atoi(argv[3])]);
+    }
+    /* topic */
+    else if (msg == 410)
+    {
+	p=strchr(Buf,' ');
+	if(p)
+	    *p++=0;
+	do_output("%stopic/%s: %s", numeric(msg),Buf,p?p:"(empty)");
     }
     /*motd*/
     else if(msg == 621)
-	do_output("[621] %s", Buf);
+	do_output("%s%s", Buf,numeric(msg));
     else
 	do_output ("len=%hd, type=%hd, data=%s", len, msg, Buf);
 
@@ -698,8 +768,10 @@ usage (void)
     puts   ("  -d DATAPORT  specify the local data port to listen on");
     puts   ("  -h		display this help message");
     puts   ("  -m META		specify metaserver to connect to");
+    puts   ("  -n		show protocol numerics");
     puts   ("  -r		auto reconnect to server");
     puts   ("  -s SERVER	connect to SERVER");
+    puts   ("  -S SPEED		set line speed to SPEED (0-10)");
     puts   ("  -p PORT	connect to PORT");
     puts   ("  -u USER	log in as USER");
     puts   ("  -v		display version information");
@@ -730,12 +802,19 @@ main (int argc, char **argv)
     int DataFd;
     size_t sinsize;
     int newfd;
+    int speed = 0;
 
     Nick="kuila0";
-    while ((i = getopt (argc, argv, "m:hrs:p:u:vd:")) != -1)
+    while ((i = getopt (argc, argv, "nm:hrs:p:u:vd:S:")) != -1)
     {
 	switch (i)
 	{
+	    case 'n':
+		Show_Numerics = 1;
+		break;
+	    case 'S':
+		speed = atoi (optarg);
+		break;
 	    case 'm':
 		metaserver = optarg;
 		break;
@@ -861,7 +940,8 @@ reconnect:
     do_output ("connected.");
 
     /* send the login command */
-    snprintf (Buf + 4, sizeof (Buf) - 4, "%s password 0 \"nap v0.9\" 3", Nick);
+    snprintf (Buf + 4, sizeof (Buf) - 4, "%s password 0 \"nap v0.9\" %d",
+	Nick, speed);
     Buf[0] = strlen (Buf + 4);
     Buf[1] = 0;
     Buf[2] = 2;

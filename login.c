@@ -86,11 +86,11 @@ HANDLER (login)
 	if (Ban[i]->type == BAN_USER && !strcasecmp (field[0], Ban[i]->target))
 	{
 	    log ("login(): banned user %s tried to log in", field[0]);
-	    if (con->class == CLASS_USER)
+	    if (con->class == CLASS_UNKNOWN)
 	    {
 		send_cmd (con, MSG_SERVER_NOSUCH,
 			"You are banned from this server: %s",
-			Ban[i]->reason ? Ban[i]->reason : "banned");
+			NONULL (Ban[i]->reason));
 		con->destroy = 1;
 	    }
 	    notify_mods ("Banned user %s attempted to log in", field[0]);

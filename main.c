@@ -92,70 +92,70 @@ HANDLER (server_stats)
 typedef struct
 {
     unsigned long message;
-    HANDLER ((*handler));
+      HANDLER ((*handler));
 }
 HANDLER;
 
 /* this is the table of valid commands we accept from both users and servers */
 static HANDLER Protocol[] = {
-    { MSG_CLIENT_LOGIN, login }, /* 6 */
-    { MSG_CLIENT_LOGIN_REGISTER, login }, /* 7 */
-    { MSG_CLIENT_ADD_FILE, add_file }, /* 100 */
-    { MSG_CLIENT_REMOVE_FILE, remove_file }, /* 102 */
-    { MSG_CLIENT_SEARCH, search }, /* 200 */
-    { MSG_CLIENT_PRIVMSG, privmsg }, /* 205 */
-    { MSG_CLIENT_ADD_HOTLIST, add_hotlist }, /* 207 */
-    { MSG_CLIENT_ADD_HOTLIST_SEQ, add_hotlist }, /* 208 */
-    { MSG_CLIENT_BROWSE, browse }, /* 211 */
-    { MSG_SERVER_STATS, server_stats }, /* 214 */
-    { MSG_CLIENT_RESUME_REQUEST, resume }, /* 215 */
-    { MSG_CLIENT_DOWNLOAD_START, download_start }, /* 218 */
-    { MSG_CLIENT_DOWNLOAD_END, download_end }, /* 219 */
-    { MSG_CLIENT_UPLOAD_START, upload_start }, /* 220 */
-    { MSG_CLIENT_UPLOAD_END, upload_end }, /* 221 */
-    { MSG_CLIENT_REMOVE_HOTLIST, remove_hotlist }, /* 303 */
-    { MSG_SERVER_NOSUCH, server_error }, /* 404 */
-    { MSG_CLIENT_DOWNLOAD_FIREWALL, download }, /* 500 */
-    { MSG_CLIENT_WHOIS, whois },
-    { MSG_CLIENT_JOIN, join },
-    { MSG_CLIENT_PART, part },
-    { MSG_CLIENT_PUBLIC, public },
-    { MSG_SERVER_PUBLIC, public },
-    { MSG_CLIENT_USERSPEED, user_speed }, /* 600 */
-    { MSG_CLIENT_KILL, kill_user },
-    { MSG_CLIENT_DOWNLOAD, download },
-    { MSG_CLIENT_UPLOAD_OK, upload_ok },
-    { MSG_SERVER_UPLOAD_REQUEST, upload_request }, /* 607 */
-    { MSG_SERVER_TOPIC, topic },
-    { MSG_CLIENT_MUZZLE, muzzle },
-    { MSG_CLIENT_UNMUZZLE, unmuzzle },
-    { MSG_CLIENT_BAN, ban }, /* 612 */
-    { MSG_CLIENT_UNBAN, unban }, /* 614 */
-    { MSG_CLIENT_BANLIST, banlist }, /* 615 */
-    { MSG_CLIENT_LIST_CHANNELS, list_channels }, /* 618 */
-    { MSG_CLIENT_DATA_PORT_ERROR, data_port_error }, /* 626 */
-    { MSG_CLIENT_WALLOP, wallop }, /* 627 */
-    { MSG_CLIENT_ANNOUNCE, announce }, /* 628 */
-    { MSG_CLIENT_SETUSERLEVEL, level },
-    { MSG_CLIENT_PING, ping }, /* 751 */
-    { MSG_CLIENT_PONG, ping }, /* 752 */
-    { MSG_CLIENT_SERVER_RECONFIG, server_reconfig }, /* 800 */
-    { MSG_CLIENT_SERVER_VERSION, server_version }, /* 801 */
-    { MSG_CLIENT_SERVER_CONFIG, server_config }, /* 810 */
-    { MSG_CLIENT_NAMES_LIST, list_users }, /* 830 */
+    {MSG_CLIENT_LOGIN, login},	/* 6 */
+    {MSG_CLIENT_LOGIN_REGISTER, login},	/* 7 */
+    {MSG_CLIENT_ADD_FILE, add_file},	/* 100 */
+    {MSG_CLIENT_REMOVE_FILE, remove_file},	/* 102 */
+    {MSG_CLIENT_SEARCH, search},	/* 200 */
+    {MSG_CLIENT_PRIVMSG, privmsg},	/* 205 */
+    {MSG_CLIENT_ADD_HOTLIST, add_hotlist},	/* 207 */
+    {MSG_CLIENT_ADD_HOTLIST_SEQ, add_hotlist},	/* 208 */
+    {MSG_CLIENT_BROWSE, browse},	/* 211 */
+    {MSG_SERVER_STATS, server_stats},	/* 214 */
+    {MSG_CLIENT_RESUME_REQUEST, resume},	/* 215 */
+    {MSG_CLIENT_DOWNLOAD_START, download_start},	/* 218 */
+    {MSG_CLIENT_DOWNLOAD_END, download_end},	/* 219 */
+    {MSG_CLIENT_UPLOAD_START, upload_start},	/* 220 */
+    {MSG_CLIENT_UPLOAD_END, upload_end},	/* 221 */
+    {MSG_CLIENT_REMOVE_HOTLIST, remove_hotlist},	/* 303 */
+    {MSG_SERVER_NOSUCH, server_error},	/* 404 */
+    {MSG_CLIENT_DOWNLOAD_FIREWALL, download},	/* 500 */
+    {MSG_CLIENT_WHOIS, whois},
+    {MSG_CLIENT_JOIN, join},
+    {MSG_CLIENT_PART, part},
+    {MSG_CLIENT_PUBLIC, public},
+    {MSG_SERVER_PUBLIC, public},
+    {MSG_CLIENT_USERSPEED, user_speed},	/* 600 */
+    {MSG_CLIENT_KILL, kill_user},
+    {MSG_CLIENT_DOWNLOAD, download},
+    {MSG_CLIENT_UPLOAD_OK, upload_ok},
+    {MSG_SERVER_UPLOAD_REQUEST, upload_request},	/* 607 */
+    {MSG_SERVER_TOPIC, topic},
+    {MSG_CLIENT_MUZZLE, muzzle},
+    {MSG_CLIENT_UNMUZZLE, unmuzzle},
+    {MSG_CLIENT_BAN, ban},	/* 612 */
+    {MSG_CLIENT_UNBAN, unban},	/* 614 */
+    {MSG_CLIENT_BANLIST, banlist},	/* 615 */
+    {MSG_CLIENT_LIST_CHANNELS, list_channels},	/* 618 */
+    {MSG_CLIENT_DATA_PORT_ERROR, data_port_error},	/* 626 */
+    {MSG_CLIENT_WALLOP, wallop},	/* 627 */
+    {MSG_CLIENT_ANNOUNCE, announce},	/* 628 */
+    {MSG_CLIENT_SETUSERLEVEL, level},
+    {MSG_CLIENT_PING, ping},	/* 751 */
+    {MSG_CLIENT_PONG, ping},	/* 752 */
+    {MSG_CLIENT_SERVER_RECONFIG, server_reconfig},	/* 800 */
+    {MSG_CLIENT_SERVER_VERSION, server_version},	/* 801 */
+    {MSG_CLIENT_SERVER_CONFIG, server_config},	/* 810 */
+    {MSG_CLIENT_NAMES_LIST, list_users},	/* 830 */
 
     /* non-standard messages */
-    { MSG_CLIENT_QUIT, client_quit },
-    { MSG_SERVER_LOGIN, server_login },
-    { MSG_SERVER_LOGIN, server_login },
-    { MSG_SERVER_LOGIN_ACK, server_login_ack },
-    { MSG_SERVER_USER_IP, user_ip }, /* 10013 */
-    { MSG_CLIENT_CONNECT, server_connect }, /* 10100 */
-    { MSG_CLIENT_DISCONNECT, server_disconnect }, /* 10101 */
-    { MSG_CLIENT_KILL_SERVER, kill_server }, /* 10110 */
-    { MSG_CLIENT_REMOVE_SERVER, remove_server }, /* 10111 */
+    {MSG_CLIENT_QUIT, client_quit},
+    {MSG_SERVER_LOGIN, server_login},
+    {MSG_SERVER_LOGIN, server_login},
+    {MSG_SERVER_LOGIN_ACK, server_login_ack},
+    {MSG_SERVER_USER_IP, user_ip},	/* 10013 */
+    {MSG_CLIENT_CONNECT, server_connect},	/* 10100 */
+    {MSG_CLIENT_DISCONNECT, server_disconnect},	/* 10101 */
+    {MSG_CLIENT_KILL_SERVER, kill_server},	/* 10110 */
+    {MSG_CLIENT_REMOVE_SERVER, remove_server},	/* 10111 */
 #if 0
-    { MSG_SERVER_COMPRESSED_DATA, compressed_data }, /* 10200 */
+    {MSG_SERVER_COMPRESSED_DATA, compressed_data},	/* 10200 */
 #endif
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
@@ -175,8 +175,8 @@ HANDLER (dispatch_command)
        handlers.  the buffer_read() function should always allocate 1 byte
        more than necessary for this purpose */
     byte = *(pkt + len);
-    ASSERT (byte != END_BYTE); /* make sure we didn't run off the end of the
-				  buffer */
+    ASSERT (byte != END_BYTE);	/* make sure we didn't run off the end of the
+				   buffer */
     *(pkt + len) = 0;
 
     for (l = 0; l < Protocol_Size; l++)
@@ -192,9 +192,11 @@ HANDLER (dispatch_command)
 
     if (l == Protocol_Size)
     {
-	log ("dispatch_command(): unknown message: tag=%hu, length=%hu, data=%s",
-	    tag, len,
-	    len ? (char *) con->recvbuf->data + con->recvbuf->consumed : "(empty)");
+	log
+	    ("dispatch_command(): unknown message: tag=%hu, length=%hu, data=%s",
+	     tag, len,
+	     len ? (char *) con->recvbuf->data +
+	     con->recvbuf->consumed : "(empty)");
 
 	send_cmd (con, MSG_SERVER_NOSUCH, "unknown command code %hu", tag);
     }
@@ -204,7 +206,7 @@ HANDLER (dispatch_command)
 }
 
 static void
-handle_connection (CONNECTION *con)
+handle_connection (CONNECTION * con)
 {
     unsigned short len, tag;
 
@@ -215,9 +217,10 @@ handle_connection (CONNECTION *con)
     if (con->class == CLASS_SERVER)
     {
 	BUFFER *b;
-	
+
 	ASSERT (con->zip != 0);
-	if (con->zip->inbuf && (b = buffer_uncompress (con->zip->zin, &con->zip->inbuf)))
+	if (con->zip->inbuf
+	    && (b = buffer_uncompress (con->zip->zin, &con->zip->inbuf)))
 	    con->recvbuf = buffer_append (con->recvbuf, b);
     }
 #endif /* HAVE_LIBZ */
@@ -248,7 +251,7 @@ handle_connection (CONNECTION *con)
 	return;
     }
 
-    con->incomplete = 0; /* found all the data we wanted */
+    con->incomplete = 0;	/* found all the data we wanted */
 
     /* the packet may be fragmented so make sure all of the bytes for this
        packet end up in the first buffer so its easy to handle */
@@ -275,12 +278,12 @@ handle_connection (CONNECTION *con)
        propogate are an ACK from a peer server that we've requested a link
        with, and an error message from a peer server */
     if (con->class == CLASS_SERVER && tag != MSG_SERVER_LOGIN_ACK &&
-	    tag != MSG_SERVER_NOSUCH && Num_Servers)
+	tag != MSG_SERVER_NOSUCH && Num_Servers)
 	pass_message (con, con->recvbuf->data + con->recvbuf->consumed,
-		4 + len);
+		      4 + len);
 
     dispatch_command (con, tag, len,
-	con->recvbuf->data + con->recvbuf->consumed + 4);
+		      con->recvbuf->data + con->recvbuf->consumed + 4);
 
     if (con->destroy)
     {
@@ -307,7 +310,7 @@ lookup_hostname (void)
 	log ("unable to find fqdn for %s", Buf);
 	Server_Name = STRDUP (Buf);
     }
-    endhostent();
+    endhostent ();
 }
 
 static void
@@ -315,23 +318,24 @@ update_stats (void)
 {
     int i, l;
 
-    log ("update_stats(): library is %d kilobytes (%d gigabytes), %d files, %d users",
-	    Num_Gigs, Num_Gigs / (1024 * 1024), Num_Files, Users->dbsize);
+    log
+	("update_stats(): library is %d kilobytes (%d gigabytes), %d files, %d users",
+	 Num_Gigs, Num_Gigs / (1024 * 1024), Num_Files, Users->dbsize);
     log ("update_stats: %d local clients, %d linked servers",
-	Num_Clients - Num_Servers, Num_Servers);
+	 Num_Clients - Num_Servers, Num_Servers);
 
     /* since we send the same data to many people, optimize by forming
        the message once then writing it out */
     snprintf (Buf + 4, sizeof (Buf) - 4, "%d %d %d", Users->dbsize, Num_Files,
-	Num_Gigs / (1024 * 1024));
+	      Num_Gigs / (1024 * 1024));
     set_tag (Buf, MSG_SERVER_STATS);
     l = strlen (Buf + 4);
     set_len (Buf, l);
     l += 4;
 
-    for(i=0;i<Num_Clients;i++)
+    for (i = 0; i < Num_Clients; i++)
     {
-	if(Clients[i] && Clients[i]->class == CLASS_USER)
+	if (Clients[i] && Clients[i]->class == CLASS_USER)
 	    queue_data (Clients[i], Buf, l);
     }
 }
@@ -352,17 +356,18 @@ ip_glob_match (const char *pattern, const char *ip)
 }
 
 static int
-check_accept (CONNECTION *cli)
+check_accept (CONNECTION * cli)
 {
     int i;
 
     /* check for max connections */
     if (Num_Clients >= Max_Connections)
     {
-	log ("check_accept: maximum number of connections (%d) has been reached",
-		Max_Connections);
-	send_cmd (cli, MSG_SERVER_ERROR, "this server is full (%d local connections)",
-		Num_Clients);
+	log
+	    ("check_accept: maximum number of connections (%d) has been reached",
+	     Max_Connections);
+	send_cmd (cli, MSG_SERVER_ERROR,
+		  "this server is full (%d local connections)", Num_Clients);
 	return 0;
     }
 
@@ -370,13 +375,16 @@ check_accept (CONNECTION *cli)
     for (i = 0; i < Ban_Size; i++)
     {
 	if (Ban[i]->type == BAN_IP &&
-		ip_glob_match (Ban[i]->target, cli->host))
+	    ip_glob_match (Ban[i]->target, cli->host))
 	{
 	    /* TODO: this does not reach all mods, only the one on
 	       this server */
+	    log ("check_accept: connection attempt from banned ip %s (%s)",
+		 cli->host, NONULL (Ban[i]->reason));
 	    notify_mods ("Connection attempt from banned ip %s", cli->host);
-	    send_cmd (cli, MSG_SERVER_ERROR, "You are banned from this server (%s)",
-		    Ban[i]->reason ? Ban[i]->reason : "banned");
+	    send_cmd (cli, MSG_SERVER_ERROR,
+		      "You are banned from this server (%s)",
+		      NONULL (Ban[i]->reason));
 	    return 0;
 	}
     }
@@ -388,12 +396,15 @@ static void
 usage (void)
 {
     fprintf (stderr,
-	     "usage: %s [ -hsv ] [ -c FILE ] [ -p PORT ] \n",
-	     PACKAGE);
-    fprintf (stderr, "  -c FILE	read config from FILE (default: %s/config\n", SHAREDIR);
+	     "usage: %s [ -hsv ] [ -c FILE ] [ -p PORT ] \n", PACKAGE);
+    fprintf (stderr, "  -c FILE	read config from FILE (default: %s/config\n",
+	     SHAREDIR);
     fputs ("  -h		print this help message\n", stderr);
-    fputs ("  -p PORT	listen on PORT for connections (default: 8888)\n", stderr);
-    fputs ("  -s		channels may only be created by privileged users\n", stderr);
+    fputs ("  -p PORT	listen on PORT for connections (default: 8888)\n",
+	   stderr);
+    fputs
+	("  -s		channels may only be created by privileged users\n",
+	 stderr);
     fputs ("  -v		display version information\n", stderr);
     exit (0);
 }
@@ -486,10 +497,10 @@ main (int argc, char **argv)
 	exit (1);
 
     n = 1;
-    if(setsockopt (s, SOL_SOCKET, SO_REUSEADDR, &n, sizeof (n))!=0)
+    if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, &n, sizeof (n)) != 0)
     {
-	perror("setsockopt");
-	exit(1);
+	perror ("setsockopt");
+	exit (1);
     }
 
     memset (&sin, 0, sizeof (sin));
@@ -556,19 +567,19 @@ main (int argc, char **argv)
 		   flag is checked here to avoid busy waiting when we really
 		   do need more data from the client connection */
 		if ((Clients[i]->incomplete == 0 && Clients[i]->recvbuf) ||
-			(Clients[i]->zip && Clients[i]->zip->inbuf))
+		    (Clients[i]->zip && Clients[i]->zip->inbuf))
 		    pending++;
 	    }
 	}
 
-	Num_Clients = n; /* actual number of clients */
+	Num_Clients = n;	/* actual number of clients */
 
 	/* if there is pending data in client queues, don't block on the
 	   select call */
 	t.tv_sec = pending ? 0 : Stat_Click;
 	t.tv_usec = 0;
 
-	pending = 0; /* reset */
+	pending = 0;		/* reset */
 
 	n = select (maxfd + 1, &set, &wset, NULL, &t);
 
@@ -597,11 +608,11 @@ main (int argc, char **argv)
 		cli->host = STRDUP (inet_ntoa (sin.sin_addr));
 		cli->class = CLASS_UNKNOWN;
 		log ("main(): connection from %s, port %d", cli->host,
-			sin.sin_port);
+		     sin.sin_port);
 		add_client (cli);
 
 		set_nonblocking (f);
-		set_keepalive (f, 1); /* enable tcp keepalive messages */
+		set_keepalive (f, 1);	/* enable tcp keepalive messages */
 
 		if (!check_accept (cli))
 		    remove_connection (cli);
@@ -615,11 +626,11 @@ main (int argc, char **argv)
 	    /* client connections may disappear during this loop, so make
 	       sure to check for a valid pointer before checking for input
 	       from it.  the holes are reclaimed in a loop above (see
-               comment there for more information) */
+	       comment there for more information) */
 	    if (Clients[i])
 	    {
 		if ((Clients[i]->flags & FLAG_CONNECTING) &&
-			FD_ISSET (Clients[i]->fd, &wset))
+		    FD_ISSET (Clients[i]->fd, &wset))
 		{
 		    complete_connect (Clients[i]);
 		    n--;	/* keep track of how many we've handled */
@@ -628,7 +639,9 @@ main (int argc, char **argv)
 		{
 		    n--;	/* keep track of how many we've handled */
 		    f = buffer_read (Clients[i]->fd,
-			(Clients[i]->zip != 0) ? &Clients[i]->zip->inbuf : &Clients[i]->recvbuf);
+				     (Clients[i]->zip !=
+				      0) ? &Clients[i]->zip->
+				     inbuf : &Clients[i]->recvbuf);
 		    if (f <= 0)
 		    {
 			if (f == 0)
@@ -677,14 +690,16 @@ main (int argc, char **argv)
 		       there is no compressed data and some queued data
 		       exists, or if the socket is writable and there is some
 		       compressed output */
-		    if ((Clients[i]->sendbuf && Clients[i]->zip->outbuf == 0) ||
-			(Clients[i]->zip->outbuf && FD_ISSET (Clients[i]->fd, &wset)))
+		    if ((Clients[i]->sendbuf && Clients[i]->zip->outbuf == 0)
+			|| (Clients[i]->zip->outbuf
+			    && FD_ISSET (Clients[i]->fd, &wset)))
 			send_queued_data (Clients[i]);
 		}
 		else
 		{
 		    /* client */
-		    if (Clients[i]->sendbuf && FD_ISSET (Clients[i]->fd, &wset))
+		    if (Clients[i]->sendbuf
+			&& FD_ISSET (Clients[i]->fd, &wset))
 			send_queued_data (Clients[i]);
 		}
 	    }
@@ -719,7 +734,7 @@ main (int argc, char **argv)
     free_hash (Channels);
     free_hash (Hotlist);
 
-    for(i=0;i<Ban_Size;i++)
+    for (i = 0; i < Ban_Size; i++)
 	free_ban (Ban[i]);
     if (Ban)
 	FREE (Ban);
