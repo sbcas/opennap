@@ -150,7 +150,6 @@ HANDLER (login)
     /* check for attempt to register a nick that is already taken */
     else if (db && tag == MSG_CLIENT_LOGIN_REGISTER)
     {
-	log ("login(): %s is already registered", av[0]);
 	if (con->class == CLASS_UNKNOWN)
 	{
 	    /* this could happen if two clients simultaneously connect
@@ -184,8 +183,6 @@ HANDLER (login)
 	       logs in, kill the older client and proceed normally */
 	    if (user->host == con->ip)
 	    {
-		log ("login(): killing ghost for %s at %s",
-			user->nick, my_ntoa(user->host));
 		pass_message_args(NULL,MSG_CLIENT_KILL,
 			":%s %s \"ghost (%s)\"",
 			Server_Name, user->nick, user->server);
@@ -225,8 +222,6 @@ HANDLER (login)
 	}
 	else if (ISSERVER (con))
 	{
-	    log ("login(): nick collision for %s", user->nick);
-
 	    /* issue a KILL for this user if we have one of them locally
 	       connected */
 	    if (ISUSER (user->con))
@@ -298,10 +293,11 @@ HANDLER (login)
 		   receive this message they will check the creation date and
 		   send back any entries which are more current that this one.
 		   kind of icky, but its the best we can do */
-		log ("login(): sending KILL for user %s", av[0]);
 		pass_message_args (NULL, MSG_CLIENT_KILL,
 				   ":%s %s \"invalid password\"", Server_Name,
 				   av[0]);
+		notify_mods(KILLLOG_MODE,"%s killed %s: invalid password",
+			Server_Name, av[0]);
 		sync_reginfo (db);
 	    }
 	    return;
@@ -311,7 +307,6 @@ HANDLER (login)
     {
 	ASSERT (tag == MSG_CLIENT_LOGIN_REGISTER);
 	ASSERT (db == 0);
-	log ("login(): registering %s", av[0]);
 	db = CALLOC (1, sizeof (USERDB));
 	if (db)
 	{
@@ -568,10 +563,8 @@ HANDLER (register_nick)
 	send_cmd (con, MSG_SERVER_NOSUCH, "You are already logged in.");
 	return;
     }
-    log ("register_nick(): attempting to register %s", pkt);
     if ((db = hash_lookup (User_Db, pkt)))
     {
-	log ("register_nick(): %s is already registered", pkt);
 	send_cmd (con, MSG_SERVER_REGISTER_FAIL, "");
 	return;
     }
@@ -694,9 +687,7 @@ HANDLER (register_user)
 	return;
     if (sender->level < LEVEL_ADMIN)
     {
-	log ("register_user(): %s has no privilege", sender->nick);
-	if (ISUSER (con))
-	    permission_denied (con);
+	permission_denied (con);
 	return;
     }
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
@@ -734,7 +725,6 @@ HANDLER (register_user)
     /* first check to make sure this user is not already registered */
     if (hash_lookup (User_Db, av[0]))
     {
-	log ("register_user(): %s is already registered", av[0]);
 	send_user (sender, MSG_SERVER_NOSUCH, "[%s] %s is already registered",
 		   Server_Name, av[0]);
 	return;
@@ -769,6 +759,9 @@ HANDLER (register_user)
     db->timestamp = Current_Time;
     db->lastSeen = Current_Time;
     hash_add (User_Db, db->nick, db);
+
+    notify_mods(CHANGELOG_MODE,"%s registered nickname %s (%s)",
+	    sender->nick, db->nick, Levels[db->level]);
 }
 
 /* 11 <user> <password>
@@ -785,7 +778,6 @@ HANDLER (check_password)
     nick = next_arg (&pkt);
     if (!pkt)
     {
-	log ("check_password(): too few parameters");
 	unparsable (con);
 	return;
     }
