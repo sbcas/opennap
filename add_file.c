@@ -16,7 +16,7 @@
 const int BitRate[18] = { 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 192 , 224, 256, 320 };
 
 /* allowed sample rates for MPEG V2/3 */
-const int SampleRate[6] = { 16000, 24000, 22050, 32000, 48000, 44100 };
+const int SampleRate[6] = { 16000, 24000, 22050, 32000, 44100, 48000 };
 
 #if 0
 static void

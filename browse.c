@@ -33,7 +33,8 @@ browse_callback (DATUM * info, BROWSE * ctx)
 		   "00000000000000000000000000000000",
 #endif
 		   info->size,
-		   info->bitrate, info->frequency, info->duration);
+		   BitRate[info->bitrate], SampleRate[info->frequency],
+		   info->duration);
 
 	ctx->count++;
     }
