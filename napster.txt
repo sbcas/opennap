@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-April 16, 2000
+April 26, 2000
 
 0.  Forward
 
@@ -105,11 +105,54 @@ appropriate, examples of the <data> section for each message are given.
 	registration time is returned.  If the nick is not registered, a
 	dummy value is returned.
 
-4	??? [CLIENT]
+4       version check [CLIENT]
 
-	<n>
+        <version>
 
-	the latest napster v2.0beta5a sends this prior to login.
+	Server sends [5] if an update is needed. All other responses are
+	ignored.
+
+	<version> = string, version 2.0b5a sends "2.0"
+
+5       "auto-upgrade" [SERVER]
+
+        <version> <hostname:filename>
+
+        Napster is out of date, get a new version.
+        Or also known as gaping security hole.
+
+        <version>  = string, the new version number.
+        <hostname> = string, hostname of upgrade (http) server
+        <filename> = string, filename
+
+        Connections are always made to port 80.
+
+        The HTTP Request:
+                GET <filename> HTTP/1.0
+                Connection: Keep-Alive
+                Host: <hostname>
+
+        Expected HTTP Response.
+                Content-Length: <size>
+                Content-Type: <doesn't matter>
+                <data>
+
+        Upgrade file is save as "upgrade.exe".
+        And executed as: upgrade.exe UPGRADE "<current.exe>"
+
+        As far as I can tell no confirmation is requested by Napster when it
+        receives this message.  And immediately start to "auto-upgrade". To keep
+        users informed that Napster is doing something potentially very harmful
+        to their computer it displays a message saying it's "auto-upgrading".
+
+        I think this pretty bad, since all someone has to do is hack a napster
+        server et voila a zillion clients at your disposal.
+
+        As far as I known this only affects the Win32 2.0b5a Napster client.
+        Other clients/versions I don't know.
+
+	[This section was contributed by Thomas van der Heijden <thom@bart.nl>
+	-ed]
 
 6	alternate login format [CLIENT]
 
@@ -721,7 +764,13 @@ appropriate, examples of the <data> section for each message are given.
 
 	lefty "generic band - generic song.mp3"
 
-609	missing.
+609     get error [SERVER]      (same as [206])
+
+        <nick> <filename>
+
+        the server sends this message when the file that the user has
+        requested to download is unavailable (such as the user is not logged
+        in).
 
 610	kill (disconnect) a user [CLIENT]
 
@@ -928,9 +977,15 @@ appropriate, examples of the <data> section for each message are given.
 
 704-749	missing.
 
-750	??? [CLIENT, SERVER]
+750	server ping [CLIENT, SERVER]
 
-	server returns an empty 750 command in response. server ping?
+        server: none
+        client: <user>
+
+        Napster 2.0b5a sends the username in a response to a 750 from the
+	server.
+
+	[server returns an empty 750 command in response. server ping? -ed]
 
 751	ping user [CLIENT, SERVER]
 
@@ -1092,7 +1147,35 @@ appropriate, examples of the <data> section for each message are given.
 
 	takes at least one argument.  no apparent effect.
 
-871-1030	missing.
+871-899	missing.
+
+900     connection test [SERVER]
+
+        <ip> <port> <data>
+
+        <ip>   - string,  ip address to connect to.
+        <port> - integer, port to connect to
+        <data> - string,  data to send to server.
+
+        Try to connect to <ip> on <port> for atmost 1000 seconds.  If the
+        connection succeeds send the <data> to target.
+
+	[reported by Thomas van der Heijden <thom@bart.nl>]
+
+901     listen test [SERVER]
+
+        <port> <timeout> <data>
+
+        <port>    - integer, port to listen on
+        <timeout> - integer, time to wait for connection in seconds
+        <data>    - string,  data to send after connection has been made.
+
+        Listen on <port> for <timeout> seconds. If a connection arrives,
+        return <data> to sender.
+
+	[reported by Thomas van der Heijden <thom@bart.nl>]
+
+902-1030	missing.
 
 3.  MD5
 
@@ -1201,3 +1284,4 @@ Ben Byer <bbyer@rice.edu>
 JT <jtraub@dragoncat.net>
 Evan Martin <eeyem@u.washington.edu>
 Colten Edwards (aka panasync@efnet) <edwards@bitchx.dimension6.com>
+Thomas van der Heijden <thom@bart.nl>
