@@ -76,7 +76,7 @@ set_tcp_buffer_len (int f, int bytes)
 }
 
 int
-new_tcp_socket (void)
+new_tcp_socket (int options)
 {
     int f;
 
@@ -85,6 +85,21 @@ new_tcp_socket (void)
     {
 	log("new_tcp_socket(): socket: %s", strerror (errno));
 	return -1;
+    }
+    if(options & ON_NONBLOCKING)
+    {
+	if(set_nonblocking(f))
+	    return -1;
+    }
+    if(options & ON_REUSEADDR)
+    {
+	int i = 1;
+	if (setsockopt (f, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST & i, sizeof (i))
+		!= 0)
+	{
+	    nlogerr ("new_tcp_socket", "setsockopt");
+	    exit (1);
+	}
     }
     return f;
 }
@@ -131,9 +146,7 @@ make_tcp_connection (const char *host, int port, unsigned int *ip)
 	return -1;
     if (ip)
 	*ip = sin.sin_addr.s_addr;
-    if ((f = new_tcp_socket ()) == -1)
-	return -1;
-    if (set_nonblocking (f) == -1)
+    if ((f = new_tcp_socket (ON_NONBLOCKING)) == -1)
 	return -1;
 
     /* if an interface was specify, bind to it before connecting */

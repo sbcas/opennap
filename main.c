@@ -34,11 +34,10 @@ unsigned int Server_Ip = 0;
 unsigned int Server_Flags = 0;
 int Max_User_Channels;		/* default, can be changed in config */
 int Stat_Click;			/* interval (in seconds) to send server stats */
-int Server_Port;		/* which port to listen on for connections */
+LIST *Server_Ports = 0;		/* which port(s) to listen on for connections */
 int Server_Queue_Length;
 int Client_Queue_Length;
 int Max_Search_Results;
-int Compression_Level;
 int Max_Shared;
 int Max_Connections;
 int Nick_Expire;
@@ -54,6 +53,7 @@ int Login_Timeout;
 int Max_Command_Length;
 
 #ifndef WIN32
+int Compression_Level;
 int Uid;
 int Gid;
 int Connection_Hard_Limit;
@@ -281,24 +281,14 @@ version (void)
     exit (0);
 }
 
-int
-main (int argc, char **argv)
+static int *
+args (int argc, char **argv, int *sockfdcount)
 {
-    int s;			/* server socket */
-    int sp = -1;		/* stats port */
-    int i;			/* generic counter */
-    int numReady;		/* number of ready sockets */
-    int port = 0, iface = INADDR_ANY;
-    fd_set set, wset;
-    struct timeval t;
-    int maxfd;
+    int i;
+    LIST *ports = 0, *tmpList;
     char *config_file = 0;
-
-#ifdef WIN32
-    WSADATA wsa;
-
-    WSAStartup (MAKEWORD (1, 1), &wsa);
-#endif /* !WIN32 */
+    int iface = INADDR_ANY;
+    int *sockfd;
 
     while ((i = getopt (argc, argv, "bc:hl:p:svD")) != -1)
     {
@@ -317,7 +307,10 @@ main (int argc, char **argv)
 	    iface = inet_addr (optarg);
 	    break;
 	case 'p':
-	    port = atoi (optarg);
+	    tmpList = CALLOC (1, sizeof (LIST));
+	    tmpList->data = STRDUP (optarg);
+	    tmpList->next = ports;
+	    ports = tmpList;
 	    break;
 	case 's':
 	    Server_Flags |= ON_STRICT_CHANNELS;
@@ -364,50 +357,68 @@ main (int argc, char **argv)
 	Server_Ip = lookup_ip (Server_Name);
     }
 
-    /* if a port was specified on the command line, override the value
+    /* if port(s) were specified on the command line, override the values
        specified in the config file */
-    if (port != 0)
-	Server_Port = port;
+    if (!ports)
+	ports = Server_Ports;
 
-    /* create the incoming connections socket */
-    s = new_tcp_socket ();
-    if (s < 0)
-	exit (1);
-
-    i = 1;
-    if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST & i, sizeof (i))
-	!= 0)
+    /* create the incoming connections socket(s) */
+    *sockfdcount = list_count (ports);
+    /* ensure at least one valid port */
+    if (*sockfdcount < 1)
     {
-	logerr ("main", "setsockopt");
+	log ("args(): no server ports defined");
 	exit (1);
     }
+    sockfd = CALLOC (*sockfdcount, sizeof (int));
 
-    if (set_nonblocking (s))
-	exit (1);
-
-    if (bind_interface (s, Interface, Server_Port) == -1)
-	exit (1);
-
-    if (listen (s, BACKLOG) < 0)
+    log ("args(): listening on %d sockets", *sockfdcount);
+    for (i = 0, tmpList = ports; i < *sockfdcount;
+	 i++, tmpList = tmpList->next)
     {
-	logerr ("main", "listen");
-	exit (1);
+	if ((sockfd[i] = new_tcp_socket (ON_NONBLOCKING | ON_REUSEADDR)) < 0)
+	    exit (1);
+	if (bind_interface (sockfd[i], Interface, atoi (tmpList->data)) == -1)
+	    exit (1);
+	if (listen (sockfd[i], BACKLOG) < 0)
+	{
+	    nlogerr ("args", "listen");
+	    exit (1);
+	}
+	log ("args(): listening on %s port %d", my_ntoa (Interface),
+	     atoi (tmpList->data));
     }
+    if (ports != Server_Ports)
+	list_free (ports, free_pointer);
+    return sockfd;
+}
 
-    log ("listening on %s port %d", my_ntoa (Interface), Server_Port);
+int
+main (int argc, char **argv)
+{
+    int *sockfd;		/* server sockets */
+    int sockfdcount;		/* number of server sockets */
+    int sp = -1;		/* stats port */
+    int i;			/* generic counter */
+    int maxfd;
+    fd_set set, wset;
+    struct timeval t;
+
+#ifdef WIN32
+    WSADATA wsa;
+
+    WSAStartup (MAKEWORD (1, 1), &wsa);
+#endif /* !WIN32 */
+
+    /* minimize the stack space for the main loop by moving the command line
+       parsing code to a separate routine */
+    sockfd = args (argc, argv, &sockfdcount);
 
     if ((Server_Flags & ON_NO_LISTEN) == 0)
     {
 	/* listen on port 8889 for stats reporting */
-	if ((sp = new_tcp_socket ()) == -1)
+	if ((sp = new_tcp_socket (ON_REUSEADDR)) == -1)
 	    exit (1);
-	i = 1;
-	if (setsockopt
-	    (sp, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST & i, sizeof (i)) != 0)
-	{
-	    logerr ("main", "setsockopt");
-	    exit (1);
-	}
 	if (bind_interface (sp, Interface, 8889))
 	    exit (1);
 	if (listen (sp, BACKLOG))
@@ -437,8 +448,13 @@ main (int argc, char **argv)
 
 	FD_ZERO (&set);
 	FD_ZERO (&wset);
-	maxfd = s;
-	FD_SET (s, &set);
+	maxfd = -1;
+	for (i = 0; i < sockfdcount; i++)
+	{
+	    FD_SET (sockfd[i], &set);
+	    if (sockfd[i] > maxfd)
+		maxfd = sockfd[i];
+	}
 	if ((Server_Flags & ON_NO_LISTEN) == 0)
 	{
 	    FD_SET (sp, &set);
@@ -462,7 +478,7 @@ main (int argc, char **argv)
 
 	t.tv_sec = next_timer ();
 	t.tv_usec = 0;
-	if ((numReady = select (maxfd + 1, &set, &wset, NULL, &t)) < 0)
+	if (select (maxfd + 1, &set, &wset, NULL, &t) < 0)
 	{
 	    logerr ("main", "select");
 	    continue;
@@ -512,8 +528,11 @@ main (int argc, char **argv)
 	   we don't screw up the loops above.  this is crucial when using
 	   poll() because Max_Clients could increase to something greater
 	   than ufdsize-2 causing us to read off the end of the array */
-	if (FD_ISSET (s, &set))
-	    accept_connection (s);
+	for (i = 0; i < sockfdcount; i++)
+	{
+	    if (FD_ISSET (sockfd[i], &set))
+		accept_connection (sockfd[i]);
+	}
 
 	/* execute any pending events now */
 	exec_timers (Current_Time);
@@ -522,7 +541,8 @@ main (int argc, char **argv)
     log ("main(): shutting down");
 
     /* disallow incoming connections */
-    CLOSE (s);
+    for (i = 0; i < sockfdcount; i++)
+	CLOSE (sockfd[i]);
     if (sp != -1)
 	CLOSE (sp);
 
@@ -539,6 +559,9 @@ main (int argc, char **argv)
     /* only clean up memory if we are in debug mode, its kind of pointless
        otherwise */
 #if DEBUG
+    if (sockfd)
+	FREE (sockfd);
+
     /* clean up */
     if (Clients)
 	FREE (Clients);
@@ -569,9 +592,9 @@ main (int argc, char **argv)
     WSACleanup ();
 #endif
 
-    Current_Time=time(0);
-    log ("main(): server ended at %s", ctime(&Current_Time));
-    fflush(stdout);
+    Current_Time = time (0);
+    log ("main(): server ended at %s", ctime (&Current_Time));
+    fflush (stdout);
 
     exit (0);
 }

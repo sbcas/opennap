@@ -21,7 +21,7 @@ ac_help="$ac_help
 ac_help="$ac_help
   --with-fd-setsize=N	Set max connections with select() to N"
 ac_help="$ac_help
-  --disable-resume	Turn off support for resume"
+  --enable-resume	Turn on support for resume"
 
 # Initialize some variables set by options.
 # The variables have the same names as the options, with
@@ -1670,19 +1670,19 @@ EOF
 
 fi
 
-ac_cv_resume=yes
+
 # Check whether --enable-resume or --disable-resume was given.
 if test "${enable_resume+set}" = set; then
   enableval="$enable_resume"
-  ac_cv_resume=$enableval
-fi
-
-if test $ac_cv_resume = yes; then
-	cat >> confdefs.h <<\EOF
+  if test $enableval=yes; then
+cat >> confdefs.h <<\EOF
 #define RESUME 1
 EOF
 
 fi
+fi
+
+
 trap '' 1 2 15
 cat > confcache <<\EOF
 # This file is a shell script that caches the results of configure

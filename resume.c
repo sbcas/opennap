@@ -21,6 +21,7 @@ HANDLER (resume)
 
     (void) tag;
     (void) len;
+    (void) pkt;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("resume");
 #if RESUME

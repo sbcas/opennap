@@ -301,6 +301,11 @@ typedef struct link
     int hops;
 } LINK;
 
+/* bitmask used for new_tcp_socket() call */
+#define ON_NONBLOCKING	1
+#define ON_REUSEADDR	2
+#define ON_LISTEN	4
+
 typedef void (*timer_cb_t) (void *);
 
 extern unsigned int Bytes_In;
@@ -326,7 +331,7 @@ extern int Nick_Expire;
 extern unsigned int Server_Flags;
 extern char *Server_Name;
 extern char *Server_Pass;
-extern int Server_Port;
+extern LIST *Server_Ports;
 extern int Server_Queue_Length;
 extern int SigCaught;		/* flag to control main loop */
 extern int Stat_Click;
@@ -605,7 +610,7 @@ char *my_ntoa (unsigned int);
 USER *new_user (void);
 CHANNEL *new_channel (void);
 CONNECTION *new_connection (void);
-int new_tcp_socket (void);
+int new_tcp_socket (int);
 char *next_arg (char **);
 char *next_arg_noskip (char **);
 time_t next_timer (void);
