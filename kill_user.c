@@ -88,16 +88,18 @@ HANDLER (kill_user)
     }
 
     /* local user issued the kill, notify peers */
-    if (con->class == CLASS_USER)
+    if (con->class == CLASS_USER && Num_Servers)
     {
-	if (Num_Servers)
-	    pass_message_args (con, MSG_CLIENT_KILL, ":%s %s %s",
-		con->user->nick, user->nick, NONULL (pkt));
+	pass_message_args (con, MSG_CLIENT_KILL, ":%s %s %s",
+	    con->user->nick, user->nick, NONULL (pkt));
     }
 
+    /* log this action */
+    log ("kill_user(): %s killed user %s: %s", killernick, user->nick,
+	NONULL (pkt));
+
     /* notify mods+ that this user was killed */
-    notify_mods ("%s killed user %s: %s", killernick, user->nick,
-	    NONULL (pkt));
+    notify_mods ("%s killed user %s: %s", killernick, user->nick, NONULL (pkt));
 
     /* notify user they were killed */
     if (user->con)
@@ -113,11 +115,14 @@ HANDLER (kill_user)
 	if (user->con == con)
 	    con->destroy = 1; /* elite killed themself? */
 	else
+	{
 	    /* this is an exception to the rule where we don't want to set
 	       user->con->destroy=1 and wait.  since the handler doesn't have
 	       a copy of this pointer we can safely destroy this here */
 	    remove_connection (user->con);
+	}
     }
+    /* remote user, just remove from the global list */
     else
 	hash_remove (Users, user->nick);
 }

@@ -16,12 +16,7 @@ HANDLER (client_quit)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-    if (con->class != CLASS_SERVER)
-    {
-	/* we should only get this message from other servers */
-	log ("client_quit(): only SERVER class may send a quit message");
-	return;
-    }
+    CHECK_SERVER_CLASS ("client_quit");
     user = hash_lookup (Users, pkt);
     if (!user)
     {

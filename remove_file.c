@@ -22,6 +22,7 @@ HANDLER (remove_file)
     MYSQL_RES	*result;
     MYSQL_ROW	row;
     int fsize;
+    char	path[256];
 
     (void) tag;
     (void) len;
@@ -36,9 +37,10 @@ HANDLER (remove_file)
 	    user->nick, pkt);
 
     /* need to pull the file size from the database to update the statistics */
+    fudge_path (pkt, path, sizeof (path));
     snprintf (Buf, sizeof (Buf),
 	    "SELECT size FROM library WHERE owner='%s' && filename='%s'",
-	    user->nick, pkt);
+	    user->nick, path);
     if (mysql_query (Db, Buf) != 0)
     {
 	sql_error ("remove_file", Buf);

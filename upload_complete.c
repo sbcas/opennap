@@ -54,8 +54,8 @@ HANDLER (upload_ok)
 	/* pull the has from the data base */
 	fudge_path (field[1], path, sizeof (path));
 	snprintf (Buf, sizeof (Buf),
-		  "SELECT md5 FROM library WHERE owner = '%s' && filename = '%s'",
-		  sender->nick, path);
+	    "SELECT md5 FROM library WHERE owner = '%s' && filename = '%s'",
+	    sender->nick, path);
 	if (mysql_query (Db, Buf) != 0)
 	{
 	    sql_error ("upload_ok", Buf);
@@ -77,8 +77,8 @@ HANDLER (upload_ok)
 	hash = row[0];
     }
 
-    log ("upload_ok(): %s notified server that %s may download \"%s\"",
-	 sender->nick, recip->nick, field[1]);
+    log ("upload_ok(): ACK \"%s\" %s => %s", field[1], sender->nick,
+	recip->nick);
 
     if (sender->port == 0)
     {
@@ -99,9 +99,12 @@ HANDLER (upload_ok)
     else if (con->class == CLASS_USER)
     {
 	/* send this message to the server the recip is on */
+	log ("upload_ok(): %s is remote, relaying message", recip->nick);
+	ASSERT (recip->serv != 0);
 	send_cmd (recip->serv, MSG_CLIENT_UPLOAD_OK, ":%s %s \"%s\"",
 		  sender->nick, recip->nick, field[1]);
     }
+
     if (result)
 	mysql_free_result (result);
 }

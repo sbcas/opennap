@@ -275,8 +275,10 @@ handle_connection (CONNECTION * con)
     if (buffer_size (con->recvbuf) < 4 + len)
     {
 	/* nope, wait until more data arrives */
+#if 0
 	log ("handle_connection(): waiting for %d bytes from client (tag=%d)",
 		len, tag);
+#endif
 	con->incomplete = 1;
 	return;
     }

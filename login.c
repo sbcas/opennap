@@ -99,7 +99,7 @@ HANDLER (login)
 
 	if (con->class == CLASS_UNKNOWN)
 	{
-	    log ("login: user %s is already active", user->nick);
+	    log ("login(): user %s is already active", user->nick);
 	    send_cmd (con, MSG_SERVER_ERROR, "user %s is already active",
 		user->nick);
 	    con->destroy = 1;
@@ -108,15 +108,15 @@ HANDLER (login)
 	{
 	    ASSERT (con->class == CLASS_SERVER);
 
-	    log ("login: nick collision detected for user %s", user->nick);
+	    log ("login(): nick collision for user %s", user->nick);
 
 	    /* issue a KILL for this user if we have one of them locally
 	       connected */
 	    if (user->con)
 	    {
 		/* pass this message to everyone */
-		pass_message_args (NULL, MSG_CLIENT_KILL, ":%s %s nick collision",
-				   Server_Name, user->nick);
+		pass_message_args (NULL, MSG_CLIENT_KILL,
+		    ":%s %s nick collision", Server_Name, user->nick);
 		/* destroy the connection - ok to remove it here since
 		   con != user->con in this case */
 		remove_connection (user->con);
@@ -379,7 +379,7 @@ HANDLER (user_ip)
     (void) tag;
     (void) len;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("user_ip");
     if (split_line (field, sizeof (field) / sizeof (char* ), pkt) != 4)
     {

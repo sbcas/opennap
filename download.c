@@ -35,6 +35,8 @@ HANDLER (download)
 	log ("download(): malformed user request");
 	return;
     }
+
+    /* find the user to download from */
     user = hash_lookup (Users, fields[0]);
     if (!user)
     {
@@ -51,6 +53,8 @@ HANDLER (download)
     if (user->port == 0 &&
 	    (con->user->port == 0 || tag == MSG_CLIENT_DOWNLOAD))
     {
+	log ("download(): both %s and %s are firewalled", con->user->nick,
+	    user->nick);
 	send_cmd (con, MSG_SERVER_FILE_READY,
 		"%s %lu %d \"%s\" firewallerror 0", user->nick, user->host,
 		user->port, fields[1]);
@@ -58,19 +62,22 @@ HANDLER (download)
     }
 
     /* send a message to the requestee */
-    log ("download(): sending upload request to %s", user->nick);
+    log ("download(): REQEST \"%s\" %s => %s",
+	fields[1], fields[0], user->nick);
 
-    /* if the requestee is a local user, send the request directly */
+    /* if the client holding the file is a local user, send the request
+       directly */
     if (user->con)
     {
 	send_cmd (user->con, MSG_SERVER_UPLOAD_REQUEST, "%s \"%s\"",
 		con->user->nick, fields[1]);
     }
+    /* otherwise pass it to the peer server for delivery */
     else
     {
-	/* otherwise pass it to our peer servers for delivery */
+	log ("download(): %s is remote, relaying request", user->nick);
 	send_cmd (user->serv, MSG_SERVER_UPLOAD_REQUEST, ":%s %s \"%s\"",
-		con->user->nick, fields[0], fields[1]);
+	    con->user->nick, user->nick, fields[1]);
     }
 }
 
@@ -165,12 +172,13 @@ HANDLER (user_speed)
     USER *user;
     (void) tag;
     (void) len;
-    CHECK_USER_CLASS("user_speed");
+
+    CHECK_USER_CLASS ("user_speed");
     user = hash_lookup (Users, pkt);
     if(!user)
     {
 	/* TODO: what error does the server return here? */
-	log("user_speed():no such user %s", pkt);
+	log ("user_speed(): no such user %s", pkt);
 	return;
     }
     ASSERT (validate_user (user));
@@ -200,7 +208,7 @@ HANDLER (data_port_error)
     ASSERT (validate_user (user));
 
     /* we pass this message to all servers so the mods can see it */
-    if (con->class == CLASS_USER)
+    if (con->class == CLASS_USER && Num_Servers)
     {
 	pass_message_args (con, MSG_SERVER_DATA_PORT_ERROR, ":%s %s",
 		sender->nick, user->nick);
@@ -243,12 +251,16 @@ HANDLER (upload_request)
 	return;
     }
     ASSERT (validate_user (recip));
+
+    /* if local user, deliver the message */
     if (recip->con)
     {
-	/* local user, deliver the message */
 	send_cmd (recip->con, MSG_SERVER_UPLOAD_REQUEST /* 607 */, "%s \"%s\"",
-		fields[0] + 1, fields[2]);
+	    fields[0] + 1, fields[2]);
     }
+
+    log ("upload_request(): REMOTE REQUEST \"%s\" %s => %s",
+	fields[2], recip->nick, fields[0] + 1);
 }
 
 /* 619 [ :<user> ] <nick> <filename> <limit> */
@@ -290,7 +302,7 @@ HANDLER (queue_limit)
 	/* locally connected, deliver final message */
 
 	/* look up the filesize in the db */
-	fudge_path(av[1],path,sizeof(path));
+	fudge_path (av[1], path, sizeof (path));
 	snprintf (Buf, sizeof (Buf),
 		"SELECT size FROM library WHERE owner='%s' && filename='%s'",
 		sender->nick, path);
