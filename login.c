@@ -204,8 +204,9 @@ HANDLER (login)
 	return;
     }
 
-    /* check for a user ban */
-    if (check_ban (con, av[0], BAN_USER))
+    /* check for a user ban, mods+ are exempt */
+    if ((!db || db->level < LEVEL_MODERATOR) &&
+	    check_ban (con, av[0], BAN_USER))
 	return;
 
     if (tag == MSG_CLIENT_LOGIN)
