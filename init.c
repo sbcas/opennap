@@ -10,6 +10,8 @@
 #include <signal.h>
 #include <netdb.h>
 #include <time.h>
+#include <stdio.h>
+#include <string.h>
 #include "opennap.h"
 #include "debug.h"
 

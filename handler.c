@@ -4,6 +4,7 @@
 
    $Id$ */
 
+#include <string.h>
 #include "opennap.h"
 #include "debug.h"
 
