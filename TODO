@@ -15,6 +15,6 @@
 
 * add a timeout to check for blocked server connect() call
 
-* channel kick and ban
+* channel ban
 
-* open up some operserv commands
+* rewrite server db to use two passwords for each server

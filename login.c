@@ -18,7 +18,7 @@ invalid_nick (const char *s)
     int count = 0;
 
     /* don't allow anyone to ever have this nick */
-    if(!strcasecmp(s,"operserv"))
+    if (!strcasecmp (s, "operserv"))
 	return 1;
     while (*s)
     {
@@ -47,7 +47,7 @@ HANDLER (login)
     char *av[7];
     USER *user;
     HOTLIST *hotlist;
-    int ac, speed;
+    int ac, speed, port;
     USERDB *db = 0;
 
     (void) len;
@@ -55,7 +55,8 @@ HANDLER (login)
 
     if (ISUSER (con))
     {
-	log ("login(): recived command %d from a logged in user: %s", tag, pkt);
+	log ("login(): recived command %d from a logged in user: %s", tag,
+	     pkt);
 	send_cmd (con, MSG_SERVER_NOSUCH, "you are already logged in");
 	return;
     }
@@ -72,7 +73,8 @@ HANDLER (login)
 	print_args (ac, av);
 	if (con->class == CLASS_UNKNOWN)
 	{
-	    send_cmd (con, MSG_SERVER_ERROR, "Too few parameters for command");
+	    send_cmd (con, MSG_SERVER_ERROR,
+		      "Too few parameters for command");
 	    con->destroy = 1;
 	}
 	return;
@@ -117,72 +119,53 @@ HANDLER (login)
 	return;
     }
 
-    if (db)
+    port = atoi (av[2]);
+    if (port < 0 || port > 65535)
     {
-	/* check for attempt to register a nick that is already taken */
-	if (tag == MSG_CLIENT_REGISTER)
-	{
-	    log ("login(): %s is already registered", av[0]);
-	    if (con->class == CLASS_UNKNOWN)
-	    {
-		/* this could happen if two clients simultaneously connect
-		   and register */
-		send_cmd (con, MSG_SERVER_ERROR, "%s is already registered",
-			  av[0]);
-	    }
-	    else
-	    {
-		ASSERT (con->class == CLASS_SERVER);
-		/* need to issue a kill and send the registration info
-		   we have on this server */
-		log ("login(): sending KILL for user %s", av[0]);
-		pass_message_args (NULL, MSG_CLIENT_KILL,
-				   ":%s %s \"account is already registered\"",
-				   Server_Name, av[0]);
-		sync_reginfo (db);
-	    }
-	    con->destroy = 1;
-	    return;
-	}
-	/* verify the password */
-	else if (check_pass (db->password, av[1]))
-	{
-	    log ("login(): bad password for user %s", av[0]);
-	    if (con->class == CLASS_UNKNOWN)
-	    {
-		send_cmd (con, MSG_SERVER_ERROR, "Invalid Password");
-		con->destroy = 1;
-	    }
-	    else
-	    {
-		ASSERT (con->class == CLASS_SERVER);
-		/* if another server let this message pass through, that
-		   means they probably have an out of date password.  notify
-		   our peers of the registration info.  note that it could be
-		   _this_ server that is stale, but when the other servers
-		   receive this message they will check the creation date and
-		   send back any entries which are more current that this one.
-		   kind of icky, but its the best we can do */
-		log ("login(): sending KILL for user %s", av[0]);
-		pass_message_args (NULL, MSG_CLIENT_KILL,
-				   ":%s %s \"invalid password\"", Server_Name,
-				   av[0]);
-		sync_reginfo (db);
-	    }
-	    return;
-	}
+	log ("login(): invalid port %d", port);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_ERROR, "Invalid port");
+	return;
     }
 
-    /* check to make sure that this user isn't ready logged in */
+    /* check for attempt to register a nick that is already taken */
+    if (db && tag == MSG_CLIENT_REGISTER)
+    {
+	log ("login(): %s is already registered", av[0]);
+	if (con->class == CLASS_UNKNOWN)
+	{
+	    /* this could happen if two clients simultaneously connect
+	       and register */
+	    send_cmd (con, MSG_SERVER_ERROR, "%s is already registered",
+		      av[0]);
+	}
+	else
+	{
+	    ASSERT (con->class == CLASS_SERVER);
+	    /* need to issue a kill and send the registration info
+	       we have on this server */
+	    log ("login(): sending KILL for user %s", av[0]);
+	    pass_message_args (NULL, MSG_CLIENT_KILL,
+			       ":%s %s \"account is already registered\"",
+			       Server_Name, av[0]);
+	    sync_reginfo (db);
+	}
+	con->destroy = 1;
+	return;
+    }
+
+    /* check to make sure that this user isn't ready logged in.  do
+       this to prevent a user from trying to check for a password of someone
+       that is already logged in */
     if ((user = hash_lookup (Users, av[0])))
     {
-	/* user already exists */
 	ASSERT (validate_user (user));
 
 	if (con->class == CLASS_UNKNOWN)
 	{
 	    log ("login(): %s is already active", user->nick);
-	    send_cmd (con, MSG_SERVER_ERROR, "%s is already active", user->nick);
+	    send_cmd (con, MSG_SERVER_ERROR, "%s is already active",
+		      user->nick);
 	    con->destroy = 1;
 	}
 	else
@@ -217,10 +200,41 @@ HANDLER (login)
     if (check_ban (con, av[0], BAN_USER))
 	return;
 
-    if (tag == MSG_CLIENT_REGISTER)
+    if (tag == MSG_CLIENT_LOGIN)
     {
-	log ("login(): registering %s", av[0]);
+	/* verify the password if registered */
+	if (db && check_pass (db->password, av[1]))
+	{
+	    log ("login(): bad password for user %s", av[0]);
+	    if (con->class == CLASS_UNKNOWN)
+	    {
+		send_cmd (con, MSG_SERVER_ERROR, "Invalid Password");
+		con->destroy = 1;
+	    }
+	    else
+	    {
+		ASSERT (con->class == CLASS_SERVER);
+		/* if another server let this message pass through, that
+		   means they probably have an out of date password.  notify
+		   our peers of the registration info.  note that it could be
+		   _this_ server that is stale, but when the other servers
+		   receive this message they will check the creation date and
+		   send back any entries which are more current that this one.
+		   kind of icky, but its the best we can do */
+		log ("login(): sending KILL for user %s", av[0]);
+		pass_message_args (NULL, MSG_CLIENT_KILL,
+				   ":%s %s \"invalid password\"", Server_Name,
+				   av[0]);
+		sync_reginfo (db);
+	    }
+	    return;
+	}
+    }
+    else			/* if (tag == MSG_CLIENT_REGISTER) */
+    {
+	ASSERT (tag == MSG_CLIENT_REGISTER);
 	ASSERT (db == 0);
+	log ("login(): registering %s", av[0]);
 	db = CALLOC (1, sizeof (USERDB));
 	if (db)
 	{
@@ -241,9 +255,9 @@ HANDLER (login)
 	if (hash_add (User_Db, db->nick, db))
 	{
 	    log ("login(): hash_add failed (fatal)");
-	    userdb_free(db);
-	    if(con->class==CLASS_UNKNOWN)
-		con->destroy=1;
+	    userdb_free (db);
+	    if (con->class == CLASS_UNKNOWN)
+		con->destroy = 1;
 	    return;
 	}
     }
@@ -257,22 +271,30 @@ HANDLER (login)
 	user->nick = STRDUP (av[0]);
 	user->clientinfo = STRDUP (av[3]);
 	user->pass = STRDUP (av[1]);
+	if (db)
+	    user->email = STRDUP (db->email);
+	else
+	{
+	    snprintf (Buf, sizeof (Buf), "anon@%s", Server_Name);
+	    user->email = STRDUP (Buf);
+	}
     }
-    if (!user || !user->nick || !user->clientinfo || !user->pass)
+    if (!user || !user->nick || !user->clientinfo || !user->pass
+	|| !user->email)
     {
 	OUTOFMEMORY ("login");
 	goto failed;
     }
-    user->port = atoi (av[2]);
+    user->port = port;
     user->speed = speed;
     user->connected = Current_Time;
     user->con = con;
+    user->level = LEVEL_USER;	/* default */
     if (hash_add (Users, user->nick, user))
     {
 	log ("login(): hash_add failed (fatal)");
 	goto failed;
     }
-    user->level = LEVEL_USER;	/* default */
 
     /* if this is a locally connected user, update our information */
     if (con->class == CLASS_UNKNOWN)
@@ -294,14 +316,12 @@ HANDLER (login)
 	con->class = CLASS_USER;
 	con->user = user;
 	/* send the login ack */
-	if (db)
-	    send_cmd (con, MSG_SERVER_EMAIL, db->email);
-	else
-	    send_cmd (con, MSG_SERVER_EMAIL, "anon@%s", Server_Name);
+	send_cmd (con, MSG_SERVER_EMAIL, user->email);
 	show_motd (con, 0, 0, NULL);
 	server_stats (con, 0, 0, NULL);
     }
 
+    /* this must come after the email ack or the win client gets confused */
     if (db && db->level != LEVEL_USER)
     {
 	/* do this before setting the user level so this user is not
@@ -400,7 +420,7 @@ HANDLER (user_ip)
     if (!user->local)
     {
 	pass_message_args (con, tag, "%s %s %s %s", user->nick,
-		field[1], field[2], field[3]);
+			   field[1], field[2], field[3]);
 	user->host = strtoul (field[1], 0, 10);
 	user->conport = atoi (field[2]);
 	ASSERT (user->server == 0);
@@ -585,9 +605,9 @@ HANDLER (register_user)
     db->nick = STRDUP (av[0]);
     db->password = STRDUP (av[1]);
     db->email = STRDUP (av[2]);
-    if(!db->nick||!db->password||!db->email)
+    if (!db->nick || !db->password || !db->email)
     {
-	OUTOFMEMORY("register_user");
+	OUTOFMEMORY ("register_user");
 	FREE (db);
 	return;
     }
@@ -608,18 +628,18 @@ HANDLER (check_password)
     (void) len;
     ASSERT (validate_connection (con));
     ASSERT (con->class == CLASS_UNKNOWN);
-    nick=next_arg(&pkt);
+    nick = next_arg (&pkt);
     if (!pkt)
     {
-	log("check_password(): too few parameters");
-	send_cmd(con,MSG_SERVER_NOSUCH,"parameters are unparsable");
+	log ("check_password(): too few parameters");
+	send_cmd (con, MSG_SERVER_NOSUCH, "parameters are unparsable");
 	return;
     }
-    db=hash_lookup(User_Db,nick);
-    if(db)
+    db = hash_lookup (User_Db, nick);
+    if (db)
     {
-	if(!check_pass(db->password,pkt))
-	    send_cmd(con,MSG_SERVER_PASS_OK,"");
+	if (!check_pass (db->password, pkt))
+	    send_cmd (con, MSG_SERVER_PASS_OK, "");
     }
 }
 
