@@ -1,4 +1,41 @@
+2000-05-15  drscholl  <drscholl@users.sourceforge.net>
+
+	* Makefile.in, kick.c:
+	the reason in clear_channel() is not quoted from the client, so use
+	next_arg() instead of split_line() to parse the input
+
+2000-05-13  drscholl  <drscholl@users.sourceforge.net>
+
+	* configure.in, init.c, join.c, login.c, main.c, opennap.h, resume.c, sample.conf, Makefile.in, README, add_file.c, config.c, configure:
+	added --disable-resume to turn off server support for resume searching
+
+	added `lock_memory' configuration variable to prevent the process from being
+	swapped
+
+	added `registered_only' configuration variable to only allow registered
+	users to log in
+
+	added `auto_register' configuration variable to automatically register users
+	upon login
+
 2000-05-09  drscholl  <drscholl@users.sourceforge.net>
+
+	* add_file.c, config.c, handler.c, opennap.h, privmsg.c, util.c:
+	added command 870 for new share file supported in beta6
+
+	next_arg() now handles quoted parameters
+
+	* server_login.c:
+	get_server_pass() should return `server_password' if no local password is
+	specified
+
+	* ChangeLog:
+	updated the ChangeLog file with recent modifications.
+
+	failed log message from the previous commit:
+
+	modified get_server_pass() to optionally return the local password to use
+	(if specified in the config file) to avoid parsing the file twice.
 
 	* server_login.c:
 	modified get_server_pass() to optionally return the local password to use

@@ -141,9 +141,8 @@ HANDLER (login)
 	if(Server_Flags&ON_AUTO_REGISTER)
 	    tag=MSG_CLIENT_REGISTER;
     }
-
     /* check for attempt to register a nick that is already taken */
-    if (db && tag == MSG_CLIENT_REGISTER)
+    else if (db && tag == MSG_CLIENT_REGISTER)
     {
 	log ("login(): %s is already registered", av[0]);
 	if (con->class == CLASS_UNKNOWN)

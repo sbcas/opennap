@@ -268,19 +268,11 @@ SOURCE=.\synch.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\textdb.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\timer.c
 # End Source File
 # Begin Source File
 
 SOURCE=.\topic.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\unmuzzle.c
 # End Source File
 # Begin Source File
 

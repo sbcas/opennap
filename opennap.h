@@ -799,6 +799,7 @@ typedef unsigned int socklen_t;
 #define strncasecmp strnicmp
 #define vsnprintf _vsnprintf
 #define snprintf _snprintf
+#define getuid() 0	/* just fake it */
 
 #if 0
 // see snprintf.c

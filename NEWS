@@ -1,3 +1,34 @@
+[opennap 0.26]
+
+added `lock_memory' boolean configuration option to prevent the process from
+being swapped when enabled
+
+added `registered_only' boolean configuration variable to only allow
+registered users to log in
+
+added `auto_register' boolean configuration option to force user account
+registration upon login
+
+added support for the new file sharing commands in Napster 2.0 Beta 6
+
+the `servers' file format was changed to add an extra field for a local
+password to use instead of `server_password' to enable different password
+pairs to be used for each server link
+
+added support for server-side ignore commands in Napster 2.0 beta 6
+
+added support for cloaking by privileged users
+
+muzzle state is now stored in the user db and restored when the user logs in
+the next time
+
+added support for server ping client command in Napster 2.0 beta 6
+
+added support for channel ban client commands in Napster 2.0 beta 6
+
+added support for creating `rollover' channels when predefined channels
+reach their limit on the number of users
+
 [opennap 0.25]
 
 added a new configuration variable `config_dir' which controls the location

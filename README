@@ -1,7 +1,7 @@
 opennap v0.26 (ALPHA)
 the open source (TM) napster server
 =====================
-May 8, 2000
+May 15, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -32,7 +32,6 @@ clients.
 
 Main differences from the official napster servers:
 * servers can be linked together
-* normal users can create channels
 * source code is freely available
 
 What's included?
@@ -151,7 +150,7 @@ commands:
 	usermode
 		this is a `bitmask' of the following modes:
 			error, ban, change, channel, kill, level, server,
-			muzzle, port, topic
+			muzzle, port, topic, cloak, wallop
 		by default they are an enabled, but you can turn selective
 		ones off by using the command:
 			msg operserv usermode -kill -level
@@ -180,7 +179,7 @@ specifying what input it expects.
 
 * Extensions to messages
 
-200	search [CLIENT]
+200	search [CLIENT] (deprecated)
 
 	SOUNDEX CONTAINS "..."
 
@@ -364,28 +363,9 @@ are implemented as additional functionality in the opennap server.
 	sets channel "Operators" such that only users with level moderator
 	or above may join the channel.
 
-10202	kick user from channel [CLIENT]
-
-	<channel> <user> [ "<reason>" ]
-
 10203	set user mode [CLIENT]
 
 	[-]{ALL,MUZZLE,BAN,KILL,PORT,WALLOP} [ ... ]
-
-10204	ban user/ip from channel [CLIENT]
-
-	<channel> <user|ip> [ "<reason>" ]
-
-10205	unban user/ip from channel [CLIENT]
-
-	<channel> <user|ip> [ "<reason>" ]
-
-10206	channel ban list [CLIENT, SERVER]
-
-	client: <channel>
-	server: <user|ip> <set-by> "<reason>" <when>
-
-	server list is terminated by an empty (zero-length) 10205 message.
 
 10300	share generic media file [CLIENT]
 
