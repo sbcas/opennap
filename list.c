@@ -22,7 +22,7 @@ list_delete (LIST *list, void *data)
 	{
 	    tmp = *ptr;
 	    *ptr = (*ptr)->next;
-	    FREE (ptr);
+	    FREE (tmp);
 	    break;
 	}
     }
