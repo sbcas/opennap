@@ -165,7 +165,7 @@ sync_banlist (CONNECTION * con)
     {
 	b = list->data;
 	ASSERT (b != 0);
-	send_cmd (con, MSG_CLIENT_BAN, ":%s %s \"%s\" %d", b->setby,
+	send_cmd (con, MSG_CLIENT_BAN, ":%s %s \"%s\" %d", Server_Name,
 		  b->target, b->reason, b->timeout);
     }
 }

@@ -160,21 +160,12 @@ HANDLER (channel_ban)
     LIST *list;
     BAN *b;
     char *banptr, realban[256];
+    USER *senderUser;
 
     (void) len;
     ASSERT (validate_connection (con));
-    if (ISSERVER (con))
-    {
-	if (*pkt != ':')
-	{
-	    log ("channel_ban(): missing sender");
-	    return;
-	}
-	pkt++;
-	sender = next_arg (&pkt);
-    }
-    else
-	sender = con->user->nick;
+    if(pop_user_server(con,tag,&pkt,&sender,&senderUser))
+	return;
     if (pkt)
 	ac = split_line (av, FIELDS (av), pkt);
     if (ac < 2)
@@ -189,14 +180,11 @@ HANDLER (channel_ban)
 	return;
     }
     /* check for permission */
-    if (ISUSER (con))
+    if (senderUser && senderUser->level < LEVEL_MODERATOR
+	    && !is_chanop (chan, senderUser))
     {
-	if (con->user->level < LEVEL_MODERATOR
-	    && !is_chanop (chan, con->user))
-	{
-	    permission_denied (con);
-	    return;
-	}
+	permission_denied (con);
+	return;
     }
 
     banptr=normalize_ban(av[1],realban,sizeof(realban));
@@ -250,22 +238,13 @@ HANDLER (channel_unban)
     BAN *b;
     CHANNEL *chan;
     char *banptr, realban[256];
+    USER *senderUser;
 
     (void) len;
     ASSERT (validate_connection (con));
 
-    if (ISSERVER (con))
-    {
-	if (*pkt != ':')
-	{
-	    log ("channel_unban(): missing sender");
-	    return;
-	}
-	pkt++;
-	sender = next_arg (&pkt);
-    }
-    else
-	sender = con->user->nick;
+    if(pop_user_server(con,tag,&pkt,&sender,&senderUser))
+	return;
     if (pkt)
 	ac = split_line (av, FIELDS (av), pkt);
     if (ac < 2)
@@ -279,15 +258,13 @@ HANDLER (channel_unban)
 	nosuchchannel (con);
 	return;
     }
-    if (ISUSER (con))
+    if (senderUser && senderUser->level < LEVEL_MODERATOR
+	    && !is_chanop (chan, senderUser))
     {
-	if (con->user->level < LEVEL_MODERATOR
-	    && !is_chanop (chan, con->user))
-	{
-	    permission_denied (con);
-	    return;
-	}
+	permission_denied (con);
+	return;
     }
+
     banptr=normalize_ban(av[1],realban,sizeof(realban));
     ASSERT (validate_channel (chan));
     for (list = &chan->bans; *list; list = &(*list)->next)
@@ -333,8 +310,8 @@ HANDLER (channel_banlist)
 	/* TODO: i have no idea what the real format of this is.  nap v1.0
 	   just displays whatever the server returns */
 	send_cmd (con, MSG_SERVER_CHANNEL_BAN_LIST,
-		  "%s %s \"%s\" %d", b->target, b->setby,
-		  NONULL (b->reason), (int) b->when);
+		  "%s %s \"%s\" %d %d", b->target, b->setby,
+		  NONULL (b->reason), (int) b->when, b->timeout);
     }
     /* TODO: i assume the list is terminated in the same fashion the other
        list commands are */
@@ -911,17 +888,13 @@ HANDLER (channel_voice)
     chanName = next_arg (&pkt);
     if (!chanName)
     {
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "channel voice failed: missing channel name");
+	unparsable (con);
 	return;
     }
     chan = hash_lookup (Channels, chanName);
     if (!chan)
     {
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "channel voice failed: no such channel");
+	nosuchchannel (con);
 	return;
     }
     if (!pkt)
@@ -944,12 +917,14 @@ HANDLER (channel_voice)
 	}
 	return;
     }
+    /* check for permission here so that normal users can see who is
+     * currently voiced
+     */
     if (sender && sender->level < LEVEL_MODERATOR
 	&& !is_chanop (chan, sender))
     {
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "channel voice failed: permission denied");
+	permission_denied (con);
+	return;
     }
     pass_message_args (con, tag, ":%s %s %s", senderName, chan->name, pkt);
     while (pkt)
