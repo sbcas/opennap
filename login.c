@@ -387,6 +387,8 @@ HANDLER (login)
 	    FREE (user->clientinfo);
 	if (user->pass)
 	    FREE (user->pass);
+	if (user->server)
+	    FREE (user->server);
 	if (user->files)
 	    free_hash (user->files);
 	FREE (user);

@@ -554,7 +554,7 @@ main (int argc, char **argv)
 	if ((n = poll (ufd, ufdsize, next_timer () * 1000)) < 0)
 	{
 	    perror ("poll");
-	    continue;
+	    break;
 	}
 #else
 	t.tv_sec = next_timer ();
