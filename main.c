@@ -9,21 +9,15 @@
 #include <winsock.h>
 #endif /* WIN32 */
 #include <stdlib.h>
-#include <signal.h>
 #include <stdio.h>
 #include <errno.h>
-#include <ctype.h>
-#include <fcntl.h>
 #ifndef WIN32
 #include <unistd.h>
 #include <time.h>
-#include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
-#include <grp.h>
-#include <pwd.h>
 #if HAVE_POLL
 #include <sys/poll.h>
 #else
@@ -104,276 +98,6 @@ HASH *Hotlist;
 #define BACKLOG 50
 
 static void
-sighandler (int sig)
-{
-    (void) sig;			/* unused */
-    SigCaught = 1;
-}
-
-HANDLER (server_stats)
-{
-    (void) pkt;
-    (void) tag;
-    (void) len;
-    send_cmd (con, MSG_SERVER_STATS, "%d %d %d", Users->dbsize, Num_Files,
-	      Num_Gigs / (1024 * 1024));
-}
-
-typedef struct
-{
-	unsigned int message;
-	HANDLER ((*handler));
-}
-HANDLER;
-
-/* this is the table of valid commands we accept from both users and servers */
-static HANDLER Protocol[] = {
-    {MSG_CLIENT_LOGIN, login},	/* 2 */
-    {MSG_CLIENT_LOGIN_REGISTER, login},	/* 6 */
-    {MSG_CLIENT_REGISTER, register_nick}, /* 7 */
-    {MSG_CLIENT_ADD_FILE, add_file},	/* 100 */
-    {MSG_CLIENT_REMOVE_FILE, remove_file},	/* 102 */
-    {MSG_CLIENT_SEARCH, search},	/* 200 */
-    {MSG_CLIENT_PRIVMSG, privmsg},	/* 205 */
-    {MSG_CLIENT_ADD_HOTLIST, add_hotlist},	/* 207 */
-    {MSG_CLIENT_ADD_HOTLIST_SEQ, add_hotlist},	/* 208 */
-    {MSG_CLIENT_BROWSE, browse},	/* 211 */
-    {MSG_SERVER_STATS, server_stats},	/* 214 */
-    {MSG_CLIENT_RESUME_REQUEST, resume},	/* 215 */
-    {MSG_CLIENT_DOWNLOAD_START, download_start},	/* 218 */
-    {MSG_CLIENT_DOWNLOAD_END, download_end},	/* 219 */
-    {MSG_CLIENT_UPLOAD_START, upload_start},	/* 220 */
-    {MSG_CLIENT_UPLOAD_END, upload_end},	/* 221 */
-    {MSG_CLIENT_REMOVE_HOTLIST, remove_hotlist},	/* 303 */
-    {MSG_SERVER_NOSUCH, server_error},	/* 404 */
-    {MSG_CLIENT_DOWNLOAD_FIREWALL, download},	/* 500 */
-    {MSG_CLIENT_WHOIS, whois},
-    {MSG_CLIENT_JOIN, join},
-    {MSG_CLIENT_PART, part},
-    {MSG_CLIENT_PUBLIC, public},
-    {MSG_SERVER_PUBLIC, public},
-    {MSG_CLIENT_USERSPEED, user_speed},	/* 600 */
-    {MSG_CLIENT_KILL, kill_user},
-    {MSG_CLIENT_DOWNLOAD, download},
-    {MSG_CLIENT_UPLOAD_OK, upload_ok},
-    {MSG_SERVER_UPLOAD_REQUEST, upload_request},	/* 607 */
-    {MSG_SERVER_TOPIC, topic},
-    {MSG_CLIENT_MUZZLE, muzzle},
-    {MSG_CLIENT_UNMUZZLE, unmuzzle},
-    {MSG_CLIENT_BAN, ban},	/* 612 */
-    {MSG_CLIENT_ALTER_PORT, alter_port},	/* 613 */
-    {MSG_CLIENT_UNBAN, unban},	/* 614 */
-    {MSG_CLIENT_BANLIST, banlist},	/* 615 */
-    {MSG_CLIENT_LIST_CHANNELS, list_channels},	/* 618 */
-    {MSG_CLIENT_LIMIT, queue_limit},	/* 619 */
-    {MSG_CLIENT_MOTD, show_motd},	/* 621 */
-    {MSG_CLIENT_DATA_PORT_ERROR, data_port_error},	/* 626 */
-    {MSG_CLIENT_WALLOP, wallop},	/* 627 */
-    {MSG_CLIENT_ANNOUNCE, announce},	/* 628 */
-    {MSG_CLIENT_SETUSERLEVEL, level},
-    {MSG_CLIENT_CHANGE_SPEED, change_speed},	/* 700 */
-    {MSG_CLIENT_CHANGE_PASS, change_pass},	/* 701 */
-    {MSG_CLIENT_CHANGE_EMAIL, change_email},	/* 702 */
-    {MSG_CLIENT_CHANGE_DATA_PORT, change_data_port}, /* 703 */
-    {MSG_CLIENT_PING, ping},	/* 751 */
-    {MSG_CLIENT_PONG, ping},	/* 752 */
-    {MSG_CLIENT_SERVER_RECONFIG, server_reconfig},	/* 800 */
-    {MSG_CLIENT_SERVER_VERSION, server_version},	/* 801 */
-    {MSG_CLIENT_SERVER_CONFIG, server_config},	/* 810 */
-    {MSG_CLIENT_EMOTE, emote},	/* 824 */
-    {MSG_CLIENT_NAMES_LIST, list_users},	/* 830 */
-
-    /* non-standard messages */
-    {MSG_CLIENT_QUIT, client_quit},
-    {MSG_SERVER_LOGIN, server_login},
-    {MSG_SERVER_LOGIN, server_login},
-    {MSG_SERVER_LOGIN_ACK, server_login_ack},
-    {MSG_SERVER_USER_IP, user_ip},		/* 10013 */
-    {MSG_SERVER_REGINFO, reginfo },		/* 10014 */
-    {MSG_CLIENT_CONNECT, server_connect},	/* 10100 */
-    {MSG_CLIENT_DISCONNECT, server_disconnect},	/* 10101 */
-    {MSG_CLIENT_KILL_SERVER, kill_server},	/* 10110 */
-    {MSG_CLIENT_REMOVE_SERVER, remove_server},	/* 10111 */
-    {MSG_CLIENT_LINKS, server_links },		/* 10112 */
-    {MSG_CLIENT_USAGE_STATS, server_usage },	/* 10115 */
-#if 0
-    {MSG_SERVER_COMPRESSED_DATA, compressed_data},	/* 10200 */
-#endif
-    {MSG_CLIENT_SHARE_FILE, share_file},
-    {MSG_SERVER_REMOTE_ERROR, priv_errmsg},	/* 10404 */
-};
-static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
-
-/* this is not a real handler, but takes the same arguments as one */
-HANDLER (dispatch_command)
-{
-    int l;
-    unsigned char byte;
-
-    ASSERT (validate_connection (con));
-
-    /* HACK ALERT
-       the handler routines all assume that the `pkt' argument is nul (\0)
-       terminated, so we have to replace the byte after the last byte in
-       this packet with a \0 to make sure we dont read overflow in the
-       handlers.  the buffer_read() function should always allocate 1 byte
-       more than necessary for this purpose */
-    ASSERT (VALID_LEN (con->recvbuf->data, con->recvbuf->consumed + 4 + len + 1));
-    byte = *(pkt + len);
-    *(pkt + len) = 0;
-
-    for (l = 0; l < Protocol_Size; l++)
-    {
-	if (Protocol[l].message == tag)
-	{
-	    ASSERT (Protocol[l].handler != 0);
-	    /* note that we pass only the data part of the packet */
-	    Protocol[l].handler (con, tag, len, pkt);
-	    break;
-	}
-    }
-
-    if (l == Protocol_Size)
-    {
-	log
-	    ("dispatch_command(): unknown message: tag=%hu, length=%hu, data=%s",
-	     tag, len,
-	     len ? (char *) con->recvbuf->data +
-	     con->recvbuf->consumed + 4 : "(empty)");
-
-	send_cmd (con, MSG_SERVER_NOSUCH, "unknown command code %hu", tag);
-    }
-
-    /* restore the byte we overwrite at the beginning of this function */
-    *(pkt + len) = byte;
-}
-
-static void
-handle_connection (CONNECTION * con)
-{
-    unsigned short len, tag;
-
-    ASSERT (validate_connection (con));
-
-#if HAVE_LIBZ
-    /* decompress server input stream */
-    if (con->class == CLASS_SERVER)
-    {
-	BUFFER *b;
-
-	ASSERT (con->zip != 0);
-	if (con->zip->inbuf
-	    && (b = buffer_uncompress (con->zip->zin, &con->zip->inbuf)))
-	    con->recvbuf = buffer_append (con->recvbuf, b);
-    }
-#endif /* HAVE_LIBZ */
-
-    /* check if there is enough data in the buffer to read the packet header */
-    if (buffer_size (con->recvbuf) < 4)
-    {
-	/* we set this flag here to avoid busy waiting in the main select()
-	   loop.  we can't process any more input until we get some more
-	   data */
-	con->incomplete = 1;
-	return;
-    }
-    /* make sure all 4 bytes of the header are in the first block */
-    if (buffer_group (con->recvbuf, 4) == -1)
-    {
-	/* probably a memory allocation error, close this connection since
-	   we can't handle it */
-	log ("handle_connection(): could not read packet header from buffer");
-	con->destroy = 1;
-	return;
-    }
-    memcpy (&len, con->recvbuf->data + con->recvbuf->consumed, 2);
-    memcpy (&tag, con->recvbuf->data + con->recvbuf->consumed + 2, 2);
-
-    /* need to convert to little endian */
-    len = BSWAP16 (len);
-    tag = BSWAP16 (tag);
-
-    /* see if all of the packet body is present */
-    if (buffer_size (con->recvbuf) < 4 + len)
-    {
-	/* nope, wait until more data arrives */
-#if 0
-	log ("handle_connection(): waiting for %d bytes from client (tag=%d)",
-		len, tag);
-#endif
-	con->incomplete = 1;
-	return;
-    }
-
-    con->incomplete = 0;	/* found all the data we wanted */
-
-    /* the packet may be fragmented so make sure all of the bytes for this
-       packet end up in the first buffer so its easy to handle */
-    if (buffer_group (con->recvbuf, 4 + len) == -1)
-    {
-	/* probably a memory allocation error, close this connection since
-	   we can't handle it */
-	log ("handle_connection(): could not read packet body from buffer");
-	con->destroy = 1;
-	return;
-    }
-
-#ifndef HAVE_DEV_RANDOM
-    add_random_bytes (con->recvbuf->data + con->recvbuf->consumed, 4 + len);
-#endif /* !HAVE_DEV_RANDOM */
-
-    /* require that the client register before doing anything else */
-    if (con->class == CLASS_UNKNOWN &&
-	(tag != MSG_CLIENT_LOGIN && tag != MSG_CLIENT_LOGIN_REGISTER &&
-	 tag != MSG_CLIENT_REGISTER && tag != MSG_SERVER_LOGIN &&
-	 tag != MSG_SERVER_LOGIN_ACK && tag != MSG_SERVER_ERROR &&
-	 tag != 4)) /* unknown: v2.0 beta 5a sends this? */
-    {
-	log ("handle_connection(): %s is not registered, closing connection",
-	     con->host);
-	log ("handle_connection(): tag=%hu, len=%hu, data=%s",
-		tag, len, con->recvbuf->data + con->recvbuf->consumed + 4);
-	con->destroy = 1;
-	return;
-    }
-
-    /* if we received this message from a peer server, pass it
-       along to the other servers behind us.  the ONLY messages we don't
-       propogate are an ACK from a peer server that we've requested a link
-       with, and an error message from a peer server */
-    if (con->class == CLASS_SERVER && tag != MSG_SERVER_LOGIN_ACK &&
-	tag != MSG_SERVER_ERROR && tag != MSG_SERVER_NOSUCH && Num_Servers)
-	pass_message (con, con->recvbuf->data + con->recvbuf->consumed,
-		      4 + len);
-
-    dispatch_command (con, tag, len,
-		      con->recvbuf->data + con->recvbuf->consumed + 4);
-
-    /* mark that we read this data and it is ok to free it */
-    con->recvbuf = buffer_consume (con->recvbuf, len + 4);
-}
-
-static void
-lookup_hostname (void)
-{
-    struct hostent *he;
-
-    /* get our canonical host name */
-    gethostname (Buf, sizeof (Buf));
-    he = gethostbyname (Buf);
-    if (he)
-    {
-	Server_Name = STRDUP (he->h_name);
-	Server_Ip = *(unsigned int *)he->h_addr_list[0];
-    }
-    else
-    {
-	log ("unable to find fqdn for %s", Buf);
-	Server_Name = STRDUP (Buf);
-    }
-}
-
-static void
 update_stats (void)
 {
     int i, l;
@@ -402,7 +126,6 @@ update_stats (void)
 	    queue_data (Clients[i], Buf, l);
     }
 }
-
 
 static int
 ip_glob_match (const char *pattern, const char *ip)
@@ -514,26 +237,26 @@ report_stats (int fd)
     }
     log ("report_stats(): connection from %s:%d", inet_ntoa (sin.sin_addr),
 	    htons (sin.sin_port));
-    /* TODO: figure out how to get the load average on a system */
+#ifdef linux
+    {
+	FILE *f = fopen ("/proc/loadavg", "r");
+	if (f)
+	{
+	    fscanf (f, "%f", &loadavg);
+	    fclose (f);
+	}
+	else
+	{
+	    log ("report_stats(): /proc/loadavg: %s (errno %d)",
+		    strerror (errno), errno);
+	}
+    }
+#endif /* linux */
     snprintf (Buf, sizeof (Buf), "%d %d %.2f %lu 0\n", Users->dbsize, Num_Files,
 	    loadavg, (unsigned long) (Num_Gigs) * 1024);
     write (n, Buf, strlen (Buf));
     close (n);
 }
-
-#ifndef WIN32
-static void
-init_signals (void)
-{
-    struct sigaction sa;
-
-    memset (&sa, 0, sizeof (sa));
-    sa.sa_handler = sighandler;
-    sigaction (SIGHUP, &sa, NULL);
-    sigaction (SIGTERM, &sa, NULL);
-    sigaction (SIGINT, &sa, NULL);
-}
-#endif /* !WIN32 */
 
 static void
 usage (void)
@@ -596,7 +319,9 @@ main (int argc, char **argv)
 							   collection */
 #ifdef WIN32
     WSADATA wsa;
-#endif /* WIN32 */
+
+    WSAStartup (MAKEWORD (1, 1), &wsa);
+#endif /* !WIN32 */
 
 #ifndef WIN32
     while ((n = getopt (argc, argv, "c:hl:p:v")) != EOF)
@@ -624,102 +349,31 @@ main (int argc, char **argv)
     }
 #endif /* !WIN32 */
 
-    log ("version %s starting", VERSION);
-
-    Server_Start = time (0);
-
-#ifndef WIN32
-    init_signals ();
-#else
-    WSAStartup (MAKEWORD (1, 1), &wsa);
-#endif /* !WIN32 */
-
-    /* load default configuration values */
-    config_defaults ();
-    lookup_hostname ();
-
-    /* load the config file */
-    config (config_file ? config_file : SHAREDIR "/config");
-
-    if (set_max_connections (Connection_Hard_Limit))
+    if (init_server (config_file))
 	exit (1);
 
-    if (getuid () == 0)
-    {
-	if (Uid == -1)
-	{
-	    /* default to user nobody */
-	    struct passwd *pw;
-
-	    pw = getpwnam ("nobody");
-	    if (!pw)
-	    {
-		fputs ("ERROR: can't find user nobody to drop privileges\n",
-			stderr);
-		exit (1);
-	    }
-	    Uid = pw->pw_uid;
-	}
-
-	if (Gid == -1)
-	{
-	    /* default to group nobody */
-	    struct group *gr;
-
-	    gr = getgrnam ("nobody");
-	    if (!gr)
-	    {
-		fputs ("ERROR: can't find group nobody to drop privileges\n",
-			stderr);
-		exit (1);
-	    }
-	    Gid = gr->gr_gid;
-	}
-
-	/* change to non-privileged mode */
-	if (setgid (Gid))
-	{
-	    perror ("setgid");
-	    exit (0);
-	}
-
-	if (setuid (Uid))
-	{
-	    perror ("setuid");
-	    exit (0);
-	}
-
-    }
-
-    log ("running as user %d, group %d", getuid (), getgid ());
-
-    Interface = inet_addr (Listen_Addr);
     /* if the interface was specified on the command line, override the
        value from the config file */
     if (iface != INADDR_ANY)
 	Interface = iface;
+    else
+	Interface = inet_addr (Listen_Addr);
+
+    Server_Ip = Interface;
+
+    if (Server_Ip == INADDR_ANY)
+    {
+	/* need to get the ip address of the external interface so that
+	   locally connected users can trasnfer files with remotely
+	   connected users.  the server will see local user as coming from
+	   127.0.0.1. */
+	Server_Ip = lookup_ip (Server_Name);
+    }
 
     /* if a port was specified on the command line, override the value
        specified in the config file */
     if (port != 0)
 	Server_Port = port;
-
-    log ("my hostname is %s", Server_Name);
-
-    /* initialize the connection to the SQL database server */
-    if (init_db () != 0)
-	exit (1);
-
-    /* initialize hash tables.  the size of the hash table roughly cuts
-       the max number of matches required to find any given entry by the same
-       factor.  so a 256 entry hash table with 1024 entries will take rougly
-       4 comparisons max to find any one entry.  we use prime numbers here
-       because that gives the table a little better spread */
-    Users = hash_init (257, (hash_destroy) free_user);
-    Channels = hash_init (257, (hash_destroy) free_channel);
-    Hotlist = hash_init (257, (hash_destroy) free_hotlist);
-    File_Table = hash_init (2053, (hash_destroy) free_flist);
-    MD5 = hash_init (2053, (hash_destroy) free_flist);
 
     /* create the incoming connections socket */
     s = new_tcp_socket ();
