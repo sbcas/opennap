@@ -235,9 +235,9 @@ HANDLER (login)
 	    return;
 	}
     }
-    else			/* if (tag == MSG_CLIENT_REGISTER) */
+    else			/* if (tag == MSG_CLIENT_LOGIN_REGISTER) */
     {
-	ASSERT (tag == MSG_CLIENT_REGISTER);
+	ASSERT (tag == MSG_CLIENT_LOGIN_REGISTER);
 	ASSERT (db == 0);
 	log ("login(): registering %s", av[0]);
 	db = CALLOC (1, sizeof (USERDB));

@@ -43,7 +43,6 @@ int Compression_Level;
 int Max_Shared;
 int Max_Connections;
 int Nick_Expire;
-int Check_Expire;
 int Max_Browse_Result;
 unsigned int Interface = INADDR_ANY;
 time_t Server_Start;		/* time at which the server was started */

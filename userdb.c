@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <limits.h>
+#include <time.h>
 #ifndef WIN32
 #include <unistd.h>
 #endif
@@ -118,6 +119,21 @@ userdb_init (void)
 static void
 dump_userdb (USERDB * db, FILE * fp)
 {
+    if (Current_Time - db->lastSeen >= Nick_Expire)
+    {
+	if (db->level < LEVEL_MODERATOR)
+	{
+	    strcpy(Buf,ctime(&db->lastSeen));
+	    Buf[strlen(Buf)-1]=0;
+	    log ("dump_userdb(): %s has expired (last seen %s)", db->nick,
+		 Buf);
+	    return;
+	}
+	/* warn, but dont nuke expired accounts for privileged users */
+	log("dump_userdb(): %s has expired (ignored: level=%s)",
+	    db->nick,Levels[db->level]);
+    }
+
     fputs (db->nick, fp);
     fputc (' ', fp);
     fputs (db->password, fp);
