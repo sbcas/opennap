@@ -48,7 +48,17 @@ sync_reginfo (USERDB * db)
 		       Levels[db->level], db->timestamp, db->lastSeen);
 }
 
-/* <nick> <pass> <port> <client-info> <speed> [email] [build] */
+/* 2 <nick> <pass> <port> <client-info> <speed> [email] [build]
+
+   servers append some additional information that they need to share in
+   order to link:
+
+   2 <nick> <pass> <port> <client-info> <speed> <email> <ts> <ip> <server> <port>
+
+   <ts> is the timestamp--time at which the client logged in
+   <ip> is the clients ip address
+   <server> is the server they are connected to
+   <port> is the port on the server they are connected to */
 HANDLER (login)
 {
     char *av[7];
@@ -409,6 +419,17 @@ HANDLER (login)
 	server_stats (con, 0, 0, NULL);
     }
 
+    /* pass this information to our peer servers */
+    if (Servers)
+    {
+	pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
+			   av[0], av[1], av[2], av[3], av[4]);
+	/* only generate this message for local users */
+	if (ISUSER (con))
+	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %u %hu %s",
+			       av[0], user->host, user->conport, Server_Name);
+    }
+
     /* this must come after the email ack or the win client gets confused */
     if (db)
     {
@@ -427,6 +448,12 @@ HANDLER (login)
 			  "%s set your user level to %s (%d).",
 			  Server_Name, Levels[user->level], user->level);
 	    }
+	    /* ensure all servers are synched up.  use the timestamp here
+	       so that multiple servers all end up with the same value if
+	       they differ */
+	    pass_message_args(NULL,MSG_CLIENT_SETUSERLEVEL,":%s %s %s %d",
+			      Server_Name, user->nick, Levels[user->level],
+			      db->timestamp);
 	}
 
 	if (db->flags & ON_MUZZLED)
@@ -448,27 +475,20 @@ HANDLER (login)
 			 user->nick);
 	}
 
-	if (ISUSER (con) && (db->flags & ON_CLOAKED))
+	if (db->flags & ON_CLOAKED)
 	{
-	    char tmp = 0;
-
-	    /* restore cloak state by faking a cloak() call */
-	    cloak (con, MSG_CLIENT_CLOAK, 0, &tmp);
+	    /* dont use the cloak() handler function since that will just
+	       toggle the value and we need to absolutely turn it on in
+	       this case in order to make sure the servers all synch up */
+	    ASSERT(user->level > LEVEL_USER);
+	    user->cloaked = 1;
+	    if(ISUSER(con))
+		send_cmd(con,MSG_SERVER_NOSUCH,"You are now cloaked.");
+	    notify_mods(CHANGELOG_MODE,"%s has cloaked",user->nick);
+	    /* use the absolute version of the command to make sure its
+	       not toggled if servers differ */
+	    pass_message_args(NULL,MSG_CLIENT_CLOAK,":%s 1",user->nick);
 	}
-    }
-
-    /* pass this information to our peer servers */
-    if (Servers)
-    {
-	pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
-			   av[0], av[1], av[2], av[3], av[4]);
-	if (ISUSER (con))
-	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %u %hu %s",
-			       av[0], user->host, user->conport, Server_Name);
-	if (user->level != LEVEL_USER)
-	    pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
-			       ":%s %s %s", Server_Name, user->nick,
-			       Levels[user->level]);
     }
 
     /* check the global hotlist to see if there are any users waiting to be

@@ -415,7 +415,7 @@ HANDLER (channel_op)
     char *sender, *schan, *suser;
     CHANNEL *chan;
     CHANUSER *chanUser;
-    USER *user;
+    USER *user, *senderUser = 0;
     LIST **list, *tmpList;
 
     ASSERT (validate_connection (con));
@@ -429,13 +429,28 @@ HANDLER (channel_op)
 	}
 	pkt++;
 	sender = next_arg (&pkt);
+	ASSERT(sender!=0);
+	if(!is_server(sender))
+	{
+	    senderUser=hash_lookup(Users,sender);
+	    if(!senderUser)
+	    {
+		log("channel_op(): could not find user %s", sender);
+		return;
+	    }
+	}
     }
     else
     {
 	ASSERT (ISUSER (con));
-	if (con->user->level < LEVEL_MODERATOR)
-	    permission_denied (con);
 	sender = con->user->nick;
+	senderUser=con->user;
+    }
+    /* check for permission */
+    if (senderUser && senderUser->level < LEVEL_MODERATOR)
+    {
+	permission_denied (con);
+	return;
     }
     schan = next_arg (&pkt);
     if (!schan)
