@@ -197,24 +197,6 @@ typedef struct _ban {
     time_t when;
 } BAN;
 
-#if MINIDB
-typedef struct _elem {
-    USER *user;		/* user possesing the file */
-    char *filename;	/* file being shared */
-    char *soundex;	/* soundex hash */
-    char *hash;		/* hash of the file */
-    int	size;		/* size of file in bytes */
-    int length;		/* length of file in seconds */
-    short bitrate;
-    unsigned short samplerate;
-    char *type;		/* MIME content-type */
-} ELEM;
-
-extern ELEM **File_Table;
-extern int File_Table_Size;
-extern int File_Table_Count;
-#endif /* MINIDB */
-
 extern char *Motd_Path;
 extern char *Db_Host;
 extern char *Db_User;

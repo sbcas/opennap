@@ -14,61 +14,6 @@
 
 extern MYSQL *Db;
 
-#if MINIDB
-ELEM **File_Table = 0;
-int File_Table_Size = 0;
-int File_Table_Count = 0;
-
-static ELEM *
-new_elem (void)
-{
-    return (CALLOC (1, sizeof (ELEM)));
-}
-#endif /* MINIDB */
-
-/* this could be extended to handle generic data as well as mp3s */
-#if 0
-typedef enum
-{
-    ATTRTYPE_MIN,
-
-    /* generic attributes */
-    ATTRTYPE_OWNER = ATTRTYPE_MIN,
-    ATTRTYPE_FILENAME,
-    ATTRTYPE_MD5,
-    ATTRTYPE_SIZE,
-    ATTRTYPE_DATATYPE,
-
-    /* mp3 attributes */
-    ATTRTYPE_BITRATE,
-    ATTRTYPE_SAMPLERATE,
-    ATTRTYPE_TIME,
-
-    ATTRTYPE_MAX
-}
-ATTRTYPE;
-
-typedef struct _attribute
-{
-    ATTRTYPE type;
-    char *val;
-}
-ATTRIBUTE;
-
-static char *
-get_attr (ATTRTYPE t, ATTRIBUTE * list, size_t listsize)
-{
-    int i;
-
-    for (i = 0; i < listsize; i++)
-    {
-	if (t == list[i]->type)
-	    return list[i].val;
-    }
-    return NULL;
-}
-#endif
-
 static void
 compute_soundex (char *d, int dsize, const char *s)
 {
@@ -230,14 +175,9 @@ share_common (USER *user, int fsize /* file size in kbytes */)
 
 HANDLER (add_file)
 {
-    char *field[6], soundex[256], *p;
+    char *field[6], soundex[256], *p, path[256];
     USER *user;
     unsigned int fsize;
-#if MINIDB
-    ELEM *elem;
-#else
-    char path[256];
-#endif
 
     (void) tag;
     (void) len;
@@ -273,23 +213,6 @@ HANDLER (add_file)
 	p++;			/* skip the backslash */
     compute_soundex (soundex, sizeof (soundex), p);
 
-#if MINIDB
-    elem = new_elem ();
-    elem->user = user;
-    elem->filename = STRDUP (field[0]);
-    elem->soundex = STRDUP (soundex);
-    elem->hash = STRDUP (field[1]);
-    elem->size = atol (field[2]);
-    elem->bitrate = atoi (field[3]);
-    elem->samplerate = atoi (field[4]);
-    elem->length = atoi (field[5]);
-    elem->type = STRDUP ("audio/mp3");
-    if (File_Table_Count == File_Table_Size)
-	File_Table = array_add (File_Table, &File_Table_Size, elem);
-    else
-	File_Table[File_Table_Count] = elem;
-    File_Table_Count++;
-#else
     /* sql will take DOS path names with backslashes to mean the escape
        char, so we have to escape them here */
     fudge_path (field[0], path, sizeof (path));
@@ -308,7 +231,6 @@ HANDLER (add_file)
 		      "error adding file to database");
 	return;
     }
-#endif /* MINIDB */
 
     /* if this is a local connection, pass this information to our peer
        servers.  note that we prepend `:<nick>' so that the peer servers
