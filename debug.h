@@ -29,6 +29,7 @@
 #define CLEANUP debug_cleanup
 #define VALID(p) debug_valid(p,1)
 #define VALID_LEN debug_valid
+#define VALID_STR(p) debug_valid(p,strlen(p)+1)
 #define MEMORY_USED debug_usage()
 
 /* internal functions, DO NOT CALL DIRECTLY -- use the above macros */

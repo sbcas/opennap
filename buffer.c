@@ -393,9 +393,7 @@ send_queued_data (CONNECTION * con)
     Bytes_Out += n;
 
     /* check to make sure the queue hasn't gotten too big */
-    n =
-	(con->class ==
-	 CLASS_SERVER) ? Server_Queue_Length : Client_Queue_Length;
+    n = (ISSERVER (con)) ? Server_Queue_Length : Client_Queue_Length;
 
     if (buffer_size (con->sendbuf) > n)
     {

@@ -336,7 +336,7 @@ validate_connection (CONNECTION * con)
     ASSERT_RETURN_IF_FAIL (VALID_LEN (con, sizeof (CONNECTION)), 0);
     ASSERT_RETURN_IF_FAIL (con->magic == MAGIC_CONNECTION, 0);
     ASSERT_RETURN_IF_FAIL ((con->class == CLASS_USER) ^ (con->user == 0), 0);
-    ASSERT_RETURN_IF_FAIL (VALID (con->host), 0);
+    ASSERT_RETURN_IF_FAIL (VALID_STR (con->host), 0);
     if (con->sendbuf)
 	ASSERT_RETURN_IF_FAIL (buffer_validate (con->sendbuf), 0);
     if (con->recvbuf)
@@ -351,13 +351,12 @@ validate_user (USER * user)
 {
     ASSERT_RETURN_IF_FAIL (VALID_LEN (user, sizeof (USER)), 0);
     ASSERT_RETURN_IF_FAIL (user->magic == MAGIC_USER, 0);
-    ASSERT_RETURN_IF_FAIL (VALID (user->nick), 0);
-    ASSERT_RETURN_IF_FAIL (VALID (user->clientinfo), 0);
+    ASSERT_RETURN_IF_FAIL (VALID_STR (user->nick), 0);
+    ASSERT_RETURN_IF_FAIL (VALID_STR (user->clientinfo), 0);
     ASSERT_RETURN_IF_FAIL (user->con == 0
 			   || VALID_LEN (user->con, sizeof (CONNECTION)), 0);
-    ASSERT_RETURN_IF_FAIL (user->email == 0 || VALID (user->email), 0);
-    ASSERT_RETURN_IF_FAIL (user->channels == 0
-			   || VALID_LEN (user->channels, sizeof (LIST)), 0);
+    ASSERT_RETURN_IF_FAIL (user->email == 0 || VALID_STR (user->email), 0);
+    ASSERT_RETURN_IF_FAIL (list_validate (user->channels), 0);
     return 1;
 }
 
@@ -365,10 +364,9 @@ int
 validate_channel (CHANNEL * chan)
 {
     ASSERT_RETURN_IF_FAIL (VALID_LEN (chan, sizeof (CHANNEL)), 0);
-    ASSERT_RETURN_IF_FAIL (chan->magic == MAGIC_CHANNEL, 0)
-	ASSERT_RETURN_IF_FAIL (VALID (chan->name), 0);
-    ASSERT_RETURN_IF_FAIL (chan->users == 0
-			   || VALID_LEN (chan->users, sizeof (LIST)), 0);
+    ASSERT_RETURN_IF_FAIL (chan->magic == MAGIC_CHANNEL, 0);
+    ASSERT_RETURN_IF_FAIL (VALID_STR (chan->name), 0);
+    ASSERT_RETURN_IF_FAIL (list_validate (chan->users), 0);
     return 1;
 }
 
@@ -377,7 +375,7 @@ validate_hotlist (HOTLIST * h)
 {
     ASSERT_RETURN_IF_FAIL (VALID_LEN (h, sizeof (HOTLIST)), 0);
     ASSERT_RETURN_IF_FAIL (h->magic == MAGIC_HOTLIST, 0);
-    ASSERT_RETURN_IF_FAIL (VALID (h->nick), 0);
+    ASSERT_RETURN_IF_FAIL (VALID_STR (h->nick), 0);
     ASSERT_RETURN_IF_FAIL (list_validate (h->users), 0);
     return 1;
 }

@@ -119,7 +119,7 @@ HANDLER (join)
 		      "You are already a member of channel %s", chan->name);
 	return;
     }
-	/* check to make sure the user has privilege to join */
+    /* check to make sure the user has privilege to join */
     else if (user->level < chan->level)
     {
 	log ("join(): channel %s is set to level %s", chan->name,
