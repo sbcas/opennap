@@ -266,7 +266,7 @@ usage (void)
     fprintf (stderr, "  -c FILE	read config from FILE (default: %s/config\n",
 	     SHAREDIR);
     fputs ("  -h		print this help message\n", stderr);
-    fputs ("  -l IP	listen only on IP instead of all interfaces", stderr);
+    fputs ("  -l IP		listen only on IP instead of all interfaces\n", stderr);
     fputs ("  -p PORT	listen on PORT for connections (default: 8888)\n",
 	   stderr);
     fputs
