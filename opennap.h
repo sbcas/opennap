@@ -504,7 +504,6 @@ char *my_ntoa (unsigned int);
 USER *new_user (void);
 CHANNEL *new_channel (void);
 CONNECTION *new_connection (void);
-HOTLIST *new_hotlist (void);
 int new_tcp_socket (void);
 char *next_arg (char **);
 char *next_arg_noskip (char **);

@@ -89,39 +89,23 @@ HANDLER (add_hotlist)
 /* packet contains: <user> */
 HANDLER (remove_hotlist)
 {
-    HOTLIST *h = 0;
-    LIST **list, *tmp;
+    HOTLIST *hotlist;
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("remove_hotlist");
-
-    /* find the user in this user's hotlist */
-    ASSERT (con->opt.hotlist != 0);
-    for (list = &con->uopt.hotlist; *list; list = &(*list)->next)
+    hotlist = hash_lookup (Hotlist, pkt);
+    if (!hotlist)
     {
-	h = (*list)->data;
-	ASSERT (validate_hotlist (h));
-	if (!strcasecmp (pkt, h->nick))
-	{
-	    tmp = *list;
-	    *list = (*list)->next;
-	    FREE (tmp);
-
-	    /* remove issuing user from the global list to notify */
-	    h->users = list_delete (h->users, con);
-	    /* if no more users are waiting for notification, destroy
-	       the entry */
-	    if (!h->users)
-		hash_remove (Hotlist, h->nick);
-	    return;
-	}
-    }
-    log ("remove_hotlist(): user %s is not on %s's hotlist", pkt,
-	    con->user->nick);
-    send_cmd (con, MSG_SERVER_NOSUCH,
+	send_cmd (con, MSG_SERVER_NOSUCH,
 	    "Could not find user %s in your hotlist.", pkt);
+	return;
+    }
+    ASSERT (validate_hotlist (hotlist));
+    hotlist->users = list_delete (hotlist->users, con);
+    if (!hotlist->users)
+	hash_remove (Hotlist, hotlist->nick);
 }
 
 void

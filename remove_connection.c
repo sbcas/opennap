@@ -34,6 +34,8 @@ server_split (USER *user, CONNECTION *con)
 void
 remove_connection (CONNECTION *con)
 {
+    HOTLIST *hotlist;
+
     ASSERT (validate_connection (con));
 
     /* close socket */
@@ -41,7 +43,7 @@ remove_connection (CONNECTION *con)
 
     if (ISUSER (con))
     {
-	LIST *u, **h, *t;
+	LIST *u;
 
 	/* remove user from global list, calls free_user() indirectly */
 	ASSERT (validate_user (con->user));
@@ -50,24 +52,16 @@ remove_connection (CONNECTION *con)
 	/* if this user had hotlist entries, remove them from the lists */
 	for (u = con->uopt.hotlist; u; u = u->next)
 	{
-	    for (h = &((HOTLIST*)u->data)->users; *h; h = &(*h)->next)
-	    {
-		if ((*h)->data == con)
-		{
-		    t = *h;
-		    *h = (*h)->next;
-		    FREE (t);
-		    break;
-		}
-	    }
-	    if (((HOTLIST *) u->data)->users == 0)
-	    {
-		/* more more users, free up this entry */
-		hash_remove (Hotlist, ((HOTLIST *) u->data)->nick);
-	    }
+	    hotlist = u->data;
+	    ASSERT (validate_hotlist (hotlist));
+	    hotlist->users = list_delete (hotlist->users, con);
+	    if (!hotlist->users)	/* no more users, free entry */
+		hash_remove (Hotlist, hotlist->nick);
 	}
 
 	list_free (con->uopt.hotlist, 0);
+	con->uopt.hotlist = 0;/* need to set this to avoid asserting in
+				 cancel_search() */
 
 	/* if this user had any pending searches, cancel them */
 	cancel_search (con);

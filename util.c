@@ -410,22 +410,6 @@ new_channel (void)
     return c;
 }
 
-HOTLIST *
-new_hotlist (void)
-{
-    HOTLIST *h = CALLOC (1, sizeof (HOTLIST));
-
-    if (!h)
-    {
-	OUTOFMEMORY ("new_hotlist");
-	return 0;
-    }
-#ifdef DEBUG
-    h->magic = MAGIC_HOTLIST;
-#endif
-    return h;
-}
-
 CONNECTION *
 new_connection (void)
 {
