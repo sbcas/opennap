@@ -13,7 +13,7 @@ direct the client to the opennap server */
    THIS PROGRAM. */
 
 /* where to seek() in the stream to find the metaserver address */
-#define OFFSET 0x005a79b /* nap v0.9 beta */
+#define OFFSET 0x005a79c /* nap v0.9 beta */
 /* #define OFFSET 0x00596bc */ /* nap v0.8 beta */
 
 int
