@@ -12,6 +12,12 @@
 #include "opennap.h"
 #include "debug.h"
 
+/* allowed bitrates for MPEG V1/V2 Layer III */
+const int BitRate[18] = { 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 192 , 224, 256, 320 };
+
+/* allowed sample rates for MPEG V2/3 */
+const int SampleRate[6] = { 16000, 24000, 22050, 32000, 48000, 44100 };
+
 #if 0
 static void
 compute_soundex (char *d, int dsize, const char *s)
@@ -285,6 +291,33 @@ new_datum (char *filename, char *hash)
     return info;
 }
 
+static int
+bitrateToMask (int bitrate)
+{
+    unsigned int i;
+
+    for(i=0;i<sizeof(BitRate)/sizeof(int);i++)
+    {
+	if(bitrate<=BitRate[i])
+	    return i;
+    }
+    log("bitrateToMask(): invalid bitrate %d", bitrate);
+    return 0; /* invalid bitrate */
+}
+
+static int
+freqToMask (int freq)
+{
+    unsigned int i;
+    for(i=0;i<sizeof(SampleRate)/sizeof(int);i++)
+    {
+	if(freq<=SampleRate[i])
+	    return i;
+    }
+    log("freqToMask(): invalid sample rate %d", freq);
+    return 0;
+}
+
 /* 100 "<filename>" <md5sum> <size> <bitrate> <frequency> <time>
    client adding file to the shared database */
 HANDLER (add_file)
@@ -342,11 +375,10 @@ HANDLER (add_file)
 	return;
     info->user = con->user;
     info->size = fsize;
-    info->bitrate = atoi (av[3]);
-    info->frequency = atoi (av[4]);
+    info->bitrate = bitrateToMask(atoi (av[3]));
+    info->frequency = freqToMask(atoi (av[4]));
     info->duration = atoi (av[5]);
     info->type = CT_MP3;
-    info->valid = 1;
 
     insert_datum (info, av[0]);
 }
@@ -413,7 +445,6 @@ HANDLER (share_file)
     info->user = con->user;
     info->size = atoi (av[1]);
     info->type = type;
-    info->valid = 1;
 
     insert_datum (info, av[0]);
 }
@@ -513,11 +544,10 @@ HANDLER (add_directory)
 	    return;
 	info->user = con->user;
 	info->size = atoi (size);
-	info->bitrate = atoi (bitrate);
-	info->frequency = atoi (freq);
+	info->bitrate = bitrateToMask(atoi (bitrate));
+	info->frequency = freqToMask(atoi (freq));
 	info->duration = atoi (duration);
 	info->type = CT_MP3;
-	info->valid = 1;
 
 	insert_datum (info, path);
     }

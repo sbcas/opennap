@@ -27,7 +27,11 @@ browse_callback (DATUM * info, BROWSE * ctx)
 		   "%s \"%s\" %s %d %hu %hu %hu",
 		   info->user->nick,
 		   info->filename,
+#if RESUME
 		   info->hash,
+#else
+		   "00000000000000000000000000000000",
+#endif
 		   info->size,
 		   info->bitrate, info->frequency, info->duration);
 

@@ -266,7 +266,7 @@ enum
     CT_UNKNOWN
 };
 
-/* core database entry (24 bytes) */
+/* core database entry (16 (+4) bytes) */
 typedef struct
 {
     USER *user;			/* user who possesses this file */
@@ -274,14 +274,14 @@ typedef struct
 #if RESUME
     char *hash;			/* the md5 hash of the file */
 #endif
-    int size;			/* size of file in bytes */
-    short bitrate;
+    unsigned int size;		/* size of file in bytes.  set to -1 if
+				   the structure is invalid */
     unsigned short duration;
-    /* next 4 fields make up 32 bits */
-    unsigned short frequency;
+    /* next 4 fields make up 16 bits */
+    unsigned int bitrate : 5;	/* offset into BitRate[] */
+    unsigned int frequency:3;	/* offset into SampleRate[] */
     unsigned int type:3;	/* content type */
-    unsigned int valid:1;	/* is this a valid file? */
-    unsigned int refcount:12;	/* how many references to this structure? */
+    unsigned int refcount:5;	/* how many references to this structure? */
 }
 DATUM;
 
@@ -369,6 +369,9 @@ extern int Max_Hotlist;
 extern int Max_Topic;
 extern int Max_Client_String;
 extern int Max_Reason;
+
+extern const int BitRate[];
+extern const int SampleRate[];
 
 #ifndef WIN32
 extern int Uid;

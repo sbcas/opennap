@@ -76,8 +76,14 @@ search_callback (DATUM * match, SEARCH * parms)
 	/* 10016 <id> <user> "<filename>" <md5> <size> <bitrate> <frequency> <duration> */
 	send_cmd (parms->con, MSG_SERVER_REMOTE_SEARCH_RESULT,
 		  "%s %s \"%s\" %s %d %d %d %d",
-		  parms->id, match->user->nick, match->filename, match->hash,
-		  match->size, match->bitrate, match->frequency,
+		  parms->id, match->user->nick, match->filename,
+#if RESUME
+		  match->hash,
+#else
+		  "00000000000000000000000000000000",
+#endif
+		  match->size, BitRate[match->bitrate],
+		  SampleRate[match->frequency],
 		  match->duration);
     }
     /* if a local user issued the search, notify them of the match */
@@ -86,10 +92,14 @@ search_callback (DATUM * match, SEARCH * parms)
 	send_cmd (parms->con, MSG_SERVER_SEARCH_RESULT,
 		  "\"%s\" %s %d %d %d %d %s %u %d",
 		  match->filename,
+#if RESUME
 		  match->hash,
+#else
+		  "00000000000000000000000000000000",
+#endif
 		  match->size,
-		  match->bitrate,
-		  match->frequency,
+		  BitRate[match->bitrate],
+		  SampleRate[match->frequency],
 		  match->duration,
 		  match->user->nick, match->user->host, match->user->speed);
     }
@@ -206,14 +216,16 @@ void
 free_datum (DATUM * d)
 {
     ASSERT (d->refcount > 0);
-    d->valid = 0;
+    d->size = -1;	/* mark as invalid */
     d->user = 0;
     d->refcount--;
     if (d->refcount == 0)
     {
 	/* no more references, we can free this memory */
 	FREE (d->filename);
+#if RESUME
 	FREE (d->hash);
+#endif
 	FREE (d);
     }
 }
@@ -244,7 +256,7 @@ collect_garbage (FLIST * files, GARBAGE * data)
     while (*ptr)
     {
 	d = (*ptr)->data;
-	if (!d->valid)
+	if (d->size == (unsigned)-1)
 	{
 	    files->count--;
 	    ++data->reaped;
@@ -345,7 +357,8 @@ fdb_search (HASH * table,
     {
 	d = (DATUM *) ptok->data;
 	ASSERT (VALID_LEN (d, sizeof (DATUM)));
-	if (d->valid && match (tokens, d->filename) && cb (d, cbdata))
+	if (d->size != (unsigned)-1 &&
+	    match (tokens, d->filename) && cb (d, cbdata))
 	{
 	    /* callback accepted match */
 	    hits++;
