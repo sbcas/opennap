@@ -56,7 +56,8 @@ HANDLER (announce)
 	return;
     }
 
-    l = form_message (Buf, sizeof (Buf), tag, "%s %s", user->nick, pkt);
+    l = form_message (Buf, sizeof (Buf), tag, "%s %s",
+	    user->cloaked ? "Operator" : user->nick, pkt);
 
     /* pass the message to our peer servers if a local user sent it */
     pass_message (con, Buf, l);
