@@ -38,7 +38,15 @@ matches returned on a client search
 
 added compressed data packet (10200) for sending compressed messages between
 servers uzing LZ77 compression.  level of compression is controlled by
-"compression_level" configuration variable
+"compression_level" configuration variable.  since compression takes a lot
+of cycles for short messages, the variable "compression_threshold" is used
+to decide when to compress data, so that short messages go through without
+compression
+
+added upload request (607) handler required for downloading from users on
+a remote server
+
+if a 404 message is received from another server, it is sent to all mods+
 
 Changes from 0.08
 =================
