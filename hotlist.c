@@ -103,7 +103,11 @@ HANDLER (remove_hotlist)
 	return;
     }
     ASSERT (validate_hotlist (hotlist));
+    /* remove the hotlist entry from the user's personal list */
+    con->uopt.hotlist = list_delete (con->uopt.hotlist, hotlist);
+    /* remove the user from the global hotlist */
     hotlist->users = list_delete (hotlist->users, con);
+    /* if there are no more waiting users, destroy the global hotlist entry */
     if (!hotlist->users)
 	hash_remove (Hotlist, hotlist->nick);
 }
