@@ -9,7 +9,6 @@
 #endif
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -50,7 +49,7 @@ HANDLER (join)
 	}
 	chan = new_channel ();
 	chan->name = STRDUP (pkt);
-	chan->created = time (0);
+	chan->created = Current_Time;
 	snprintf (Buf, sizeof (Buf), "Welcome to the %s channel.",
 	    chan->name);
 	chan->topic = STRDUP (Buf);

@@ -250,6 +250,7 @@ typedef struct _ban {
 } BAN;
 
 typedef void (*list_destroy_t) (void *);
+typedef void (*timer_t) (void *);
 
 extern char *Motd_Path;
 extern char *Db_Host;
@@ -279,6 +280,7 @@ extern int Collect_Interval;
 extern int Uid;
 extern int Gid;
 extern int Connection_Hard_Limit;
+extern time_t Current_Time;
 
 extern unsigned int Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
@@ -445,6 +447,7 @@ void set_val (char *d, unsigned short val);
 void add_client (CONNECTION *);
 void add_random_bytes (char *, int);
 void add_server (CONNECTION *);
+void add_timer (int, int, timer_t, void *);
 void *array_add (void *, int *, void *);
 void *array_remove (void *, int *, void *);
 int bind_interface (int, unsigned int, int);
@@ -463,6 +466,7 @@ void close_db (void);
 void complete_connect (CONNECTION *con);
 void config (const char *);
 void config_defaults (void);
+void exec_timers (time_t);
 void expand_hex (char *, int);
 void fdb_garbage_collect (HASH *);
 void finalize_compress (ZIP *);
@@ -472,6 +476,7 @@ void free_config (void);
 void free_datum (DATUM *);
 void free_flist (FLIST *);
 void free_hotlist (HOTLIST *);
+void free_timers (void);
 void free_user (USER *);
 char *generate_nonce (void);
 void handle_connection (CONNECTION *);

@@ -6,7 +6,6 @@
 
 #include <ctype.h>
 #include <string.h>
-#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "opennap.h"
@@ -77,7 +76,7 @@ HANDLER (ban)
 	    break;
 	if (!(b->reason = STRDUP (NONULL (pkt))))
 	    break;
-	b->when = time (0);
+	b->when = Current_Time;
 	/* determine if this ban is on an ip or a user */
 	b->type = (is_ip (ban)) ? BAN_IP : BAN_USER;
 	Ban = array_add (Ban, &Ban_Size, b);

@@ -56,6 +56,12 @@ of file descriptors the process can use
 added configure option --with-fd-setsize to specify the maxium number of
 filedescriptor that can be used on select() based systems
 
+added timer functions for scheduling periodic events (colten edwards)
+
+added global variable Current_Time which is set once per iteration of the
+main loop.  functions which need the current time should use this variable
+rather than calling time()
+
 Changes from 0.11
 =================
 

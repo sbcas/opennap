@@ -59,9 +59,11 @@ init_server (const char *cf)
     sigaction (SIGPIPE, &sa, NULL);
 #endif /* !WIN32 */
 
+    Current_Time = time (0);
+
     log ("version %s starting", VERSION);
 
-    Server_Start = time (0);
+    Server_Start = Current_Time;
 
     /* load default configuration values */
     config_defaults ();

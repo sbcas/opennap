@@ -11,9 +11,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <time.h>
 #ifndef WIN32
 #include <unistd.h>
-#include <time.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -61,6 +61,7 @@ int Collect_Interval;
 int Uid;
 int Gid;
 int Connection_Hard_Limit;
+time_t Current_Time;
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;
@@ -101,10 +102,8 @@ static void
 update_stats (void)
 {
     int i, l;
-    time_t t;
 
-    t = time (0);
-    log ("update_stats(): current time is %s", ctime (&t));
+    log ("update_stats(): current time is %s", ctime (&Current_Time));
     log
 	("update_stats(): library is %d kilobytes (%d gigabytes), %d files, %d users",
 	 Num_Gigs, Num_Gigs / (1024 * 1024), Num_Files, Users->dbsize);
@@ -314,9 +313,7 @@ main (int argc, char **argv)
     int maxfd;
 #endif /* HAVE_POLL */
     char *config_file = 0;
-    time_t next_update = 0;
-    time_t next_collect = time (0) + Collect_Interval;	/* when to run garbage
-							   collection */
+
 #ifdef WIN32
     WSADATA wsa;
 
@@ -413,9 +410,16 @@ main (int argc, char **argv)
     init_random ();
 #endif /* !HAVE_DEV_RANDOM */
 
+    /* schedule periodic events */
+    add_timer (Collect_Interval, -1, (timer_t) fdb_garbage_collect, File_Table);
+    add_timer (Collect_Interval, -1, (timer_t) fdb_garbage_collect, MD5);
+    add_timer (Stat_Click, -1, (timer_t) update_stats, 0);
+
     /* main event loop */
     while (!SigCaught)
     {
+	Current_Time = time (0);
+
 #if HAVE_POLL
 	/* ensure that we have enough pollfd structs.  add two extra for
 	   the incoming connections port and the stats port */
@@ -592,13 +596,6 @@ main (int argc, char **argv)
 	if (SigCaught)
 	    break;
 
-	/* we should send the clients updated server stats every so often */
-	if (next_update < time (0))
-	{
-	    update_stats ();
-	    next_update = time (0) + Stat_Click;
-	}
-
 	/* write out data and reap dead client connections */
 	for (i = 0; !SigCaught && i < Num_Clients; i++)
 	{
@@ -634,12 +631,8 @@ main (int argc, char **argv)
 	    }
 	}
 
-	if (time (0) > next_collect)
-	{
-	    fdb_garbage_collect (File_Table);
-	    fdb_garbage_collect (MD5);
-	    next_collect = time(0) + Collect_Interval;
-	}
+	/* execute any pending events now */
+	exec_timers (Current_Time);
     }
 
     if (SigCaught)
@@ -676,6 +669,7 @@ main (int argc, char **argv)
     free_hash (Users);
     free_hash (Channels);
     free_hash (Hotlist);
+    free_timers ();
 
     for (i = 0; i < Ban_Size; i++)
 	free_ban (Ban[i]);
