@@ -222,7 +222,7 @@ HANDLER (alter_pass)
 	return;
     }
     pass_message_args (con, tag, ":%s %s %s \"%s\"", sender->nick, db->nick,
-		       db->password, av[2]);
+		       av[1], av[2]);
     notify_mods (CHANGELOG_MODE, "%s changed %s's password: %s", 
 	    	sender->nick, db->nick, av[2]);
 }
