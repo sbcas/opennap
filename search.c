@@ -140,7 +140,7 @@ tokenize (char *s)
 	    !strcmp ("d", s) ||
 	    !strcmp ("e", s) ||
 	    !strcmp ("napster", s) ||
-	    !strcmp ("music", s)
+	    !strcmp ("music", s) ||
 	    !strcmp ("program", s) ||
 	    !strcmp ("files", s) ||
 	    !strcmp ("windows", s) ||
@@ -148,8 +148,7 @@ tokenize (char *s)
 	    !strcmp ("desktop", s) ||
 	    !strcmp ("my", s) ||
 	    !strcmp ("documents", s) ||
-	    !strcmp ("winamp", s) ||
-	    !strcmp ("mp3s", s))
+	    !strcmp ("winamp", s) || !strcmp ("mp3s", s))
 	{
 	    s = ptr;
 	    continue;
@@ -200,7 +199,7 @@ GARBAGE;
 static void
 collect_garbage (FLIST * files, GARBAGE * data)
 {
-    LIST *ptr, *last = 0;
+    LIST **ptr, *tmp;
     DATUM *d;
 
     /* print some info about large bins so we can consider adding them to
@@ -208,34 +207,23 @@ collect_garbage (FLIST * files, GARBAGE * data)
     if (files->count >= THRESH)
     {
 	log ("collect garbage(): bin for \"%s\" exceeds %d entries",
-		flist->key, THRESH);
+	     files->key, THRESH);
     }
-    ptr = files->list;
-    while (ptr)
+    ptr = &files->list;
+    while (*ptr)
     {
-	d = ptr->data;
+	d = (*ptr)->data;
 	if (!d->valid)
 	{
 	    files->count--;
 	    ++data->reaped;
-	    if (last)
-		last->next = ptr->next;
-	    else
-	    {
-		/* first in list */
-		files->list = ptr->next;
-	    }
-	    ptr->next = 0;
-	    list_free (ptr, (list_destroy_t) free_datum);
-	    if (!last)
-	    {
-		ptr = files->list;
-		continue;
-	    }
-	    ptr = last;		/* reset */
+	    tmp = *ptr;
+	    *ptr = (*ptr)->next;
+	    tmp->next = 0;
+	    list_free (tmp, (list_destroy_t) free_datum);
+	    continue;
 	}
-	last = ptr;
-	ptr = ptr->next;
+	ptr = &(*ptr)->next;
     }
 
     if (files->count == 0)
