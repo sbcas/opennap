@@ -1,3 +1,5 @@
 * add a timeout to check for blocked server connect() call
 
 * find bug which results in negative total library size
+
+* lots of things still need to be documented

@@ -32,6 +32,11 @@ HANDLER (resume)
     }
 
     fsize = atoi (av[1]);
+    if(fsize < 1)
+    {
+	send_cmd(con,MSG_SERVER_NOSUCH,"invalid file size");
+	return;
+    }
 
     /* search the database for a list of all files which match this hash */
     flist = hash_lookup (MD5, av[0]);
@@ -40,13 +45,13 @@ HANDLER (resume)
 	for (ptr = flist->list; ptr; ptr = ptr->next)
 	{
 	    d = (DATUM *) ptr->data;
-	    if (d->valid && d->size == fsize)
+	    if (d->size == (size_t)fsize)
 	    {
 		ASSERT (validate_user (d->user));
 		send_cmd (con, MSG_SERVER_RESUME_MATCH,
-			  "%s %u %d \"%s%s\" %s %d %hu",
+			  "%s %u %d \"%s\" %s %d %hu",
 			  d->user->nick, d->user->ip, d->user->port,
-			  d->path->path, d->filename, d->hash, d->size,
+			  d->filename, d->hash, d->size,
 			  d->user->speed);
 	    }
 	}

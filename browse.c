@@ -222,7 +222,7 @@ HANDLER (browse_new)
 		    /* same directory as previous result, append */
 		    rsp = append_string (rsp, " \"%s\" %s %d %d %d %d", base,
 #if RESUME
-					 d->md5,
+					 d->hash,
 #else
 					 "0",
 #endif
@@ -248,7 +248,7 @@ HANDLER (browse_new)
 		    rsp = append_string (0, "%s \"%s\" \"%s\" %s %d %d %d %d",
 					 user->nick, dir, base,
 #if RESUME
-					 d->md5,
+					 d->hash,
 #else
 					 "0",
 #endif
