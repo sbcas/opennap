@@ -86,7 +86,7 @@ HANDLER (server_login)
     if (ip != con->ip)
     {
 	send_cmd (con, MSG_SERVER_ERROR,
-		  "your ip address does not match that name");
+		  "Your IP address does not match that name");
 	log ("server_login(): %s does not resolve to %s", fields[0],
 	     my_ntoa (con->ip));
 	con->destroy = 1;
@@ -95,6 +95,9 @@ HANDLER (server_login)
 
     FREE (con->host);
     con->host = STRDUP (fields[0]);
+
+    /* notify local admins of the connection request */
+    notify_mods ("Received server login request from %s", con->host);
 
     /* see if there is any entry for this server */
     if ((pass = get_server_pass (con->host)) == 0)

@@ -50,6 +50,7 @@ try_connect (char *host, int port)
 	goto error;
     }
     cli->ip = ip;
+    cli->port = port;
     cli->connecting = 1;
     add_client (cli);
     return;
@@ -101,19 +102,18 @@ HANDLER (server_connect)
 {
     USER *user;
     char *fields[3];
-    int i, argc;
+    int i, argc, port;
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-    CHECK_USER_CLASS ("server_connect");
     if (pop_user (con, &pkt, &user) != 0)
 	return;
     ASSERT (validate_user (user));
 
     if (user->level < LEVEL_ADMIN)
     {
-	if (con->class == CLASS_USER)
+	if (ISUSER (con))
 	    permission_denied (con);
 	return; /* no privilege */
     }
@@ -124,23 +124,30 @@ HANDLER (server_connect)
 	log ("server_connect(): too few fields");
 	return;
     }
-
+    port = atoi (fields[1]);
+    if (port < 0 || port > 65535)
+    {
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid port number");
+	return;
+    }
     if (argc == 2 || (argc == 3 && !strcasecmp (fields[2], Server_Name)))
     {
 	/* make sure we aren't already connected to this server */
 	for (i = 0; i < Num_Servers; i++)
 	{
-	    if (!strcasecmp (fields[0], Servers[i]->host))
+	    if (!strcasecmp (fields[0], Servers[i]->host) &&
+		Servers[i]->port == port)
 	    {
-		log ("server_connect(): %s tried to link server %s, but it is already connected",
-			user->nick, fields[0]);
-		if (con->class == CLASS_USER)
-		    send_cmd (con, MSG_SERVER_NOSUCH,
-			    "server %s is already connected", fields[0]);
+		log ("server_connect(): already linked to %s:%d",
+		    fields[0], port);
+		send_user (user, MSG_SERVER_NOSUCH,
+		    "[%s] %s:%d is already linked", Server_Name, fields[0],
+		    port);
 		return;
 	    }
 	}
-	try_connect (fields[0], atoi (fields[1]));
+	try_connect (fields[0], port);
     }
     else if (Num_Servers)
     {

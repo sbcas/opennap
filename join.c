@@ -17,7 +17,7 @@
 /* [ :<nick> ] <channel> */
 HANDLER (join)
 {
-    USER *user;
+    USER *user, *chanUser;
     CHANNEL *chan;
     LIST *list;
 
@@ -32,16 +32,18 @@ HANDLER (join)
     /* enforce a maximum channels per user */
     if (list_count (user->channels) > Max_User_Channels)
     {
-	if (ISUSER(con))
+	log ("join(): %s reached max channel count (%d)", Max_User_Channels);
+	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		"Maximum number of channels is %d.", Max_User_Channels);
+		      "Maximum number of channels is %d.", Max_User_Channels);
 	return;
     }
 
     if (user->muzzled)
     {
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Muzzled users may not join chat rooms.");
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		      "Muzzled users may not join chat rooms.");
 	return;
     }
 
@@ -57,7 +59,7 @@ HANDLER (join)
 	}
 	chan = new_channel ();
 	if (!chan)
-	    return; /* out of memory */
+	    return;		/* out of memory */
 	chan->name = STRDUP (pkt);
 	if (!chan->name)
 	{
@@ -67,7 +69,7 @@ HANDLER (join)
 	}
 	/* set the default topic */
 	snprintf (Buf, sizeof (Buf), "Welcome to the %s channel.",
-	    chan->name);
+		  chan->name);
 	chan->topic = STRDUP (Buf);
 	if (!chan->topic)
 	{
@@ -85,14 +87,51 @@ HANDLER (join)
 	log ("user %s is already on channel %s", user->nick, chan->name);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		    "You are already a member of channel %s", chan->name);
+		      "You are already a member of channel %s", chan->name);
 	return;
     }
 
     ASSERT (validate_channel (chan));
 
+    /* add this channel to the list of this user is subscribed to */
+    list = CALLOC (1, sizeof (LIST));
+    if (!list)
+    {
+	OUTOFMEMORY ("join");
+	goto error;
+    }
+    list->data = chan;
+    user->channels = list_append (user->channels, list);
+
+    /* add this user to the channel members list */
+    list = CALLOC (1, sizeof (LIST));
+    if (!list)
+    {
+	OUTOFMEMORY ("join");
+	goto error;
+    }
+    list->data = user;
+    chan->users = list_append (chan->users, list);
+
+    if (ISUSER (con))
+    {
+	/* send the client the list of current users in the channel */
+	for (list = chan->users; list; list = list->next)
+	{
+	    chanUser = list->data;
+	    ASSERT (chanUser != 0);
+	    /* don't send info for the user that joined the channel */
+	    if (chanUser != user)
+	    {
+		send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST, "%s %s %d %d",
+		    chan->name, chanUser->nick, chanUser->shared,
+		    chanUser->speed);
+	    }
+	}
+    }
+
     if (Num_Servers)
-	pass_message_args(con,tag,":%s %s",user->nick,chan->name);
+	pass_message_args (con, tag, ":%s %s", user->nick, chan->name);
 
     /* if local user */
     if (ISUSER (con))
@@ -101,49 +140,17 @@ HANDLER (join)
 	send_cmd (con, MSG_SERVER_JOIN_ACK, "%s", chan->name);
     }
 
-    /* add this channel to the USER channel list */
-    list = CALLOC (1, sizeof (LIST));
-    if (!list)
-    {
-	OUTOFMEMORY ("join");
-	return;
-    }
-    list->data = chan;
-    user->channels = list_append (user->channels, list);
-
-    if (ISUSER (con))
-    {
-	/* send the client the list of current users in the channel */
-	for (list = chan->users; list; list = list->next)
-	{
-	    USER *chanUser = list->data;
-
-	    ASSERT (chanUser != 0);
-	    send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST, "%s %s %d %d",
-		      chan->name, chanUser->nick,
-		      chanUser->shared, chanUser->speed);
-	}
-    }
-
-    /* add this user to the members list */
-    list = CALLOC (1, sizeof (LIST));
-    if (!list)
-    {
-	OUTOFMEMORY ("join");
-	return;
-    }
-    list->data = user;
-    chan->users = list_append (chan->users, list);
-
     /* notify other members of the channel that this user has joined */
     for (list = chan->users; list; list = list->next)
     {
-	/* we only send to our locally connected clients */
-	if (((USER *) list->data)->local)
+	chanUser = list->data;
+	ASSERT (chanUser != 0);
+	/* we only send to our locally connected clients, but don't send to
+	   the user that just joined. */
+	if (chanUser->local && chanUser != user)
 	{
-	    send_cmd (((USER *) list->data)->con, MSG_SERVER_JOIN,
-		    "%s %s %d %d",
-		    chan->name, user->nick, user->shared, user->speed);
+	    send_cmd (chanUser->con, MSG_SERVER_JOIN, "%s %s %d %d",
+		chan->name, user->nick, user->shared, user->speed);
 	}
     }
 
@@ -158,5 +165,16 @@ HANDLER (join)
 	/* send channel topic */
 	ASSERT (chan->topic != 0);
 	send_cmd (con, MSG_SERVER_TOPIC, "%s %s", chan->name, chan->topic);
+    }
+    return;
+
+error:
+    /* set things back to a sane state */
+    chan->users = list_delete (chan->users, user);
+    user->channels = list_delete (user->channels, chan);
+    if (chan->users == 0)
+    {
+	log ("join(): destroying channel %s", chan->name);
+	hash_remove (Channels, chan->name);
     }
 }
