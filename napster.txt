@@ -805,7 +805,10 @@ appropriate, examples of the <data> section for each message are given.
 821	???
 822	???
 823	???
-824	???
+
+824	emote [CLIENT]
+
+	<text>
 
 825	user list entry [SERVER]
 

@@ -339,6 +339,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_SERVER_RECONFIG	800
 #define MSG_CLIENT_SERVER_VERSION	801
 #define MSG_CLIENT_SERVER_CONFIG	810
+#define MSG_CLIENT_EMOTE		824
 #define MSG_SERVER_NAMES_LIST		825
 #define MSG_SERVER_NAMES_LIST_END	830
 #define MSG_CLIENT_NAMES_LIST		830
@@ -458,6 +459,7 @@ HANDLER (data_port_error);
 HANDLER (download);
 HANDLER (download_end);
 HANDLER (download_start);
+HANDLER (emote);
 HANDLER (join);
 HANDLER (kill_user);
 HANDLER (kill_server);

@@ -120,3 +120,50 @@ HANDLER (public)
     if (con->class == CLASS_USER && remote)
 	pass_message (con, Buf, 4 + l);
 }
+
+/* 824 [ :<user> ] <channel> "<text>" */
+HANDLER (emote)
+{
+    USER *user;
+    CHANNEL *chan;
+    int i, argc;
+    char *argv[2];
+
+    ASSERT (validate_connection (con));
+    if (pop_user (con, &pkt, &user) != 0)
+	return;
+    argc = split_line (argv, sizeof (argv), pkt);
+    if (argc != 2)
+    {
+	log ("emote(): expected 2 args, got %d", argc);
+	return;
+    }
+    /* make sure this user is on the channel they are sending to */
+    chan = 0;
+    for (i = 0; i < user->numchannels; i++)
+    {
+	if (!strcasecmp (argv[0], user->channels[i]->name))
+	{
+	    chan = user->channels[i];
+	    break;
+	}
+    }
+    if (!chan)
+    {
+	if (con->class==CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "you are not on channel %s",
+		    argv[0]);
+	return;
+    }
+
+    /* send this message to all channel members */
+    for (i = 0; i < chan->numusers; i++)
+	if (chan->users[i]->con)
+	    send_cmd (chan->users[i]->con, MSG_CLIENT_EMOTE, "%s %s %s",
+		    chan->name, user->nick, argv[1]);
+
+    /* pass message to peer servers */
+    if (con->class == CLASS_USER && Num_Servers)
+	pass_message_args (con, MSG_CLIENT_EMOTE, "%s %s %s",
+		chan->name, user->nick, argv[1]);
+}
