@@ -5,8 +5,11 @@
    $Id$ */
 
 #include <stdlib.h>
+#include <mysql.h>
 #include "opennap.h"
 #include "debug.h"
+
+extern MYSQL *Db;
 
 /* user request to change the data port they are listening on.
    703 [ :<user> ] <port> */
@@ -59,6 +62,14 @@ HANDLER (change_speed)
 	{
 	    pass_message_args (con, MSG_CLIENT_CHANGE_SPEED, ":%s %d",
 		    user->nick, spd);
+	}
+	snprintf (Buf, sizeof (Buf),
+		"UPDATE library SET linespeed=%d WHERE owner='%s'",
+		spd, user->nick);
+	if (mysql_query (Db, Buf) != 0)
+	{
+	    sql_error ("change_speed", Buf);
+	    return;
 	}
     }
     else if (con->class == CLASS_USER)

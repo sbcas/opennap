@@ -28,6 +28,9 @@ on for incoming connections instead of any device
 fixes to compile cleanly without debugging enabled (not recommended at this
 point)
 
+change_speed() needs to update the library table so that searches by speed
+are correct after a user changes their line speed
+
 Changes from 0.09
 =================
 

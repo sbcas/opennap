@@ -25,7 +25,8 @@ handler (int sig)
 static void
 usage (void)
 {
-    puts ("usage: metaserver [ -v ] [ -l IP ] [ -p <port> ] [ host:port ... ]");
+    puts
+	("usage: metaserver [ -v ] [ -l IP ] [ -p <port> ] [ host:port ... ]");
     puts ("  -v		display version number and exit");
     puts ("  -l IP	listen only on interface for IP");
     puts ("  -p <port>	listen for connection on <port> (default is 8875)\n");
@@ -47,27 +48,27 @@ main (int argc, char **argv)
     int port = 8875;
     unsigned int iface = INADDR_ANY;
 
-    while ((i = getopt (argc, argv, "hl:vp:"))!=EOF)
+    while ((i = getopt (argc, argv, "hl:vp:")) != EOF)
     {
 	switch (i)
 	{
-		case 'l':
-			iface = inet_addr (optarg);
-			break;
-	    case 'p':
-		port = atoi (optarg);
-		break;
-	    case 'v':
-		printf("%s metaserver version %s\n", PACKAGE, VERSION);
-		exit(1);
-	    default:
-		usage();
+	case 'l':
+	    iface = inet_addr (optarg);
+	    break;
+	case 'p':
+	    port = atoi (optarg);
+	    break;
+	case 'v':
+	    printf ("%s metaserver version %s\n", PACKAGE, VERSION);
+	    exit (1);
+	default:
+	    usage ();
 	}
     }
 
     /* read in the host list */
     if (!argv[optind])
-	hosts[numhosts++] = strdup ("127.0.0.1:8888"); /* use default host */
+	hosts[numhosts++] = strdup ("127.0.0.1:8888");	/* use default host */
     else
     {
 	while (argv[optind])
@@ -105,7 +106,7 @@ main (int argc, char **argv)
 	perror ("listen");
 	exit (1);
     }
-    i=0;
+    i = 0;
     for (;;)
     {
 	FD_ZERO (&set);
@@ -122,9 +123,9 @@ main (int argc, char **argv)
 	    perror ("accept");
 	    break;
 	}
-	write (f, hosts[i], strlen(hosts[i]));
+	write (f, hosts[i], strlen (hosts[i]));
 	write (f, "\n", 1);
-	i = (i+1) % numhosts;
+	i = (i + 1) % numhosts;
 	close (f);
     }
     close (s);
