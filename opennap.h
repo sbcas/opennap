@@ -506,6 +506,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_NAMES_LIST_END	830
 #define MSG_CLIENT_NAMES_LIST		830
 #define MSG_CLIENT_GLOBAL_USER_LIST	831
+#define MSG_SERVER_GLOBAL_USER_LIST	832
 #define MSG_CLIENT_ADD_DIRECTORY	870
 
 /* non-standard message unique to this server */

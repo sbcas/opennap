@@ -4,6 +4,7 @@
 
    $Id$ */
 
+#include <string.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -21,7 +22,7 @@ HANDLER (list_users)
     chan = hash_lookup (Channels, pkt);
     if (!chan)
     {
-	nosuchchannel(con);
+	nosuchchannel (con);
 	return;
     }
     ASSERT (validate_channel (chan));
@@ -29,17 +30,83 @@ HANDLER (list_users)
     if (list_find (con->user->channels, chan) == 0)
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "you're not on channel %s",
-	    chan->name);
+		  chan->name);
 	return;
     }
 
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
-	send_cmd (con, MSG_SERVER_NAMES_LIST /* 825 */, "%s %s %d %d",
+	send_cmd (con, MSG_SERVER_NAMES_LIST /* 825 */ , "%s %s %d %d",
 		  chan->name, chanUser->nick, chanUser->shared,
 		  chanUser->speed);
     }
 
-    send_cmd (con, MSG_SERVER_NAMES_LIST_END /* 830 */, "");
+    send_cmd (con, MSG_SERVER_NAMES_LIST_END /* 830 */ , "");
+}
+
+#define ON_ELITE 1
+#define ON_ADMIN 2
+#define ON_MODERATOR 4
+
+struct guldata {
+    int flags;
+    char *server;
+    CONNECTION *con;
+};
+
+static void
+global_user_list_cb (USER * user, struct guldata *data)
+{
+    ASSERT (validate_user (user));
+    ASSERT (data != 0);
+    if((data->flags & ON_ADMIN) && user->level != LEVEL_ADMIN)
+	return;
+    if((data->flags & ON_ELITE) && user->level != LEVEL_ELITE)
+	return;
+    if((data->flags & ON_MODERATOR) && user->level != LEVEL_MODERATOR)
+	return;
+    if(data->server && strcasecmp(data->server,user->server)!=0)
+	return;	/* no match */
+    send_cmd (data->con, MSG_SERVER_GLOBAL_USER_LIST, "%s %s", user->nick,
+	      my_ntoa (user->host));
+}
+
+/* 831 [server] [flags] */
+HANDLER (global_user_list)
+{
+    struct guldata data;
+
+    ASSERT (validate_connection (con));
+    (void) len;
+    CHECK_USER_CLASS ("global_user_list");
+    if (con->user->level < LEVEL_MODERATOR)
+    {
+	permission_denied (con);
+	return;
+    }
+    data.con = con;
+    data.server = next_arg(&pkt);
+    data.flags=0;
+    if(pkt)
+    {
+	while(*pkt)
+	{
+	    switch(*pkt)
+	    {
+		case 'e':
+		    data.flags|=ON_ELITE;
+		    break;
+		case 'a':
+		    data.flags|=ON_ADMIN;
+		    break;
+		case 'm':
+		    data.flags|=ON_MODERATOR;
+		    break;
+	    }
+	    pkt++;
+	}
+    }
+    hash_foreach (Users, (hash_callback_t) global_user_list_cb, &data);
+    send_cmd (con, tag, "");	/* end of list */
 }
