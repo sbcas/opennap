@@ -19,6 +19,7 @@
 #include <zlib.h>
 #include "hash.h"
 #include "list.h"
+#include "mempool.h"
 
 #define OUTOFMEMORY(f) log("%s(): OUT OF MEMORY at %s:%d", f, __FILE__, __LINE__)
 #define _logerr(f,s,e) log("%s(): %s: %s (errno %d)", f, s, strerror(e), e)
@@ -414,6 +415,10 @@ extern HASH *File_Table;
 extern HASH *MD5;
 #endif
 extern HASH *User_Db;
+
+extern MEMPOOL *FilePool;
+extern MEMPOOL *UserPool;
+extern MEMPOOL *ConPool;
 
 extern char *Levels[LEVEL_ELITE + 1];
 extern char *Content_Types[CT_UNKNOWN];

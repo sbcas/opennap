@@ -9,7 +9,8 @@ opennap_SOURCES=opennap.h main.c add_file.c search.c \
 	md5.c md5.h hotlist.c remove_file.c list_channels.c \
 	list_users.c ping.c resume.c change.c ban.c network.c buffer.c \
 	server_usage.c server_links.c init.c handler.c timer.c list.c \
-	list.h userdb.c serverlib.c kick.c usermode.c channel.c
+	list.h userdb.c serverlib.c kick.c usermode.c channel.c \
+	mempool.h mempool.c
 mkpass_SOURCES=mkpass.c md5.c debug.c util.c
 metaserver_SOURCES=metaserver.c
 setup_SOURCES=setup.c
