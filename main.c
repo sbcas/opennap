@@ -221,7 +221,7 @@ handle_connection (CONNECTION *con)
        data arrives in separate packets */
     while (con->recvbytes - 4 < len)
     {
-	l = read (con->fd, con->recvhdr + con->recvbytes - 4, len - con->recvbytes + 4);
+	l = read (con->fd, con->recvdata + con->recvbytes - 4, len - con->recvbytes + 4);
 	if (l == -1)
 	{
 	    if (errno == EAGAIN)
@@ -271,6 +271,7 @@ handle_connection (CONNECTION *con)
     if (con->class == CLASS_SERVER && tag != MSG_SERVER_LOGIN_ACK)
 	pass_message (con, con->recvdata, len);
 
+    ASSERT (con->recvdata != 0);
     con->recvdata[len] = 0;		/* terminate the string */
 
     for (l = 0; l < Protocol_Size; l++)
@@ -563,6 +564,7 @@ main (int argc, char **argv)
 
     free_hash (Users);
     free_hash (Channels);
+    free_hash (Hotlist);
 
     FREE (Db_Host);
     FREE (Db_User);

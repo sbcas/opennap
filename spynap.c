@@ -48,9 +48,9 @@ void user_input (char *s)
 	    snprintf (Buf, sizeof (Buf), "FILENAME CONTAINS \"%s\" MAX_RESULTS 100", s);
 	    s = Buf;
 	}
-	else if (!strncmp("browse", s, 5))
+	else if (!strncmp("browse", s, 6))
 	{
-	    s+=5;
+	    s+=6;
 	    type=211;
 	}
 	else if (!strncmp("get", s, 3))
@@ -79,7 +79,7 @@ void user_input (char *s)
 	    *p++ = 0;
 	type = atoi (s);
     }
-    len = strlen (p);
+    len = p ? strlen (p) : 0;
 
     write (Fd, &len, 2);
     write (Fd, &type, 2);

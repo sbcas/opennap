@@ -1,4 +1,4 @@
-/* Copyright (C) 1999 drscholl@hotmail.com
+/* Copyright (C) 2000 drscholl@sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -76,8 +76,8 @@ struct _connection
     int sendbufmax;		/* memory allocated for queue */
 
     /* input buffer */
-    char recvhdr[4];
-    char *recvdata;
+    char recvhdr[4];		/* packet header */
+    char *recvdata;		/* packet body (data) */
     int recvbytes; /* bytes read, INCLUDING packet header */
     int recvdatamax; /* actual length of .recvdata buffer */
 
