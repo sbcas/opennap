@@ -1,4 +1,3 @@
-# $Id$
 bin_PROGRAMS=opennap metaserver
 opennap_SOURCES=opennap.h main.c add_file.c db.c search.c \
 	motd.c hash.h hash.c privmsg.c browse.c \

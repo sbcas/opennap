@@ -295,7 +295,7 @@ handle_connection (CONNECTION * con)
        propogate are an ACK from a peer server that we've requested a link
        with, and an error message from a peer server */
     if (con->class == CLASS_SERVER && tag != MSG_SERVER_LOGIN_ACK &&
-	tag != MSG_SERVER_NOSUCH && Num_Servers)
+	tag != MSG_SERVER_ERROR && tag != MSG_SERVER_NOSUCH && Num_Servers)
 	pass_message (con, con->recvbuf->data + con->recvbuf->consumed,
 		      4 + len);
 
