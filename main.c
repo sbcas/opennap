@@ -123,6 +123,7 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_UPLOAD_START, upload_start }, /* 220 */
     { MSG_CLIENT_UPLOAD_END, upload_end }, /* 221 */
     { MSG_CLIENT_REMOVE_HOTLIST, remove_hotlist }, /* 303 */
+    { MSG_SERVER_NOSUCH, server_error }, /* 404 */
     { MSG_CLIENT_DOWNLOAD_FIREWALL, download }, /* 500 */
     { MSG_CLIENT_WHOIS, whois },
     { MSG_CLIENT_JOIN, join },
@@ -133,6 +134,7 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_KILL, kill_user },
     { MSG_CLIENT_DOWNLOAD, download },
     { MSG_CLIENT_UPLOAD_OK, upload_ok },
+    { MSG_SERVER_UPLOAD_REQUEST, upload_request }, /* 607 */
     { MSG_SERVER_TOPIC, topic },
     { MSG_CLIENT_MUZZLE, muzzle },
     { MSG_CLIENT_UNMUZZLE, unmuzzle },
@@ -303,11 +305,11 @@ handle_connection (CONNECTION *con)
     }
 
     /* if we received this message from a peer server, pass it
-       along to the other servers behind us.  the ONLY message we don't
-       propogate is an ACK from a peer server that we've requested a link
-       with */
+       along to the other servers behind us.  the ONLY messages we don't
+       propogate are an ACK from a peer server that we've requested a link
+       with, and an error message from a peer server */
     if (con->class == CLASS_SERVER && tag != MSG_SERVER_LOGIN_ACK &&
-	    Num_Servers)
+	    tag != MSG_SERVER_NOSUCH && Num_Servers)
 	pass_message (con, con->recvdata, len);
 
     ASSERT (con->recvdata != 0);

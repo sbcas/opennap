@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <string.h>
 #include "opennap.h"
@@ -24,14 +26,14 @@ HANDLER (level)
     if (con->class == CLASS_SERVER)
     {
 	/* skip over who set the user level */
-	sender = pkt;
+	sender = pkt + 1;
 	pkt = strchr (pkt, ' ');
 	if (!pkt)
 	{
 	    log ("level(): request contained too few fields");
 	    return;
 	}
-	pkt++;
+	*pkt++ = 0;
     }
 
     if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 2)

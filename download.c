@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <unistd.h>
 #include <stdio.h>
@@ -16,7 +18,7 @@ HANDLER (download)
     USER *user;
     short msg;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     CHECK_USER_CLASS ("download");
 
@@ -185,4 +187,27 @@ HANDLER (data_port_error)
     /* if local, notify the target of the error */
     if (user->con)
 	send_cmd (user->con, MSG_SERVER_DATA_PORT_ERROR, "%s", sender->nick);
+}
+
+/* 607 :<sender> <recip> "<filename>" */
+HANDLER (upload_request)
+{
+    char *fields[3];
+    USER *recip;
+
+    ASSERT (validate_connection (con));
+    CHECK_SERVER_CLASS ("upload_request");
+    if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 3)
+    {
+	log ("upload_request(): wrong number of args");
+	return;
+    }
+    recip = hash_lookup (Users, fields[1]);
+    ASSERT (validate_user (recip));
+    if (recip->con)
+    {
+	/* local user, deliver the message */
+	send_cmd (recip->con, MSG_SERVER_UPLOAD_REQUEST /* 607 */, "%s \"%s\"",
+		fields[0] + 1, fields[2]);
+    }
 }

@@ -260,3 +260,11 @@ HANDLER (server_version)
 	}
     }
 }
+
+/* 404 <message> */
+HANDLER (server_error)
+{
+    ASSERT (validate_connection (con));
+    CHECK_SERVER_CLASS ("server_error");
+    notify_mods ("server %s sent error message: %s", con->host, pkt);
+}

@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <string.h>
 #include <stdarg.h>
@@ -101,8 +103,9 @@ HANDLER (kill_user)
     /* notify user they were killed */
     if (user->con)
     {
-	send_cmd (user->con, MSG_SERVER_NOSUCH, "you have been killed by %s",
-	    killernick);
+	send_cmd (user->con, MSG_SERVER_NOSUCH,
+		"you have been killed by %s: %s", killernick,
+		reason ? reason : "");
     }
 
     /* forcefully close the client connection if local, otherwise remove
