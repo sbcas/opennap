@@ -168,3 +168,121 @@ HANDLER (alter_port)
     notify_mods ("%s changed %s's data port to %d: %s", sender->nick,
 		 user->nick, p, NONULL (pkt));
 }
+
+/* 753 [ :<sender> ] <nick> <pass> "<reason>"
+   admin command to change a user's password */
+HANDLER (alter_pass)
+{
+    USER *sender;
+    int ac;
+    char *av[3];
+    USERDB *db;
+
+    ASSERT (validate_connection);
+    (void) tag;
+    (void) len;
+    if (pop_user (con, &pkt, &sender))
+	return;
+    if (sender->level < LEVEL_ADMIN)
+    {
+	log ("alter_pass(): %s has no privilege", sender->nick);
+	if (ISUSER (con))
+	    permission_denied (con);
+	return;
+    }
+    if (!pkt)
+    {
+	log ("alter_pass(): missing arguments");
+	return;
+    }
+    ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
+
+    if (ac != 3)
+    {
+	log ("alter_pass(): wrong number of arguments");
+	print_args (ac, av);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Wrong number of arguments.");
+	return;
+    }
+    db = userdb_fetch (av[0]);
+    if (!db)
+    {
+	log ("alter_pass(): %s is not registered", av[0]);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not a registered nick.",
+		      av[0]);
+	return;
+    }
+    FREE (db->password);
+    db->password = STRDUP (av[1]);
+    if (!db->password)
+    {
+	OUTOFMEMORY ("alter_pass");
+	userdb_free (db);
+	return;
+    }
+    pass_message_args (con, tag, ":%s %s %s \"%s\"", sender->nick, db->nick,
+		       db->password, av[2]);
+    notify_mods ("%s changed %s's password: %s", sender->nick, db->nick,
+		 av[2]);
+    if (userdb_store (db))
+    {
+	log ("alter_pass(): userdb_store failed");
+	send_user (sender, MSG_SERVER_NOSUCH, "[%s] db failure", Server_Name);
+    }
+    userdb_free (db);
+}
+
+/* 625 [ :<sender> ] <nick> <speed>
+   admin command to change another user's reported line speed */
+HANDLER (alter_speed)
+{
+    USER *sender, *user;
+    int ac, speed;
+    char *av[2];
+
+    ASSERT (validate_connection (con));
+    (void) tag;
+    (void) len;
+    if (pop_user (con, &pkt, &sender))
+	return;
+    ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
+
+    if (ac != 2)
+    {
+	log ("alter_speed(): wrong number of parameters");
+	print_args (ac, av);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Wrong number of parameters");
+	return;
+    }
+    if (sender->level < LEVEL_MODERATOR)
+    {
+	if (ISUSER (con))
+	    permission_denied (con);
+	return;
+    }
+    speed = atoi (av[1]);
+    if (speed < 0 || speed > 10)
+    {
+	log ("alter_speed(): invalid speed %d", speed);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid speed.");
+	return;
+    }
+    user = hash_lookup (Users, av[0]);
+    if (!user)
+    {
+	log ("alter_speed(): could not find %s", av[0]);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		      "User %s is not currently online.", av[0]);
+	return;
+    }
+    ASSERT (validate_user (user));
+    pass_message_args (con, tag, ":%s %s %d", sender->nick, user->nick,
+		       speed);
+    notify_mods ("%s changed %s's speed to %d.", sender->nick, user->nick,
+		 speed);
+}

@@ -850,9 +850,11 @@ appropriate, examples of the <data> section for each message are given.
 
 	this message is sent in response to the the 751 (PING) requeset
 
-753	???
+753	change password for another user [CLIENT]
 
-	[returns permission denied.  -ed]
+	<user> <password> "<reason>"
+
+	allows an administrator to change the password for another user
 
 800	reload config [CLIENT]
 

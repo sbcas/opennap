@@ -413,6 +413,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_MOTD			621
 #define MSG_CLIENT_MUZZLE		622
 #define MSG_CLIENT_UNMUZZLE		623
+#define MSG_CLIENT_ALTER_SPEED		625
 #define MSG_CLIENT_DATA_PORT_ERROR	626
 #define MSG_SERVER_DATA_PORT_ERROR	626	/* same as client message */
 #define MSG_CLIENT_WALLOP		627
@@ -428,6 +429,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_PING			751
 #define MSG_CLIENT_PONG			752
 #define MSG_SERVER_PONG			752
+#define MSG_CLIENT_ALTER_PASS		753	/* admin pass change */
 #define MSG_CLIENT_SERVER_RECONFIG	800
 #define MSG_CLIENT_SERVER_VERSION	801
 #define MSG_CLIENT_SERVER_CONFIG	810
@@ -516,6 +518,7 @@ void init_compress (CONNECTION *, int);
 int init_db (void);
 void init_random (void);
 int init_server (const char *);
+int invalid_channel (const char *);
 void log (const char *fmt, ...);
 unsigned int lookup_ip (const char *host);
 int make_tcp_connection (const char *host, int port, unsigned int *ip);
@@ -571,7 +574,9 @@ HANDLER (dispatch_command);
 /* protocol handlers */
 HANDLER (add_file);
 HANDLER (add_hotlist);
+HANDLER (alter_pass);
 HANDLER (alter_port);
+HANDLER (alter_speed);
 HANDLER (announce);
 HANDLER (ban);
 HANDLER (banlist);

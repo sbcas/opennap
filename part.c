@@ -24,11 +24,27 @@ HANDLER (part)
 	return;
     ASSERT (validate_user (user));
 
+    /* this can happen if we recieve a message from a peer server without
+       the channel name given */
+    if (!pkt)
+    {
+	log ("part(): server message is missing channel name");
+	return;
+    }
+
+    if (invalid_channel (pkt))
+    {
+	log ("part(): invalid channel name: %s", pkt);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid channel name.");
+	return;
+    }
+
     /* find the requested channel in the user's  list */
     for (list = user->channels; list; list = list->next)
     {
 	chan = list->data;
-	ASSERT (chan != 0);
+	ASSERT (validate_channel (chan));
 	if (!strcmp (pkt, chan->name))
 	    break;
     }
@@ -36,10 +52,9 @@ HANDLER (part)
     if (!list)
     {
 	/* user is not on this channel */
-	log ("part(): user %s is not on channel %s", user->nick, pkt);
+	log ("part(): %s is not on channel %s", user->nick, pkt);
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "You are not a member of channel %s", pkt);
+	    send_cmd (con, MSG_SERVER_NOSUCH, "You are not in that channel.");
 	return;
     }
 

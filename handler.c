@@ -114,6 +114,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_LIST_CHANNELS, list_channels},	/* 618 */
     {MSG_CLIENT_LIMIT, queue_limit},	/* 619 */
     {MSG_CLIENT_MOTD, show_motd},	/* 621 */
+    {MSG_CLIENT_ALTER_SPEED, alter_speed},	/* 625 */
     {MSG_CLIENT_DATA_PORT_ERROR, data_port_error},	/* 626 */
     {MSG_CLIENT_WALLOP, wallop},	/* 627 */
     {MSG_CLIENT_ANNOUNCE, announce},	/* 628 */
@@ -124,6 +125,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_CHANGE_DATA_PORT, change_data_port},	/* 703 */
     {MSG_CLIENT_PING, ping},	/* 751 */
     {MSG_CLIENT_PONG, ping},	/* 752 */
+    {MSG_CLIENT_ALTER_PASS, alter_pass},	/* 753 */
     {MSG_CLIENT_SERVER_RECONFIG, server_reconfig},	/* 800 */
     {MSG_CLIENT_SERVER_VERSION, server_version},	/* 801 */
     {MSG_CLIENT_SERVER_CONFIG, server_config},	/* 810 */

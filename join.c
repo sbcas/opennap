@@ -15,8 +15,8 @@
 #include "debug.h"
 
 /* ensure the channel name contains only valid characters */
-static int
-invalid_channel (char *s)
+int
+invalid_channel (const char *s)
 {
     int count = 0;
 
