@@ -1,3 +1,159 @@
+2000-06-23  drscholl  <drscholl@users.sourceforge.net>
+
+	* TODO, channel.c:
+	channel_mode should not allow a user below the channel level to change
+	the mode
+
+2000-06-22  drscholl  <drscholl@users.sourceforge.net>
+
+	* Makefile.in, README, channel.c, handler.c, opennap.h, privmsg.c, public.c, serverlib.c, synch.c:
+	added channel voice and muzzle commands
+
+	* channel.c, join.c, opennap.h, usermode.c:
+	removed channel and topic usermode flags since they are no longer used
+
+	reworked join() to allow channel ops to bypass the +INVITE and limit checks
+
+	* channel.c, configure, configure.in, join.c, kick.c, opennap.h, topic.c:
+	updated version to 0.34
+
+	removed notify_mods() from all channel specific calls.  notify_ops() will
+	now notify mods+ in the channel.
+
+2000-06-21  drscholl  <drscholl@users.sourceforge.net>
+
+	* napster.txt, privmsg.c:
+	added invite and mode command to chanserv
+
+	* README, browse.c, handler.c, opennap.h, whois.c:
+	added new experimental browse command (10301/10302) for more compact browse
+	listings
+
+2000-06-19  drscholl  <drscholl@users.sourceforge.net>
+
+	* README, channel.c, opennap.h, synch.c, topic.c:
+	added +TOPIC channel mode to allow any user to change the topic
+
+2000-06-17  drscholl  <drscholl@users.sourceforge.net>
+
+	* channel.c:
+	invite message printed the wrong user for who issued the invite
+
+	* README, channel.c, free_user.c, handler.c, join.c, opennap.h, serverlib.c, synch.c, util.c:
+	added +INVITE channel mode
+
+	* README, channel.c, opennap.h, public.c, synch.c:
+	added +MODERATED channel mode - only ops and mods+ can speak in public
+
+	* README, channel.c, handler.c, join.c, list_channels.c, opennap.h, part_channel.c, synch.c, whois.c:
+	added channel_mode(10209) command
+
+	added +PRIVATE channel mode to make the channel not show up in the channel
+	lists or whois response
+
+2000-06-15  drscholl  <drscholl@users.sourceforge.net>
+
+	* network.c: solaris doesnt define INADDR_NONE
+
+	* buffer.c:
+	avoid coredump in queue_data() when buffer_new() fails
+
+	* search.c, server_usage.c:
+	server stat message should use %u for the number of total kbytes
+
+	search expected "EQUALS" intead of "EQUAL TO"
+
+2000-06-14  drscholl  <drscholl@users.sourceforge.net>
+
+	* README, channel.c, handler.c, opennap.h, privmsg.c:
+	added channel_wallop (10208) command to send a message to all mods+ and
+	channel operators for a specified channel
+
+	* config.c:
+	default max_nick_length changed to 19 since the win32 napster client can't
+	cope with anything longer than this
+
+	* userdb.c:
+	expired nicks weren't removed from User_Db until the server restarted
+
+	* login.c, userdb.c:
+	need to use strtoul() to convert ip address from string to unsigned int
+	instead of atoi()
+
+	* Makefile.am, Makefile.in, add_file.c, buffer.c, free_user.c, init.c, login.c, main.c, mempool.c, mempool.h, opennap.h, remove_connection.c, search.c, serverlib.c:
+	removed mempool code.  it turned out to be less efficient that malloc/free
+
+2000-06-13  drscholl  <drscholl@users.sourceforge.net>
+
+	* buffer.c, login.c, server_connect.c, server_login.c, serverlib.c:
+	buffer_queue() did not set the .datasize after copying data
+
+	* buffer.c:
+	fixed buffer_queue() to handle input larger than BUFFER_SIZE bytes
+
+	* remove_connection.c:
+	fixed memory leak with free'g the input buffers for client connections
+
+	* buffer.c: fixed bug in buffer_compress()
+
+	* buffer.c, debug.c, free_user.c, init.c, login.c, main.c, mempool.c, opennap.h, remove_connection.c, serverlib.c, util.c:
+	added memory pool management for users, connections, send queue buffers
+
+	* Makefile.am, Makefile.in, add_file.c, init.c, main.c, mempool.c, mempool.h, opennap.h, search.c:
+	added initial support for memory pools
+
+2000-06-11  drscholl  <drscholl@users.sourceforge.net>
+
+	* README, login.c:
+	servers should not issue KILL messages to the server from which a nick
+	collision occurs
+
+2000-06-10  drscholl  <drscholl@users.sourceforge.net>
+
+	* setup.c, Makefile.in, TODO, search.c:
+	rewrote search_internal() to be able to parse arbitrary length search
+	strings
+
+	setup should create files as -rw-------
+
+	* Makefile.in, TODO, configure, configure.in, free_user.c, kill_user.c, login.c, opennap.h, synch.c:
+	added .killed member to CONNECTION so that a QUIT is not issued when a local
+	user is killed (the KILL is sufficient)
+
+	consolodated the MSG_SERVER_USER_IP message into MSG_CLIENT_LOGIN so that
+	nick collision can be handled more gracefully.  This allows the server to
+	reject the newer user instead of rejecting both clients.
+
+2000-06-09  drscholl  <drscholl@users.sourceforge.net>
+
+	* Makefile.in, channel.c, configure, configure.in, muzzle.c:
+	check for -lsocket (needed for os/2)
+
+	fixed segfault in muzzle() for log message when the user is already muzzled
+	and the user is not logged in
+
+	* NEWS, README, configure, configure.in, opennap.h:
+	post 0.32 commit
+
+2000-06-08  drscholl  <drscholl@users.sourceforge.net>
+
+	* channel.c, login.c:
+	bug in channel_op() allows any user to make themself a channel operator.
+	missing a return statement after the permission denied message
+
+	servers now synch the user level when a user logs in to ensure all servers
+	have the same settings
+
+	* Makefile.in, NEWS, README, motd.c, opennap.h, opennap.opt, setup.dsp, ChangeLog:
+	updated for 0.31 release
+
+	motd.c was missing stdlib.h for free()
+
+	updated project files for Win32 build
+
+	* server_login.c:
+	server link log messages are important after all
+
 2000-06-08  drscholl  <drscholl@users.sourceforge.net>
 
 	* server_login.c:

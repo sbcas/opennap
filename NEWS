@@ -1,3 +1,31 @@
+[opennap 0.34]
+
+added channel mode command (/msg chanserv mode <channel> [mode]) where
+mode is one or more of
+	+MODERATED	only mods, ops and voiced users can talk
+	+INVITE		non-ops/mods must be invited to /join
+	+TOPIC		any user in the channel can change the topic
+	+PRIVATE	channel does not show up in channel list
+
+added channel voice command: /msg chanserv voice <channel> [user [user ...]]
+allows a user to talk in a moderated channel
+
+added channel muzzle command: /msg chanserv muzzle <channel> <user> ["reason"]
+muzzles a user in the specified channel only
+
+added channel invite command: /msg chanserv invite <channel> <user>
+to allow a user to join a +invite channel
+
+added channel wallop command: /msg chanserv wallop <channel> <text>
+to send a message to all ops/mods+ in the specified channel
+
+notifications about changes in channels are now only sent to the ops/mods+ in
+that channel rather than to all mods+
+
+removed +TOPIC and +CHANNEL user modes
+
+max nickname length set to 19 to avoid a bug in the windows napster client
+
 [opennap 0.32]
 
 fixes bug in channel_op() which allowed any user to gain channel operator

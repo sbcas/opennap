@@ -1,10 +1,10 @@
 opennap v0.34 (ALPHA)
 the open source (TM) napster server
 ===================================
-June 22, 2000
+June 23, 2000
 
 http://opennap.sourceforge.net
-IRC: #opennap on irc.openprojects.net
+IRC: #opennap on irc.openprojects.net and EFNet
 Email: opennap-dev@lists.sourceforge.net
 
 opennap is an Open Source(TM) server implementation of the popular
@@ -31,7 +31,8 @@ server should be compliant with the several currently available Unix Napster
 clients.
 
 Main differences from the official napster servers:
-* servers can be linked together
+* servers can be linked together fully (chat and search)
+* channel operators can be defined to moderate specific channels
 * source code is freely available
 
 What's included?
