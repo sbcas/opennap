@@ -8,12 +8,14 @@
    server */
 
 #include <fcntl.h>
-#include <unistd.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#ifndef WIN32
+#include <unistd.h>
 #include <sys/time.h>
+#endif
 #include <stdlib.h>
 #include "md5.h"
 #include "opennap.h"

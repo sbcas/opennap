@@ -4,7 +4,11 @@
 
    $Id$ */
 
+#ifndef WIN32
 #include <unistd.h>
+#else
+#include <windows.h>
+#endif /* !WIN32 */
 #include <string.h>
 #include <errno.h>
 #include <sys/time.h>
@@ -94,16 +98,20 @@ buffer_group (BUFFER *b, int n)
     }
 }
 
+#ifdef WIN32
+#define errno h_errno
+#endif
+
 int
 buffer_read (int fd, BUFFER **b)
 {
     int n;
     BUFFER *p;
 
-    n = read (fd, Buf, sizeof (Buf));
+    n = READ (fd, Buf, sizeof (Buf));
     if (n == -1)
     {
-	log ("buffer_read: read: %s (errno %d)", strerror (errno), errno);
+	log ("buffer_read(): read: %s (errno %d)", strerror (errno), errno);
 	return -1;
     }
     if (n == 0)
@@ -421,7 +429,7 @@ send_queued_data (CONNECTION *con)
     if (!con->sendbuf)
 	return;	/* nothing to do */
 
-    n = write (con->fd, con->sendbuf->data + con->sendbuf->consumed,
+    n = WRITE (con->fd, con->sendbuf->data + con->sendbuf->consumed,
 	con->sendbuf->datasize - con->sendbuf->consumed);
     if (n == -1)
     {

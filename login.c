@@ -8,7 +8,11 @@
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
+#ifndef WIN32
 #include <unistd.h>
+#else
+#include <windows.h>
+#endif
 #include <mysql.h>
 #include <ctype.h>
 #include "opennap.h"

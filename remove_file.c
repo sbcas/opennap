@@ -4,6 +4,9 @@
 
    $Id$ */
 
+#ifdef WIN32
+#include <windows.h>
+#endif
 #include <mysql.h>
 #include <stdlib.h>
 #include <stdio.h>

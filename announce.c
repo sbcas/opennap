@@ -4,7 +4,9 @@
 
    $Id$ */
 
+#ifndef WIN32
 #include <unistd.h>
+#endif /* !WIN32 */
 #include <stdio.h>
 #include <string.h>
 #include "opennap.h"

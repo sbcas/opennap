@@ -6,7 +6,9 @@
 
 #include <stdio.h>
 #include <time.h>
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <stdlib.h>
 #include <mysql.h>

@@ -4,18 +4,25 @@
 
    $Id$ */
 
+#ifndef WIN32
 #include <unistd.h>
+#else
+#include <windows.h>
+#include <winsock.h>
+#endif /* !WIN32 */
 #include <stdlib.h>
 #include <signal.h>
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
-#include <netdb.h>
 #include <fcntl.h>
+#ifndef WIN32
 #include <time.h>
+#include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif /* !WIN32 */
 #include <string.h>
 #if HAVE_POLL
 #include <sys/poll.h>
@@ -333,7 +340,6 @@ lookup_hostname (void)
 	log ("unable to find fqdn for %s", Buf);
 	Server_Name = STRDUP (Buf);
     }
-    endhostent ();
 }
 
 static void
@@ -458,6 +464,7 @@ accept_connection (int s)
 	remove_connection (cli);
 }
 
+#ifndef WIN32
 static void
 init_signals (void)
 {
@@ -469,6 +476,7 @@ init_signals (void)
     sigaction (SIGTERM, &sa, NULL);
     sigaction (SIGINT, &sa, NULL);
 }
+#endif /* !WIN32 */
 
 static void
 usage (void)
@@ -527,6 +535,7 @@ main (int argc, char **argv)
     char *config_file = 0;
     time_t next_update = 0;
 
+#ifndef WIN32
     while ((n = getopt (argc, argv, "c:hl:p:v")) != EOF)
     {
 	switch (n)
@@ -550,10 +559,15 @@ main (int argc, char **argv)
 		usage ();
 	}
     }
+#endif /* !WIN32 */
 
     log ("version %s starting", VERSION);
 
+#ifndef WIN32
     init_signals ();
+#else
+    WSAStartup (MAKEWORD (1, 1), &wsa);
+#endif /* !WIN32 */
 
     /* load default configuration values */
     config_defaults ();
@@ -815,7 +829,7 @@ main (int argc, char **argv)
     }
 
     /* disallow incoming connections */
-    close (s);
+    CLOSE (s);
 
     close_db ();
 
@@ -845,6 +859,10 @@ main (int argc, char **argv)
 
     /* this displays a list of leaked memory.  pay attention to this. */
     CLEANUP ();
+
+#ifdef WIN32
+    WSACleanup ();
+#endif
 
     exit (0);
 }

@@ -4,10 +4,14 @@
 
    $Id$ */
 
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 #include <mysql.h>
 #include <string.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdarg.h>

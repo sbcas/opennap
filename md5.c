@@ -26,6 +26,10 @@
 
 #include <sys/types.h>
 
+#ifdef WIN32
+#define STDC_HEADERS 1
+#endif
+
 #if STDC_HEADERS || defined _LIBC
 # include <stdlib.h>
 # include <string.h>

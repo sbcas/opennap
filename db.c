@@ -4,6 +4,9 @@
 
    $Id$ */
 
+#ifdef WIN32
+#include <windows.h>
+#endif /* WIN32 */
 #include <mysql.h>
 #include <stdio.h>
 #include "opennap.h"

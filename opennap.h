@@ -7,6 +7,9 @@
 #ifndef opennap_h
 #define opennap_h
 
+#ifdef WIN32
+#include <windows.h>
+#endif
 #include <stdarg.h>
 #include <sys/types.h>
 #if HAVE_LIBZ
@@ -508,5 +511,33 @@ HANDLER (whois);
 #define CHECK_SERVER_CLASS(f) if(con->class != CLASS_SERVER) { log ("%s: not SERVER class", f); return; }
 
 #define NONULL(p) (p!=0?p:"")
+
+/*
+** Macros to use to aid in porting code to Win32
+*/
+#ifndef WIN32
+#define READ read
+#define WRITE write
+#define CLOSE close
+#else
+#define READ(a,b,c) recv(a,b,c,0)
+#define WRITE(a,b,c) send(a,b,c,0)
+#define CLOSE closesocket
+#define EINPROGRESS WSAEINPROGRESS
+
+#define SHAREDIR "/opennap"
+#define PACKAGE "opennap"
+#define VERSION "0.12"
+
+typedef unsigned int socklen_t;
+
+#define strcasecmp stricmp
+#define strncasecmp strincmp
+
+// see snprintf.c
+extern int snprintf (char *str,size_t count,const char *fmt,...);
+extern int vsnprintf (char *str, size_t count, const char *fmt, va_list args);
+
+#endif /* !WIN32 */
 
 #endif /* opennap_h */

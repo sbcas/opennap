@@ -43,7 +43,7 @@ static CONFIG Vars[] = {
     { "stat_click", VAR_TYPE_INT, UL &Stat_Click, 60 },
     { "strict_channels", VAR_TYPE_BOOL, OPTION_STRICT_CHANNELS, 0 },
     { "server_queue_length", VAR_TYPE_INT, UL &Server_Queue_Length, 1048576 },
-    { "client_queue_length", VAR_TYPE_INT, UL &Client_Queue_Length, 10240 },
+    { "client_queue_length", VAR_TYPE_INT, UL &Client_Queue_Length, 102400 },
     { "max_results", VAR_TYPE_INT, UL &Max_Search_Results, 100 },
     { "compression_level", VAR_TYPE_INT, UL &Compression_Level, 1 },
     { "compression_threshold", VAR_TYPE_INT, UL &Compression_Threshold, 16384 },

@@ -1,6 +1,6 @@
 opennap v0.12 (ALPHA)
 =====================
-February 1, 2000
+February 13, 2000
 
 http://opennap.sourceforge.net
 http://sourceforge.net/project/?group_id=1321
@@ -14,6 +14,7 @@ requests.  So far this server has only been tested on:
 	* Red Hat Linux 6.1 (i686) running MySQL 3.23.30
 	* Red Hat Linux 6.0 (Alpha) running MySQL 3.23.30
 	* BSDI 4.1
+	* Win32
 Minimal porting should be required for compilation on other Unix variants
 (if you do a port, please send patches to drscholl@users.sourceforge.net)
 

@@ -6,12 +6,14 @@
 
 #include <errno.h>
 #include <string.h>
-#include <unistd.h>
 #include <fcntl.h>
+#ifndef WIN32
 #include <sys/socket.h>
+#include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#endif /* !WIN32 */
 #include "opennap.h"
 #include "debug.h"
 
@@ -37,10 +39,16 @@ int
 set_nonblocking (int f)
 {
     /* set the socket to be nonblocking */
+#ifndef WIN32
     if (fcntl (f, F_SETFL, O_NONBLOCK) != 0)
+#else
+    int val = 1;
+
+    if (ioctlsocket (f, FIONBIO, &val) != 0)
+#endif /* !WIN32 */
     {
-	log("set_nonblocking(): fcntl: %s", strerror (errno));
-	close (f);
+	log ("set_nonblocking(): fcntl: %s", strerror (errno));
+	CLOSE (f);
 	return -1;
     }
     return 0;
@@ -89,6 +97,10 @@ bind_interface (int fd, unsigned int ip, int port)
     return 0;
 }
 
+#ifdef WIN32
+#define errno h_errno
+#endif
+
 int
 make_tcp_connection (const char *host, int port, unsigned int *ip)
 {
@@ -119,7 +131,8 @@ make_tcp_connection (const char *host, int port, unsigned int *ip)
     {
 	if (errno != EINPROGRESS)
 	{
-	    log("make_tcp_connection: connect: %s", strerror (errno));
+	    log ("make_tcp_connection: connect: %s (errno %d)",
+		    strerror (errno), errno);
 	    close (f);
 	    return -1;
 	}

@@ -23,6 +23,12 @@ added support for account registration
 
 added support for change email (702) command
 
+added support for the emote (824) command
+
+win32 port by "Damian Hodgkiss" <mian@thirty4.com>
+
+bumped up client queue length to 100Kbytes
+
 Changes from 0.10
 =================
 added max_connections config variable

@@ -4,7 +4,11 @@
 
    $Id$ */
 
+#ifndef WIN32
 #include <unistd.h>
+#else
+#include <windows.h>
+#endif
 #include <mysql.h>
 #include <fcntl.h>
 #include <string.h>

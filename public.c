@@ -5,7 +5,9 @@
    $Id$ */
 
 #include <stdio.h>
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <time.h>
 #include "opennap.h"

@@ -4,8 +4,12 @@
 
    $Id$ */
 
-#include <mysql.h>
+#ifdef WIN32
+#include <windows.h>
+#else
 #include <unistd.h>
+#endif
+#include <mysql.h>
 #include <stdio.h>
 #include "opennap.h"
 #include "debug.h"
