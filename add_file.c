@@ -225,9 +225,10 @@ HANDLER (add_file)
 
     ASSERT (validate_user (user));
 
-    if (user->shared == Max_Shared)
+    if (user->shared > Max_Shared)
     {
-	log ("add_file(): %s is already sharing %d files", user->shared);
+	log ("add_file(): %s is already sharing %d files", user->nick,
+		user->shared);
 	if (user->con)
 	    send_cmd (user->con, MSG_SERVER_NOSUCH,
 		      "You may only share %d files.", Max_Shared);
@@ -305,6 +306,16 @@ HANDLER (share_file)
 
     if (pop_user (con, &pkt, &user) != 0)
 	return;
+
+    if (user->shared > Max_Shared)
+    {
+	log ("add_file(): %s is already sharing %d files", user->nick,
+		user->shared);
+	if (user->con)
+	    send_cmd (user->con, MSG_SERVER_NOSUCH,
+		      "You may only share %d files.", Max_Shared);
+	return;
+    }
 
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 4)
     {

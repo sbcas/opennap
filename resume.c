@@ -38,9 +38,9 @@ HANDLER (resume)
 	for (ptr = flist->list; ptr; ptr = ptr->next)
 	{
 	    d = (DATUM *) ptr->data;
-	    if (d->size == fsize)
+	    if (d->valid && d->size == fsize)
 	    {
-		ASSERT (validate_connection (d->user));
+		ASSERT (validate_user (d->user));
 		send_cmd (con, MSG_SERVER_RESUME_MATCH,
 			"%s %lu %d \"%s\" %s %d %hu",
 			d->user->nick, d->user->host, d->user->port,

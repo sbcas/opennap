@@ -50,6 +50,7 @@ free_user (USER * user)
     hotlist = hash_lookup (Hotlist, user->nick);
     if (hotlist)
     {
+	ASSERT (validate_hotlist (hotlist));
 	ASSERT (hotlist->numusers > 0);
 	for (i = 0; i < hotlist->numusers; i++)
 	    send_cmd (hotlist->users[i], MSG_SERVER_USER_SIGNOFF, "%s",

@@ -28,15 +28,28 @@ HANDLER (add_hotlist)
     {
 	/* no hotlist, create one */
 	hotlist = new_hotlist ();
+	if (!hotlist)
+	    return;	/* no memory */
 	hotlist->nick = STRDUP (pkt);
+	if (!hotlist->nick)
+	{
+	    log ("add_hotlist(): ERROR: OUT OF MEMORY");
+	    FREE (hotlist);
+	    return;
+	}
 	hash_add (Hotlist, hotlist->nick, hotlist);
     }
+    ASSERT (validate_hotlist (hotlist));
 
     /* make sure this user isn't already listed */
     for (i = 0; i < hotlist->numusers; i++)
     {
 	if (hotlist->users[i] == con)
+	{
+	    log ("add_hotlist(): %s is already on %s's hotlist",
+		    hotlist->nick, con->user->nick);
 	    return; /* already present */
+	}
     }
 
     /* add this user to the list of users waiting for notification */
@@ -54,6 +67,7 @@ HANDLER (add_hotlist)
     user = hash_lookup (Users, hotlist->nick);
     if (user)
     {
+	ASSERT (validate_user (user));
 	send_cmd (con, MSG_SERVER_USER_SIGNON, "%s %d", user->nick,
 	    user->speed);
     }
@@ -73,6 +87,7 @@ HANDLER (remove_hotlist)
     /* find the user in this user's hotlist */
     for (i = 0; i < con->hotlistsize; i++)
     {
+	ASSERT (validate_hotlist (con->hotlist[i]));
 	if (strcmp (con->hotlist[i]->nick, pkt) == 0)
 	{
 	    h = con->hotlist[i];

@@ -417,6 +417,11 @@ new_user (void)
 {
     USER *u = CALLOC (1, sizeof (USER));
 
+    if (!u)
+    {
+	log ("new_user(): ERROR: OUT OF MEMORY");
+	return 0;
+    }
 #ifdef DEBUG
     u->magic = MAGIC_USER;
 #endif
@@ -428,6 +433,11 @@ new_channel (void)
 {
     CHANNEL *c = CALLOC (1, sizeof (CHANNEL));
 
+    if (!c)
+    {
+	log ("new_channel(): ERROR: OUT OF MEMORY");
+	return 0;
+    }
 #ifdef DEBUG
     c->magic = MAGIC_CHANNEL;
 #endif
@@ -439,6 +449,11 @@ new_hotlist (void)
 {
     HOTLIST *h = CALLOC (1, sizeof (HOTLIST));
 
+    if (!h)
+    {
+	log ("new_hotlist(): ERROR: OUT OF MEMORY");
+	return 0;
+    }
 #ifdef DEBUG
     h->magic = MAGIC_HOTLIST;
 #endif
@@ -450,6 +465,11 @@ new_connection (void)
 {
     CONNECTION *c = CALLOC (1, sizeof (CONNECTION));
 
+    if (!c)
+    {
+	log ("new_connection(): ERROR: OUT OF MEMORY");
+	return 0;
+    }
 #ifdef DEBUG
     c->magic = MAGIC_CONNECTION;
 #endif
