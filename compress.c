@@ -74,7 +74,7 @@ HANDLER (compressed_data)
 		con->recvdatamax = len + 1;
 		con->recvdata = REALLOC (con->recvdata, con->recvdatamax);
 	    }
-	    memcpy (con->recvdata, data, len);
+	    memcpy (con->recvdata, data + offset, len);
 	}
 	ASSERT (con->recvdata != 0);
 	*(con->recvdata + len) = 0;

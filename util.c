@@ -240,53 +240,53 @@ send_queued_data (CONNECTION *con)
 	return; /* nothing to do */
 
 #if HAVE_LIBZ
-    if (con->class == CLASS_SERVER)
+    /* see if there is any data we can compress
+       only compress if we have enough data to justify it */
+    l = con->sendbuflen - con->sendbufcompressed;
+    if (con->class == CLASS_SERVER &&
+	    Compression_Level > 0 &&
+	    l >= Compression_Threshold)
     {
-	/* see if there is any data we can compress */
-	if (con->sendbufcompressed < con->sendbuflen)
-	{
-	    long datasize;
-	    unsigned char *data;
+	long datasize;
+	unsigned char *data;
 
-	    l = con->sendbuflen - con->sendbufcompressed;
-	    datasize = l;
-	    data = MALLOC (datasize);
-	    if (compress2 (data, (unsigned long *) &datasize,
+	datasize = l;
+	data = MALLOC (datasize);
+	if (compress2 (data, (unsigned long *) &datasize,
 		    (unsigned char *) con->sendbuf + con->sendbufcompressed, l,
 		    Compression_Level) == Z_OK)
+	{
+	    /* make sure there is enough room to hold the compressed
+	       packet */
+	    if (con->sendbuflen - l + datasize + 6 < con->sendbufmax)
 	    {
-		/* make sure there is enough room to hold the compressed
-		   packet */
-		if (con->sendbuflen - l + datasize + 6 < con->sendbufmax)
-		{
-		    con->sendbuflen -= l; /* pop the uncompressed packet */
+		con->sendbuflen -= l; /* pop the uncompressed packet */
 
-		    set_val (con->sendbuf + con->sendbuflen, datasize + 2);
-		    con->sendbuflen += 2;
-		    set_val (con->sendbuf + con->sendbuflen,
+		set_val (con->sendbuf + con->sendbuflen, datasize + 2);
+		con->sendbuflen += 2;
+		set_val (con->sendbuf + con->sendbuflen,
 			MSG_SERVER_COMPRESSED_DATA);
-		    con->sendbuflen += 2;
-		    set_val (con->sendbuf + con->sendbuflen, l); /* uncompressed size */
-		    con->sendbuflen += 2;
+		con->sendbuflen += 2;
+		set_val (con->sendbuf + con->sendbuflen, l); /* uncompressed size */
+		con->sendbuflen += 2;
 
-		    memcpy (con->sendbuf + con->sendbuflen, data, datasize);
-		    con->sendbuflen += datasize;
-		    con->sendbufcompressed = con->sendbuflen;
+		memcpy (con->sendbuf + con->sendbuflen, data, datasize);
+		con->sendbuflen += datasize;
+		con->sendbufcompressed = con->sendbuflen;
 
-		    log ("send_queued_data(): compressed %d bytes into %d (%d%%).",
+		log ("send_queued_data(): compressed %d bytes into %d (%d%%).",
 			l, datasize, (100 * (datasize - l)) / l);
-		}
-		else
-		{
-		    log ("send_queued_data(): compressed packet is larger, not compressing");
-		}
 	    }
 	    else
 	    {
-		log ("send_queued_data(): error compressing data");
+		log ("send_queued_data(): compressed packet is larger, not compressing");
 	    }
-	    FREE (data);
 	}
+	else
+	{
+	    log ("send_queued_data(): error compressing data");
+	}
+	FREE (data);
     }
 #endif /* HAVE_LIBZ */
 

@@ -41,6 +41,7 @@ int Server_Queue_Length;
 int Client_Queue_Length;
 int Max_Search_Results;
 int Compression_Level;
+int Compression_Threshold;
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;
