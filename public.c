@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <stdio.h>
 #include <unistd.h>
@@ -19,7 +21,7 @@ HANDLER (public)
     int i, l, remote = 0;
     char *ptr;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     /* can't use split line here because the text field is considered all
        one item */
@@ -49,7 +51,7 @@ HANDLER (public)
 		    ptr);
 	return;
     }
-    ASSERT (VALID (chan));
+    ASSERT (validate_channel (chan));
 
     if (con->class == CLASS_SERVER)
     {
@@ -72,7 +74,7 @@ HANDLER (public)
     else
 	user = con->user;
 
-    ASSERT (VALID (user));
+    ASSERT (validate_user (user));
 
     /* make sure this user is a member of the channel */
     for (i = 0; i < user->numchannels; i++)
@@ -82,16 +84,16 @@ HANDLER (public)
     if (i == user->numchannels)
     {
 	/* user is not a member of this channel */
-	log ("public(): user %s attempt to send to %s", user->nick,
-	     chan->name);
+	if (user->con)
+	    send_cmd (user->con, MSG_SERVER_NOSUCH,
+		"you are not on channel %s", chan->name);
 	return;
     }
 
-    /* check to make sure this user is not muzzled */
-    if (time (0) < user->muzzled)
+    if (user->muzzled)
     {
-	log ("public(): user %s is muzzled for %d more seconds",
-		user->nick, user->muzzled - time (0));
+	if (user->con)
+	    send_cmd (user->con, MSG_SERVER_NOSUCH, "You are muzzled.");
 	return;
     }
 

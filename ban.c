@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <ctype.h>
 #include <string.h>
@@ -45,7 +47,6 @@ HANDLER (ban)
     {
 	if (con->class == CLASS_USER)
 	    permission_denied (con);
-	log ("ban_user(): %s does not have ban privilege", sender->nick);
 	return;
     }
 
@@ -72,6 +73,8 @@ HANDLER (ban)
     else
 	b->reason = STRDUP ("");
     Ban = array_add (Ban, &Ban_Size, b);
+
+    notify_mods ("%s banned %s: %s", sender->nick, ban, pkt);
 }
 
 /* 614 [ :<sender> ] <nick|ip> */

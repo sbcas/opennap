@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <mysql.h>
 #include <stdio.h>
@@ -15,12 +17,11 @@ free_user (USER * user)
     int i;
     HOTLIST *hotlist;
 
-    ASSERT (VALID (user));
+    ASSERT (validate_user (user));
 
     if (user->con && Num_Servers)
     {
 	/* local user, notify peers of this user's departure */
-	ASSERT (VALID (user->con));
 	pass_message_args (user->con, MSG_CLIENT_QUIT, "%s", user->nick);
     }
 

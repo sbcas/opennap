@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include <unistd.h>
 #include <stdio.h>
@@ -24,7 +26,7 @@ HANDLER (join)
     ASSERT (validate_user (user));
 
     /* enforce a maximum channels per user */
-    if (user->numchannels > Max_User_Channels)
+    if (user->numchannels == Max_User_Channels)
     {
 	if (con->class == CLASS_USER)
 	    send_cmd (con, MSG_SERVER_NOSUCH,

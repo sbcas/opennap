@@ -90,6 +90,7 @@ pass_message (CONNECTION *con, char *pkt, size_t pktlen)
 {
     int i;
 
+    ASSERT (validate_connection (con));
     for (i = 0; i < Num_Servers; i++)
 	if (Servers[i] != con)
 	    queue_data (Servers[i], pkt, pktlen);
@@ -117,7 +118,7 @@ pass_message_args (CONNECTION *con, unsigned long msgtype, const char *fmt, ...)
 void
 free_channel (CHANNEL * chan)
 {
-    ASSERT(VALID(chan));
+    ASSERT(validate_channel (chan));
     ASSERT (chan->numusers == 0);
     FREE (chan->name);
     if (chan->topic)
@@ -170,7 +171,7 @@ split_line (char **template, int templatecount, char *pkt)
 int
 pop_user (CONNECTION *con, char **pkt, USER **user)
 {
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
     if (con->class == CLASS_SERVER)
     {
 	char *ptr;

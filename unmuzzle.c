@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #include "opennap.h"
 #include "debug.h"
@@ -8,14 +10,14 @@
 /* [ :<nick> ] <user> */
 HANDLER (unmuzzle)
 {
-    USER *user;
+    USER *sender, *user;
 
     ASSERT (validate_connection (con));
 
-    if (pop_user (con, &pkt, &user) != 0)
+    if (pop_user (con, &pkt, &sender) != 0)
 	return;
 
-    if (user->level < LEVEL_MODERATOR)
+    if (sender->level < LEVEL_MODERATOR)
     {
 	if (con->class == CLASS_USER)
 	    permission_denied (con);
@@ -41,4 +43,11 @@ HANDLER (unmuzzle)
 	pass_message_args (con, MSG_CLIENT_UNMUZZLE, ":%s %s",
 		  con->user->nick, user->nick);
     }
+
+    notify_mods ("%s unmuzzled %s.", sender->nick, user->nick);
+
+    /* notify the user they have been unmuzzled */
+    if (user->con)
+	send_cmd (user->con, MSG_SERVER_NOSUCH,
+	    "You have been unmuzzled by %s", sender->nick);
 }

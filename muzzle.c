@@ -1,17 +1,18 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
 
-#include <stdlib.h>
-#include <time.h>
+   $Id$ */
+
+#include <string.h>
 #include "opennap.h"
 #include "debug.h"
 
-/* [ :<nick> ] <user-to-muzzle> <time> */
+/* [ :<nick> ] <user-to-muzzle> [ <reason> ] */
 HANDLER (muzzle)
 {
     USER *sender, *user;
-    char *fields[2];
+    char *reason;
 
     ASSERT (validate_connection (con));
 
@@ -20,46 +21,44 @@ HANDLER (muzzle)
 
     ASSERT (validate_user (sender));
 
-    if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 2)
-    {
-	log ("muzzle(): malformed client request");
-	return;
-    }
+    reason = strchr (pkt, ' ');
+    if (reason)
+	*reason++ = 0;
 
     /* find the user to be muzzled */
-    user = hash_lookup (Users, fields[0]);
+    user = hash_lookup (Users, pkt);
     if (!user)
     {
 	if (con->class == CLASS_USER)
-	    nosuchuser (con, fields[0]);
-	else
-	    log ("muzzle(): can't locate user %s", fields[0]);
+	    nosuchuser (con, pkt);
 	return;
     }
     ASSERT (validate_user (user));
 
     /* ensure that this user has privilege to execute the command */
-    if (user->level >= sender->level)
+    if (sender->level < LEVEL_ELITE && user->level >= sender->level)
     {
 	if (con->class == CLASS_USER)
 	    permission_denied (con);
 	return;
     }
 
-    /* set the time until which the user is muzzled */
-    user->muzzled = time (0) + atoi (fields[1]);
+    user->muzzled = 1;
 
     if (con->class == CLASS_USER && Num_Servers)
     {
-	ASSERT (VALID (con->user));
-	pass_message_args (con, MSG_CLIENT_MUZZLE, ":%s %s %s", con->user->nick,
-		user->nick, fields[1]);
+	ASSERT (validate_user (con->user));
+	pass_message_args (con, MSG_CLIENT_MUZZLE, ":%s %s %s",
+	    con->user->nick, user->nick, reason ? reason : "");
     }
 
     /* notify the user they have been muzzled */
     if (user->con)
-	send_cmd (user->con, MSG_SERVER_NOSUCH, "You have been muzzled.");
+	send_cmd (user->con, MSG_SERVER_NOSUCH,
+	    "You have been muzzled by %s: %s", sender->nick,
+	    reason ? reason : "");
 
     /* notify mods+ of this action */
-    notify_mods ("%s has muzzled %s.", sender->nick, user->nick);
+    notify_mods ("%s has muzzled %s: %s", sender->nick, user->nick,
+	reason ? reason : "");
 }

@@ -70,7 +70,7 @@ struct _user
     unsigned short conport;	/* remote port for connection to server */
     LEVEL level;		/* user level */
     time_t connected;		/* time at which the user connected */
-    time_t muzzled;		/* time at which the user is allowed to post public msgs */
+    int muzzled;		/* non-zero if this user is muzzled */
 
     CHANNEL **channels;		/* channels of which this user is a member */
     int numchannels;		/* number of channels */

@@ -17,6 +17,12 @@ server_split (void *puser, void *pcon)
 
     ASSERT (validate_user (user));
     ASSERT (validate_connection (con));
+
+    /* on split, we have to notify our peer servers that this user
+       is no longer online */
+    if (Num_Servers)
+	pass_message_args (con, MSG_CLIENT_QUIT, "%s", user->nick);
+
     if (user->serv == con)
 	hash_remove (Users, user->nick);
 }
@@ -37,7 +43,7 @@ remove_connection (CONNECTION *con)
 	int i;
 
 	/* remove user from global list */
-	ASSERT (VALID (con->user));
+	ASSERT (validate_user (con->user));
 	hash_remove (Users, con->user->nick);
 
 	/* if this user had hotlist entries, remove them from the lists */
