@@ -119,7 +119,8 @@ HANDLER (server_login)
 	con->destroy = 1;
 	return;
     }
-    con->compress =  (compress < Compression_Level) ? compress : Compression_Level;
+    con->compress =
+	(compress < Compression_Level) ? compress : Compression_Level;
 
     /* if this is a new request, set up the authentication info now */
     if (!con->server_login)
@@ -132,7 +133,8 @@ HANDLER (server_login)
 	    return;
 	}
 
-	log ("server_login(): peer initiated connection, sending login request");
+	log
+	    ("server_login(): peer initiated connection, sending login request");
 	if ((con->opt.auth->nonce = generate_nonce ()) == NULL)
 	{
 	    send_cmd (con, MSG_SERVER_ERROR, "unable to generate nonce");
@@ -146,10 +148,10 @@ HANDLER (server_login)
     }
 
     con->opt.auth->sendernonce = STRDUP (fields[1]);
-    if(!con->opt.auth->sendernonce)
+    if (!con->opt.auth->sendernonce)
     {
-	OUTOFMEMORY("server_login");
-	con->destroy=1;
+	OUTOFMEMORY ("server_login");
+	con->destroy = 1;
 	return;
     }
 
@@ -177,6 +179,7 @@ HANDLER (server_login_ack)
     struct md5_ctx md5;
     char hash[33];
     char *pass;
+    LIST *list;
 
     (void) tag;
     (void) len;
@@ -253,7 +256,16 @@ HANDLER (server_login_ack)
 #endif
 
     /* put this connection in the shortcut list to the server conections */
-    add_server (con);
+    list = CALLOC (1, sizeof (LIST));
+    if (!list)
+    {
+	OUTOFMEMORY ("server_login_ack");
+	con->destroy = 1;
+	return;
+    }
+
+    list->data = con;
+    Servers = list_append (Servers, list);
 
     /* synchronize our state with this server */
     synch_server (con);

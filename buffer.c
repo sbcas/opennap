@@ -20,6 +20,7 @@ static BUFFER *
 buffer_new (void)
 {
     BUFFER *r = CALLOC (1, sizeof (BUFFER));
+
     if (!r)
     {
 	OUTOFMEMORY ("buffer_new");
@@ -34,7 +35,7 @@ buffer_new (void)
 /* append bytes to the buffer.  `step' is the size of a buffer to create if
    a new buffer needs to be created */
 static BUFFER *
-buffer_queue (BUFFER *b, char *d, int dsize, int step)
+buffer_queue (BUFFER * b, char *d, int dsize, int step)
 {
     BUFFER *r = b;
 
@@ -91,7 +92,7 @@ buffer_queue (BUFFER *b, char *d, int dsize, int step)
 
 /* consume some bytes from the buffer */
 BUFFER *
-buffer_consume (BUFFER *b, int n)
+buffer_consume (BUFFER * b, int n)
 {
     ASSERT (buffer_validate (b));
     ASSERT (b->consumed + n <= b->datasize);
@@ -108,7 +109,7 @@ buffer_consume (BUFFER *b, int n)
 }
 
 BUFFER *
-buffer_append (BUFFER *a, BUFFER *b)
+buffer_append (BUFFER * a, BUFFER * b)
 {
     BUFFER *r = a;
 
@@ -123,7 +124,7 @@ buffer_append (BUFFER *a, BUFFER *b)
 }
 
 int
-buffer_size (BUFFER *b)
+buffer_size (BUFFER * b)
 {
     int n = 0;
 
@@ -134,7 +135,7 @@ buffer_size (BUFFER *b)
 }
 
 void
-buffer_free (BUFFER *b)
+buffer_free (BUFFER * b)
 {
     BUFFER *p;
 
@@ -150,30 +151,32 @@ buffer_free (BUFFER *b)
 
 #if DEBUG
 int
-buffer_validate (BUFFER *b)
+buffer_validate (BUFFER * b)
 {
     ASSERT_RETURN_IF_FAIL (VALID_LEN (b, sizeof (BUFFER)), 0);
     ASSERT_RETURN_IF_FAIL (b->magic == MAGIC_BUFFER, 0);
     ASSERT_RETURN_IF_FAIL (b->datasize <= b->datamax, 0);
-    ASSERT_RETURN_IF_FAIL (b->data == 0 || VALID_LEN (b->data, b->datasize), 0);
+    ASSERT_RETURN_IF_FAIL (b->data == 0
+			   || VALID_LEN (b->data, b->datasize), 0);
     ASSERT_RETURN_IF_FAIL (b->consumed == 0 || b->consumed < b->datasize, 0);
-    ASSERT_RETURN_IF_FAIL (b->next == 0 || VALID_LEN (b->next, sizeof (BUFFER*)), 0);
+    ASSERT_RETURN_IF_FAIL (b->next == 0
+			   || VALID_LEN (b->next, sizeof (BUFFER *)), 0);
     return 1;
 }
 #endif /* DEBUG */
 
 #if HAVE_LIBZ
 static BUFFER *
-buffer_compress (z_streamp zip, BUFFER **b)
+buffer_compress (z_streamp zip, BUFFER ** b)
 {
     BUFFER *r;
     int n, bytes, flush;
 
     ASSERT (buffer_validate (*b));
 
-    r = buffer_new();
+    r = buffer_new ();
     if (!r)
-	return 0; /* out of memory */
+	return 0;		/* out of memory */
     r->data = MALLOC (16384);
     if (!r->data)
     {
@@ -204,7 +207,7 @@ buffer_compress (z_streamp zip, BUFFER **b)
 	if (n != Z_OK)
 	{
 	    log ("buffer_compress(): deflate: %s (error %d)",
-		    NONULL (zip->msg), n);
+		 NONULL (zip->msg), n);
 	    break;
 	}
 
@@ -230,7 +233,7 @@ buffer_compress (z_streamp zip, BUFFER **b)
    than 16kb), we uncompress all data when we receive it and don't worry
    about blocking. */
 int
-buffer_decompress (BUFFER *b, z_streamp zip, char *in, int insize)
+buffer_decompress (BUFFER * b, z_streamp zip, char *in, int insize)
 {
     int n;
 
@@ -249,7 +252,7 @@ buffer_decompress (BUFFER *b, z_streamp zip, char *in, int insize)
 	    /* allocate one extra byte to write a \0 char */
 	    if (safe_realloc ((void **) &b->data, b->datamax + 2049))
 	    {
-		OUTOFMEMORY("buffer_decompress");
+		OUTOFMEMORY ("buffer_decompress");
 		return -1;
 	    }
 	    b->datamax += 2048;
@@ -257,13 +260,13 @@ buffer_decompress (BUFFER *b, z_streamp zip, char *in, int insize)
 	    zip->avail_out = b->datamax - b->datasize;
 	    /* set this to the max size and subtract what is left after the
 	       inflate */
-	    b->datasize += zip->avail_out;
+	    b->datasize = b->datamax;
 	}
 	n = inflate (zip, Z_SYNC_FLUSH);
 	if (n != Z_OK)
 	{
 	    log ("buffer_decompress(): inflate: %s (error %d)",
-		    NONULL (zip->msg), n);
+		 NONULL (zip->msg), n);
 	    return -1;
 	}
 	/* subtract unused bytes */
@@ -273,7 +276,7 @@ buffer_decompress (BUFFER *b, z_streamp zip, char *in, int insize)
 }
 
 void
-init_compress (CONNECTION *con, int level)
+init_compress (CONNECTION * con, int level)
 {
     int n;
 
@@ -297,36 +300,38 @@ init_compress (CONNECTION *con, int level)
     if (n != Z_OK)
     {
 	log ("init_compress: inflateInit: %s (%d)",
-		NONULL (con->sopt->zin->msg), n);
+	     NONULL (con->sopt->zin->msg), n);
     }
     n = deflateInit (con->sopt->zout, level);
     if (n != Z_OK)
     {
 	log ("init_compress: deflateInit: %s (%d)",
-		NONULL (con->sopt->zout->msg), n);
+	     NONULL (con->sopt->zout->msg), n);
     }
 
     log ("init_compress: compressing server stream at level %d", level);
 }
 
 void
-finalize_compress (SERVER *serv)
+finalize_compress (SERVER * serv)
 {
     int n;
 
     n = deflateEnd (serv->zout);
     if (n != Z_OK)
-	log ("finalize_compress: deflateEnd: %s (%d)", NONULL (serv->zout->msg), n);
+	log ("finalize_compress: deflateEnd: %s (%d)",
+	     NONULL (serv->zout->msg), n);
     n = inflateEnd (serv->zin);
     if (n != Z_OK)
-	log ("finalize_compress: inflateEnd: %s (%d)", NONULL (serv->zin->msg), n);
+	log ("finalize_compress: inflateEnd: %s (%d)",
+	     NONULL (serv->zin->msg), n);
     FREE (serv->zin);
     FREE (serv->zout);
 }
 #endif
 
 int
-send_queued_data (CONNECTION *con)
+send_queued_data (CONNECTION * con)
 {
     int n;
 
@@ -345,16 +350,16 @@ send_queued_data (CONNECTION *con)
 
     /* is there data to write? */
     if (!con->sendbuf)
-	return 0; /* nothing to do */
+	return 0;		/* nothing to do */
 
     n = WRITE (con->fd, con->sendbuf->data + con->sendbuf->consumed,
-	con->sendbuf->datasize - con->sendbuf->consumed);
+	       con->sendbuf->datasize - con->sendbuf->consumed);
     if (n == -1)
     {
 	if (errno != EWOULDBLOCK && errno != EDEADLK)
 	{
 	    log ("send_queued_data(): write: %s (errno %d)",
-		    strerror (errno), errno);
+		 strerror (errno), errno);
 	    return -1;
 	}
 	return 0;
@@ -366,12 +371,14 @@ send_queued_data (CONNECTION *con)
     }
 
     /* check to make sure the queue hasn't gotten too big */
-    n = (con->class == CLASS_SERVER) ? Server_Queue_Length : Client_Queue_Length;
+    n =
+	(con->class ==
+	 CLASS_SERVER) ? Server_Queue_Length : Client_Queue_Length;
 
     if (buffer_size (con->sendbuf) > n)
     {
-	log ("send_queued_data(): output buffer for %s exceeded %d bytes", 
-	    con->host, n);
+	log ("send_queued_data(): output buffer for %s exceeded %d bytes",
+	     con->host, n);
 	return -1;
     }
 
@@ -379,7 +386,7 @@ send_queued_data (CONNECTION *con)
 }
 
 void
-queue_data (CONNECTION *con, char *s, int ssize)
+queue_data (CONNECTION * con, char *s, int ssize)
 {
     ASSERT (validate_connection (con));
     if (ISSERVER (con))

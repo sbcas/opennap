@@ -33,7 +33,7 @@ HANDLER (join)
     if (list_count (user->channels) > Max_User_Channels)
     {
 	log ("join(): %s reached max channel count (%d)", user->nick,
-	    Max_User_Channels);
+	     Max_User_Channels);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
 		      "Maximum number of channels is %d.", Max_User_Channels);
@@ -115,8 +115,7 @@ HANDLER (join)
     chan->users = list_append (chan->users, list);
 
     /* if there are linked servers, send this message along */
-    if (Num_Servers)
-	pass_message_args (con, tag, ":%s %s", user->nick, chan->name);
+    pass_message_args (con, tag, ":%s %s", user->nick, chan->name);
 
     /* if local user send an ack for the join */
     if (ISUSER (con))
@@ -133,8 +132,8 @@ HANDLER (join)
 	    if (chanUser != user)
 	    {
 		send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST, "%s %s %d %d",
-		    chan->name, chanUser->nick, chanUser->shared,
-		    chanUser->speed);
+			  chan->name, chanUser->nick, chanUser->shared,
+			  chanUser->speed);
 	    }
 	}
     }
@@ -147,7 +146,7 @@ HANDLER (join)
 	ASSERT (chanUser != 0);
 	if (ISUSER (chanUser->con))
 	    send_cmd (chanUser->con, MSG_SERVER_JOIN, "%s %s %d %d",
-		    chan->name, user->nick, user->shared, user->speed);
+		      chan->name, user->nick, user->shared, user->speed);
     }
 
     if (ISUSER (con))
@@ -164,7 +163,7 @@ HANDLER (join)
     }
     return;
 
-error:
+  error:
     /* set things back to a sane state */
     chan->users = list_delete (chan->users, user);
     user->channels = list_delete (user->channels, chan);

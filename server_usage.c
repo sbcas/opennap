@@ -15,32 +15,33 @@
 HANDLER (server_usage)
 {
     USER *user;
-    int mem_used;
+    int mem_used, numServers;
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("server_usage");
     if (pop_user (con, &pkt, &user) != 0)
-        return;
+	return;
 
     if (user->level < LEVEL_ADMIN)
     {
-        if (con->class == CLASS_USER)
-            permission_denied (con);
-        return; /* no privilege */
+	if (con->class == CLASS_USER)
+	    permission_denied (con);
+	return;			/* no privilege */
     }
-    
-    if(!*pkt||!strcasecmp(pkt,Server_Name))
+
+    if (!*pkt || !strcasecmp (pkt, Server_Name))
     {
 	mem_used = MEMORY_USED;
 
+	numServers = list_count (Servers);
 	send_cmd (user->con, MSG_SERVER_USAGE_STATS,
-		"%d %d %d %d %d %d %d %d %d",
-		Num_Clients - Num_Servers, Num_Servers, Users->dbsize,
-		Num_Files, Num_Gigs, Channels->dbsize, Server_Start,
-		time (0) - Server_Start, mem_used);
+		  "%d %d %d %d %d %d %d %d %d",
+		  Num_Clients - numServers, numServers, Users->dbsize,
+		  Num_Files, Num_Gigs, Channels->dbsize, Server_Start,
+		  time (0) - Server_Start, mem_used);
     }
     else
-	pass_message_args(con,tag,":%s %s", user->nick, pkt);
+	pass_message_args (con, tag, ":%s %s", user->nick, pkt);
 }

@@ -92,8 +92,7 @@ search_callback (DATUM * match, SEARCH * parms)
 		  match->bitrate,
 		  match->frequency,
 		  match->duration,
-		  match->user->nick,
-		  match->user->host, match->user->speed);
+		  match->user->nick, match->user->host, match->user->speed);
     }
 
     return 1;			/* accept match */
@@ -111,7 +110,7 @@ free_flist (FLIST * ptr)
 /* returns nonzero if there is already the token specified by `s' in the
    list */
 static int
-duplicate (LIST *list, const char *s)
+duplicate (LIST * list, const char *s)
 {
     ASSERT (s != 0);
     for (; list; list = list->next)
@@ -150,9 +149,7 @@ tokenize (char *s)
 	   searches down any even after the selection of the bin to search */
 	if (!strcmp ("a", s) ||
 	    !strcmp ("i", s) ||
-	    !strcmp ("the", s) ||
-	    !strcmp ("and", s) ||
-	    !strcmp ("in", s) ||
+	    !strcmp ("the", s) || !strcmp ("and", s) || !strcmp ("in", s) ||
 	    /* the following are common path names and don't really
 	       provide useful information */
 	    !strcmp ("mp3", s) ||
@@ -168,8 +165,7 @@ tokenize (char *s)
 	    !strcmp ("desktop", s) ||
 	    !strcmp ("my", s) ||
 	    !strcmp ("documents", s) ||
-	    !strcmp ("winamp", s) ||
-	    !strcmp ("mp3s", s))
+	    !strcmp ("winamp", s) || !strcmp ("mp3s", s))
 	{
 	    s = ptr;
 	    continue;
@@ -622,8 +618,8 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 
     if (n < max_results)
     {
-	if ((ISSERVER (con) && Num_Servers > 1) ||
-	    (ISUSER (con) && Num_Servers))
+	if ((ISSERVER (con) && list_count (Servers) > 1) ||
+	    (ISUSER (con) && Servers))
 	{
 	    char *request;
 	    DSEARCH *dsearch;
@@ -636,16 +632,16 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    dsearch = CALLOC (1, sizeof (DSEARCH));
 	    if (id)
 		dsearch->id = STRDUP (id);
-	    else if ((dsearch->id = generate_search_id ())==0)
+	    else if ((dsearch->id = generate_search_id ()) == 0)
 	    {
-		FREE(dsearch);
+		FREE (dsearch);
 		goto done;
 	    }
 	    else
 		dsearch->local = 1;
 	    dsearch->con = con;
 	    dsearch->nick = STRDUP (user->nick);
-	    dsearch->numServers = Num_Servers;
+	    dsearch->numServers = list_count (Servers);
 	    dsearch->valid = 1;
 	    if (ISSERVER (con))
 		dsearch->numServers--;
@@ -662,7 +658,7 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    /* pass this message to all servers EXCEPT the one we recieved
 	       it from (if this was a remote search */
 	    pass_message_args (con, MSG_SERVER_REMOTE_SEARCH, "%s %s %s",
-		    dsearch->nick, dsearch->id, request);
+			       dsearch->nick, dsearch->id, request);
 	    FREE (request);
 	    done = 0;		/* delay sending the end-of-search message */
 	}
@@ -778,9 +774,9 @@ HANDLER (remote_search_result)
 		return;
 	    }
 	    send_cmd (search->con, MSG_SERVER_SEARCH_RESULT,
-		    "\"%s\" %s %s %s %s %s %s %u %d",
-		    av[2], av[3], av[4], av[5], av[6], av[7], user->nick,
-		    user->host, user->speed);
+		      "\"%s\" %s %s %s %s %s %s %u %d",
+		      av[2], av[3], av[4], av[5], av[6], av[7], user->nick,
+		      user->host, user->speed);
 	}
     }
 }
@@ -803,7 +799,8 @@ HANDLER (remote_search_end)
 	return;
     }
     search->count++;
-    if (search->count >= search->numServers || search->count >= Num_Servers)
+    if (search->count >= search->numServers ||
+	search->count >= list_count (Servers))
     {
 	/* got the end of the search matches from all our peers, issue
 	   find ack to the server that sent us this request, or deliver
@@ -825,7 +822,7 @@ HANDLER (remote_search_end)
 	{
 	    ASSERT (validate_connection (search->con));
 	    send_cmd (search->con, MSG_SERVER_REMOTE_SEARCH_END, "%s",
-		    search->id);
+		      search->id);
 	}
 	Remote_Search = list_delete (Remote_Search, search);
 	free_dsearch (search);
@@ -833,14 +830,14 @@ HANDLER (remote_search_end)
     else
     {
 	log ("remote_end_match(): got %d of %d replies for id %s",
-		search->count, search->numServers, search->id);
+	     search->count, search->numServers, search->id);
     }
 }
 
 /* if a user logs out before the search is complete, we need to cancel
    the search so that we don't try to send the result to the client */
 void
-cancel_search (CONNECTION *con)
+cancel_search (CONNECTION * con)
 {
     LIST *list;
     DSEARCH *d;

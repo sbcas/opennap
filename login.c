@@ -340,7 +340,7 @@ HANDLER (login)
 	userdb_free (db);
 
     /* pass this information to our peer servers */
-    if (Num_Servers)
+    if (Servers)
     {
 	pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
 			   av[0], av[1], av[2], av[3], av[4]);
@@ -418,9 +418,8 @@ HANDLER (user_ip)
 	return;
     }
 
-    if (Num_Servers > 1)
-	pass_message_args (con, tag, "%s %s %s %s", user->nick,
-			   field[1], field[2], field[3]);
+    pass_message_args (con, tag, "%s %s %s %s", user->nick,
+		       field[1], field[2], field[3]);
 
     user->host = strtoul (field[1], 0, 10);
     user->conport = atoi (field[2]);
@@ -515,10 +514,9 @@ HANDLER (reginfo)
 	}
     }
 
-    if (Num_Servers > 1)
-	pass_message_args (con, tag, ":%s %s %s %s %s %s %s",
-			   server, fields[0], fields[1], fields[2], fields[3],
-			   fields[4], fields[5]);
+    pass_message_args (con, tag, ":%s %s %s %s %s %s %s",
+		       server, fields[0], fields[1], fields[2], fields[3],
+		       fields[4], fields[5]);
 
     db->password = STRDUP (fields[1]);
     db->email = STRDUP (fields[2]);
@@ -559,6 +557,7 @@ HANDLER (register_user)
 	return;
     }
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
+
     /* if the user level was specified do some security checks */
     if (ac > 3)
     {
@@ -574,27 +573,26 @@ HANDLER (register_user)
 	if (sender->level < LEVEL_ELITE && level >= sender->level)
 	{
 	    log ("register_user(): %s has no privilege to create %s accounts",
-		sender->nick, Levels[level]);
+		 sender->nick, Levels[level]);
 	    if (ISUSER (con))
 		permission_denied (con);
 	    return;
 	}
     }
     else
-	level = LEVEL_USER; /* default */
+	level = LEVEL_USER;	/* default */
 
     /* first check to make sure this user is not already registered */
     if (userdb_fetch (av[0]))
     {
 	log ("register_user(): %s is already registered", av[0]);
 	send_user (sender, MSG_SERVER_NOSUCH, "[%s] %s is already registered",
-	    Server_Name, av[0]);
+		   Server_Name, av[0]);
 	return;
     }
-    if (Num_Servers)
-	pass_message_args (con, tag, ":%s %s %s %s %s",
-			   sender->nick, av[0], av[1], av[2],
-			   ac > 3 ? av[3] : "");
+    pass_message_args (con, tag, ":%s %s %s %s %s",
+		       sender->nick, av[0], av[1], av[2],
+		       ac > 3 ? av[3] : "");
 
     db = CALLOC (1, sizeof (USERDB));
     if (!db)
@@ -612,7 +610,7 @@ HANDLER (register_user)
     {
 	log ("register_user(): userdb_store failed");
 	send_user (sender, MSG_SERVER_NOSUCH,
-	    "[%s] unable to register nick (db failure)", Server_Name);
+		   "[%s] unable to register nick (db failure)", Server_Name);
     }
     FREE (db);
 }

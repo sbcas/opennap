@@ -29,7 +29,7 @@ try_connect (char *host, int port)
     cli = new_connection ();
     if (!cli)
 	goto error;
-    cli->class = CLASS_UNKNOWN; /* not authenticated yet */
+    cli->class = CLASS_UNKNOWN;	/* not authenticated yet */
     cli->fd = f;
     cli->host = STRDUP (host);
     if (!cli->host)
@@ -54,7 +54,7 @@ try_connect (char *host, int port)
     cli->connecting = 1;
     add_client (cli);
     return;
-error:
+  error:
     log ("try_connect(): closing connection");
     CLOSE (f);
     if (cli)
@@ -72,21 +72,21 @@ error:
 }
 
 void
-complete_connect (CONNECTION *con)
+complete_connect (CONNECTION * con)
 {
     if (check_connect_status (con->fd) != 0)
     {
 	con->destroy = 1;
 	return;
     }
-    con->connecting = 0; /* connected now */
+    con->connecting = 0;	/* connected now */
 
     /* send the login request */
     ASSERT (Server_Name != 0);
     ASSERT (con->server_login == 1);
     ASSERT (con->opt.auth != 0);
     send_cmd (con, MSG_SERVER_LOGIN, "%s %s %d", Server_Name,
-	    con->opt.auth->nonce, Compression_Level);
+	      con->opt.auth->nonce, Compression_Level);
 
     /* we handle the response to the login request in the main event loop so
        that we don't block while waiting for th reply.  if the server does
@@ -102,7 +102,9 @@ HANDLER (server_connect)
 {
     USER *user;
     char *fields[3];
-    int i, argc, port;
+    int argc, port;
+    LIST *list;
+    CONNECTION *server;
 
     (void) tag;
     (void) len;
@@ -115,10 +117,11 @@ HANDLER (server_connect)
     {
 	if (ISUSER (con))
 	    permission_denied (con);
-	return; /* no privilege */
+	return;			/* no privilege */
     }
 
     argc = split_line (fields, sizeof (fields) / sizeof (char *), pkt);
+
     if (argc < 2)
     {
 	log ("server_connect(): too few fields");
@@ -134,40 +137,43 @@ HANDLER (server_connect)
     if (argc == 2 || (argc == 3 && !strcasecmp (fields[2], Server_Name)))
     {
 	/* make sure we aren't already connected to this server */
-	for (i = 0; i < Num_Servers; i++)
+	for (list = Servers; list; list = list->next)
 	{
-	    if (!strcasecmp (fields[0], Servers[i]->host) &&
-		Servers[i]->port == port)
+	    server = list->data;
+	    ASSERT (validate_connection (con));
+	    ASSERT (ISSERVER (con));
+	    if (!strcasecmp (fields[0], server->host) && server->port == port)
 	    {
 		log ("server_connect(): already linked to %s:%d",
-		    fields[0], port);
+		     fields[0], port);
 		send_user (user, MSG_SERVER_NOSUCH,
-		    "[%s] %s:%d is already linked", Server_Name, fields[0],
-		    port);
+			   "[%s] %s:%d is already linked", Server_Name,
+			   fields[0], port);
 		return;
 	    }
 	}
 	try_connect (fields[0], port);
     }
-    else if (Num_Servers)
+    else
     {
 	/* pass the message on the target server */
 	ASSERT (argc == 3);
 	pass_message_args (con, MSG_CLIENT_CONNECT, ":%s %s %s %s",
-	    user->nick, fields[0], fields[1], fields[2]);
+			   user->nick, fields[0], fields[1], fields[2]);
     }
 
     notify_mods ("%s requested server link from %s to %s:%s",
-	user->nick, argc == 3 ? fields[2] : Server_Name, fields[0], fields[1]);
+		 user->nick, argc == 3 ? fields[2] : Server_Name, fields[0],
+		 fields[1]);
 }
 
 /* 10101 [ :<nick> ] <server> <reason> */
 HANDLER (server_disconnect)
 {
     USER *user;
-    char *reason;
-    int i;
+    char *host;
     CONNECTION *serv;
+    LIST *tmpList, **list;
 
     (void) tag;
     (void) len;
@@ -181,24 +187,26 @@ HANDLER (server_disconnect)
 	    permission_denied (con);
 	return;
     }
-    reason = strchr (pkt, ' ');
-    if (reason)
-	*reason++ = 0;
-    for (i = 0; i < Num_Servers; i++)
-	if (!strcasecmp (Servers[i]->host, pkt))
-	    break;
-    if (Num_Servers)
-	pass_message_args (con, MSG_CLIENT_DISCONNECT, ":%s %s %s",
-		user->nick, pkt, reason ? reason : "disconnect");
-    notify_mods ("%s disconnected server %s: %s", user->nick, pkt,
-	    NONULL(reason));
-    /* if its a locally connected server, shut it down now */
-    if(i<Num_Servers)
+    host = next_arg (&pkt);
+    for (list = &Servers; *list; list = &(*list)->next)
     {
-	serv = Servers[i];
-	Servers = array_remove (Servers, &Num_Servers, Servers[i]);
-	serv->destroy = 1;
+	serv = (*list)->data;
+	ASSERT (validate_connection (serv));
+	ASSERT (ISSERVER (serv));
+	if (!strcasecmp (serv->host, host))
+	{
+	    tmpList = *list;
+	    *list = (*list)->next;
+	    FREE (tmpList);
+	    serv->destroy = 1;
+	    break;
+	}
     }
+
+    pass_message_args (con, MSG_CLIENT_DISCONNECT, ":%s %s %s",
+		       user->nick, host, NONULL (pkt));
+    notify_mods ("%s disconnected server %s: %s", user->nick, host,
+		 NONULL (pkt));
 }
 
 /* 10110 [ :<user> ] <server> [ <reason> ] */
@@ -216,23 +224,21 @@ HANDLER (kill_server)
     ASSERT (validate_user (user));
     if (user->level < LEVEL_ELITE)
     {
-	log("kill_server(): %s attempted to kill the server", user->nick);
+	log ("kill_server(): %s attempted to kill the server", user->nick);
 	if (con->class == CLASS_USER)
 	    permission_denied (con);
 	return;
     }
-    server=next_arg(&pkt);
+    server = next_arg (&pkt);
 
-    if(Num_Servers)
-	pass_message_args (con, MSG_CLIENT_KILL_SERVER, ":%s %s %s",
-		user->nick, server, NONULL(pkt));
-    notify_mods ("%s killed server %s: %s", user->nick, server,
-	    NONULL(pkt));
+    pass_message_args (con, MSG_CLIENT_KILL_SERVER, ":%s %s %s",
+		       user->nick, server, NONULL (pkt));
+    notify_mods ("%s killed server %s: %s", user->nick, server, NONULL (pkt));
 
     if (!strcasecmp (server, Server_Name))
     {
-	log("kill_server(): shutdown by %s: %s", user->nick, NONULL(pkt));
-	SigCaught = 1; /* this causes the main event loop to exit */
+	log ("kill_server(): shutdown by %s: %s", user->nick, NONULL (pkt));
+	SigCaught = 1;		/* this causes the main event loop to exit */
     }
 }
 
@@ -257,18 +263,18 @@ HANDLER (remove_server)
     if (reason)
 	*reason++ = 0;
     snprintf (Buf, sizeof (Buf), "DELETE FROM servers WHERE server = '%s'",
-	pkt);
+	      pkt);
 #if 0
     if (mysql_query (Db, Buf) != 0)
     {
 	sql_error ("remove_server", Buf);
 	send_cmd (con, MSG_SERVER_NOSUCH,
-	    "error removing %s from SQL database", pkt);
+		  "error removing %s from SQL database", pkt);
     }
     else
     {
 	notify_mods ("%s removed server %s from database: %s",
-	    con->user->nick, pkt, reason ? reason : "");
+		     con->user->nick, pkt, reason ? reason : "");
     }
 #endif
 }
@@ -296,8 +302,8 @@ HANDLER (server_version)
 	send_user (user, MSG_SERVER_NOSUCH, "%s %s", PACKAGE, VERSION);
 	send_user (user, MSG_SERVER_NOSUCH, "--");
     }
-    else if (Num_Servers)
-	pass_message_args(con,tag,":%s %s", user->nick, pkt);
+    else
+	pass_message_args (con, tag, ":%s %s", user->nick, pkt);
 }
 
 /* 404 <message> */

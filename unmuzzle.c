@@ -38,14 +38,14 @@ HANDLER (unmuzzle)
 
     user->muzzled = 0;
 
-    if (Num_Servers)
-	pass_message_args (con, MSG_CLIENT_UNMUZZLE, ":%s %s",
-		  sender->nick, user->nick);
+    /* relay to peer servers */
+    pass_message_args (con, MSG_CLIENT_UNMUZZLE, ":%s %s",
+		       sender->nick, user->nick);
 
     notify_mods ("%s unmuzzled %s.", sender->nick, user->nick);
 
     /* notify the user they have been unmuzzled */
     if (user->local)
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-	    "You have been unmuzzled by %s", sender->nick);
+		  "You have been unmuzzled by %s", sender->nick);
 }

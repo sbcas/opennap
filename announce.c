@@ -28,8 +28,9 @@ HANDLER (announce)
     else
     {
 	char *ptr;
+
 	ASSERT (ISSERVER (con));
-	ptr=next_arg_noskip(&pkt);
+	ptr = next_arg_noskip (&pkt);
 	if (!pkt)
 	{
 	    log ("announce(): too few arguments in server message");
@@ -61,8 +62,7 @@ HANDLER (announce)
     l += 4;
 
     /* pass the message to our peer servers if a local user sent it */
-    if (Num_Servers)
-	pass_message (con, Buf, l);
+    pass_message (con, Buf, l);
 
     /* broadcast the message to our local users */
     for (i = 0; i < Max_Clients; i++)
@@ -94,7 +94,7 @@ HANDLER (wallop)
     }
     else
     {
-	ptr = next_arg_noskip(&pkt);
+	ptr = next_arg_noskip (&pkt);
 	if (!pkt)
 	{
 	    log ("wallop(): malformed message from %s", pkt);
@@ -102,8 +102,7 @@ HANDLER (wallop)
 	}
     }
 
-    if (Num_Servers)
-	pass_message_args (con, MSG_SERVER_ANNOUNCE, "%s %s", ptr, pkt);
+    pass_message_args (con, MSG_SERVER_ANNOUNCE, "%s %s", ptr, pkt);
 
     /* deliver message to local users */
     for (i = 0; i < Max_Clients; i++)

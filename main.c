@@ -86,8 +86,7 @@ HASH *MD5;
 
 /* local server list.  NOTE that this contains pointers into the Clients
    list to speed up server-server message passing */
-CONNECTION **Servers = NULL;
-int Num_Servers = 0;
+LIST *Servers = 0;
 
 int Num_Files = 0;
 int Num_Gigs = 0;		/* in kB */
@@ -106,13 +105,16 @@ static void
 update_stats (void)
 {
     int i, l;
+    int numServers = list_count (Servers);
 
-    log ("update_stats(): current time is %s", ctime (&Current_Time));
+    strcpy (Buf, ctime (&Current_Time));
+    Buf[strlen (Buf) - 1] = 0;
+    log ("update_stats(): current time is %s", Buf);
     log
 	("update_stats(): library is %d kilobytes (%d gigabytes), %d files, %d users",
 	 Num_Gigs, Num_Gigs / (1024 * 1024), Num_Files, Users->dbsize);
     log ("update_stats: %d local clients, %d linked servers",
-	 Num_Clients - Num_Servers, Num_Servers);
+	 Num_Clients - numServers, numServers);
 
     /* since we send the same data to many people, optimize by forming
        the message once then writing it out */
@@ -122,7 +124,6 @@ update_stats (void)
     l = strlen (Buf + 4);
     set_len (Buf, l);
     l += 4;
-
     for (i = 0; i < Max_Clients; i++)
     {
 	if (Clients[i] && ISUSER (Clients[i]))
@@ -317,9 +318,10 @@ main (int argc, char **argv)
     int i;			/* generic counter */
     int n;			/* number of ready sockets */
     int port = 0, iface = INADDR_ANY, nolisten = 0;
+
 #if HAVE_POLL
     struct pollfd *ufd = 0;
-    int	ufdsize;		/* number of entries in ufd */
+    int ufdsize;		/* number of entries in ufd */
 #else
     fd_set set, wset;
     struct timeval t;
@@ -439,6 +441,7 @@ main (int argc, char **argv)
     /* these only need to be set once */
     ufdsize = 2;
     ufd = CALLOC (ufdsize, sizeof (struct pollfd));
+
     ufd[0].fd = s;
     ufd[0].events = POLLIN;
     if (!nolisten)
@@ -459,7 +462,8 @@ main (int argc, char **argv)
 	if (ufdsize < Max_Clients + 2)
 	{
 	    /* increment in steps of 10 to avoid calling this too often */
-	    if (safe_realloc ((void **) &ufd, sizeof (struct pollfd) * (Max_Clients + 12)))
+	    if (safe_realloc
+		((void **) &ufd, sizeof (struct pollfd) * (Max_Clients + 12)))
 	    {
 		OUTOFMEMORY ("main");
 		break;
@@ -491,8 +495,8 @@ main (int argc, char **argv)
 	    if (Clients[i])
 	    {
 #if HAVE_POLL
-		ufd[i+2].fd = Clients[i]->fd;
-		ufd[i+2].events = 0;
+		ufd[i + 2].fd = Clients[i]->fd;
+		ufd[i + 2].events = 0;
 #endif /* HAVE_POLL */
 
 		/* check sockets for writing */
@@ -512,14 +516,14 @@ main (int argc, char **argv)
 #if HAVE_POLL
 	    else
 	    {
-		ufd[i+2].fd = -1;	/* unused */
-		ufd[i+2].events = 0;
+		ufd[i + 2].fd = -1;	/* unused */
+		ufd[i + 2].events = 0;
 	    }
 #endif
 	}
 
 #if HAVE_POLL
-	if ((n = poll(ufd, ufdsize, next_timer() * 1000)) < 0)
+	if ((n = poll (ufd, ufdsize, next_timer () * 1000)) < 0)
 	{
 	    perror ("poll");
 	    continue;
@@ -542,12 +546,12 @@ main (int argc, char **argv)
 		if (WRITABLE (i) && Clients[i]->connecting)
 		{
 		    complete_connect (Clients[i]);
-		    n--;		/* track of how many handled */
+		    n--;	/* track of how many handled */
 		}
 		else if (READABLE (i))
 		{
 		    handle_connection (Clients[i]);
-		    n--;		/* track of how many handled */
+		    n--;	/* track of how many handled */
 		}
 	    }
 	}
@@ -566,7 +570,7 @@ main (int argc, char **argv)
 		       there is data to be compressed, or if the socket is
 		       writable and there is some compressed output */
 		    if (Clients[i]->sendbuf
-			    || (Clients[i]->sopt->outbuf && WRITABLE (i)))
+			|| (Clients[i]->sopt->outbuf && WRITABLE (i)))
 		    {
 			if (send_queued_data (Clients[i]) == -1)
 			    Clients[i]->destroy = 1;
@@ -576,7 +580,7 @@ main (int argc, char **argv)
 		   writable or we're about to close the connection, send any
 		   queued data */
 		else if (Clients[i]->sendbuf &&
-			(WRITABLE (i) || Clients[i]->destroy))
+			 (WRITABLE (i) || Clients[i]->destroy))
 		{
 		    if (send_queued_data (Clients[i]) == -1)
 			Clients[i]->destroy = 1;
@@ -587,7 +591,8 @@ main (int argc, char **argv)
 		{
 		    /* should have flushed everything */
 		    ASSERT (Clients[i]->sendbuf == 0);
-		    log ("main(): closing connection for %s", Clients[i]->host);
+		    log ("main(): closing connection for %s",
+			 Clients[i]->host);
 		    remove_connection (Clients[i]);
 		}
 	    }
@@ -610,12 +615,12 @@ main (int argc, char **argv)
 #if HAVE_POLL
 	if (ufd[0].revents & POLLIN)
 #else
-	    if (FD_ISSET (s, &set))
+	if (FD_ISSET (s, &set))
 #endif
-	    {
-		accept_connection (s);
-		n--;
-	    }
+	{
+	    accept_connection (s);
+	    n--;
+	}
 
 	/* execute any pending events now */
 	exec_timers (Current_Time);

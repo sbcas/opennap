@@ -80,9 +80,8 @@ HANDLER (public)
 	return;
     }
 
-    if (Num_Servers)
-	pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name,
-			   pkt);
+    /* relay this message to peer servers */
+    pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name, pkt);
 
     /* format the message */
     snprintf (Buf + 4, sizeof (Buf) - 4, "%s %s %s", chan->name, sender->nick,
@@ -145,9 +144,9 @@ HANDLER (emote)
 	return;
     }
 
-    if (Num_Servers)
-	pass_message_args (con, tag, ":%s %s \"%s\"", user->nick, chan->name,
-			   av[1]);
+    /* relay to peer servers */
+    pass_message_args (con, tag, ":%s %s \"%s\"", user->nick, chan->name,
+		       av[1]);
 
     /* since we send the same data to multiple clients, format the data once
        and queue it up directly */

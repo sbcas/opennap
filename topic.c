@@ -32,10 +32,10 @@ HANDLER (topic)
     if (con->class == CLASS_SERVER)
     {
 	pkt++;
-	nick=next_arg(&pkt);
+	nick = next_arg (&pkt);
 	if (!pkt)
 	{
-	    log("topic(): too few fields in server message");
+	    log ("topic(): too few fields in server message");
 	    return;
 	}
     }
@@ -50,7 +50,7 @@ HANDLER (topic)
 	    log ("topic(): %s has no privilege", con->user->nick);
 	    return;
 	}
-	nick=con->user->nick;
+	nick = con->user->nick;
     }
 
     /* don't use split line because the topic could be multi-word */
@@ -71,8 +71,8 @@ HANDLER (topic)
     ASSERT (validate_channel (chan));
     if (ISUSER (con) && list_find (con->user->channels, chan) == 0)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "You are not a member of channel %s",
-	    chanName);
+	send_cmd (con, MSG_SERVER_NOSUCH,
+		  "You are not a member of channel %s", chanName);
 	return;
     }
 
@@ -84,9 +84,9 @@ HANDLER (topic)
 	return;
     }
 
-    if (Num_Servers)
-	pass_message_args (con, MSG_SERVER_TOPIC, ":%s %s %s",
-		nick, chan->name, chan->topic);
+    /* relay to peer servers */
+    pass_message_args (con, MSG_SERVER_TOPIC, ":%s %s %s",
+		       nick, chan->name, chan->topic);
 
     /* notify the rest of the channel of the topic change. there should
        probably be another message type which contains the nick who changed

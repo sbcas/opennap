@@ -85,9 +85,9 @@ HANDLER (level)
 	sender = con->user->nick;
     }
 
-    if (Num_Servers)
-	pass_message_args (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s",
-			   sender, user->nick, Levels[level]);
+    /* relay to peer servers */
+    pass_message_args (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s",
+		       sender, user->nick, Levels[level]);
 
     notify_mods ("%s set %s's user level to %s (%d).", sender, user->nick,
 		 Levels[level], level);
@@ -125,7 +125,7 @@ HANDLER (level)
 
 	/* no local user db entry.  this nick probably should be registered */
 	log ("level(): %s is not locally registered, creating entry",
-		user->nick);
+	     user->nick);
 	db = CALLOC (1, sizeof (USERDB));
 	if (!db)
 	{

@@ -138,8 +138,8 @@ transfer_count_wrapper (CONNECTION * con, char *pkt, int numeric)
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user))
 	return 0;
-    if (Num_Servers)
-	pass_message_args (con, numeric, ":%s", user->nick);
+    /* relay to peer servers */
+    pass_message_args (con, numeric, ":%s", user->nick);
     return user;
 }
 
@@ -251,8 +251,7 @@ HANDLER (data_port_error)
     ASSERT (validate_user (user));
 
     /* we pass this message to all servers so the mods can see it */
-    if (Num_Servers)
-	pass_message_args (con, tag, ":%s %s", sender->nick, user->nick);
+    pass_message_args (con, tag, ":%s %s", sender->nick, user->nick);
 
     notify_mods
 	("Notification from %s: %s (%s) - configured data port %d is unreachable.",

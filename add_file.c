@@ -251,11 +251,9 @@ insert_datum (DATUM * info, char *av)
     /* TODO: this should be changed so that the servers will periodically
        exchnage user info rather than for each message.  if a user adds
        5000 files it will send 5000 of these.. */
-    if (Num_Servers)
-	pass_message_args (info->user->con, MSG_SERVER_USER_SHARING,
-			   "%s %d %d", info->user->nick, info->user->shared,
-			   info->user->libsize);
-
+    pass_message_args (info->user->con, MSG_SERVER_USER_SHARING,
+		       "%s %d %d", info->user->nick, info->user->shared,
+		       info->user->libsize);
 }
 
 static DATUM *
@@ -444,7 +442,6 @@ HANDLER (user_sharing)
     deltasize = atoi (av[2]) - user->libsize;
     Num_Gigs += deltasize;
     user->libsize += deltasize;
-    if (Num_Servers > 1)
-	pass_message_args (con, tag, "%s %d %d", user->nick, user->shared,
-			   user->libsize);
+    pass_message_args (con, tag, "%s %d %d", user->nick, user->shared,
+		       user->libsize);
 }

@@ -27,11 +27,12 @@ void
 nosuchuser (CONNECTION * con, char *nick)
 {
     ASSERT (VALID (con));
-    send_cmd (con, MSG_SERVER_NOSUCH, "User %s is not currently online.", nick);
+    send_cmd (con, MSG_SERVER_NOSUCH, "User %s is not currently online.",
+	      nick);
 }
 
 void
-permission_denied (CONNECTION *con)
+permission_denied (CONNECTION * con)
 {
     send_cmd (con, MSG_SERVER_NOSUCH, "permission denied");
 }
@@ -45,7 +46,7 @@ set_val (char *d, unsigned short val)
 }
 
 void
-send_cmd (CONNECTION *con, unsigned int msgtype, const char *fmt, ...)
+send_cmd (CONNECTION * con, unsigned int msgtype, const char *fmt, ...)
 {
     va_list ap;
     size_t l;
@@ -60,34 +61,29 @@ send_cmd (CONNECTION *con, unsigned int msgtype, const char *fmt, ...)
     queue_data (con, Buf, 4 + l);
 }
 
-/* adds a pointer to `c' to the list of servers for quick access */
-void
-add_server (CONNECTION *c)
-{
-    Servers = REALLOC (Servers, sizeof (CONNECTION *) * (Num_Servers + 1));
-    Servers[Num_Servers] = c;
-    Num_Servers++;
-}
-
 /* send a message to all peer servers.  `con' is the connection the message
    was received from and is used to avoid sending the message back from where
    it originated. */
 void
-pass_message (CONNECTION *con, char *pkt, size_t pktlen)
+pass_message (CONNECTION * con, char *pkt, size_t pktlen)
 {
-    int i;
+    LIST *list;
 
-    for (i = 0; i < Num_Servers; i++)
-	if (Servers[i] != con)
-	    queue_data (Servers[i], pkt, pktlen);
+    for (list = Servers; list; list = list->next)
+	if (list->data != con)
+	    queue_data (list->data, pkt, pktlen);
 }
 
 /* wrapper for pass_message() */
 void
-pass_message_args (CONNECTION *con, unsigned int msgtype, const char *fmt, ...)
+pass_message_args (CONNECTION * con, unsigned int msgtype, const char *fmt,
+		   ...)
 {
     va_list ap;
     size_t l;
+
+    if (!Servers)
+	return;			/* nothing to do */
 
     va_start (ap, fmt);
     vsnprintf (Buf + 4, sizeof (Buf) - 4, fmt, ap);
@@ -104,7 +100,7 @@ pass_message_args (CONNECTION *con, unsigned int msgtype, const char *fmt, ...)
 void
 free_channel (CHANNEL * chan)
 {
-    ASSERT(validate_channel (chan));
+    ASSERT (validate_channel (chan));
     FREE (chan->name);
     if (chan->topic)
 	FREE (chan->topic);
@@ -157,7 +153,7 @@ split_line (char **template, int templatecount, char *pkt)
 }
 
 int
-pop_user (CONNECTION *con, char **pkt, USER **user)
+pop_user (CONNECTION * con, char **pkt, USER ** user)
 {
     ASSERT (validate_connection (con));
     if (con->class == CLASS_SERVER)
@@ -170,7 +166,7 @@ pop_user (CONNECTION *con, char **pkt, USER **user)
 	    return -1;
 	}
 	++*pkt;
-	ptr = next_arg(pkt);
+	ptr = next_arg (pkt);
 	*user = hash_lookup (Users, ptr);
 	if (!*user)
 	{
@@ -183,7 +179,8 @@ pop_user (CONNECTION *con, char **pkt, USER **user)
 	   sent to them */
 	if ((*user)->local)
 	{
-	    log ("pop_user(): fatal error, received server message for local user!");
+	    log
+		("pop_user(): fatal error, received server message for local user!");
 	    return -1;
 	}
     }
@@ -206,8 +203,8 @@ expand_hex (char *v, int vsize)
 
     for (i = vsize - 1; i >= 0; i--)
     {
-	v[2 * i + 1] = hex [v[i] & 0xf];
-	v[2 * i] = hex [(v[i] >> 4) & 0xf];
+	v[2 * i + 1] = hex[v[i] & 0xf];
+	v[2 * i] = hex[(v[i] >> 4) & 0xf];
     }
 }
 
@@ -228,12 +225,12 @@ init_random (void)
     /* seed the random number generate with a better random value */
     if ((f = open ("/dev/random", O_RDONLY)) > 0)
     {
-	n = read (f, seed, sizeof(seed));
+	n = read (f, seed, sizeof (seed));
 	if (n > 0)
 	{
 	    if ((unsigned int) n < sizeof (seed))
 		log ("init_random(): only got %d of %d random bytes", n,
-		    sizeof (seed));
+		     sizeof (seed));
 	    md5_process_bytes (seed, n, &Random_Context);
 	    Stale_Random = 0;
 	}
@@ -294,8 +291,10 @@ array_add (void *list, int *listsize, void *ptr)
     char **plist;
 
     ASSERT (list == 0 || VALID_LEN (list, *listsize * sizeof (char *)));
+
     ASSERT (VALID (ptr));
     list = REALLOC (list, sizeof (char *) * (*listsize + 1));
+
     plist = (char **) list;
     plist[*listsize] = ptr;
     ++*listsize;
@@ -311,16 +310,19 @@ array_remove (void *list, int *listsize, void *ptr)
     char **plist = (char **) list;
 
     ASSERT (VALID_LEN (list, *listsize * sizeof (char *)));
+
     ASSERT (VALID (ptr));
-    for (i=0;i<*listsize;i++)
+    for (i = 0; i < *listsize; i++)
     {
 	if (ptr == plist[i])
 	{
 	    if (i < *listsize - 1)
 		memmove (&plist[i], &plist[i + 1],
-			sizeof (char *) * (*listsize - i - 1));
+			 sizeof (char *) * (*listsize - i - 1));
+
 	    --*listsize;
 	    list = REALLOC (list, *listsize * sizeof (char *));
+
 	    break;
 	}
     }
@@ -329,7 +331,7 @@ array_remove (void *list, int *listsize, void *ptr)
 
 #ifdef DEBUG
 int
-validate_connection (CONNECTION *con)
+validate_connection (CONNECTION * con)
 {
     ASSERT_RETURN_IF_FAIL (VALID_LEN (con, sizeof (CONNECTION)), 0);
     ASSERT_RETURN_IF_FAIL (con->magic == MAGIC_CONNECTION, 0);
@@ -345,30 +347,33 @@ validate_connection (CONNECTION *con)
 }
 
 int
-validate_user (USER *user)
+validate_user (USER * user)
 {
     ASSERT_RETURN_IF_FAIL (VALID_LEN (user, sizeof (USER)), 0);
     ASSERT_RETURN_IF_FAIL (user->magic == MAGIC_USER, 0);
     ASSERT_RETURN_IF_FAIL (VALID (user->nick), 0);
     ASSERT_RETURN_IF_FAIL (VALID (user->clientinfo), 0);
-    ASSERT_RETURN_IF_FAIL (user->con == 0 || VALID_LEN (user->con, sizeof (CONNECTION)), 0);
+    ASSERT_RETURN_IF_FAIL (user->con == 0
+			   || VALID_LEN (user->con, sizeof (CONNECTION)), 0);
     ASSERT_RETURN_IF_FAIL (user->email == 0 || VALID (user->email), 0);
-    ASSERT_RETURN_IF_FAIL (user->channels == 0 || VALID_LEN (user->channels, sizeof (LIST)), 0);
+    ASSERT_RETURN_IF_FAIL (user->channels == 0
+			   || VALID_LEN (user->channels, sizeof (LIST)), 0);
     return 1;
 }
 
 int
-validate_channel (CHANNEL *chan)
+validate_channel (CHANNEL * chan)
 {
     ASSERT_RETURN_IF_FAIL (VALID_LEN (chan, sizeof (CHANNEL)), 0);
     ASSERT_RETURN_IF_FAIL (chan->magic == MAGIC_CHANNEL, 0)
-    ASSERT_RETURN_IF_FAIL (VALID (chan->name), 0);
-    ASSERT_RETURN_IF_FAIL (chan->users == 0 || VALID_LEN (chan->users, sizeof (LIST)), 0);
+	ASSERT_RETURN_IF_FAIL (VALID (chan->name), 0);
+    ASSERT_RETURN_IF_FAIL (chan->users == 0
+			   || VALID_LEN (chan->users, sizeof (LIST)), 0);
     return 1;
 }
 
 int
-validate_hotlist (HOTLIST *h)
+validate_hotlist (HOTLIST * h)
 {
     ASSERT_RETURN_IF_FAIL (VALID_LEN (h, sizeof (HOTLIST)), 0);
     ASSERT_RETURN_IF_FAIL (h->magic == MAGIC_HOTLIST, 0);
@@ -443,9 +448,10 @@ char *
 next_arg_noskip (char **s)
 {
     char *r = *s;
-    *s=strchr(r, ' ');
-    if(*s)
-	*(*s)++=0;
+
+    *s = strchr (r, ' ');
+    if (*s)
+	*(*s)++ = 0;
     return r;
 }
 
@@ -461,9 +467,9 @@ next_arg (char **s)
     {
 	*(*s)++ = 0;
 	while (ISSPACE (**s))
-	    ++*s;
+	    ++ * s;
 	if (!**s)
-	    *s = 0;	/* no more arguments */
+	    *s = 0;		/* no more arguments */
     }
     return r;
 }
@@ -472,9 +478,10 @@ char *
 strlower (char *s)
 {
     char *r = s;
+
     ASSERT (s != 0);
     while (*s)
-    	*s++ = tolower ((unsigned char) *s);
+	*s++ = tolower ((unsigned char) *s);
     return r;
 }
 
@@ -493,7 +500,7 @@ safe_realloc (void **ptr, int bytes)
 /* this function sends a command to an arbitrary user without the caller
    needing to know if its a local client or not */
 void
-send_user (USER *user, int tag, char *fmt, ...)
+send_user (USER * user, int tag, char *fmt, ...)
 {
     int len, offset;
     va_list ap;
@@ -501,49 +508,51 @@ send_user (USER *user, int tag, char *fmt, ...)
     if (user->local)
     {
 	/* deliver directly */
-	va_start(ap, fmt);
-	vsnprintf(Buf+4,sizeof(Buf)-4,fmt,ap);
-	va_end(ap);
-	set_tag(Buf,tag);
-	len=strlen(Buf+4);
-	set_len(Buf,len);
+	va_start (ap, fmt);
+	vsnprintf (Buf + 4, sizeof (Buf) - 4, fmt, ap);
+	va_end (ap);
+	set_tag (Buf, tag);
+	len = strlen (Buf + 4);
+	set_len (Buf, len);
     }
     else
     {
 	/* encapsulate and send to remote server */
 #if 0
-	log("send_user(): %s is remote, relaying to %s", user->nick,
-		user->con->host);
+	log ("send_user(): %s is remote, relaying to %s", user->nick,
+	     user->con->host);
 #endif
-	snprintf(Buf+4,sizeof(Buf)-4,":%s %s ", Server_Name, user->nick);
-	offset=strlen(Buf+4);
-	set_tag(Buf,MSG_SERVER_ENCAPSULATED);
-	va_start(ap, fmt);
-	vsnprintf(Buf+8+offset,sizeof(Buf)-8-offset,fmt,ap);
-	va_end(ap);
-	set_tag(Buf+4+offset,tag);
-	len=strlen(Buf+8+offset);
-	set_len(Buf+4+offset,len);
+	snprintf (Buf + 4, sizeof (Buf) - 4, ":%s %s ", Server_Name,
+		  user->nick);
+	offset = strlen (Buf + 4);
+	set_tag (Buf, MSG_SERVER_ENCAPSULATED);
+	va_start (ap, fmt);
+	vsnprintf (Buf + 8 + offset, sizeof (Buf) - 8 - offset, fmt, ap);
+	va_end (ap);
+	set_tag (Buf + 4 + offset, tag);
+	len = strlen (Buf + 8 + offset);
+	set_len (Buf + 4 + offset, len);
 	len += offset + 4;
-	set_len(Buf,len);
+	set_len (Buf, len);
     }
-    queue_data(user->con,Buf,len+4);
+    queue_data (user->con, Buf, len + 4);
 }
 
 int
-add_client (CONNECTION *cli)
+add_client (CONNECTION * cli)
 {
     int i;
 
-    if(Max_Clients == Num_Clients)
+    if (Max_Clients == Num_Clients)
     {
 	/* no space left, allocate more */
-	if(safe_realloc((void**)&Clients,sizeof(CONNECTION*)*(Num_Clients+10)))
+	if (safe_realloc
+	    ((void **) &Clients, sizeof (CONNECTION *) * (Num_Clients + 10)))
 	{
-	    OUTOFMEMORY("add_client");
-	    CLOSE(cli->fd);
-	    FREE(cli->host);
-	    FREE(cli);
+	    OUTOFMEMORY ("add_client");
+	    CLOSE (cli->fd);
+	    FREE (cli->host);
+	    FREE (cli);
 	    return -1;
 	}
 	cli->id = Max_Clients;
@@ -554,14 +563,14 @@ add_client (CONNECTION *cli)
     else
     {
 	/* insert this connection into a hole */
-	for(i=0;i<Max_Clients;i++)
-	    if(!Clients[i])
+	for (i = 0; i < Max_Clients; i++)
+	    if (!Clients[i])
 	    {
-		Clients[i]=cli;
-		cli->id=i;
+		Clients[i] = cli;
+		cli->id = i;
 		break;
 	    }
-	ASSERT(i!=Max_Clients);
+	ASSERT (i != Max_Clients);
     }
     Num_Clients++;
     return 0;

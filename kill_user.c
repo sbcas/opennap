@@ -26,7 +26,7 @@ notify_mods (const char *fmt, ...)
     for (i = 0; i < Max_Clients; i++)
     {
 	if (Clients[i] && ISUSER (Clients[i]) &&
-		Clients[i]->user->level >= LEVEL_MODERATOR)
+	    Clients[i]->user->level >= LEVEL_MODERATOR)
 	    queue_data (Clients[i], Buf, len + 4);
     }
 }
@@ -71,7 +71,7 @@ HANDLER (kill_user)
     /* extract the target of the kill */
     target = next_arg (&pkt);
 
-    /* find the user to kill*/
+    /* find the user to kill */
     user = hash_lookup (Users, target);
     if (!user)
     {
@@ -89,16 +89,16 @@ HANDLER (kill_user)
 	return;
     }
 
-    if (Num_Servers)
-	pass_message_args (con, MSG_CLIENT_KILL, ":%s %s %s",
-	    killernick, user->nick, NONULL (pkt));
+    pass_message_args (con, MSG_CLIENT_KILL, ":%s %s %s",
+		       killernick, user->nick, NONULL (pkt));
 
     /* log this action */
     log ("kill_user(): %s killed user %s: %s", killernick, user->nick,
-	NONULL (pkt));
+	 NONULL (pkt));
 
     /* notify mods+ that this user was killed */
-    notify_mods ("%s killed user %s: %s", killernick, user->nick, NONULL (pkt));
+    notify_mods ("%s killed user %s: %s", killernick, user->nick,
+		 NONULL (pkt));
 
     /* forcefully close the client connection if local, otherwise remove
        from global user list */
@@ -107,7 +107,7 @@ HANDLER (kill_user)
 	user->con->destroy = 1;
 	/* notify user they were killed */
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-	    "You have been killed by %s: %s", killernick, NONULL (pkt));
+		  "You have been killed by %s: %s", killernick, NONULL (pkt));
     }
     /* remote user, just remove from the global list */
     else

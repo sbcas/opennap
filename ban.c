@@ -15,14 +15,14 @@
 static int
 is_ip (const char *s)
 {
-    for(;*s;s++)
-	if(!isdigit(*s) && *s != '.')
+    for (; *s; s++)
+	if (!isdigit (*s) && *s != '.')
 	    return 0;
     return 1;
 }
 
 void
-free_ban (BAN *b)
+free_ban (BAN * b)
 {
     FREE (b->target);
     FREE (b->setby);
@@ -54,13 +54,10 @@ HANDLER (ban)
 	return;
     }
 
-    ban=next_arg(&pkt);
+    ban = next_arg (&pkt);
 
-    if (Num_Servers)
-    {
-	pass_message_args (con, MSG_CLIENT_BAN, ":%s %s %s",
-		sender->nick, ban, NONULL(pkt));
-    }
+    pass_message_args (con, MSG_CLIENT_BAN, ":%s %s %s", sender->nick, ban,
+		       NONULL (pkt));
 
     do
     {
@@ -116,9 +113,8 @@ HANDLER (unban)
 	if (!strcasecmp (pkt, Ban[i]->target))
 	{
 	    free_ban (Ban[i]);
-	    if (Num_Servers)
-		pass_message_args (con, MSG_CLIENT_UNBAN, ":%s %s",
-			user->nick, pkt);
+	    pass_message_args (con, MSG_CLIENT_UNBAN, ":%s %s", user->nick,
+			       pkt);
 	    Ban_Size--;
 	    notify_mods ("%s removed the ban on %s", user->nick, pkt);
 	    return;
@@ -141,15 +137,15 @@ HANDLER (banlist)
     for (i = 0; i < Ban_Size; i++)
     {
 	if (Ban[i]->type == BAN_IP)
-	    send_cmd (con, MSG_SERVER_IP_BANLIST /* 616 */, "%s %s \"%s\" %ld",
-		    Ban[i]->target, Ban[i]->setby,
-		    NONULL (Ban[i]->reason),
-		    Ban[i]->when);
+	    send_cmd (con, MSG_SERVER_IP_BANLIST /* 616 */ ,
+		      "%s %s \"%s\" %ld", Ban[i]->target, Ban[i]->setby,
+		      NONULL (Ban[i]->reason), Ban[i]->when);
     }
     for (i = 0; i < Ban_Size; i++)
     {
 	if (Ban[i]->type == BAN_USER)
-	    send_cmd (con, MSG_SERVER_NICK_BANLIST /* 626 */, "%s", Ban[i]->target);
+	    send_cmd (con, MSG_SERVER_NICK_BANLIST /* 626 */ , "%s",
+		      Ban[i]->target);
     }
-    send_cmd (con, MSG_CLIENT_BANLIST /* 615 */, "");
+    send_cmd (con, MSG_CLIENT_BANLIST /* 615 */ , "");
 }

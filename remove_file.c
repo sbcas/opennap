@@ -10,15 +10,15 @@
 /* 102 <filename> */
 HANDLER (remove_file)
 {
-    USER	*user;
-    DATUM	*info;
-    int		fsize;
+    USER *user;
+    DATUM *info;
+    int fsize;
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-    CHECK_USER_CLASS("remove_file");
-    user=con->user;
+    CHECK_USER_CLASS ("remove_file");
+    user = con->user;
     if (user->shared == 0)
     {
 	log ("remove_file(): user %s is not sharing any files", user->nick);
@@ -36,7 +36,7 @@ HANDLER (remove_file)
     }
 
     /* adjust the global state information */
-    fsize = info->size / 1024; /* kB */
+    fsize = info->size / 1024;	/* kB */
     user->libsize -= fsize;
     Num_Gigs -= fsize;
     ASSERT (Num_Files > 0);
@@ -46,7 +46,6 @@ HANDLER (remove_file)
     /* this invokes free_datum() indirectly */
     hash_remove (user->files, info->filename);
 
-    if(Num_Servers)
-	pass_message_args(con,MSG_SERVER_USER_SHARING,"%s %d %d",
-		user->nick,user->shared,user->libsize);
+    pass_message_args (con, MSG_SERVER_USER_SHARING, "%s %d %d",
+		       user->nick, user->shared, user->libsize);
 }

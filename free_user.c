@@ -16,7 +16,7 @@ free_user (USER * user)
 
     ASSERT (validate_user (user));
 
-    if (user->local && Num_Servers)
+    if (user->local && Servers)
     {
 	/* local user, notify peers of this user's departure */
 	log ("free_user(): sending QUIT message for user %s", user->nick);
@@ -43,7 +43,7 @@ free_user (USER * user)
 
     ASSERT (Num_Files >= user->shared);
     Num_Files -= user->shared;
-    Num_Gigs -= user->libsize; /* this is in kB */
+    Num_Gigs -= user->libsize;	/* this is in kB */
 
     /* check the global hotlist for this user to see if anyone wants notice
        of this user's departure */

@@ -39,20 +39,17 @@ HANDLER (part)
 	log ("part(): user %s is not on channel %s", user->nick, pkt);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		    "You are not a member of channel %s", pkt);
+		      "You are not a member of channel %s", pkt);
 	return;
     }
 
-    if (Num_Servers)
-    {
-	/* NOTE: we use the MSG_CLIENT_PART(401) message instead of
-	   passing MSG_SERVER_PART(407) to pass between servers because we
-	   can reuse this same function for both messages easier than
-	   implementing support for parsing the latter.  The 401 message
-	   will be translated into a 407 for sending to end users. */
-	pass_message_args (con, MSG_CLIENT_PART, ":%s %s",
-		user->nick, chan->name);
-    }
+    /* NOTE: we use the MSG_CLIENT_PART(401) message instead of
+       passing MSG_SERVER_PART(407) to pass between servers because we
+       can reuse this same function for both messages easier than
+       implementing support for parsing the latter.  The 401 message
+       will be translated into a 407 for sending to end users. */
+    pass_message_args (con, MSG_CLIENT_PART, ":%s %s", user->nick,
+		       chan->name);
 
     user->channels = list_delete (user->channels, chan);
 

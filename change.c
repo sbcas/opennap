@@ -29,10 +29,7 @@ HANDLER (change_data_port)
     if (port >= 0 && port <= 65535)
     {
 	user->port = port;
-	if (Num_Servers)
-	{
-	    pass_message_args (con, tag, ":%s %d", user->nick, user->port);
-	}
+	pass_message_args (con, tag, ":%s %d", user->nick, user->port);
     }
     else if (ISUSER (con))
 	send_cmd (con, MSG_SERVER_NOSUCH, "invalid data port");
@@ -54,8 +51,7 @@ HANDLER (change_speed)
     if (spd >= 0 && spd <= 10)
     {
 	user->speed = spd;
-	if (Num_Servers)
-	    pass_message_args (con, tag, ":%s %d", user->nick, spd);
+	pass_message_args (con, tag, ":%s %d", user->nick, spd);
     }
     else if (ISUSER (con))
 	send_cmd (con, MSG_SERVER_NOSUCH, "invalid speed");
@@ -72,8 +68,7 @@ HANDLER (change_pass)
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;
-    if (Num_Servers)
-	pass_message_args (con, tag, "%s", pkt);
+    pass_message_args (con, tag, "%s", pkt);
     db = userdb_fetch (user->nick);
     if (!db)
     {
@@ -99,8 +94,7 @@ HANDLER (change_email)
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;
-    if (Num_Servers)
-	pass_message_args (con, tag, "%s", pkt);
+    pass_message_args (con, tag, "%s", pkt);
     db = userdb_fetch (user->nick);
     if (!db)
     {
@@ -169,9 +163,7 @@ HANDLER (alter_port)
     if (user->local)
 	send_cmd (user->con, MSG_CLIENT_ALTER_PORT, "%d", p);
 
-    if (Num_Servers)
-	pass_message_args (con, tag, ":%s %s %d", sender->nick, user->nick,
-			   p);
+    pass_message_args (con, tag, ":%s %s %d", sender->nick, user->nick, p);
 
     notify_mods ("%s changed %s's data port to %d: %s", sender->nick,
 		 user->nick, p, NONULL (pkt));

@@ -15,7 +15,8 @@
 HANDLER (server_links)
 {
     USER *user;
-    int i;
+    LIST *list;
+    CONNECTION *serv;
 
     (void) tag;
     (void) len;
@@ -32,22 +33,22 @@ HANDLER (server_links)
 	return;			/* no privilege */
     }
 
-    if (!*pkt || !strcasecmp(Server_Name,pkt))
+    if (!*pkt || !strcasecmp (Server_Name, pkt))
     {
-	for (i = 0; i < Num_Servers; i++)
+	for (list = Servers; list; list = list->next)
 	{
-	    if (Servers[i]->recvbuf)
+	    serv = list->data;
+	    if (serv->recvbuf)
 		send_user (user, MSG_SERVER_LINKS, "%s %d %d %d %d",
-			Servers[i]->host, Servers[i]->port,
-			Servers[i]->recvbuf->datamax,
-			Servers[i]->recvbuf->datasize,
-			Servers[i]->recvbuf->consumed);
+			   serv->host, serv->port,
+			   serv->recvbuf->datamax,
+			   serv->recvbuf->datasize, serv->recvbuf->consumed);
 	    else
 		send_user (user, MSG_SERVER_LINKS, "%s %d 0 0 0",
-			Servers[i]->host, Servers[i]->port);
+			   serv->host, serv->port);
 	    send_user (user, MSG_SERVER_LINKS, "");
 	}
     }
-    else if(Num_Servers)
-	pass_message_args(con,tag,":%s %s",user->nick,pkt);
+    else
+	pass_message_args (con, tag, ":%s %s", user->nick, pkt);
 }

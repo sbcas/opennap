@@ -13,7 +13,7 @@
 #include "debug.h"
 
 static void
-server_split (USER *user, CONNECTION *con)
+server_split (USER * user, CONNECTION * con)
 {
     ASSERT (validate_user (user));
     ASSERT (validate_connection (con));
@@ -24,15 +24,14 @@ server_split (USER *user, CONNECTION *con)
     {
 	/* on split, we have to notify our peer servers that this user
 	   is no longer online */
-	if (Num_Servers)
-	    pass_message_args (con, MSG_CLIENT_QUIT, "%s", user->nick);
+	pass_message_args (con, MSG_CLIENT_QUIT, "%s", user->nick);
 	/* remove the user from the hash table */
 	hash_remove (Users, user->nick);
     }
 }
 
 void
-remove_connection (CONNECTION *con)
+remove_connection (CONNECTION * con)
 {
     HOTLIST *hotlist;
 
@@ -60,8 +59,8 @@ remove_connection (CONNECTION *con)
 	}
 
 	list_free (con->uopt.hotlist, 0);
-	con->uopt.hotlist = 0;/* need to set this to avoid asserting in
-				 cancel_search() */
+	con->uopt.hotlist = 0;	/* need to set this to avoid asserting in
+				   cancel_search() */
 
 	/* if this user had any pending searches, cancel them */
 	cancel_search (con);
@@ -82,7 +81,7 @@ remove_connection (CONNECTION *con)
 	log ("remove_connection(): server split detected (%s)", con->host);
 	notify_mods ("server %s has split.", con->host);
 
-	Servers = array_remove (Servers, &Num_Servers, con);
+	Servers = list_delete (Servers, con);
 
 	/* remove all users that were behind this server from the hash table.
 	   this should be an infrequent enough occurance than iterating the

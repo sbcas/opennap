@@ -50,10 +50,10 @@ struct _buffer
 #if DEBUG
     unsigned int magic;
 #endif
-    char *data;		/* allocated data */
-    int datasize;	/* total bytes used in `data' */
-    int datamax;	/* size of allocated memory block */
-    int consumed;	/* how many bytes of data consumed from this buffer */
+    char *data;			/* allocated data */
+    int datasize;		/* total bytes used in `data' */
+    int datamax;		/* size of allocated memory block */
+    int consumed;		/* how many bytes of data consumed from this buffer */
     BUFFER *next;
 };
 
@@ -73,7 +73,8 @@ struct _channel
 };
 
 /* user level */
-enum {
+enum
+{
     LEVEL_LEECH,
     LEVEL_USER,
     LEVEL_MODERATOR,
@@ -95,11 +96,11 @@ struct _user
     unsigned short uploads;	/* no. of uploads in progress */
     unsigned short downloads;	/* no. of downloads in progress */
 
-    unsigned int level : 3;	/* user level */
-    unsigned int speed : 4;	/* link speed */
-    unsigned int local : 1;	/* nonzero if locally connected */
-    unsigned int muzzled : 1;	/* non-zero if this user is muzzled */
-    unsigned int xxx : 7;	/* unused */
+    unsigned int level:3;	/* user level */
+    unsigned int speed:4;	/* link speed */
+    unsigned int local:1;	/* nonzero if locally connected */
+    unsigned int muzzled:1;	/* non-zero if this user is muzzled */
+    unsigned int xxx:7;		/* unused */
     unsigned short shared;	/* # of shared files */
 
     unsigned short totalup;	/* total number of uploads */
@@ -128,18 +129,22 @@ enum
 #define ISSERVER(c)	((c)->class==CLASS_SERVER)
 #define ISUSER(c)	((c)->class == CLASS_USER)
 
-typedef struct {
+typedef struct
+{
 #if HAVE_LIBZ
-    z_streamp zin;	/* input stream decompressor */
-    z_streamp zout;	/* output stream compressor */
+    z_streamp zin;		/* input stream decompressor */
+    z_streamp zout;		/* output stream compressor */
 #endif
-    BUFFER *outbuf;	/* compressed output buffer */
-} SERVER;
+    BUFFER *outbuf;		/* compressed output buffer */
+}
+SERVER;
 
-typedef struct {
+typedef struct
+{
     char *nonce;
     char *sendernonce;
-} AUTH;
+}
+AUTH;
 
 struct _connection
 {
@@ -157,7 +162,8 @@ struct _connection
     BUFFER *sendbuf;		/* output buffer */
     BUFFER *recvbuf;		/* input buffer */
 
-    union {
+    union
+    {
 #define uopt opt
 	/* hotlist for user.  this is the list of users they wish to be
 	   notified about when they log in or out.  note that this is just
@@ -169,20 +175,21 @@ struct _connection
 #define sopt opt.server
 	SERVER *server;
 	AUTH *auth;
-    } opt;
+    }
+    opt;
 
-    unsigned int connecting : 1;
-    unsigned int incomplete : 1;
-    unsigned int destroy : 1;	/* connection should be destoyed in
+    unsigned int connecting:1;
+    unsigned int incomplete:1;
+    unsigned int destroy:1;	/* connection should be destoyed in
 				   handle_connection().  because h_c() caches
 				   a copy of the CONNECTION pointer, we can't
 				   remove it from inside a handler, so we mark
 				   it here and have it removed at a later time 
 				   when it is safe */
-    unsigned int server_login : 1;	/* server login in progress */
-    unsigned int compress : 4;	/* compression level for this connection */
-    unsigned int class : 2;	/* connection class (unknown, user, server) */
-    unsigned int xxx : 6;	/* unused */
+    unsigned int server_login:1;	/* server login in progress */
+    unsigned int compress:4;	/* compression level for this connection */
+    unsigned int class:2;	/* connection class (unknown, user, server) */
+    unsigned int xxx:6;		/* unused */
 };
 
 /* hotlist entry */
@@ -191,20 +198,23 @@ struct _hotlist
 #ifdef DEBUG
     unsigned int magic;
 #endif
-    char *nick;		/* user being monitored */
+    char *nick;			/* user being monitored */
     LIST *users;
 };
 
 /* list of DATUM entries, used in the global file list */
-typedef struct {
-    char *key;	/* keyword */
-    LIST *list;	/* list of files containing this keyword */
-    int count;	/* number of files in the list */
-} FLIST;
+typedef struct
+{
+    char *key;			/* keyword */
+    LIST *list;			/* list of files containing this keyword */
+    int count;			/* number of files in the list */
+}
+FLIST;
 
 /* content-type */
-enum {
-    CT_MP3,	/* default */
+enum
+{
+    CT_MP3,			/* default */
     CT_AUDIO,
     CT_VIDEO,
     CT_APPLICATION,
@@ -216,40 +226,47 @@ enum {
 /* core database entry (24 bytes) */
 typedef struct
 {
-    USER *user;		/* user who possesses this file */
-    char *filename;	/* the filename */
-    char *hash;		/* the md5 hash of the file */
-    int size;		/* size of file in bytes */
+    USER *user;			/* user who possesses this file */
+    char *filename;		/* the filename */
+    char *hash;			/* the md5 hash of the file */
+    int size;			/* size of file in bytes */
     short bitrate;
     unsigned short duration;
     /* next 4 fields make up 32 bits */
     unsigned short frequency;
-    unsigned int type : 3;	/* content type */
-    unsigned int valid : 1;	/* is this a valid file? */
-    unsigned int refcount : 12;	/* how many references to this structure? */
-} DATUM;
+    unsigned int type:3;	/* content type */
+    unsigned int valid:1;	/* is this a valid file? */
+    unsigned int refcount:12;	/* how many references to this structure? */
+}
+DATUM;
 
-typedef enum {
+typedef enum
+{
     BAN_IP,
     BAN_USER
-} ban_t;
+}
+ban_t;
 
-typedef struct _ban {
+typedef struct _ban
+{
     ban_t type;
     char *target;
     char *setby;
     char *reason;
     time_t when;
-} BAN;
+}
+BAN;
 
-typedef struct {
+typedef struct
+{
     char *nick;
     char *password;
     char *email;
     int level;
     time_t created;
     time_t lastSeen;
-} USERDB;
+}
+USERDB;
 
 typedef void (*timer_cb_t) (void *);
 
@@ -258,7 +275,7 @@ extern char *Listen_Addr;
 extern char *Server_Name;
 extern char *Server_Pass;
 extern int Server_Port;
-extern int SigCaught;	/* flag to control main loop */
+extern int SigCaught;		/* flag to control main loop */
 extern int Max_User_Channels;	/* # of channels is a user allowed to join */
 extern int Stat_Click;
 extern int Server_Queue_Length;
@@ -273,6 +290,7 @@ extern int Max_Browse_Result;
 extern unsigned int Interface;
 extern time_t Server_Start;
 extern int Collect_Interval;
+
 #ifndef WIN32
 extern int Uid;
 extern int Gid;
@@ -286,6 +304,7 @@ extern char *User_Db_Path;
 extern char *Server_Db_Path;
 
 extern unsigned int Server_Flags;
+
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
 
 extern char Buf[2048];
@@ -297,8 +316,7 @@ extern int Max_Clients;
 extern int Num_Files;		/* total number of available files */
 extern int Num_Gigs;		/* total size of files available (in kB) */
 
-extern CONNECTION **Servers;	/* peer servers */
-extern int Num_Servers;
+LIST *Servers;			/* peer servers */
 
 extern BAN **Ban;
 extern int Ban_Size;
@@ -395,11 +413,11 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_MUZZLE		622
 #define MSG_CLIENT_UNMUZZLE		623
 #define MSG_CLIENT_DATA_PORT_ERROR	626
-#define MSG_SERVER_DATA_PORT_ERROR	626 /* same as client message */
+#define MSG_SERVER_DATA_PORT_ERROR	626	/* same as client message */
 #define MSG_CLIENT_WALLOP		627
-#define MSG_SERVER_WALLOP		627 /* same as client message */
+#define MSG_SERVER_WALLOP		627	/* same as client message */
 #define MSG_CLIENT_ANNOUNCE		628
-#define MSG_SERVER_ANNOUNCE		628 /* same as client message */
+#define MSG_SERVER_ANNOUNCE		628	/* same as client message */
 #define MSG_SERVER_NICK_BANLIST		629
 #define MSG_CLIENT_CHANGE_SPEED		700
 #define MSG_CLIENT_CHANGE_PASS		701
@@ -455,7 +473,6 @@ void set_val (char *d, unsigned short val);
 /* utility routines */
 int add_client (CONNECTION *);
 void add_random_bytes (char *, int);
-void add_server (CONNECTION *);
 void add_timer (int, int, timer_cb_t, void *);
 void *array_add (void *, int *, void *);
 void *array_remove (void *, int *, void *);
@@ -466,14 +483,15 @@ void buffer_free (BUFFER *);
 int buffer_group (BUFFER *, int);
 int buffer_read (int, BUFFER **);
 int buffer_size (BUFFER *);
+
 #if HAVE_LIBZ
 int buffer_decompress (BUFFER *, z_streamp, char *, int);
 #endif
 int buffer_validate (BUFFER *);
-void cancel_search (CONNECTION *con);
+void cancel_search (CONNECTION * con);
 int check_connect_status (int);
 void close_db (void);
-void complete_connect (CONNECTION *con);
+void complete_connect (CONNECTION * con);
 void config (const char *);
 void config_defaults (void);
 void exec_timers (time_t);
@@ -513,7 +531,7 @@ void part_channel (CHANNEL *, USER *);
 void pass_message (CONNECTION *, char *, size_t);
 void pass_message_args (CONNECTION * con, unsigned int msgtype,
 			const char *fmt, ...);
-void permission_denied (CONNECTION *con);
+void permission_denied (CONNECTION * con);
 int pop_user (CONNECTION * con, char **pkt, USER ** user);
 void queue_data (CONNECTION *, char *, int);
 size_t read_bytes (int, char *, size_t);
@@ -521,7 +539,7 @@ void remove_connection (CONNECTION *);
 void remove_user (CONNECTION *);
 int safe_realloc (void **, int);
 void send_cmd (CONNECTION *, unsigned int msgtype, const char *fmt, ...);
-int send_queued_data (CONNECTION *con);
+int send_queued_data (CONNECTION * con);
 void send_user (USER *, int, char *fmt, ...);
 int set_keepalive (int, int);
 int set_data_size (int);
@@ -661,7 +679,7 @@ typedef unsigned int socklen_t;
 #define strncasecmp strnicmp
 
 // see snprintf.c
-extern int snprintf (char *str,size_t count,const char *fmt,...);
+extern int snprintf (char *str, size_t count, const char *fmt, ...);
 extern int vsnprintf (char *str, size_t count, const char *fmt, va_list args);
 extern int _getopt (int, char **, char *);
 

@@ -23,13 +23,13 @@ HANDLER (muzzle)
 
     ASSERT (validate_user (sender));
 
-    nick=next_arg(&pkt);
+    nick = next_arg (&pkt);
 
     /* find the user to be muzzled */
     user = hash_lookup (Users, nick);
     if (!user)
     {
-	if (ISUSER(con))
+	if (ISUSER (con))
 	    nosuchuser (con, pkt);
 	return;
     }
@@ -38,24 +38,24 @@ HANDLER (muzzle)
     /* ensure that this user has privilege to execute the command */
     if (sender->level < LEVEL_ELITE && user->level >= sender->level)
     {
-	if (ISUSER(con))
+	if (ISUSER (con))
 	    permission_denied (con);
 	return;
     }
 
-    if (Num_Servers)
-    {
-	pass_message_args (con, MSG_CLIENT_MUZZLE, ":%s %s %s",
-	    sender->nick, user->nick, NONULL(pkt));
-    }
+    /* relay to peer servers */
+    pass_message_args (con, MSG_CLIENT_MUZZLE, ":%s %s %s",
+		       sender->nick, user->nick, NONULL (pkt));
 
     user->muzzled = 1;
 
     /* notify the user they have been muzzled */
     if (user->local)
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-	    "You have been muzzled by %s: %s", sender->nick, NONULL(pkt));
+		  "You have been muzzled by %s: %s", sender->nick,
+		  NONULL (pkt));
 
     /* notify mods+ of this action */
-    notify_mods ("%s has muzzled %s: %s", sender->nick, user->nick,NONULL(pkt));
+    notify_mods ("%s has muzzled %s: %s", sender->nick, user->nick,
+		 NONULL (pkt));
 }

@@ -53,7 +53,7 @@ HANDLER (encapsulated)
 	ptr++;
 	queue_data (user->con, ptr, len - (ptr - pkt));
     }
-    else if (Num_Servers > 1)
+    else
     {
 	*ptr = ch;
 	pass_message (con, pkt, len);
@@ -209,7 +209,7 @@ handle_connection (CONNECTION * con)
 	    if (n == -1)
 	    {
 		log ("handle_connection(): read: %s (errno %d)",
-			strerror (errno), errno);
+		     strerror (errno), errno);
 	    }
 	    else
 		log ("handle_connection(): EOF from %s", con->host);
@@ -250,7 +250,7 @@ handle_connection (CONNECTION * con)
 	while (con->recvbuf->datasize < 4)
 	{
 	    n = read (con->fd, con->recvbuf->data + con->recvbuf->datasize,
-		    4 - con->recvbuf->datasize);
+		      4 - con->recvbuf->datasize);
 	    if (n == -1)
 	    {
 		if (errno != EWOULDBLOCK)
@@ -289,7 +289,7 @@ handle_connection (CONNECTION * con)
 		con->recvbuf->datamax = 4 + len;
 	    }
 	    n = read (con->fd, con->recvbuf->data + con->recvbuf->datasize,
-		    len + 4 - con->recvbuf->datasize);
+		      len + 4 - con->recvbuf->datasize);
 	    if (n == -1)
 	    {
 		/* since the header and body could arrive in separate packets,
@@ -299,7 +299,7 @@ handle_connection (CONNECTION * con)
 		if (errno != EWOULDBLOCK)
 		{
 		    log ("handle_connection(): read: %s (errno %d)",
-			    strerror (errno), errno);
+			 strerror (errno), errno);
 		    con->destroy = 1;
 		}
 		return;
@@ -332,26 +332,25 @@ handle_connection (CONNECTION * con)
 	    break;
 	/* add this data to the random pool */
 	add_random_bytes (con->recvbuf->data + con->recvbuf->consumed,
-		4 + len);
+			  4 + len);
 	/* require that the client register before doing anything else */
 	if (con->class == CLASS_UNKNOWN &&
-		(tag != MSG_CLIENT_LOGIN && tag != MSG_CLIENT_LOGIN_REGISTER &&
-		 tag != MSG_CLIENT_REGISTER && tag != MSG_SERVER_LOGIN &&
-		 tag != MSG_SERVER_LOGIN_ACK && tag != MSG_SERVER_ERROR &&
-		 tag != 4))	/* unknown: v2.0 beta 5a sends this? */
+	    (tag != MSG_CLIENT_LOGIN && tag != MSG_CLIENT_LOGIN_REGISTER &&
+	     tag != MSG_CLIENT_REGISTER && tag != MSG_SERVER_LOGIN &&
+	     tag != MSG_SERVER_LOGIN_ACK && tag != MSG_SERVER_ERROR && tag != 4))	/* unknown: v2.0 beta 5a sends this? */
 	{
 	    log
 		("handle_connection(): %s is not registered, closing connection",
 		 con->host);
 	    *(con->recvbuf->data + con->recvbuf->consumed + 4 + len) = 0;
 	    log ("handle_connection(): tag=%hu, len=%hu, data=%s", tag, len,
-		    con->recvbuf->data + con->recvbuf->consumed + 4);
+		 con->recvbuf->data + con->recvbuf->consumed + 4);
 	    con->destroy = 1;
 	    return;
 	}
 	/* call the protocol handler */
 	dispatch_command (con, tag, len,
-		con->recvbuf->data + con->recvbuf->consumed + 4);
+			  con->recvbuf->data + con->recvbuf->consumed + 4);
 	/* mark data as processed */
 	con->recvbuf->consumed += 4 + len;
     }
@@ -362,8 +361,9 @@ handle_connection (CONNECTION * con)
 	{
 	    /* shift down unprocessed data */
 	    memmove (con->recvbuf->data,
-		    con->recvbuf->data + con->recvbuf->consumed, n);
-	    log ("handle_connection(): %d unprocessed bytes left in buffer", n);
+		     con->recvbuf->data + con->recvbuf->consumed, n);
+	    log ("handle_connection(): %d unprocessed bytes left in buffer",
+		 n);
 	}
 	con->recvbuf->datasize = n;
 	con->recvbuf->consumed = 0;	/* reset */
