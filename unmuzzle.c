@@ -19,13 +19,6 @@ HANDLER (unmuzzle)
     if (pop_user (con, &pkt, &sender) != 0)
 	return;
 
-    if (sender->level < LEVEL_MODERATOR)
-    {
-	if (con->class == CLASS_USER)
-	    permission_denied (con);
-	return;
-    }
-
     /* find the target of the unmuzzle */
     user = hash_lookup (Users, pkt);
     if (!user)
@@ -35,6 +28,15 @@ HANDLER (unmuzzle)
 	return;
     }
     ASSERT (validate_user (user));
+
+    if (sender->level <= user->level && sender->level != LEVEL_ELITE)
+    {
+	log ("unmuzzle(): %s has no privilege to unmuzzle %s",
+	    sender->nick, user->nick);
+	if (ISUSER (con))
+	    permission_denied (con);
+	return;
+    }
 
     user->muzzled = 0;
 

@@ -42,7 +42,7 @@ HANDLER (kill_user)
     (void) len;
     ASSERT (validate_connection (con));
 
-    if (con->class == CLASS_USER)
+    if (ISUSER (con))
     {
 	/* check to make sure this user has privilege */
 	ASSERT (validate_user (con->user));
@@ -83,9 +83,12 @@ HANDLER (kill_user)
     ASSERT (validate_user (user));
 
     /* check for permission */
-    if (killer && killer->level < LEVEL_ELITE && user->level >= killer->level)
+    if (killer && user->level >= killer->level && killer->level != LEVEL_ELITE)
     {
-	permission_denied (con);
+	log ("kill_user(): %s has no privilege to kill %s",
+	    killer->nick, user->nick);
+	if (ISUSER (con))
+	    permission_denied (con);
 	return;
     }
 
@@ -93,12 +96,10 @@ HANDLER (kill_user)
 		       killernick, user->nick, NONULL (pkt));
 
     /* log this action */
-    log ("kill_user(): %s killed user %s: %s", killernick, user->nick,
-	 NONULL (pkt));
+    log ("kill_user(): %s killed %s: %s", killernick, user->nick, NONULL (pkt));
 
     /* notify mods+ that this user was killed */
-    notify_mods ("%s killed user %s: %s", killernick, user->nick,
-		 NONULL (pkt));
+    notify_mods ("%s killed %s: %s", killernick, user->nick, NONULL (pkt));
 
     /* forcefully close the client connection if local, otherwise remove
        from global user list */
