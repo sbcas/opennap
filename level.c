@@ -76,6 +76,7 @@ HANDLER (level)
 	/* user is logged in */
 	ASSERT (validate_user (user));
 	if (ISUSER (con) && con->user->level < LEVEL_ELITE &&
+		con->user != user &&	/* allow self demotion */
 		user->level >= con->user->level)
 	{
 	    permission_denied (con);
@@ -93,13 +94,16 @@ HANDLER (level)
 	    send_cmd (user->con, MSG_SERVER_NOSUCH,
 		      "%s changed your user level to %s (%d)",
 		      sender, Levels[level], level);
-	/* delay setting user->level until after the notify_mods() call */
+	/* delay setting user->level until after the notify_mods() call so
+	   that a user promoted to mod+ doesnt get notified twice */
     }
 
     if ((db = hash_lookup (User_Db, fields[0])))
     {
 	/* registered nick */
 	if (ISUSER (con) && con->user->level < LEVEL_ELITE &&
+		/* allow self demotion */
+		strcasecmp (con->user->nick, db->nick) != 0 &&
 		con->user->level <= db->level)
 	{
 	    ASSERT (user == 0);
