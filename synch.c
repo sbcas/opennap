@@ -39,8 +39,8 @@ synch_user (USER *user, CONNECTION *con)
     }
 
     /* send a login message for this user */
-    send_cmd (con, MSG_CLIENT_LOGIN, "%s - %d \"%s\" %d",
-	    user->nick, user->port, user->clientinfo, user->speed);
+    send_cmd (con, MSG_CLIENT_LOGIN, "%s %s %d \"%s\" %d",
+	    user->nick, user->pass, user->port, user->clientinfo, user->speed);
 
     /* send the user's host */
     send_cmd (con, MSG_SERVER_USER_IP, "%s %lu %hu %s", user->nick,

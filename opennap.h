@@ -89,6 +89,7 @@ struct _user
     unsigned int magic;
 #endif
     char *nick;
+    char *pass;			/* password for this user */
     char *clientinfo;
     char *email;		/* user's email address */
     char *server;		/* which server the user is connected to */

@@ -247,6 +247,7 @@ HANDLER (login)
     user->nick = STRDUP (field[0]);
     user->port = atoi (field[2]);
     user->clientinfo = STRDUP (field[3]);
+    user->pass = STRDUP (field[1]);
     user->speed = speed;
     user->connected = time (0);
     user->level = level;
@@ -376,6 +377,8 @@ HANDLER (reginfo)
     MYSQL_RES *result;
     MYSQL_ROW row;
 
+    (void) tag;
+    (void) len;
     ASSERT (validate_connection (con));
 
     if (*pkt != ':')

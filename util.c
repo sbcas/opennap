@@ -83,7 +83,7 @@ pass_message (CONNECTION *con, char *pkt, size_t pktlen)
 {
     int i;
 
-    ASSERT (validate_connection (con));
+    ASSERT (con == 0 || validate_connection (con));
     for (i = 0; i < Num_Servers; i++)
 	if (Servers[i] != con)
 	    queue_data (Servers[i], pkt, pktlen);
