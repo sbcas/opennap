@@ -11,11 +11,12 @@
 
 * add a timeout to check for blocked server connect() call
 
-* rewrite server db to use two passwords for each server
-
 * allow channels file to accept the default level as either a word or the
   number
 
 * find the server output for the global users list
 
-* find numerics for server ignore/unignore
+* nonblocking connect() doesnt work under win32 so they can't link
+
+* win32 version crashes on the first fdb_garbage_collect() call after files
+  are shared

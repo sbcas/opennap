@@ -78,8 +78,10 @@ HASH *Users;
 /* global file list */
 HASH *File_Table;
 
+#if RESUME
 /* global hash list */
 HASH *MD5;
+#endif /* RESUME */
 
 /* local server list.  NOTE that this contains pointers into the Clients
    list to speed up server-server message passing */
@@ -400,7 +402,9 @@ main (int argc, char **argv)
     /* schedule periodic events */
     add_timer (Collect_Interval, -1, (timer_cb_t) fdb_garbage_collect,
 	       File_Table);
+#if RESUME
     add_timer (Collect_Interval, -1, (timer_cb_t) fdb_garbage_collect, MD5);
+#endif /* RESUME */
     add_timer (Stat_Click, -1, (timer_cb_t) update_stats, 0);
     add_timer (User_Db_Interval, -1, (timer_cb_t) userdb_dump, 0);
 
