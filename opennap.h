@@ -365,6 +365,7 @@ extern int Max_Channel_Length;
 extern int Max_Ignore;
 extern int Max_Hotlist;
 extern int Max_Topic;
+extern int Max_Client_String;
 
 #ifndef WIN32
 extern int Uid;
@@ -824,7 +825,7 @@ typedef unsigned int socklen_t;
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
-#define VERSION "0.29"
+#define VERSION "0.30"
 
 #define USE_CRLF 1
 

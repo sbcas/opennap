@@ -736,15 +736,16 @@ appropriate, examples of the <data> section for each message are given.
 
 604	whois response [SERVER]
 
-	<nick> "<user-level>" <time> "<channels>" <status> <shared>
+	<nick> "<user-level>" <time> "<channels>" "<status>" <shared>
 	<downloads> <uploads> <link-type> "<client-info>" [ <total downloads>
 	<total_uploads> <ip> <connecting port> <data port> <email> ]
 
-	<user-level> is one of "User" or "Admin"
+	<user-level> is one of "User", "Moderator", "Admin" or "Elite"
 	<time> is seconds this user has been connected
 	<channels> is the list of channels the client is a member of, each
 		separated by a space (ASCII 32)
-	<status> is one of "Active." or "Inactive." if they are on or offline
+	<status> is one of "Active", "Inactive" (offline) or "Remote" (on a
+		different server)
 	<shared> is number of files user has available for download
 	<downloads> is the current number of downloads in progress
 	<uploads> is the current number of uploads in progress

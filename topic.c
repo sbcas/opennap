@@ -73,7 +73,7 @@ HANDLER (topic)
 	if (chan->topic)
 	    FREE (chan->topic);
 	/* if the topic is too long, truncate it */
-	if(Max_Topic > 0 && strlen(pkt) > Max_Topic)
+	if(Max_Topic > 0 && strlen(pkt) > (unsigned)Max_Topic)
 	    *(pkt+Max_Topic)=0;
 	if (!(chan->topic = STRDUP (pkt)))
 	{

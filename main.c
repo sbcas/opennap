@@ -55,6 +55,7 @@ int Compression_Level = 0;
 int Max_Ignore;
 int Max_Hotlist;
 int Max_Topic;
+int Max_Client_String;
 
 #ifndef WIN32
 int Uid;

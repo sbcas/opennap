@@ -301,6 +301,9 @@ HANDLER (login)
     if (user)
     {
 	user->nick = STRDUP (av[0]);
+	/* if the client version string is too long, truncate it */
+	if(Max_Client_String >0 && strlen(av[3])>(unsigned)Max_Client_String)
+	    *(av[3] + Max_Client_String) = 0;
 	user->clientinfo = STRDUP (av[3]);
 	user->pass = STRDUP (av[1]);
     }
