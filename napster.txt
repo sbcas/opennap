@@ -833,6 +833,25 @@ matches at 300,032 bytes, but no correlation has been drawn as to when that
 happens.  The speculation at this point is that it might have to do with
 the existence of a ID3v2 tag, or perhaps the file was sampled at 48kHz...?
 
+Skip id3v2, seek to frame sync and hash.
+
+[papasync(edwards@bitchx.dimension6.com)] [napster(napster@el8.org)] Then you
+          read the whole header and check if the values are correct. You will
+          see in the following table the exact meaning of each bit i n the
+          header, and which values may be checked for validity. Each value
+          that is specified as reserved, invalid, bad, or not allowed should
+          indicate an invalid header. Remember, this is not enough, frame sync
+          can be easily (and very frequently) found in an y binary file. Also
+          it is likely th
+[papasync(edwards@bitchx.dimension6.com)] [napster(napster@el8.org)] The frame
+          header is constituted by the very first four bytes (32bits) in a
+          frame. The first eleven bits (or first twelve bits, see below about
+          frame sync) of a frame header are always set and they are called
+          "frame sync". Therefore, you can search through the file for the
+          first occurence of frame sync (meaning that yo u have to find a byte
+          with a value of 255, and followed by a byte with its three (or four)
+          most significan
+
 Note: the linux nap client (versions 0.7 - 0.9) seem to hash exactly 300,000
 bytes, which is NOT what the official windows client does.
 

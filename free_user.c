@@ -16,6 +16,9 @@ void
 free_user (USER * user)
 {
     int i;
+#if MINIDB
+    int n;
+#endif /* MINIDB */
     HOTLIST *hotlist;
 
     ASSERT (validate_user (user));
@@ -26,14 +29,30 @@ free_user (USER * user)
 	pass_message_args (user->con, MSG_CLIENT_QUIT, "%s", user->nick);
     }
 
+    /* remove all files for this user from the database */
+#if MINIDB
+    n = 0;
+    for (i = 0; i < File_Table_Count; i++)
+    {
+	if (File_Table[i]->user == user)
+	    free_elem (File_Table[i]);
+	else
+	{
+	    if (i != n)
+		File_Table[n] = File_Table[i];
+	    n++;
+	}
+    }
+    File_Table_Count = n;
+#else
     if (!SigCaught)
     {
-	/* remove all files for this user from the database */
 	snprintf (Buf, sizeof (Buf), "DELETE FROM library WHERE owner = '%s'",
 		user->nick);
 	if (mysql_query (Db, Buf) != 0)
 	    sql_error ("free_user", Buf);
     }
+#endif /* MINIDB */
 
     /* remove this user from any channels they were on */
     if (user->channels)

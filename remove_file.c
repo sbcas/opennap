@@ -16,8 +16,12 @@ extern MYSQL *Db;
 HANDLER (remove_file)
 {
     USER *user;
+#if MINIDB
+    int i;
+#else
     MYSQL_RES	*result;
     MYSQL_ROW	row;
+#endif /* MINIDB */
     int fsize;
 
     (void) tag;
@@ -32,9 +36,30 @@ HANDLER (remove_file)
 	pass_message_args (con, MSG_CLIENT_REMOVE_FILE, ":%s %s",
 	    user->nick, pkt);
 
+#if MINIDB
+    for (i = 0; i < File_Table_Count; i++)
+    {
+	if (user == File_Table[i]->user &&
+		!strcmp (pkt, File_Table[i]->filename))
+	{
+	    /* subtract the file size from the user and global counts */
+	    fsize = File_Table[i]->size / 1024; /* in kbytes */
+	    user->libsize -= fsize;
+	    Num_Gigs -= fsize;
+	    free_elem (File_Table[i]);
+	    File_Table_Count--;
+	    /* if there are other entries, move the last one to fill this
+	       spot, since we don't particularly care about order */
+	    if (File_Table_Count > 0)
+		File_Table[i] = File_Table[File_Table_Count];
+	    break;
+	}
+    }
+#else
     /* need to pull the file size from the database to update the statistics */
-    snprintf (Buf, sizeof (Buf), "SELECT size FROM library WHERE owner = '%s' && filename = '%s'",
-	user->nick, pkt);
+    snprintf (Buf, sizeof (Buf),
+	    "SELECT size FROM library WHERE owner = '%s' && filename = '%s'",
+	    user->nick, pkt);
     if (mysql_query (Db, Buf) != 0)
     {
 	sql_error ("remove_file", Buf);
@@ -54,14 +79,13 @@ HANDLER (remove_file)
 
     mysql_free_result (result);
 
-    Num_Files--;
-    user->shared--;
-
-    snprintf (Buf, sizeof (Buf), "DELETE FROM library WHERE owner = '%s' && filename = '%s'",
+    snprintf (Buf, sizeof (Buf),
+	    "DELETE FROM library WHERE owner = '%s' && filename = '%s'",
 	user->nick, pkt);
     if (mysql_query (Db, Buf) != 0)
-    {
 	sql_error ("remove_file", Buf);
-	return;
-    }
+#endif /* MINIDB */
+
+    Num_Files--;
+    user->shared--;
 }

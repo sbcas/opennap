@@ -18,20 +18,16 @@
 
 extern MYSQL *Db;
 
-#define APPEND(d,s) {l=strlen(d);snprintf(d+l,sizeof(d)-l,"%s",s);}
-
-static void
-convert_to_lower_case (char *s)
-{
-    for (; *s; s++)
-	*s = tolower (*s);
-}
-
 /* convert spaces to % for SQL query, and quoted specials chars */
 static void
 format_request (const char *s, char *d, int dsize)
 {
-    for (; dsize > 1 && *s; s++)
+    if (dsize > 1)
+    {
+	*d++ = '%';
+	dsize--;
+    }
+    for (; dsize > 2 && *s; s++)
     {
 	if (*s == ' ')
 	{
@@ -49,18 +45,75 @@ format_request (const char *s, char *d, int dsize)
 	    *d++ = *s;
 	dsize--;
     }
+    if (dsize > 1)
+    {
+	*d++ = '%';
+	dsize--;
+    }
     *d = 0;
 }
+
+#if MINIDB
+static int
+glob_match (const char *pat, const char *s)
+{
+    char c;
+
+    while (*pat && *s)
+    {
+	if (*pat == '_')
+	{
+	    /* match any char */
+	}
+	else if (*pat == '%')
+	{
+	    /* match 0 or more chars */
+	    pat++;
+	    c = tolower (*pat);
+	    while (*s)
+	    {
+		while (*s && tolower (*s) != c)
+		    s++;
+		if (!*s)
+		    break;
+		if (glob_match (pat, s) == 1)
+		    return 1;
+		s++;
+	    }
+	    if (!*s)
+		break;
+	}
+	else
+	{
+	    /* handle quoted chars */
+	    if (*pat == '\\')
+		pat++;
+	    if (tolower (*pat) != tolower (*s))
+		break;
+	}
+	s++; /* skip the matched char */
+	pat++;
+    }
+    return (! (*pat || *s));
+}
+#endif /* MINIDB */
 
 HANDLER (search)
 {
     char *fields[32], *p;
+#ifndef MINIDB
     MYSQL_RES *result;
     MYSQL_ROW row;
-    int i, numrows, numwords, max_results = Max_Search_Results, compound = 0;
-    size_t l;
+    int numrows;
     USER *user;
-    char quoted[128], *type = "mp3";	/* default */
+#endif
+    int i, numwords, max_results = Max_Search_Results;
+    char file[32];
+    char soundex[32];
+    char type[32];
+    int minbitrate = 0, maxbitrate;
+    int minfrequency = 0, maxfrequency;
+    int minspeed = 0, maxspeed;
 
     (void) tag;
     (void) len;
@@ -68,12 +121,24 @@ HANDLER (search)
 
     CHECK_USER_CLASS ("search");
 
+    file[0] = 0;
+    soundex[0] = 0;
+    strcpy (type, "audio/mp3");
+
+#if MINIDB
+    maxbitrate = 384;
+    maxfrequency = 48000;
+    maxspeed = 10;
+#else
+    maxbitrate = 0;
+    maxfrequency = 0;
+    maxspeed = 0;
+#endif /* MINIDB */
+
     log ("search: %s", pkt);
 
     numwords = split_line (fields, sizeof (fields) / sizeof (char *), pkt);
-
-    /* base search string, we add qualifiers to this */
-    snprintf (Buf, sizeof (Buf), "SELECT * FROM library WHERE");
+    ASSERT (numwords != 32); /* check to see if we had more fields */
 
     /* parse the request */
     i = 0;
@@ -107,14 +172,12 @@ HANDLER (search)
 		p--;
 	    }
 
-	    /* convert for SQL query */
-	    format_request (fields[i], quoted, sizeof (quoted));
-
-	    l = strlen (Buf);
-	    snprintf (Buf + l, sizeof (Buf) - l, " %s%s LIKE '%%%s%%'",
-		      compound ? " && " : "", fields[i - 2], quoted);
+	    /* convert for query */
+	    if (!strcasecmp ("filename", fields[i-2]))
+		format_request (fields[i], file, sizeof (file));
+	    else
+		format_request (fields[i], soundex, sizeof (soundex));
 	    i++;
-	    compound = 1;
 	}
 	else if (strcasecmp ("max_results", fields[i]) == 0)
 	{
@@ -125,47 +188,90 @@ HANDLER (search)
 	    if (max_results > Max_Search_Results)
 	    {
 		log ("search(): client requested a maximum of %d results",
-		     max_results);
+			max_results);
 		max_results = Max_Search_Results;
 	    }
 	    i++;
 	}
-	else if (strcasecmp ("linespeed", fields[i]) == 0 ||
-		 strcasecmp ("bitrate", fields[i]) == 0 ||
-		 strcasecmp ("freq", fields[i]) == 0)
+	else if (!strcasecmp ("linespeed", fields[i]))
 	{
-	    convert_to_lower_case (fields[i]);
-	    l = strlen (Buf);
-	    snprintf (Buf + l, sizeof (Buf) - l, " %s%s",
-		      compound ? " && " : "", fields[i]);
 	    i++;
-	    if (strcasecmp ("at least", fields[i]) == 0)
+	    if (i + 1 < numwords)
 	    {
-		APPEND (Buf, " >= ");
-	    }
-	    else if (strcasecmp ("at most", fields[i]) == 0)
-	    {
-		APPEND (Buf, " <= ");
-	    }
-	    else if (strcasecmp ("equals", fields[i]) == 0)
-	    {
-		APPEND (Buf, " = ");
+		if (!strcasecmp ("at least", fields[i]))
+		    minspeed = atoi (fields[i+1]);
+		else if (!strcasecmp ("at most", fields[i]))
+		    maxspeed = atoi (fields[i+1]);
+		else if (!strcasecmp ("equals", fields[i]))
+		    maxspeed = minspeed = atoi (fields[i+1]);
+		else
+		{
+		    send_cmd (con, MSG_SERVER_NOSUCH, "invalid search request");
+		    goto done;
+		}
+		i += 2;
 	    }
 	    else
 	    {
 		send_cmd (con, MSG_SERVER_NOSUCH, "invalid search request");
-		log ("search: bad compare function: %s", fields[i]);
 		goto done;
 	    }
+	}
+	else if (!strcasecmp ("bitrate", fields[i]))
+	{
 	    i++;
-	    APPEND (Buf, fields[i]);
+	    if (i + 1 < numwords)
+	    {
+		if (!strcasecmp ("at least", fields[i]))
+		    minbitrate = atoi (fields[i+1]);
+		else if (!strcasecmp ("at most", fields[i]))
+		    maxbitrate = atoi (fields[i+1]);
+		else if (!strcasecmp ("equals", fields[i]))
+		    maxbitrate = minbitrate = atoi (fields[i+1]);
+		else
+		{
+		    send_cmd (con, MSG_SERVER_NOSUCH, "invalid search request");
+		    goto done;
+		}
+		i += 2;
+	    }
+	    else
+	    {
+		send_cmd (con, MSG_SERVER_NOSUCH, "invalid search request");
+		goto done;
+	    }
+	}
+	else if (!strcasecmp ("freq", fields[i]))
+	{
 	    i++;
-	    compound = 1;
+	    if (i + 1 < numwords)
+	    {
+		if (!strcasecmp ("at least", fields[i]))
+		    minfrequency = atoi (fields[i+1]);
+		else if (!strcasecmp ("at most", fields[i]))
+		    maxfrequency = atoi (fields[i+1]);
+		else if (!strcasecmp ("equals", fields[i]))
+		    maxfrequency = minfrequency = atoi (fields[i+1]);
+		else
+		{
+		    send_cmd (con, MSG_SERVER_NOSUCH, "invalid search request");
+		    goto done;
+		}
+		i += 2;
+	    }
+	    else
+	    {
+		send_cmd (con, MSG_SERVER_NOSUCH, "invalid search request");
+		goto done;
+	    }
 	}
 	else if (!strcasecmp ("type", fields[i]))
 	{
 	    i++;
-	    type = fields[i];
+	    if (!strcasecmp (fields[i], "any"))
+		strcpy (type, "any");
+	    else
+		format_request (fields[i], type, sizeof (type));
 	    i++;
 	}
 	else
@@ -175,17 +281,78 @@ HANDLER (search)
 	    goto done;
 	}
     }
-    /* if we are only searching for a particular content-type, add it now */
-    if (strcasecmp (type, "any"))
-    {
-	snprintf (Buf + strlen (Buf), sizeof (Buf) - strlen (Buf),
-		" && type LIKE '%%%s%%'", type);
-    }
 
-    /* add the limit and make sure we don't return matches for the user that
-       issued the search (we assume they know what files they are sharing) */
-    snprintf (Buf + strlen (Buf), sizeof (Buf) - strlen (Buf),
-	      " && owner != '%s' LIMIT %d", con->user->nick, max_results);
+#if MINIDB
+    for (i = 0; i < File_Table_Size && max_results > 0; i++)
+    {
+	if (File_Table[i]->user != con->user)
+	{
+	    if (file[0] && glob_match (file, File_Table[i]->filename) == 0)
+		continue;
+	    if (soundex[0] && glob_match (soundex, File_Table[i]->soundex) == 0)
+		continue;
+	    if (glob_match (type, File_Table[i]->type) == 0)
+		continue;
+	    if (minbitrate > File_Table[i]->bitrate)
+		continue;
+	    if (minspeed > File_Table[i]->user->speed)
+		continue;
+	    if (minfrequency >  File_Table[i]->samplerate)
+		continue;
+	    if (maxbitrate < File_Table[i]->bitrate)
+		continue;
+	    if (maxspeed < File_Table[i]->user->speed)
+		continue;
+	    if (maxfrequency < File_Table[i]->samplerate)
+		continue;
+
+	    send_cmd (con, MSG_SERVER_SEARCH_RESULT,
+		    "\"%s\" %s %d %d %d %d %s %lu %d",
+		    File_Table[i]->filename,
+		    File_Table[i]->hash,
+		    File_Table[i]->size,
+		    File_Table[i]->bitrate,
+		    File_Table[i]->samplerate,
+		    File_Table[i]->length,
+		    File_Table[i]->user->nick,
+		    File_Table[i]->user->host,
+		    File_Table[i]->user->speed);
+
+	    max_results--;
+	}
+    }
+#else
+    snprintf (Buf, sizeof (Buf), "SELECT * FROM library WHERE owner!='%s'",
+	    con->user->nick);
+    if (file[0])
+	snprintf (Buf + strlen(Buf), sizeof (Buf) - strlen(Buf),
+		" && filename LIKE '%s'", file);
+    if (soundex[0])
+	snprintf (Buf + strlen(Buf), sizeof (Buf) - strlen(Buf),
+		" && soundex LIKE '%s'", file);
+    if (strcasecmp (type, "any"))
+	snprintf (Buf + strlen(Buf), sizeof (Buf) - strlen(Buf),
+		" && type LIKE '%s'", type);
+    if (minbitrate)
+	snprintf (Buf + strlen(Buf), sizeof (Buf) - strlen(Buf),
+		" && bitrate>=%d", minbitrate);
+    if (maxbitrate)
+	snprintf (Buf + strlen(Buf), sizeof (Buf) - strlen(Buf),
+		" && bitrate<=%d", maxbitrate);
+    if (minfrequency)
+	snprintf (Buf + strlen(Buf), sizeof (Buf) - strlen(Buf),
+		" && freq>=%d", minfrequency);
+    if (maxfrequency)
+	snprintf (Buf + strlen(Buf), sizeof (Buf) - strlen(Buf),
+		" && freq<=%d", maxfrequency);
+    if (minspeed)
+	snprintf (Buf + strlen(Buf), sizeof (Buf) - strlen(Buf),
+		" && linespeed>=%d", minspeed);
+    if (maxspeed)
+	snprintf (Buf + strlen(Buf), sizeof (Buf) - strlen(Buf),
+		" && linespeed<=%d", maxspeed);
+    snprintf (Buf + strlen(Buf), sizeof (Buf) - strlen(Buf),
+	    " LIMIT %d", max_results);
 
     log ("search: %s", Buf);
 
@@ -226,6 +393,7 @@ HANDLER (search)
 		  user->host, user->speed /* link speed */ );
     }
     mysql_free_result (result);
+#endif /* MINIDB */
 
 done:
 

@@ -839,6 +839,10 @@ main (int argc, char **argv)
     if (Ban)
 	FREE (Ban);
 
+#if MINIDB
+    FREE (File_Table);
+#endif /* MINIDB */
+
     /* free up memory associated with global configuration variables */
     free_config ();
 

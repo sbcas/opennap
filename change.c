@@ -63,6 +63,7 @@ HANDLER (change_speed)
 	    pass_message_args (con, MSG_CLIENT_CHANGE_SPEED, ":%s %d",
 		    user->nick, spd);
 	}
+#ifndef MINIDB
 	snprintf (Buf, sizeof (Buf),
 		"UPDATE library SET linespeed=%d WHERE owner='%s'",
 		spd, user->nick);
@@ -71,6 +72,7 @@ HANDLER (change_speed)
 	    sql_error ("change_speed", Buf);
 	    return;
 	}
+#endif /* MINIDB */
     }
     else if (con->class == CLASS_USER)
 	send_cmd (con, MSG_SERVER_NOSUCH, "invalid speed");

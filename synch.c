@@ -64,9 +64,12 @@ synch_user (USER *user, CONNECTION *con)
 void
 synch_server (CONNECTION *con)
 {
+#ifndef MINIDB
     MYSQL_RES *result;
     MYSQL_ROW row;
-    int i, n;
+    int n;
+#endif
+    int i;
 
     ASSERT (validate_connection (con));
 
@@ -80,6 +83,23 @@ synch_server (CONNECTION *con)
     /* now dump the contents of the library db and send in bulk */
     log ("sync_server(): syncing db");
 
+#if MINIDB
+    ASSERT (File_Table_Count == Num_Files);
+    for (i = 0; i < File_Table_Count; i++)
+    {
+	if (!strcasecmp (File_Table[i]->type, "audio/mp3"))
+	    send_cmd (con, MSG_CLIENT_ADD_FILE, ":%s \"%s\" %s %d %d %d %d",
+		    File_Table[i]->user->nick, File_Table[i]->filename,
+		    File_Table[i]->hash, File_Table[i]->size,
+		    File_Table[i]->bitrate, File_Table[i]->samplerate,
+		    File_Table[i]->length);
+	else
+	    send_cmd (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %s %d %s",
+		    File_Table[i]->user->nick, File_Table[i]->filename,
+		    File_Table[i]->hash, File_Table[i]->size,
+		    File_Table[i]->type);
+    }
+#else
     if (mysql_query (Db, "SELECT * FROM library") != 0)
     {
 	sql_error ("synch_user", "SELECT * FROM library");
@@ -102,5 +122,6 @@ synch_server (CONNECTION *con)
 		    row[IDX_MD5], row[IDX_TYPE]);
     }
     mysql_free_result (result);
+#endif /* MINIDB */
     log ("synch_server(): done");
 }

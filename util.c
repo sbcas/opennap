@@ -459,3 +459,15 @@ log (const char *fmt, ...)
     va_end (ap);
     fputc ('\n', stdout);
 }
+
+#if MINIDB
+void
+free_elem (ELEM *e)
+{
+    FREE (e->filename);
+    FREE (e->hash);
+    FREE (e->soundex);
+    FREE (e->type);
+    FREE (e);
+}
+#endif /* MINIDB */
