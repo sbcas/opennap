@@ -24,6 +24,8 @@ AC_CHECK_FILE(/dev/random, [AC_DEFINE(HAVE_DEV_RANDOM)])
 fi
 
 AC_CHECK_LIB(z, compress2)
+AC_CHECK_LIB(xnet,gethostbyname)
+AC_CHECK_LIB(nsl,socket)
 AC_CHECK_FUNCS(poll)
 
 ac_cv_warnings=yes

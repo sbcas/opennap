@@ -274,6 +274,11 @@ set_data_size (int n)
     return 0;
 }
 
+/* SysVR4 uses RLIMIT_AS (eg. Solaris) */
+#ifndef RLIMIT_RSS
+#define RLIMIT_RSS RLIMIT_AS
+#endif
+
 int
 set_rss_size (int n)
 {

@@ -14,7 +14,7 @@
 typedef struct _timerstruct
 {
     struct _timerstruct *next;
-    timer_t func;
+    timer_cb_t func;
     void *arg;
     time_t next_time;
     time_t interval;
@@ -55,7 +55,7 @@ make_refnum (void)
 }
 
 void
-add_timer (int interval, int events, timer_t func, void *arg)
+add_timer (int interval, int events, timer_cb_t func, void *arg)
 {
     TIMER *new;
 

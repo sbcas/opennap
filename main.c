@@ -424,9 +424,9 @@ main (int argc, char **argv)
 #endif /* !HAVE_DEV_RANDOM */
 
     /* schedule periodic events */
-    add_timer (Collect_Interval, -1, (timer_t) fdb_garbage_collect, File_Table);
-    add_timer (Collect_Interval, -1, (timer_t) fdb_garbage_collect, MD5);
-    add_timer (Stat_Click, -1, (timer_t) update_stats, 0);
+    add_timer (Collect_Interval, -1, (timer_cb_t) fdb_garbage_collect, File_Table);
+    add_timer (Collect_Interval, -1, (timer_cb_t) fdb_garbage_collect, MD5);
+    add_timer (Stat_Click, -1, (timer_cb_t) update_stats, 0);
 
     /* main event loop */
     while (!SigCaught)

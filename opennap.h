@@ -252,7 +252,7 @@ typedef struct {
     time_t lastSeen;
 } USERDB;
 
-typedef void (*timer_t) (void *);
+typedef void (*timer_cb_t) (void *);
 
 extern char *Motd_Path;
 extern char *Listen_Addr;
@@ -456,7 +456,7 @@ void set_val (char *d, unsigned short val);
 void add_client (CONNECTION *);
 void add_random_bytes (char *, int);
 void add_server (CONNECTION *);
-void add_timer (int, int, timer_t, void *);
+void add_timer (int, int, timer_cb_t, void *);
 void *array_add (void *, int *, void *);
 void *array_remove (void *, int *, void *);
 int bind_interface (int, unsigned int, int);

@@ -84,6 +84,13 @@ init_server (const char *cf)
     if (Max_Rss_Size != -1 && set_rss_size (Max_Rss_Size))
 	return -1;
 
+    /* open files before dropping dropping cap */
+    if (userdb_init (User_Db_Path))
+    {
+	log ("init(): userdb_init failed");
+	return -1;
+    }
+
     if (getuid () == 0)
     {
 	if (Uid == -1)
@@ -134,12 +141,6 @@ init_server (const char *cf)
 #endif /* !WIN32 */
 
     log ("my hostname is %s", Server_Name);
-
-    if (userdb_init (User_Db_Path))
-    {
-	log ("init(): userdb_init failed");
-	return -1;
-    }
 
     /* initialize hash tables.  the size of the hash table roughly cuts
        the max number of matches required to find any given entry by the same
