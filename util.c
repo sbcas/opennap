@@ -226,6 +226,15 @@ queue_data (CONNECTION *con, char *s, int ssize)
     con->sendbuflen += ssize;
 }
 
+/* how much uncompressed data we can fit in one packet */
+#if 0
+#define MAX_UNCOMPRESSED_SIZE	131070
+#else
+/* small value for testing purposes only!  this will force send_queued_data()
+   to fragment the packet */
+#define MAX_UNCOMPRESSED_SIZE	2000
+#endif
+
 static int
 calculate_chunk_length (CONNECTION *con)
 {
@@ -244,13 +253,13 @@ calculate_chunk_length (CONNECTION *con)
 
 	/* text compresses at around 50%, so make sure we dont try to
 	   send more than 131070 bytes in one packet */
-	if (offset - con->sendbufcompressed + len + 4 > 131070)
+	if (offset - con->sendbufcompressed + len + 4 > MAX_UNCOMPRESSED_SIZE)
 	    break;
 
 	offset += len + 4; /* skip over the packet header and body */
     }
 
-    return (offset);
+    return (offset - con->sendbufcompressed); /* number of bytes to compress */
 }
 
 void
@@ -272,14 +281,23 @@ send_queued_data (CONNECTION *con)
     {
 	long datasize;
 	unsigned char *data = 0;
+	int compressed = 0; /* how many compressed packets so far */
 
 	/* we have to make sure that the size of the compressed packet is
 	   less than 65535 bytes, which is what fits in a 16-bit integer.
 	   so we loop here to compress the data.  we have to semi-parse
 	   the packets so that we make sure we compress on the boundaries,
 	   because the underlying packets can't be split between
-	   compressed packets */
-	while (con->sendbuflen - con->sendbufcompressed >= Compression_Threshold)
+	   compressed packets.
+
+	   since we could have a lot of data to send on a server join,
+	   we keep track of how many compressed packets so far, and if
+	   we reach the threshold `Max_Compress' we stop to avoid blocking
+	   the rest of the server.  Administrators will have to tune this
+	   value so that it compresses data fast enough to keep up with
+	   what we can write, without blocking client connections */
+	while (con->sendbuflen - con->sendbufcompressed >= Compression_Threshold &&
+	    compressed < Max_Compress)
 	{
 	    datasize = calculate_chunk_length (con);
 	    data = REALLOC (data, datasize);
@@ -340,16 +358,22 @@ send_queued_data (CONNECTION *con)
 
 		/* if there were leftovers, we need to shift them down
 		   to the end of the compressed packet we just wrote */
-		if (c_end < con->sendbuflen)
+		if (u_end < con->sendbuflen)
 		{
 		    memmove (con->sendbuf + c_end,
 			    con->sendbuf + u_end,
 			    con->sendbuflen - u_end);
-		    log ("send_queued_data(): %d uncompressed bytes remain in the queue",
-			    con->sendbuflen - u_end);
 		}
 
 		con->sendbuflen -= delta;
+
+		compressed++; /* keep track of what we've done so we
+				    don't block */
+		if (compressed == Max_Compress)
+		{
+		    log ("send_queued_data(): max_compress reached (%d) with %d bytes left",
+			Max_Compress, con->sendbuflen - con->sendbufcompressed);
+		}
 	    }
 	    else
 	    {
@@ -529,7 +553,7 @@ array_remove (void *list, int *listsize, void *ptr)
     int i;
     char **plist = (char **) list;
 
-    ASSERT (VALID (list));
+    ASSERT (VALID_LEN (list, *listsize * sizeof (char *)));
     ASSERT (VALID (ptr));
     for (i=0;i<*listsize;i++)
     {
@@ -538,10 +562,10 @@ array_remove (void *list, int *listsize, void *ptr)
 	    if (i < *listsize - 1)
 		memmove (&plist[i], &plist[i + 1], sizeof (char *) * (*listsize - i - 1));
 	    --*listsize;
+	    list = REALLOC (list, *listsize * sizeof (char *));
 	    break;
 	}
     }
-    list = REALLOC (list, *listsize * sizeof (char *));
     return list;
 }
 

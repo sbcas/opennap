@@ -286,6 +286,8 @@ extern int Client_Queue_Length;
 extern int Max_Search_Results;
 extern int Compression_Level;
 extern int Compression_Threshold;
+extern int Max_Compress;	/* maximum number of compressed packets to
+				   generate in a single cycle */
 
 extern unsigned long Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */

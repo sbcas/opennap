@@ -13,18 +13,21 @@ MYSQL *Db = NULL;
 int
 init_db (void)
 {
+    MYSQL *d;
+
     Db = mysql_init (Db);
     if (Db == NULL)
     {
-	log ("init_db(): mysql_init: %s", mysql_error (Db));
+	log ("init_db(): mysql_init failed");
 	return -1;
     }
-    Db = mysql_connect (Db, Db_Host, Db_User, Db_Pass);
-    if (Db == NULL)
+    d = mysql_connect (Db, Db_Host, Db_User, Db_Pass);
+    if (d == NULL)
     {
 	log ("init_db(): mysql_connect: %s", mysql_error (Db));
 	return -1;
     }
+    Db = d;
     if (mysql_select_db (Db, Db_Name))
     {
 	log ("init_db(): mysql_select_db: %s", mysql_error (Db));

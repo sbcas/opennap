@@ -48,6 +48,7 @@ static CONFIG Vars[] = {
 #if HAVE_LIBZ
     { "compression_level", VAR_TYPE_INT, UL &Compression_Level, 1 },
     { "compression_threshold", VAR_TYPE_INT, UL &Compression_Threshold, 8192 },
+    { "max_compress", VAR_TYPE_INT, UL &Max_Compress, 5 }
 #endif
 };
 
