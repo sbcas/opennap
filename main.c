@@ -90,9 +90,9 @@ LIST *Servers = 0;
 /* list of all servers in the cluster */
 LIST *Server_Links = 0;
 
-int Local_Files = 0;	/* number of files shared by local users */
+int Local_Files = 0;		/* number of files shared by local users */
 int Num_Files = 0;
-unsigned int Num_Gigs = 0;		/* in kB */
+unsigned int Num_Gigs = 0;	/* in kB */
 int SigCaught = 0;
 char Buf[2048];			/* global scratch buffer */
 
@@ -121,10 +121,11 @@ update_stats (void)
     log ("update_stats(): %d local clients, %d linked servers",
 	 Num_Clients - numServers, numServers);
     log ("update_stats(): %d local files", Local_Files);
-    log ("update_stats(): File_Table contains %d entries", File_Table->dbsize);
+    log ("update_stats(): File_Table contains %d entries",
+	 File_Table->dbsize);
     delta = Current_Time - Last_Click;
     log ("update_stats(): %.2f kbytes/sec in, %.2f kbytes/sec out",
-	(float) Bytes_In / 1024. / delta, (float) Bytes_Out / 1024. / delta);
+	 (float) Bytes_In / 1024. / delta, (float) Bytes_Out / 1024. / delta);
     Bytes_In = 0;
     Bytes_Out = 0;
     Last_Click = Current_Time;
@@ -153,7 +154,7 @@ accept_connection (int s)
     struct sockaddr_in sin;
     int f;
 
-    for(;;)
+    for (;;)
     {
 	sinsize = sizeof (sin);
 	if ((f = accept (s, (struct sockaddr *) &sin, &sinsize)) < 0)
@@ -172,7 +173,8 @@ accept_connection (int s)
 	   interface so others can download from them */
 	if (sin.sin_addr.s_addr == inet_addr ("127.0.0.1"))
 	{
-	    log ("accept_connection(): connected via loopback, using external ip");
+	    log
+		("accept_connection(): connected via loopback, using external ip");
 	    cli->ip = Server_Ip;
 	    cli->host = STRDUP (Server_Name);
 	    if (!cli->host)
@@ -203,7 +205,7 @@ accept_connection (int s)
     /* not reached */
     ASSERT (0);
     return;
-error:
+  error:
     CLOSE (f);
     if (cli->host)
 	FREE (cli->host);
@@ -252,10 +254,12 @@ static void
 usage (void)
 {
     fprintf (stderr,
-	     "usage: %s [ -hsv ] [ -c FILE ] [ -p PORT ] [ -l IP ]\n",
+	     "usage: %s [ -bhsv ] [ -c FILE ] [ -p PORT ] [ -l IP ]\n",
 	     PACKAGE);
     fprintf (stderr, "  -c FILE	read config from FILE (default: %s/config\n",
 	     SHAREDIR);
+    fputs ("  -b		run as a background process (daemon)\n",
+	   stderr);
     fputs ("  -h		print this help message\n", stderr);
     fputs
 	("  -l IP		listen only on IP instead of all interfaces\n",
@@ -284,7 +288,7 @@ main (int argc, char **argv)
     int sp = -1;		/* stats port */
     int i;			/* generic counter */
     int numReady;		/* number of ready sockets */
-    int port = 0, iface = INADDR_ANY, nolisten = 0;
+    int port = 0, iface = INADDR_ANY;
     fd_set set, wset;
     struct timeval t;
     int maxfd;
@@ -296,14 +300,15 @@ main (int argc, char **argv)
     WSAStartup (MAKEWORD (1, 1), &wsa);
 #endif /* !WIN32 */
 
-    /* printf("%d\n", sizeof(DATUM)); */
-
-    while ((i = getopt (argc, argv, "c:hl:p:vD")) != -1)
+    while ((i = getopt (argc, argv, "bc:hl:p:svD")) != -1)
     {
 	switch (i)
 	{
+	case 'b':
+	    Server_Flags |= ON_BACKGROUND;
+	    break;
 	case 'D':
-	    nolisten++;
+	    Server_Flags |= ON_NO_LISTEN;	/* dont listen on stats port */
 	    break;
 	case 'c':
 	    config_file = optarg;
@@ -324,6 +329,19 @@ main (int argc, char **argv)
 	    usage ();
 	}
     }
+
+#ifndef WIN32
+    /* check whether to run in the background */
+    if (Server_Flags & ON_BACKGROUND)
+    {
+	if (fork () == 0)
+	{
+	    setsid ();
+	}
+	else
+	    exit (0);
+    }
+#endif
 
     if (init_server (config_file))
 	exit (1);
@@ -360,7 +378,7 @@ main (int argc, char **argv)
     if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST & i, sizeof (i))
 	!= 0)
     {
-	perror ("setsockopt");
+	logerr ("main", "setsockopt");
 	exit (1);
     }
 
@@ -372,29 +390,29 @@ main (int argc, char **argv)
 
     if (listen (s, BACKLOG) < 0)
     {
-	perror ("listen");
+	logerr ("main", "listen");
 	exit (1);
     }
 
     log ("listening on %s port %d", my_ntoa (Interface), Server_Port);
 
-    if (!nolisten)
+    if ((Server_Flags & ON_NO_LISTEN) == 0)
     {
 	/* listen on port 8889 for stats reporting */
 	if ((sp = new_tcp_socket ()) == -1)
 	    exit (1);
 	i = 1;
-	if (setsockopt (sp, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST & i, sizeof (i))
-	    != 0)
+	if (setsockopt
+	    (sp, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST & i, sizeof (i)) != 0)
 	{
-	    perror ("setsockopt");
+	    logerr ("main", "setsockopt");
 	    exit (1);
 	}
 	if (bind_interface (sp, Interface, 8889))
 	    exit (1);
 	if (listen (sp, BACKLOG))
 	{
-	    perror ("listen");
+	    logerr ("main", "listen");
 	    exit (1);
 	}
     }
@@ -421,7 +439,7 @@ main (int argc, char **argv)
 	FD_ZERO (&wset);
 	maxfd = s;
 	FD_SET (s, &set);
-	if (!nolisten)
+	if ((Server_Flags & ON_NO_LISTEN) == 0)
 	{
 	    FD_SET (sp, &set);
 	    if (sp > maxfd)
@@ -437,7 +455,7 @@ main (int argc, char **argv)
 		    maxfd = Clients[i]->fd;
 		/* check sockets for writing */
 		if (Clients[i]->connecting || Clients[i]->sendbuf ||
-		     (ISSERVER (Clients[i]) && Clients[i]->sopt->outbuf))
+		    (ISSERVER (Clients[i]) && Clients[i]->sopt->outbuf))
 		    FD_SET (Clients[i]->fd, &wset);
 	    }
 	}
@@ -446,14 +464,14 @@ main (int argc, char **argv)
 	t.tv_usec = 0;
 	if ((numReady = select (maxfd + 1, &set, &wset, NULL, &t)) < 0)
 	{
-	    perror ("main(): select");
+	    logerr ("main", "select");
 	    continue;
 	}
 
 	/* process incoming requests */
 	for (i = 0; !SigCaught && i < Max_Clients; i++)
 	    if (Clients[i] && !Clients[i]->destroy &&
-		    FD_ISSET (Clients[i]->fd, &set))
+		FD_ISSET (Clients[i]->fd, &set))
 		handle_connection (Clients[i]);
 
 	if (SigCaught)
@@ -476,7 +494,7 @@ main (int argc, char **argv)
 		else if (Clients[i]->class == CLASS_UNKNOWN &&
 			 Current_Time - Clients[i]->timer >= Login_Timeout)
 		{
-		    log("main(): login timeout for %s", Clients[i]->host);
+		    log ("main(): login timeout for %s", Clients[i]->host);
 		    Clients[i]->destroy = 1;
 		}
 		if (Clients[i]->destroy)
@@ -501,10 +519,7 @@ main (int argc, char **argv)
 	exec_timers (Current_Time);
     }
 
-    if (SigCaught)
-	log ("caught signal");
-
-    log ("shutting down");
+    log ("main(): shutting down");
 
     /* disallow incoming connections */
     CLOSE (s);
@@ -553,6 +568,10 @@ main (int argc, char **argv)
 #ifdef WIN32
     WSACleanup ();
 #endif
+
+    Current_Time=time(0);
+    log ("main(): server ended at %s", ctime(&Current_Time));
+    fflush(stdout);
 
     exit (0);
 }

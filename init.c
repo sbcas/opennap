@@ -10,12 +10,17 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <netdb.h>
+#if HAVE_MLOCKALL
 #include <sys/mman.h>
+#endif /* HAVE_MLOCKALL */
 #endif /* !WIN32 */
 #include <signal.h>
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -42,16 +47,36 @@ sighandler (int sig)
 {
     switch (sig)
     {
-	case SIGINT:
-	case SIGHUP:
-	case SIGTERM:
-	    SigCaught = 1;
-	    break;
-	case SIGUSR1:
-	    CLEANUP ();
+    case SIGINT:
+    case SIGHUP:
+    case SIGTERM:
+	SigCaught = 1;
+	break;
+    case SIGUSR1:
+	CLEANUP ();
     }
 }
 #endif
+
+/* write the pid to a file so an external program can check to see if the
+   process is still running. */
+static void
+dump_pid (void)
+{
+    FILE *f;
+    char path[_POSIX_PATH_MAX];
+
+    log ("dump_pid(): pid is %d", getpid ());
+    snprintf (path, sizeof (path), "%s/pid", Config_Dir);
+    f = fopen (path, "w");
+    if (!f)
+    {
+	logerr ("dump_pid", path);
+	return;
+    }
+    fprintf (f, "%d\n", getpid ());
+    fclose (f);
+}
 
 int
 init_server (const char *cf)
@@ -71,22 +96,50 @@ init_server (const char *cf)
 
     Current_Time = time (0);
 
-    log ("version %s starting", VERSION);
-    log ("pid is %d", getpid ());
-
     Server_Start = Current_Time;
 
     /* load default configuration values */
     config_defaults ();
-    lookup_hostname ();
 
     /* load the config file */
     config (cf ? cf : SHAREDIR "/config");
 
+    /* if running in daemon mode, reopen stdout as a log file */
+    if (Server_Flags & ON_BACKGROUND)
+    {
+	char path[_POSIX_PATH_MAX];
+	int fd;
+
+	snprintf (path, sizeof (path), "%s/log", Config_Dir);
+	fd = open (path, O_CREAT | O_WRONLY | O_APPEND, S_IRUSR | S_IWUSR);
+	if (fd > 0)
+	{
+	    /* close stdout */
+	    if (dup2 (fd, 1) == -1)
+	    {
+		logerr ("init_server", "dup2");
+		return -1;
+	    }
+	    close (fd);
+	}
+	else
+	{
+	    logerr ("init_server", path);
+	    return -1;
+	}
+    }
+
+    log ("init_server(): version %s starting", VERSION);
+    dump_pid ();
+
+    /* if not defined in the config file, get the system name */
+    if (!Server_Name)
+	lookup_hostname ();
+
     /* open files before dropping dropping cap */
     if (userdb_init ())
     {
-	log ("init(): userdb_init failed");
+	log ("init_server(): userdb_init failed");
 	return -1;
     }
 
@@ -99,11 +152,13 @@ init_server (const char *cf)
 	return -1;
     if (Max_Rss_Size != -1 && set_rss_size (Max_Rss_Size))
 	return -1;
+#if HAVE_MLOCKALL
     if (Server_Flags & ON_LOCK_MEMORY)
     {
-	if(mlockall(MCL_CURRENT|MCL_FUTURE))
-	    perror("mlockall");
+	if (mlockall (MCL_CURRENT | MCL_FUTURE))
+	    logerr ("init_server", "mlockall");
     }
+#endif /* HAVE_MLOCKALL */
 
     if (getuid () == 0)
     {
@@ -116,7 +171,7 @@ init_server (const char *cf)
 	    if (!pw)
 	    {
 		fputs ("ERROR: can't find user nobody to drop privileges\n",
-			stderr);
+		       stderr);
 		return -1;
 	    }
 	    Uid = pw->pw_uid;
@@ -131,7 +186,7 @@ init_server (const char *cf)
 	    if (!gr)
 	    {
 		fputs ("ERROR: can't find group nobody to drop privileges\n",
-			stderr);
+		       stderr);
 		return -1;
 	    }
 	    Gid = gr->gr_gid;
@@ -140,20 +195,20 @@ init_server (const char *cf)
 	/* change to non-privileged mode */
 	if (setgid (Gid))
 	{
-	    perror ("setgid");
+	    logerr ("init_server", "setgid");
 	    return -1;
 	}
 
 	if (setuid (Uid))
 	{
-	    perror ("setuid");
+	    logerr ("init_server", "setuid");
 	    return -1;
 	}
     }
-    log ("running as user %d, group %d", getuid (), getgid ());
+    log ("init_server(): running as user %d, group %d", getuid (), getgid ());
 #endif /* !WIN32 */
 
-    log ("my hostname is %s", Server_Name);
+    log ("init_server(): my hostname is %s", Server_Name);
 
     /* initialize hash tables.  the size of the hash table roughly cuts
        the max number of matches required to find any given entry by the same

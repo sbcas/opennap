@@ -144,38 +144,34 @@ config (const char *path)
     char *ptr, *val;
     int line = 0;
 
-    f = fopen (path, "r");
-    if (!f)
+    if ((f = fopen (path, "r")))
     {
-	perror (path);
-	return;
-    }
-    log ("config(): reading %s", path);
-    while (fgets (Buf, sizeof (Buf), f))
-    {
-	/* strip trailing whitespace */
-	ptr = Buf + strlen (Buf);
-	while(ptr>Buf && ISSPACE(*(ptr-1)))
-	    ptr--;
-	*ptr=0;
-	line++;
-	ptr = Buf;
-	while (ISSPACE (*ptr))
-	    ptr++;
-	if (*ptr == '#' || *ptr == 0)
-	    continue;
-	val = strchr (ptr, ' ');
-	if (val)
+	while (fgets (Buf, sizeof (Buf), f))
 	{
-	    *val++ = 0;
-	    while (ISSPACE (*val))
-		val++;
-	}
+	    /* strip trailing whitespace */
+	    ptr = Buf + strlen (Buf);
+	    while(ptr>Buf && ISSPACE(*(ptr-1)))
+		ptr--;
+	    *ptr=0;
+	    line++;
+	    ptr = Buf;
+	    while (ISSPACE (*ptr))
+		ptr++;
+	    if (*ptr == '#' || *ptr == 0)
+		continue;
+	    val = strchr (ptr, ' ');
+	    if (val)
+	    {
+		*val++ = 0;
+		while (ISSPACE (*val))
+		    val++;
+	    }
 
-	if (set_var (ptr, val) != 0)
-	    log ("config(): error in %s, line %d: %s=%s", path, line, ptr, val);
+	    if (set_var (ptr, val) != 0)
+		log ("config(): error in %s, line %d: %s=%s", path, line, ptr, val);
+	}
+	fclose (f);
     }
-    fclose (f);
 }
 
 /* 810 <var> <value> */

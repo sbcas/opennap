@@ -245,6 +245,7 @@ log (const char *fmt, ...)
     vprintf (fmt, ap);
     va_end (ap);
     fputc ('\n', stdout);
+    fflush (stdout);
 }
 
 /* like next_arg(), except we don't skip over additional whitespace */
