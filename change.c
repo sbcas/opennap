@@ -86,6 +86,8 @@ HANDLER (change_pass)
     FREE (db->password);
     db->password = generate_pass (pkt);
     db->timestamp = Current_Time;
+    if (ISUSER (con))
+	send_cmd (con, MSG_SERVER_NOSUCH, "password changed");
 }
 
 /* 702 [ :<user> ] <email>
