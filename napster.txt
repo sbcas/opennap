@@ -692,6 +692,13 @@ appropriate, examples of the <data> section for each message are given.
 
 	client request send a message to all users
 
+700	change link speed [CLIENT]
+
+	<speed>
+
+	client is notifying server that its correct link speed is <speed>,
+	in the range 0-10 (see the login message for details).
+
 702	change email address [CLIENT]
 
 	<email address>

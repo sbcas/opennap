@@ -1,3 +1,9 @@
+Changes from 0.08
+=================
+added support for the data port error (626) command
+
+added support for the change speed command (700)
+
 Changes from 0.07
 =================
 

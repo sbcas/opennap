@@ -175,6 +175,7 @@ struct _hotlist
 #define MSG_SERVER_DATA_PORT_ERROR	626 /* same as client message */
 #define MSG_CLIENT_WALLOP		627
 #define MSG_CLIENT_ANNOUNCE		628
+#define MSG_CLIENT_CHANGE_SPEED		700
 #define MSG_CLIENT_CHANGE_DATA_PORT	703
 #define MSG_CLIENT_PING			751
 #define MSG_SERVER_PING			751
@@ -274,6 +275,7 @@ HANDLER (add_hotlist);
 HANDLER (announce);
 HANDLER (browse);
 HANDLER (change_data_port);
+HANDLER (change_speed);
 HANDLER (client_quit);
 HANDLER (data_port_error);
 HANDLER (download);

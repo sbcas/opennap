@@ -24,3 +24,29 @@ HANDLER (change_data_port)
     else
 	send_cmd (con, MSG_SERVER_ERROR, "invalid data port");
 }
+
+/* 700 [ :<user> ] <speed> */
+/* client is changing link speed */
+HANDLER (change_speed)
+{
+    USER *user;
+    int spd;
+
+    ASSERT (VALID (con));
+    if (pop_user (con, &pkt, &user) != 0)
+	return;
+    spd = atoi (pkt);
+    if (spd >= 0 && spd <= 10)
+    {
+	user->speed = spd;
+	/* if a local user, pass this info to our peer servers */
+	if (con->class == CLASS_USER)
+	    pass_message_args (con, MSG_CLIENT_CHANGE_SPEED, ":%s %d",
+		    user->nick, spd);
+    }
+    else
+    {
+	log ("change_speed(): %s tried to change speed to %d", user->nick,
+		spd);
+    }
+}
