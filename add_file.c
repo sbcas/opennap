@@ -259,6 +259,7 @@ new_datum (char *filename, char *hash)
 {
     DATUM *info = CALLOC (1, sizeof (DATUM));
 
+    (void)hash;
     if (!info)
     {
 	OUTOFMEMORY ("new_datum");
@@ -271,6 +272,7 @@ new_datum (char *filename, char *hash)
 	FREE (info);
 	return 0;
     }
+#if RESUME
     info->hash = STRDUP (hash);
     if (!info->hash)
     {
@@ -279,6 +281,7 @@ new_datum (char *filename, char *hash)
 	FREE (info);
 	return 0;
     }
+#endif
     return info;
 }
 

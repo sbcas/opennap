@@ -60,7 +60,12 @@ HANDLER (download)
 		    send_user (sender, MSG_SERVER_FILE_READY /* 204 */ ,
 			       "%s %u %d \"%s\" %s %d", user->nick,
 			       user->host, user->port, info->filename,
-			       info->hash, user->speed);
+#if RESUME
+			       info->hash,
+#else
+			       "00000000000000000000000000000000",
+#endif
+			       user->speed);
 		}
 	    }
 	    else

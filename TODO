@@ -5,3 +5,5 @@
   amount of valid information about the contents of their mp3 library
 
 * add a timeout to check for blocked server connect() call
+
+* need a command to see if a nick is registered
