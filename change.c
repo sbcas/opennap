@@ -276,6 +276,14 @@ HANDLER (alter_speed)
 	return;
     }
     ASSERT (validate_user (user));
+    if(user->speed == speed)
+    {
+	if(ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"%s's speed is already %d",
+		    user->nick, speed);
+	return;
+    }
+    user->speed=speed;
     pass_message_args (con, tag, ":%s %s %d", sender->nick, user->nick,
 		       speed);
     notify_mods (CHANGELOG_MODE, "%s changed %s's speed to %d.",

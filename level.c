@@ -58,7 +58,7 @@ HANDLER (level)
     {
 	log ("level(): unknown level %s", fields[1]);
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s: invalid level", fields[1]);
+	    send_cmd (con, MSG_SERVER_NOSUCH, "invalid level");
 	return;
     }
 
