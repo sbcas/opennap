@@ -288,6 +288,7 @@ extern int Compression_Level;
 extern int Compression_Threshold;
 extern int Max_Compress;	/* maximum number of compressed packets to
 				   generate in a single cycle */
+extern int Max_Shared;
 
 extern unsigned long Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */

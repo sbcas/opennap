@@ -77,10 +77,12 @@ Last updated January 24, 2000
 
 	* Library table
 
-		CREATE TABLE library (owner VARCHAR(32), filename VARCHAR(256),
+		CREATE TABLE library (owner VARCHAR(32) NOT NULL,
+			filename VARCHAR(256) NOT NULL,
 			size INT UNSIGNED, md5 CHAR(48), bitrate INT UNSIGNED,
 			freq INT UNSIGNED, duration INT UNSIGNED,
-			linespeed INT UNSIGNED);
+			linespeed INT UNSIGNED, PRIMARY KEY (owner,
+			filename));
 
 		'owner' is the nick contributing the file
 		'filename' is the name of the contributed file

@@ -43,6 +43,7 @@ int Max_Search_Results;
 int Compression_Level;
 int Compression_Threshold;
 int Max_Compress;
+int Max_Shared;
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;

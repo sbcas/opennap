@@ -52,6 +52,12 @@ fixed kill_user() so elites can kill other elites
 
 enabled tcp keepalive messages for client connections
 
+added max_shared config variable to control how many files a user is allowed
+to share
+
+(owner,filename) should be the primary key in the library table to avoid
+duplicates from the same user.
+
 Changes from 0.08
 =================
 

@@ -81,6 +81,14 @@ HANDLER (add_file)
 	return;
     }
 
+    if (user->shared == Max_Shared)
+    {
+	if (user->con)
+	    send_cmd (user->con, MSG_SERVER_NOSUCH,
+		    "You may only share %d files.",
+		    Max_Shared);
+	return;
+    }
     /* sql will take DOS path names with backslashes to mean the escape
        char, so we have to escape them here */
     fudge_path (field[0], path, sizeof (path));
