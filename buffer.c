@@ -65,6 +65,7 @@ buffer_group (BUFFER *b, int n)
 	b->data = REALLOC (b->data, b->datasize + l + 1);
 	ASSERT (b->next != 0);
 	/* steal `l' bytes from the next buffer block */
+	ASSERT (b->next->datasize >= l);
 	memcpy (b->data + b->datasize, b->next->data + b->next->consumed, l);
 	b->datasize += l;
 	*(b->data + b->datasize) = 0;

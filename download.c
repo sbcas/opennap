@@ -205,6 +205,7 @@ HANDLER (upload_request)
 {
     char *fields[3];
     USER *recip;
+
     (void) tag;
     (void) len;
 
@@ -215,7 +216,18 @@ HANDLER (upload_request)
 	log ("upload_request(): wrong number of args");
 	return;
     }
+    if (*fields[0] != ':')
+    {
+	log ("upload_request(): missing colon (:) prefix in server message");
+	return;
+    }
+
     recip = hash_lookup (Users, fields[1]);
+    if (!recip)
+    {
+	log ("upload_request(): unable to find user %s", fields[1]);
+	return;
+    }
     ASSERT (validate_user (recip));
     if (recip->con)
     {
@@ -228,16 +240,16 @@ HANDLER (upload_request)
 /* 619 [ :<user> ] <nick> <filename> <limit> */
 HANDLER (queue_limit)
 {
-    int ac;
     char *av[3];
     USER *sender, *recip;
 
     (void) tag;
     (void) len;
+    ASSERT (validate_connection (con));
+
     if (pop_user (con, &pkt, &sender) != 0)
 	return;
-    ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
-    if (ac < 3)
+    if (split_line (av, sizeof (av) / sizeof (char *), pkt) < 3)
     {
 	log ("queue_limit(): too few arguments");
 	if (con->class == CLASS_USER)
@@ -255,9 +267,11 @@ HANDLER (queue_limit)
 	    nosuchuser (con, av[0]);
 	return;
     }
+    ASSERT (validate_user (recip));
     if (recip->con)
     {
 	/* locally connected, deliver final message */
+	ASSERT (validate_connection (recip->con));
 	send_cmd (recip->con, MSG_SERVER_LIMIT, "%s \"%s\" %s",
 		sender->nick, av[1], av[2]);
     }

@@ -376,6 +376,7 @@ validate_user (USER *user)
     ASSERT_RETURN_IF_FAIL (user->magic == MAGIC_USER, 0);
     ASSERT_RETURN_IF_FAIL (VALID (user->nick), 0);
     ASSERT_RETURN_IF_FAIL (VALID (user->clientinfo), 0);
+    ASSERT_RETURN_IF_FAIL (user->con == 0 || VALID_LEN (user->con, sizeof (CONNECTION)), 0);
     ASSERT_RETURN_IF_FAIL (user->email == 0 || VALID (user->email), 0);
     ASSERT_RETURN_IF_FAIL ((user->channels != 0) ^ (user->numchannels == 0), 0);
     ASSERT_RETURN_IF_FAIL (user->numchannels == 0 || VALID_LEN (user->channels, sizeof (USER *) * user->numchannels), 0);
