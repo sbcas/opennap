@@ -80,15 +80,14 @@ HANDLER (kick)
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
 		  "You were kicked from channel %s%s%s: %s",
 		  chan->name,
-		  sender->cloaked?"":" by ",
-		  sender->cloaked?"": sender->nick,
-		  ac == 3 ? av[2] : "");
+		  sender->cloaked ? "" : " by ",
+		  sender->cloaked ? "" : sender->nick, ac == 3 ? av[2] : "");
     }
 
     user->channels = list_delete (user->channels, chan);
 
     notify_mods (CHANNELLOG_MODE, "%s kicked %s out of channel %s: %s",
-	    sender->nick, user->nick, chan->name, ac == 3 ? av[2] : "");
+		 sender->nick, user->nick, chan->name, ac == 3 ? av[2] : "");
 
     /* has to come after the notify_mods() since it uses chan->name and
        chan may disappear if there are no users left
@@ -96,27 +95,25 @@ HANDLER (kick)
     part_channel (chan, user);
 }
 
-/* 820 [ :<sender> ] <channel> [ "<reason>" ] */
+/* 820 [ :<sender> ] <channel> [ <reason> ] */
 HANDLER (clear_channel)
 {
     CHANNEL *chan;
     USER *sender, *user;
     LIST *list;
-    int ac;
-    char *av[2];
+    char *chanName;
 
     (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender))
 	return;
-    ac = split_line (av, FIELDS (av), pkt);
-    if (ac < 1)
+    chanName = next_arg (&pkt);
+    if (!chanName)
     {
-	log ("clear_channel(): missing channel name");
 	unparsable (con);
 	return;
     }
-    chan = hash_lookup (Channels, av[0]);
+    chan = hash_lookup (Channels, chanName);
     if (!chan)
     {
 	nosuchchannel (con);
@@ -127,11 +124,8 @@ HANDLER (clear_channel)
 	permission_denied (con);
 	return;
     }
-    if (ac == 1)
-	pass_message_args (con, tag, ":%s %s", sender->nick, chan->name);
-    else
-	pass_message_args (con, tag, ":%s %s \"%s\"", sender->nick,
-			   chan->name, av[1]);
+    pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name,
+		       NONULL (pkt));
     list = chan->users;
     while (list)
     {
@@ -150,11 +144,11 @@ HANDLER (clear_channel)
 		send_cmd (user->con, MSG_CLIENT_PART, "%s", chan->name);
 		send_cmd (user->con, MSG_SERVER_NOSUCH,
 			  "%s cleared channel %s: %s", sender->nick,
-			  chan->name, ac > 1 ? av[1] : "");
+			  chan->name, NONULL (pkt));
 	    }
 	    part_channel (chan, user);
 	}
     }
     notify_mods (CHANNELLOG_MODE, "%s cleared channel %s: %s", sender->nick,
-	    chan->name, ac > 1 ? av[1] : "");
+		 chan->name, NONULL (pkt));
 }
