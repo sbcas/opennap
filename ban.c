@@ -219,7 +219,8 @@ check_ban (CONNECTION * con, const char *target, ban_t type)
 	    else
 		notify_mods ("Connection from banned user %s (%s): %s",
 			     target, my_ntoa (con->ip), NONULL (ban->reason));
-	    con->destroy = 1;
+	    if (con->class == CLASS_UNKNOWN)
+		con->destroy = 1;
 	    return 1;
 	}
     }
