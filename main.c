@@ -886,7 +886,7 @@ main (int argc, char **argv)
     if (Servers)
 	FREE (Servers);
 
-    //free_hash (File_Table);
+    free_hash (File_Table);
     free_hash (MD5);
     free_hash (Users);
     free_hash (Channels);
