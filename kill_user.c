@@ -105,7 +105,7 @@ HANDLER (kill_user)
        from global user list */
     if (user->con)
     {
-	con->destroy = 1;
+	user->con->destroy = 1;
 	/* notify user they were killed */
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
 	    "you have been killed by %s: %s", killernick, NONULL (pkt));
