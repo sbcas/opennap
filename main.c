@@ -551,6 +551,7 @@ main (int argc, char **argv)
 
 		ASSERT(dns_result!=0);
 		ASSERT(ptr!=0);
+		ptr->resolved = 1;
 		if(dns_result->status==adns_s_ok)
 		{
 		    FREE(ptr->host);
@@ -559,11 +560,10 @@ main (int argc, char **argv)
 		    {
 			OUTOFMEMORY("main");
 			ptr->destroy = 1;
-			ptr->resolved = 1; /* don't call adns_cancel */
 			continue;
 		    }
-		    log("main(): %s resolves to %s",
-			    my_ntoa(ptr->ip), ptr->host);
+		    /* log("main(): %s resolves to %s",
+			    my_ntoa(ptr->ip), ptr->host);*/
 		}
 		else
 		{
@@ -571,7 +571,6 @@ main (int argc, char **argv)
 			    ptr->host, dns_result->status);
 		    /* just make due with the ip address instead */
 		}
-		ptr->resolved = 1;
 	    }
 	}
 #endif

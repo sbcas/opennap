@@ -113,7 +113,8 @@ count_clones (unsigned int ip)
    servers append some additional information that they need to share in
    order to link:
 
-   2 <nick> <pass> <port> <client-info> <speed> <email> <ts> <ip> <server> <serverport> <host>
+   2 <nick> <pass> <port> <client-info> <speed> <email> <ts> <ip> <server>
+   <serverport> <host>
 
    <ts> is the time at which the client logged in (timestamp)
    <ip> is the client's ip address
@@ -123,12 +124,14 @@ count_clones (unsigned int ip)
 
 HANDLER (login)
 {
-    char *av[10];
+    char *av[11];
     USER *user;
     HOTLIST *hotlist;
     int ac, speed, port;
     USERDB *db = 0;
     char *host;
+    char realhost[16];
+    unsigned int ip;
 
     (void) len;
     ASSERT (validate_connection (con));
@@ -144,15 +147,49 @@ HANDLER (login)
     /* check for the correct number of fields for this message type.  some
        clients send extra fields, so we just check to make sure we have
        enough for what is required in this implementation. */
-    if (ac < 5)
+    if (ISUNKNOWN(con))
     {
-	log ("login(): too few parameters (tag=%d)", tag);
-	print_args (ac, av);
-	if (ISUNKNOWN (con))
+	/* check for enough args */
+	if(ac<5)
 	{
+	    log ("login(): too few parameters (tag=%d)", tag);
+	    print_args (ac, av);
 	    unparsable (con);
 	    con->destroy = 1;
+	    return;
 	}
+	host=con->host;
+	ip=con->ip;
+    }
+    else if(ISSERVER(con))
+    {
+	/* require at least 10 arguments */
+	/* TODO: this will become 11 in a revision or two so that the dns
+	 * field is required
+	 */
+	if(ac<10)
+	{
+	    if(ac>0)
+		kill_client(av[0],"invalid login request from server");
+	    log("login(): too few args for command from server %s", con->host);
+	    print_args (ac, av);
+	    return;
+	}
+	ip = strtoul(av[7], 0, 10);
+	if(ac>10)
+	    host=av[10];	/* dns name passed by the peer server */
+	else
+	{
+	    /* convert uint32 to dot-quad */
+	    strncpy(realhost,my_ntoa(ip), sizeof(realhost)-1);
+	    realhost[sizeof(realhost)-1]=0;	/* ensure termination */
+	    host=realhost;	/* fall back to ip in dot-quad */
+	}
+    }
+    else
+    {
+	/* we should never get here */
+	ASSERT(0);
 	return;
     }
 
@@ -169,52 +206,6 @@ HANDLER (login)
 	    kill_client (av[0], "invalid nick");
 	}
 	return;
-    }
-
-    /* determine the dns name for this client */
-    if(ISUNKNOWN(con))
-	host=con->host;
-    else if(ISSERVER(con) && ac>11)
-	host=av[11];
-    else if(ac>7)
-	host=av[7];
-    else
-    {
-	log("login(): unable to get dns name for user %s", av[0]);
-	host="UNKNOWN";
-    }
-
-    /* retrieve registration info (could be NULL) */
-    db = hash_lookup (User_Db, av[0]);
-
-    /* bypass restrictions for privileged users */
-    if (!db || db->level < LEVEL_MODERATOR)
-    {
-	if(ISUNKNOWN(con))
-	{
-	    /* enforce maximum local users */
-	    if(Num_Clients >= Max_Connections)
-	    {
-		log ("login(): max_connections (%d) reached", Max_Connections);
-		send_cmd (con, MSG_SERVER_ERROR,
-			"This server is full (%d connections)", Max_Connections);
-		con->destroy = 1;
-		return;
-	    }
-	    /* check for max clones on one server */
-	    if (Max_Clones > 0 && count_clones (con->ip) >= Max_Clones)
-	    {
-		log ("login(): clones detected from %s", host);
-		send_cmd(con,MSG_SERVER_ERROR,
-			"Exceeded max connections to this server");
-		con->destroy = 1;
-		return;
-	    }
-	}
-
-	/* check for user|ip ban.  */
-	if (check_ban (con, av[0], host))
-	    return;
     }
 
     speed = atoi (av[4]);
@@ -252,6 +243,39 @@ HANDLER (login)
 	     port, con->host);
 	port = 0;
 	/* TODO: generate a change port command */
+    }
+
+    /* retrieve registration info (could be NULL) */
+    db = hash_lookup (User_Db, av[0]);
+
+    /* bypass restrictions for privileged users */
+    if (!db || db->level < LEVEL_MODERATOR)
+    {
+	if(ISUNKNOWN(con))
+	{
+	    /* enforce maximum local users */
+	    if(Num_Clients >= Max_Connections)
+	    {
+		log ("login(): max_connections (%d) reached", Max_Connections);
+		send_cmd (con, MSG_SERVER_ERROR,
+			"This server is full (%d connections)", Max_Connections);
+		con->destroy = 1;
+		return;
+	    }
+	    /* check for max clones on one server */
+	    if (Max_Clones > 0 && count_clones (con->ip) >= Max_Clones)
+	    {
+		log ("login(): clones detected from %s", host);
+		send_cmd(con,MSG_SERVER_ERROR,
+			"Exceeded max connections to this server");
+		con->destroy = 1;
+		return;
+	    }
+	}
+
+	/* check for user|ip ban.  */
+	if (check_ban (con, av[0], host))
+	    return;
     }
 
     if (tag == MSG_CLIENT_LOGIN)
@@ -310,8 +334,7 @@ HANDLER (login)
 		pass_message_args (NULL, MSG_SERVER_NOTIFY_MODS,
 				   ":%s %d \"Bad password for %s (%s) from %s\"",
 				   Server_Name, ERROR_MODE,
-				   db->nick, Levels[db->level],
-				   host);
+				   db->nick, Levels[db->level], host);
 	    }
 	    if (ISUNKNOWN (con))
 	    {
@@ -364,63 +387,37 @@ HANDLER (login)
 	else
 	{
 	    ASSERT (ISSERVER (con));
-	    if(ac>=10)
+	    /* check the timestamp to see which client is older.  the last
+	       one to connect gets killed. when the timestamp is not
+	       available, both clients are killed. */
+	    if (atoi (av[6]) < user->connected)
 	    {
-		/* check the timestamp to see which client is older.  the last
-		   one to connect gets killed. when the timestamp is not
-		   available, both clients are killed. */
-		if (atoi (av[6]) < user->connected)
-		{
-		    /* reject the client that was already logged in since has
-		     an older timestamp */
+		/* reject the client that was already logged in since has
+		   an older timestamp */
 
-		    /* the user we see logged in after the same user on another
-		       server, so we want to kill the existing user.  we don't
-		       pass this back to the server that we received the login
-		       from because that will kill the legitimate user */
-		    pass_message_args (con, MSG_CLIENT_KILL,
-			    ":%s %s \"nick collision (%s %s)\"",
-			    Server_Name, user->nick, av[8], user->server);
-		    notify_mods (KILLLOG_MODE,
-			    "%s killed %s: nick collision (%s %s)",
-			    Server_Name, user->nick, av[8], user->server);
+		/* the user we see logged in after the same user on another
+		   server, so we want to kill the existing user.  we don't
+		   pass this back to the server that we received the login
+		   from because that will kill the legitimate user */
+		pass_message_args (con, MSG_CLIENT_KILL,
+			":%s %s \"nick collision (%s %s)\"",
+			Server_Name, user->nick, av[8], user->server);
+		notify_mods (KILLLOG_MODE,
+			"%s killed %s: nick collision (%s %s)",
+			Server_Name, user->nick, av[8], user->server);
 
-		    if (ISUSER (user->con))
-			zap_local_user (user->con, "nick collision");
-		    else
-			hash_remove (Users, user->nick);
-		    /* proceed with login normally */
-		}
+		if (ISUSER (user->con))
+		    zap_local_user (user->con, "nick collision");
 		else
-		{
-		    /* the client we already know about is older, reject
-		       this login */
-		    log("login(): nick collision for user %s, rejected login from server %s",
-			    user->nick, con->host);
-		    return;
-		}
+		    hash_remove (Users, user->nick);
+		/* proceed with login normally */
 	    }
 	    else
 	    {
-		/* no timestamp available, reject both clients */
-		notify_mods (KILLLOG_MODE,
-			"%s killed %s: nick collision (no TS from %s)",
-			Server_Name, user->nick, con->host);
-		/* notify other servers of the kill. we don't send the kill
-		   to the server we received the login request from */
-		pass_message_args(con,MSG_CLIENT_KILL,
-			":%s %s \"nick collision (no TS from %s)\"",
-			Server_Name,user->nick,con->host);
-		if(ISUSER(user->con))
-		{
-		    user->con->killed = 1;
-		    user->con->destroy = 1;
-		    send_cmd(user->con, MSG_SERVER_NOSUCH,
-			    "You were killed by %s: nick collision",
-			    Server_Name);
-		}
-		else
-		    hash_remove(Users,user->nick);
+		/* the client we already know about is older, reject
+		   this login */
+		log("login(): nick collision for user %s, rejected login from server %s",
+			user->nick, con->host);
 		return;
 	    }
 	}
@@ -487,6 +484,13 @@ HANDLER (login)
     user->speed = speed;
     user->con = con;
     user->level = LEVEL_USER;	/* default */
+    user->host = STRDUP (host);
+    if(!user->host)
+    {
+	OUTOFMEMORY("login");
+	goto failed;
+    }
+    user->ip = ip;
 
     /* if this is a locally connected user, update our information */
     if (ISUNKNOWN (con))
@@ -494,9 +498,7 @@ HANDLER (login)
 	/* save the ip address of this client */
 	user->connected = Current_Time;
 	user->local = 1;
-	user->ip = con->ip;
 	user->conport = con->port;
-	user->host = STRDUP (con->host);
 	if (!(user->server = STRDUP (Server_Name)))
 	{
 	    OUTOFMEMORY ("login");
@@ -524,29 +526,14 @@ HANDLER (login)
     else
     {
 	ASSERT (ISSERVER (con));
-	/* newer servers (0.33+) pass the additional information in the
-	   login message, check for it here */
-	if (ac >= 10)
+	user->connected = atoi (av[6]);
+	user->server = STRDUP (av[8]);
+	if (!user->server)
 	{
-	    /* data is present */
-	    user->connected = atoi (av[6]);
-	    user->ip = strtoul (av[7], 0, 10);
-	    user->server = STRDUP (av[8]);
-	    if (!user->server)
-	    {
-		OUTOFMEMORY ("login");
-		goto failed;
-	    }
-	    user->conport = atoi (av[9]);
-	    user->host=STRDUP(host);
-	    if(!user->host)
-	    {
-		OUTOFMEMORY("login");
-		goto failed;
-	    }
+	    OUTOFMEMORY ("login");
+	    goto failed;
 	}
-	else
-	    user->connected = Current_Time; /* TS not present */
+	user->conport = atoi (av[9]);
     }
 
     if (hash_add (Users, user->nick, user))
