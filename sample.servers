@@ -1,0 +1,12 @@
+# sample servers file for opennap 0.21
+#
+# Lines beginning with a hash (#) are comments and are ignored.  The format
+# of each line should be:
+#
+# server password
+#
+# server	the dns name for the server
+# password	the password to accept for authentication
+#
+# Example:
+# opennap.other.domain.com opennapishere

@@ -246,23 +246,27 @@ handle_connection (CONNECTION * con)
 	    con->recvbuf->datamax = 4;
 	}
 	/* read the packet header if we haven't seen it already */
-	if (con->recvbuf->datasize < 4)
+	while (con->recvbuf->datasize < 4)
 	{
 	    n = read (con->fd, con->recvbuf->data + con->recvbuf->datasize,
 		    4 - con->recvbuf->datasize);
-	    if (n <= 0)
+	    if (n == -1)
 	    {
-		if (n == -1)
+		if (errno != EWOULDBLOCK)
+		{
 		    log ("handle_connection(): read: %s (errno %d)",
 			 strerror (errno), errno);
-		else
-		    log ("handle_connection(): EOF from %s", con->host);
+		    con->destroy = 1;
+		}
+		return;
+	    }
+	    else if (n == 0)
+	    {
+		log ("handle_connection(): EOF from %s", con->host);
 		con->destroy = 1;
 		return;
 	    }
 	    con->recvbuf->datasize += n;
-	    if (con->recvbuf->datasize < 4)
-		return;
 	}
 	/* read the packet body */
 	memcpy (&len, con->recvbuf->data, 2);

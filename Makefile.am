@@ -13,5 +13,5 @@ opennap_SOURCES=opennap.h main.c add_file.c search.c \
 metaserver_SOURCES=metaserver.c
 EXTRA_DIST=sample.conf sample.motd napster.txt .indent.pro \
 	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp snprintf.c \
-	opennap.opt opennap.plg
+	opennap.opt opennap.plg sample.users sample.servers opennap.spec
 INCLUDES=-DSHAREDIR=\"$(pkgdatadir)\"

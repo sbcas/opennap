@@ -1,0 +1,20 @@
+# Sample User Database for opennap 0.21
+#
+# Lines starting with a hash (#) are comments and are ignored.  Each line of
+# the database should be of the format:
+#
+# nickname password email level created lastseen
+#
+# nickname	the nickname that is registered
+# password	the password for this nickname
+# email		the email address for this user
+# level		the default user level of this user.  should be one of:
+#		leech, user, moderator, admin, elite
+# created	the time at which the account was registered (as measured by
+#		the time(2) system call
+# lastseen	the time at which the user last logged into the server (as
+#		measured by the time(2) system call
+#
+# Example:
+# lewser narf blah@email.com leech 0 0
+# poweruser easypass my@address.com elite 0 0
