@@ -62,8 +62,6 @@ remove_connection (CONNECTION * con)
 	}
 
 	list_free (con->uopt->hotlist, 0);
-	con->uopt->hotlist = 0;	/* need to set this to avoid asserting in
-				   cancel_search() */
 	FREE (con->uopt);
 
     }
