@@ -52,6 +52,7 @@ try_connect (char *host, int port)
     cli->ip = ip;
     cli->port = port;
     cli->connecting = 1;
+    cli->timer=Current_Time;
     add_client (cli);
     return;
   error:

@@ -120,7 +120,7 @@ update_stats (void)
 	 Num_Gigs, Num_Gigs / (1024 * 1024), Num_Files, Users->dbsize);
     log ("update_stats(): %d local clients, %d linked servers",
 	 Num_Clients - numServers, numServers);
-    log ("update_stats(): %s local files", Local_Files);
+    log ("update_stats(): %d local files", Local_Files);
     log ("update_stats(): File_Table contains %d entries", File_Table->dbsize);
     delta = Current_Time - Last_Click;
     log ("update_stats(): %.2f kbytes/sec in, %.2f kbytes/sec out",
