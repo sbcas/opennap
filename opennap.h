@@ -535,6 +535,7 @@ int init_db (void);
 void init_random (void);
 int init_server (const char *);
 int invalid_channel (const char *);
+int is_linked (CONNECTION *, const char *);
 void log (const char *fmt, ...);
 unsigned int lookup_ip (const char *host);
 int make_tcp_connection (const char *host, int port, unsigned int *ip);

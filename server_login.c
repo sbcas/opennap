@@ -79,6 +79,10 @@ HANDLER (server_login)
 	return;
     }
 
+    /* check to see if this server is already linked */
+    if (is_linked (con, fields[0]))
+	return;
+
     /* make sure this connection is coming from where they say they are */
     /* TODO: make this nonblocking for the rest of the server */
     ip = lookup_ip (fields[0]);
