@@ -10,8 +10,25 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "opennap.h"
 #include "debug.h"
+
+/* ensure the channel name contains only valid characters */
+static int
+invalid_channel (char *s)
+{
+    int count = 0;
+
+    while (*s)
+    {
+	if (ISSPACE (*s) || !ISPRINT(*s) || *s == ':')
+	    return 1;
+	count++;
+	s++;
+    }
+    return ((count > 0));
+}
 
 /* handle client request to join channel */
 /* [ :<nick> ] <channel> */
@@ -24,9 +41,9 @@ HANDLER (join)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-
     if (pop_user (con, &pkt, &user) != 0)
 	return;
+    ASSERT (validate_user (user));
     if (!pkt || !*pkt)
     {
 	log ("join(): missing channel name");
@@ -34,8 +51,13 @@ HANDLER (join)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "Missing channel name.");
 	return;
     }
-    ASSERT (validate_user (user));
-
+    if (invalid_channel (pkt))
+    {
+	log ("join(): invalid channel name");
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid channel name.");
+	return;
+    }
     /* enforce a maximum channels per user */
     if (list_count (user->channels) > Max_User_Channels)
     {
@@ -46,7 +68,6 @@ HANDLER (join)
 		      "Maximum number of channels is %d.", Max_User_Channels);
 	return;
     }
-
     if (user->muzzled)
     {
 	if (ISUSER (con))
@@ -54,7 +75,6 @@ HANDLER (join)
 		      "Muzzled users may not join chat rooms.");
 	return;
     }
-
     chan = hash_lookup (Channels, pkt);
     if (!chan)
     {
