@@ -419,6 +419,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_IGNORE_USER		322
 #define MSG_CLIENT_UNIGNORE_USER	323
 #define MSG_SERVER_NOT_IGNORED		324
+#define MSG_SERVER_ALREADY_IGNORED	325
 #define MSG_CLIENT_CLEAR_IGNORE		326
 #define MSG_CLIENT_JOIN			400
 #define MSG_CLIENT_PART			401

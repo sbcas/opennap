@@ -176,7 +176,10 @@ HANDLER (ignore)
     /*ensure that this user is not already on the ignore list */
     for (list = con->uopt->ignore; list; list = list->next)
 	if (!strcasecmp (pkt, list->data))
+	{
+	    send_cmd(con,MSG_SERVER_ALREADY_IGNORED,"%s",pkt);
 	    return;		/*already added */
+	}
     list = MALLOC (sizeof (LIST));
     list->data = STRDUP (pkt);
     list->next = con->uopt->ignore;

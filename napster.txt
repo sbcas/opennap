@@ -552,7 +552,12 @@ appropriate, examples of the <data> section for each message are given.
 	server indicates that <user> is not currently ignored in response to
 	a 323 request.
 
-325	missing.
+325	user is already ignored [SERVER]
+
+	<user>
+
+	server indicates the specified user is already on the user's ignore
+	list
 
 326	clear ignore list [CLIENT, SERVER]
 
