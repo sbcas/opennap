@@ -932,6 +932,6 @@ HANDLER (channel_invite)
 	    send_cmd(user->con,tag,"%s %s",chan->name,sender->nick);
 	else
 	    send_cmd(user->con,MSG_SERVER_NOSUCH,"%s invited you to channel %s",
-		    user->nick, chan->name);
+		    sender->nick, chan->name);
     }
 }
