@@ -20,7 +20,6 @@ lookup_ip (const char *host)
 {
     struct hostent *he;
     unsigned int ip;
-    struct in_addr
 
     log ("lookup_ip(): resolving %s", host);
     he = gethostbyname (host);
