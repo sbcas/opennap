@@ -527,7 +527,7 @@ HANDLER (reginfo)
     }
     db->level = get_level (fields[3]);
     db->created = atol (fields[4]);
-    db->lastSeen = get_level (fields[5]);
+    db->lastSeen = atol (fields[5]);
     if (userdb_store (db))
 	log ("reginfo(): userdb_store failed (ignored)");
     else
