@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-June 1, 2000
+June 21, 2000
 
 0.  Foreward
 
@@ -692,9 +692,18 @@ appropriate, examples of the <data> section for each message are given.
 
 	<channel> <user|ip> [ "<reason>" ]
 
-424	channel ban clear
+424	channel ban clear [CLIENT]
 
-	<channel>
+	Format: <channel>
+
+425	alternate topic (?) [SERVER]
+
+	Format: <message>
+
+	[The server sends this command when a user joins one of the
+	predefined channels.  It seems to send a default message if the
+	topic for the channel is the default, otherwise it sends the current
+	channel topic.  -ed]
 
 500	alternate download request [CLIENT]
 

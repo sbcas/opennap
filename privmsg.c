@@ -133,6 +133,10 @@ chanserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_DEOP;
     else if (!strcasecmp ("wallop", cmd))
 	tag = MSG_CLIENT_CHANNEL_WALLOP;
+    else if (!strcasecmp ("invite", cmd))
+	tag = MSG_CLIENT_CHANNEL_INVITE;
+    else if (!strcasecmp ("mode", cmd))
+	tag = MSG_CLIENT_CHANNEL_MODE;
     else if (!strcasecmp ("help", cmd))
     {
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
@@ -146,10 +150,12 @@ chanserv (CONNECTION * con, char *pkt)
 		"ChanServ deop <channel> <user> [user ...]");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ drop <channel>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ help");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ invite <channel> <user>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
 		  "ChanServ kick <channel> <user> [reason]");
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
 		  "ChanServ limit <channel> <number>");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ mode <channel> [mode]");
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
 		"ChanServ op <channel> <user> [user ...]");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ oplist <channel>");
