@@ -516,6 +516,10 @@ HANDLER (whois);
 
 #define NONULL(p) (p!=0?p:"")
 
+#ifndef HAVE_SOCKLEN_T
+typedef unsigned int socklen_t;
+#endif
+
 /*
 ** Macros to use to aid in porting code to Win32
 */
@@ -532,8 +536,6 @@ HANDLER (whois);
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
 #define VERSION "0.12"
-
-typedef unsigned int socklen_t;
 
 #define strcasecmp stricmp
 #define strncasecmp strnicmp

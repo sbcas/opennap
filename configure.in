@@ -5,9 +5,9 @@ AM_PROG_CC_STDC
 AC_HEADER_STDC
 AC_MSG_CHECKING(for socklen_t)
 AC_EGREP_HEADER(socklen_t, /usr/include/sys/socket.h,
-	[AC_MSG_RESULT(yes)],
-	[AC_MSG_RESULT(no)
-	AC_DEFINE(socklen_t, unsigned int)])
+	[AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_SOCKLEN_T)],
+	[AC_MSG_RESULT(no)])
 AC_C_BIGENDIAN
 
 if test -d /usr/local/lib/mysql; then
@@ -23,7 +23,18 @@ AC_MSG_RESULT(MySQL header files are in $MYSQLINCDIR)
 AC_MSG_RESULT(MySQL library files are in $MYSQLLIBDIR)
 AC_SUBST(MYSQLINCDIR)
 AC_SUBST(MYSQLLIBDIR)
+
+dnl give the option to disable the use of /dev/random even if it exists
+ac_cv_check_random=yes
+AC_ARG_ENABLE(random, [  --disable-random	Do not use /dev/random ],
+	[if test $enableval = 'no'; then
+		ac_cv_check_random=no
+
+	fi])
+if test $ac_cv_check_random = 'yes'; then
 AC_CHECK_FILE(/dev/random, [AC_DEFINE(HAVE_DEV_RANDOM)])
+fi
+
 AC_CHECK_LIB(z, compress2)
 AC_CHECK_FUNCS(poll)
 
