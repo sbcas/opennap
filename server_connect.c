@@ -96,7 +96,7 @@ complete_connect (CONNECTION * con)
        not accept our connection it will just drop it and we will detect
        it by the normal means that every other connection is checked */
 
-    log ("complete_connect(): connection to %s established.", con->host);
+    log ("complete_connect(): connection to %s established", con->host);
 }
 
 /* process client request to link another server */

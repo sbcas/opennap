@@ -213,6 +213,8 @@ HANDLER (server_login)
     send_cmd (con, MSG_SERVER_LOGIN_ACK, hash);
 
     FREE (localPass);
+
+    log("server_login(): ACK for %s sent", con->host);
 }
 
 HANDLER (server_login_ack)

@@ -486,6 +486,8 @@ HANDLER (login)
 	    }
 	    user->conport = atoi (av[9]);
 	}
+	else
+	    user->connected = Current_Time; /* TS not present */
     }
 
     if (hash_add (Users, user->nick, user))

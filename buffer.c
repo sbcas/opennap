@@ -64,6 +64,7 @@ buffer_queue (BUFFER * b, char *d, int dsize)
 	if (count > b->datamax - b->datasize)
 	    count = b->datamax - b->datasize;
 	memcpy (b->data + b->datasize, d, count);
+	b->datasize+=count;
 	dsize -= count;
 	d += count;
     }
@@ -181,9 +182,9 @@ buffer_compress (z_streamp zip, BUFFER ** b)
 		break;
 	    /* mark the buffer as completely full then remove unused data
 	       when we exit this loop */
-	    (*pr)->datasize = BUFFER_SIZE;
+	    (*pr)->datasize = (*pr)->datamax;
 	    zip->next_out = (unsigned char *) (*pr)->data;
-	    zip->avail_out = BUFFER_SIZE;
+	    zip->avail_out = (*pr)->datasize;
 	}
 	n = deflate (zip, flush);
 	if (n != Z_OK)

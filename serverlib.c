@@ -210,8 +210,10 @@ validate_user (USER * user)
     ASSERT_RETURN_IF_FAIL (user->magic == MAGIC_USER, 0);
     ASSERT_RETURN_IF_FAIL (VALID_STR (user->nick), 0);
     ASSERT_RETURN_IF_FAIL (VALID_STR (user->clientinfo), 0);
+#if 0
     ASSERT_RETURN_IF_FAIL (user->con == 0
 			   || VALID_LEN (user->con, sizeof (CONNECTION)), 0);
+#endif
     ASSERT_RETURN_IF_FAIL (list_validate (user->channels), 0);
     return 1;
 }
