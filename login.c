@@ -381,6 +381,10 @@ HANDLER (login)
 	/* save the ip address of this client */
 	user->local = 1;
 	user->host = con->ip;
+#if TRESOLV
+	/* dns name will have been found by this point */
+	user->dns = STRDUP (con->host);
+#endif
 	user->conport = con->port;
 	if (!(user->server = STRDUP (Server_Name)))
 	{
@@ -461,8 +465,14 @@ HANDLER (login)
 	pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
 			   av[0], av[1], av[2], av[3], av[4]);
 	if (ISUSER (con))
-	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %u %hu %s",
-			       av[0], user->host, user->conport, Server_Name);
+	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %u %hu %s %s",
+			       av[0], user->host, user->conport, Server_Name,
+#if TRESOLV
+			       user->dns
+#else
+			       my_ntoa(user->host),
+#endif
+			       );
 	if (user->level != LEVEL_USER)
 	    pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
 			       ":%s %s %s", Server_Name, user->nick,
@@ -507,18 +517,19 @@ HANDLER (login)
     }
 }
 
-/* 10013 <user> <ip> <port> <server> */
+/* 10013 <user> <ip> <port> <server> [dns-name] */
 /* peer server is sending us the ip address for a locally connected client */
 HANDLER (user_ip)
 {
-    char *field[4];
+    char *field[5];
     USER *user;
+    int ac;
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("user_ip");
-    if (split_line (field, sizeof (field) / sizeof (char *), pkt) != 4)
+    if ((ac=split_line (field, sizeof (field) / sizeof (char *), pkt)) < 4)
     {
 	log ("user_ip(): wrong number of arguments");
 	return;
@@ -539,6 +550,8 @@ HANDLER (user_ip)
 	ASSERT (user->server == 0);
 	if (!(user->server = STRDUP (field[3])))
 	    OUTOFMEMORY ("user_ip");
+	if(ac>4)
+	    user->dns = STRDUP (field[4]);
     }
     else
     {

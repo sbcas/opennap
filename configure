@@ -1701,7 +1701,7 @@ if test "${enable_tresolv+set}" = set; then
 #define TRESOLV 1
 EOF
 
-	echo $ac_n "checking for pthread_create""... $ac_c" 1>&6
+		echo $ac_n "checking for pthread_create""... $ac_c" 1>&6
 echo "configure:1706: checking for pthread_create" >&5
 if eval "test \"`echo '$''{'ac_cv_func_pthread_create'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6

@@ -119,6 +119,7 @@ struct _user
     char *pass;			/* password for this user, needed for sync */
     char *clientinfo;
     char *server;		/* which server the user is connected to */
+    char *dns;			/* dns host name */
 
     unsigned short uploads;	/* no. of uploads in progress */
     unsigned short downloads;	/* no. of downloads in progress */
@@ -200,7 +201,7 @@ struct _connection
     unsigned short port;	/* remote port */
     int fd;			/* socket for this connection */
     unsigned int ip;		/* ip for this connection */
-    char *host;			/* host from which this connection originates */
+    char *host;			/* dns name */
     USER *user;			/* pointer to the user associated with this
 				   connection, if CLASS_USER */
     BUFFER *sendbuf;		/* output buffer */

@@ -56,6 +56,8 @@ free_user (USER * user)
     if ((db = hash_lookup (User_Db, user->nick)))
 	db->lastSeen = Current_Time;
 
+    if(user->dns)
+	FREE(user->dns);
     FREE (user->nick);
     FREE (user->pass);
     FREE (user->clientinfo);

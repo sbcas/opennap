@@ -203,6 +203,9 @@ validate_user (USER * user)
     ASSERT_RETURN_IF_FAIL (user->magic == MAGIC_USER, 0);
     ASSERT_RETURN_IF_FAIL (VALID_STR (user->nick), 0);
     ASSERT_RETURN_IF_FAIL (VALID_STR (user->clientinfo), 0);
+#if TRESOLV
+    ASSERT_RETURN_IF_FAIL (user->dns == 0 || VALID_STR (user->dns), 0);
+#endif
     ASSERT_RETURN_IF_FAIL (user->con == 0
 			   || VALID_LEN (user->con, sizeof (CONNECTION)), 0);
     ASSERT_RETURN_IF_FAIL (list_validate (user->channels), 0);

@@ -97,7 +97,7 @@ HANDLER (whois)
 	rsp = append_string (rsp, " %d %d %s %d %d",
 			     user->totaldown, user->totalup,
 #if TRESOLV
-			     ISUSER(user->con) ? (user->con->host!=QUERY_PENDING?user->con->host:"pending") : my_ntoa(user->host),
+			     user->dns,
 #else
 			     my_ntoa (user->host),
 #endif
