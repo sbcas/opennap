@@ -102,6 +102,12 @@ appropriate, examples of the <data> section for each message are given.
 	registration time is returned.  If the nick is not registered, a
 	dummy value is returned.
 
+4	??? [CLIENT]
+
+	<n>
+
+	the latest napster v2.0beta5a sends this prior to login.
+
 6	alternate login format [CLIENT]
 
 	this message is used when logging in for the first time after

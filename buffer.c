@@ -404,7 +404,8 @@ send_queued_data (CONNECTION *con)
 
     if (buffer_size (con->sendbuf) > n)
     {
-	log ("send_queued_data: output buffer for %s exceeded %d bytes", n);
+	log ("send_queued_data: output buffer for %s exceeded %d bytes", 
+		con->host, n);
 	con->destroy = 1;
 	return;
     }

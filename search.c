@@ -31,12 +31,12 @@ convert_to_lower_case (char *s)
 static void
 format_request (const char *s, char *d, int dsize)
 {
-    for (;dsize>1 && *s;s++)
+    for (; dsize > 1 && *s; s++)
     {
 	if (*s == ' ')
 	{
 	    *d++ = '%';
-	    while (isspace(*(s+1)))
+	    while (isspace (*(s + 1)))
 		s++;
 	}
 	else if (*s == '\'' || *s == '%' || *s == '_' || *s == '\\')
@@ -49,7 +49,7 @@ format_request (const char *s, char *d, int dsize)
 	    *d++ = *s;
 	dsize--;
     }
-    *d=0;
+    *d = 0;
 }
 
 HANDLER (search)
@@ -80,7 +80,7 @@ HANDLER (search)
     while (i < numwords)
     {
 	if (!strcasecmp ("filename", fields[i]) ||
-		!strcasecmp ("soundex", fields[i]))
+	    !strcasecmp ("soundex", fields[i]))
 	{
 	    i++;
 	    /* next word should be "contains" */
@@ -88,7 +88,7 @@ HANDLER (search)
 	    {
 		log
 		    ("search(): error in search string, expected '%s CONTAINS'",
-		     fields[i-1]);
+		     fields[i - 1]);
 		return;
 	    }
 	    i++;
@@ -111,7 +111,7 @@ HANDLER (search)
 
 	    l = strlen (Buf);
 	    snprintf (Buf + l, sizeof (Buf) - l, " %s%s LIKE '%%%s%%'",
-		    compound ? " && " : "", fields[i-2], quoted);
+		      compound ? " && " : "", fields[i - 2], quoted);
 	    i++;
 	    compound = 1;
 	}
@@ -124,7 +124,7 @@ HANDLER (search)
 	    if (max_results > Max_Search_Results)
 	    {
 		log ("search(): client requested a maximum of %d results",
-			max_results);
+		     max_results);
 		max_results = Max_Search_Results;
 	    }
 	    i++;
@@ -134,17 +134,17 @@ HANDLER (search)
 		 strcasecmp ("freq", fields[i]) == 0)
 	{
 	    convert_to_lower_case (fields[i]);
-	    l=strlen(Buf);
-	    snprintf(Buf+l,sizeof(Buf)-l," %s%s", compound ? " && " : "",
-		    fields[i]);
+	    l = strlen (Buf);
+	    snprintf (Buf + l, sizeof (Buf) - l, " %s%s",
+		      compound ? " && " : "", fields[i]);
 	    i++;
 	    if (strcasecmp ("at least", fields[i]) == 0)
 	    {
-		APPEND (Buf, " > ");
+		APPEND (Buf, " >= ");
 	    }
 	    else if (strcasecmp ("at most", fields[i]) == 0)
 	    {
-		APPEND (Buf, " < ");
+		APPEND (Buf, " <= ");
 	    }
 	    else if (strcasecmp ("equals", fields[i]) == 0)
 	    {
@@ -166,8 +166,10 @@ HANDLER (search)
 	    return;
 	}
     }
-    snprintf (Buf + strlen (Buf), sizeof (Buf) - strlen (Buf), " LIMIT %d",
-	      max_results);
+    /* add the limit and make sure we don't return matches for the user that
+       issued the search (we assume they know what files they are sharing) */
+    snprintf (Buf + strlen (Buf), sizeof (Buf) - strlen (Buf),
+	    " && owner != '%s' LIMIT %d", con->user->nick, max_results);
 
     log ("search: %s", Buf);
 
@@ -182,7 +184,7 @@ HANDLER (search)
 	return;
     }
     numrows = mysql_num_rows (result);
-    log ("search(): %d matches", numrows);
+    log ("search: %d matches", numrows);
     for (i = 0; i < numrows; i++)
     {
 	row = mysql_fetch_row (result);

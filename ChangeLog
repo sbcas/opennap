@@ -14,6 +14,10 @@ syntax in the 200 message is
 	SOUNDEX CONTAINS "..."
 each soundex word should be separated by a space inside the quotes.
 
+search no longer returns matches for the user issuing the search
+
+search should use <= and >= for AT MOST and AT LEAST
+
 Changes from 0.09
 =================
 

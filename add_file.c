@@ -189,10 +189,9 @@ compute_soundex (char *d, int dsize, const char *s)
 
 HANDLER (add_file)
 {
-    char *field[6];
-    char path[256], soundex[256], *p;
+    char *field[6], path[256], soundex[256], *p;
     USER *user;
-    int fsize;
+    unsigned long fsize;
 
     (void) tag;
     (void) len;
@@ -205,7 +204,9 @@ HANDLER (add_file)
 
     if (split_line (field, sizeof (field) / sizeof (char *), pkt) != 6)
     {
-	log ("add_file(): wrong number of fields in message");
+	log ("add_file: wrong number of fields in message");
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of fields");
 	return;
     }
 
@@ -213,8 +214,7 @@ HANDLER (add_file)
     {
 	if (user->con)
 	    send_cmd (user->con, MSG_SERVER_NOSUCH,
-		    "You may only share %d files.",
-		    Max_Shared);
+		    "You may only share %d files.", Max_Shared);
 	return;
     }
     /* sql will take DOS path names with backslashes to mean the escape
@@ -240,6 +240,8 @@ HANDLER (add_file)
     if (mysql_query (Db, Buf) != 0)
     {
 	sql_error ("add_file", Buf);
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "error adding file to database");
 	return;
     }
 
@@ -252,7 +254,7 @@ HANDLER (add_file)
     /* to avoid rounding errors in the total approximate size, we first
        subtract what we know this client has contributed, then recalculate
        the size in gigabytes */
-    fsize = atoi (field[2]) / 1024; /* file size in kB */
+    fsize = atol (field[2]) / 1024; /* file size in kB */
     user->libsize += fsize;
     Num_Gigs += fsize; /* this is actually kB, not gB */
     Num_Files++;

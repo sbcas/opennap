@@ -137,6 +137,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_WALLOP, wallop},	/* 627 */
     {MSG_CLIENT_ANNOUNCE, announce},	/* 628 */
     {MSG_CLIENT_SETUSERLEVEL, level},
+    {MSG_CLIENT_CHANGE_DATA_PORT, change_data_port}, /* 703 */
     {MSG_CLIENT_PING, ping},	/* 751 */
     {MSG_CLIENT_PONG, ping},	/* 752 */
     {MSG_CLIENT_SERVER_RECONFIG, server_reconfig},	/* 800 */
@@ -265,7 +266,8 @@ handle_connection (CONNECTION * con)
     if (con->class == CLASS_UNKNOWN &&
 	(tag != MSG_CLIENT_LOGIN && tag != MSG_CLIENT_LOGIN_REGISTER &&
 	 tag != MSG_CLIENT_REGISTER && tag != MSG_SERVER_LOGIN &&
-	 tag != MSG_SERVER_LOGIN_ACK && tag != MSG_SERVER_ERROR))
+	 tag != MSG_SERVER_LOGIN_ACK && tag != MSG_SERVER_ERROR &&
+	 tag != 4)) /* unknown: v2.0 beta 5a sends this? */
     {
 	log ("handle_connection: %s is not registered, closing connection",
 	     con->host);
