@@ -477,6 +477,7 @@ HANDLER (reginfo)
     char *server;
     char *fields[6];
     USERDB *db;
+    int level;
 
     (void) tag;
     (void) len;
@@ -531,9 +532,15 @@ HANDLER (reginfo)
 	}
 	hash_add (User_Db, db->nick, db);
     }
+    level=get_level(fields[3]);
+    if(level==-1)
+    {
+	log("reginfo(): invalid level %s", fields[3]);
+	level=LEVEL_USER;	/* reset to something reasonable */
+    }
 
     pass_message_args (con, tag, ":%s %s %s %s %s %s %s",
-		       server, fields[0], fields[1], fields[2], fields[3],
+		       server, fields[0], fields[1], fields[2], Levels[level],
 		       fields[4], fields[5]);
 
     /* this is already the MD5-hashed password, just copy it */
@@ -544,7 +551,7 @@ HANDLER (reginfo)
 	OUTOFMEMORY ("reginfo");
 	return;
     }
-    db->level = get_level (fields[3]);
+    db->level = level;
     db->created = atol (fields[4]);
     db->lastSeen = atol (fields[5]);
 }
