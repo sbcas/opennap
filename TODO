@@ -4,8 +4,6 @@
   problem since when the user first connects they will likely send a large
   amount of valid information about the contents of their mp3 library
 
-* add a list users command (found numeric, still need to find the format)
-
 * server linking is still blocking for some reason, even thought the socket
   is set nonblocking before the connect() call
 
@@ -13,7 +11,5 @@
 
 * allow channels file to accept the default level as either a word or the
   number
-
-* find the server output for the global users list
 
 * nonblocking connect() doesnt work under win32 so they can't link
