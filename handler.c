@@ -73,7 +73,8 @@ typedef struct
 }
 HANDLER;
 
-/* this is the table of valid commands we accept from both users and servers */
+/* this is the table of valid commands we accept from both users and servers
+   THIS TABLE MUST BE SORTED BY MESSAGE TYPE */
 static HANDLER Protocol[] = {
     {MSG_CLIENT_LOGIN, login},	/* 2 */
     {MSG_CLIENT_LOGIN_REGISTER, login},	/* 6 */
@@ -81,6 +82,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_ADD_FILE, add_file},	/* 100 */
     {MSG_CLIENT_REMOVE_FILE, remove_file},	/* 102 */
     {MSG_CLIENT_SEARCH, search},	/* 200 */
+    {MSG_CLIENT_DOWNLOAD, download},	/* 203 */
     {MSG_CLIENT_PRIVMSG, privmsg},	/* 205 */
     {MSG_CLIENT_ADD_HOTLIST, add_hotlist},	/* 207 */
     {MSG_CLIENT_ADD_HOTLIST_SEQ, add_hotlist},	/* 208 */
@@ -92,21 +94,19 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_UPLOAD_START, upload_start},	/* 220 */
     {MSG_CLIENT_UPLOAD_END, upload_end},	/* 221 */
     {MSG_CLIENT_REMOVE_HOTLIST, remove_hotlist},	/* 303 */
+    {MSG_CLIENT_JOIN, join},	/* 400 */
+    {MSG_CLIENT_PART, part},	/* 401 */
+    {MSG_CLIENT_PUBLIC, public},	/* 402 */
+    {MSG_SERVER_PUBLIC, public},	/* 403 */
     {MSG_SERVER_NOSUCH, server_error},	/* 404 */
+    {MSG_SERVER_TOPIC, topic},	/* 410 */
     {MSG_CLIENT_DOWNLOAD_FIREWALL, download},	/* 500 */
-    {MSG_CLIENT_WHOIS, whois},
-    {MSG_CLIENT_JOIN, join},
-    {MSG_CLIENT_PART, part},
-    {MSG_CLIENT_PUBLIC, public},
-    {MSG_SERVER_PUBLIC, public},
     {MSG_CLIENT_USERSPEED, user_speed},	/* 600 */
-    {MSG_CLIENT_KILL, kill_user},
-    {MSG_CLIENT_DOWNLOAD, download},
-    {MSG_CLIENT_UPLOAD_OK, upload_ok},
+    {MSG_CLIENT_WHOIS, whois}, /* 603 */
+    {MSG_CLIENT_SETUSERLEVEL, level},	/* 606 */
     {MSG_SERVER_UPLOAD_REQUEST, upload_request},	/* 607 */
-    {MSG_SERVER_TOPIC, topic},
-    {MSG_CLIENT_MUZZLE, muzzle},
-    {MSG_CLIENT_UNMUZZLE, unmuzzle},
+    {MSG_CLIENT_UPLOAD_OK, upload_ok},	/* 608 */
+    {MSG_CLIENT_KILL, kill_user},	/* 610 */
     {MSG_CLIENT_BAN, ban},	/* 612 */
     {MSG_CLIENT_ALTER_PORT, alter_port},	/* 613 */
     {MSG_CLIENT_UNBAN, unban},	/* 614 */
@@ -114,11 +114,12 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_LIST_CHANNELS, list_channels},	/* 618 */
     {MSG_CLIENT_LIMIT, queue_limit},	/* 619 */
     {MSG_CLIENT_MOTD, show_motd},	/* 621 */
+    {MSG_CLIENT_MUZZLE, muzzle},	/* 622 */
+    {MSG_CLIENT_UNMUZZLE, unmuzzle},	/* 623 */
     {MSG_CLIENT_ALTER_SPEED, alter_speed},	/* 625 */
     {MSG_CLIENT_DATA_PORT_ERROR, data_port_error},	/* 626 */
     {MSG_CLIENT_WALLOP, wallop},	/* 627 */
     {MSG_CLIENT_ANNOUNCE, announce},	/* 628 */
-    {MSG_CLIENT_SETUSERLEVEL, level},
     {MSG_CLIENT_CHANGE_SPEED, change_speed},	/* 700 */
     {MSG_CLIENT_CHANGE_PASS, change_pass},	/* 701 */
     {MSG_CLIENT_CHANGE_EMAIL, change_email},	/* 702 */
@@ -133,7 +134,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_NAMES_LIST, list_users},	/* 830 */
 
     /* non-standard messages */
-    {MSG_CLIENT_QUIT, client_quit},
+    {MSG_CLIENT_QUIT, client_quit},	/* 10000 */
     {MSG_SERVER_LOGIN, server_login},	/* 10010 */
     {MSG_SERVER_LOGIN_ACK, server_login_ack},	/* 10011 */
     {MSG_SERVER_USER_SHARING, user_sharing},	/* 10012 */
@@ -151,9 +152,30 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_USAGE_STATS, server_usage},	/* 10115 */
     {MSG_CLIENT_REGISTER_USER, register_user},	/* 10200 */
     {MSG_CLIENT_CHANNEL_LEVEL, channel_level},	/* 10201 */
-    {MSG_CLIENT_SHARE_FILE, share_file},
+    {MSG_CLIENT_SHARE_FILE, share_file},	/* 10300 */
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
+
+/* use a binary search to find the table in the entry */
+static int
+find_handler (unsigned int tag)
+{
+    int min = 0, max = Protocol_Size - 1, try;
+
+    while (!SigCaught)
+    {
+	try = (max + min) / 2;
+	if (tag == Protocol[try].message)
+	    return try;
+	else if (min == max)
+	    return -1;	/* not found */
+	else if (tag < Protocol[try].message)
+	    max = try - 1;
+	else
+	    min = try + 1;
+    }
+    return -1;
+}
 
 /* this is not a real handler, but takes the same arguments as one */
 HANDLER (dispatch_command)
@@ -174,15 +196,13 @@ HANDLER (dispatch_command)
 	    (con->recvbuf->data, con->recvbuf->consumed + 4 + len + 1));
     byte = *(pkt + len);
     *(pkt + len) = 0;
-    for (l = 0; l < Protocol_Size; l++)
+    l = find_handler (tag);
+    if (l != -1)
     {
-	if (Protocol[l].message == tag)
-	{
-	    ASSERT (Protocol[l].handler != 0);
-	    /* note that we pass only the data part of the packet */
-	    Protocol[l].handler (con, tag, len, pkt);
-	    goto done;
-	}
+	ASSERT (Protocol[l].handler != 0);
+	/* note that we pass only the data part of the packet */
+	Protocol[l].handler (con, tag, len, pkt);
+	goto done;
     }
     log ("dispatch_command(): unknown message: tag=%hu, length=%hu, data=%s",
 	tag, len, pkt);
