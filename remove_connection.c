@@ -62,6 +62,10 @@ remove_connection (CONNECTION * con)
 	}
 
 	list_free (con->uopt->hotlist, 0);
+
+	if (con->uopt->files)
+	    free_hash (con->uopt->files);
+
 	FREE (con->uopt);
 
     }

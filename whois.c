@@ -75,17 +75,25 @@ HANDLER (whois)
 
 	/* we show admins the server which a user is connected to */
 	send_user (sender, MSG_SERVER_WHOIS_RESPONSE,
-		   "%s \"%s\" %d \"%s\" \"%s\" %d %d %d %d \"%s\" %d %d %s %d %d %s %s%s%s",
-		   user->nick, Levels[user->level], online, chanlist,
+		   "%s \"%s\" %d \"%s\" \"%s\" %d %d %d %d \"%s\" %d %d %s %d %d %s%s%s",
+		   user->nick,
+		   Levels[user->level],
+		   online,
+		   chanlist,
 		   user->muzzled ? "Muzzled" : "Active",
-		   user->shared, user->downloads, user->uploads,
-		   user->speed, user->clientinfo, user->totaldown,
-		   user->totalup, my_ntoa (user->host),
-		   user->conport, user->port, db ? db->email : "unknown",
+		   user->shared,
+		   user->downloads,
+		   user->uploads,
+		   user->speed,
+		   user->clientinfo,
+		   user->totaldown,
+		   user->totalup,
+		   my_ntoa (user->host),
+		   user->conport,
+		   user->port,
+		   db ? db->email : "unknown",
 		   sender->level > LEVEL_MODERATOR ? " " : "",
-		   sender->level >
-		   LEVEL_MODERATOR ? (user->server ? user->
-				      server : Server_Name) : "");
+		   sender->level > LEVEL_MODERATOR ? (user->server ? user->server : Server_Name) : "");
     }
     FREE (chanlist);
 
