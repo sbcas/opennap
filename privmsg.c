@@ -64,6 +64,26 @@ operserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_OP_LIST;
     else if (!strcasecmp ("deop", cmd))
 	tag = MSG_CLIENT_DEOP;
+    else if (!strcasecmp("help",cmd))
+    {
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ Help for OperServ:");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ cloak");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ config");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ connect");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ deop");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ disconnect");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ help");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ killserver");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ links");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ op");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ oplist");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ reconfig");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ register");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ stats");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ usermode");
+	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ END of help for OperServ");
+	return;
+    }
     else
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "Unknown OperServ command: %s",

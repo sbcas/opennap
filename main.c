@@ -542,10 +542,9 @@ main (int argc, char **argv)
     if (sp != -1)
 	CLOSE (sp);
 
-    /* write out the user database */
-    userdb_dump ();
-
-    save_bans ();
+    userdb_dump ();	/* write out the user database */
+    save_bans ();	/* write out server bans */
+    dump_channels();	/* write out persistent channels file */
 
     /* close all client connections */
     for (i = 0; i < Max_Clients; i++)

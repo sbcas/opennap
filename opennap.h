@@ -583,6 +583,7 @@ void close_db (void);
 void complete_connect (CONNECTION * con);
 void config (const char *);
 void config_defaults (void);
+void dump_channels(void);
 void exec_timers (time_t);
 void expand_hex (char *, int);
 void fdb_garbage_collect (HASH *);
