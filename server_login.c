@@ -13,17 +13,17 @@
 #include "debug.h"
 #include "md5.h"
 
-#define get_server_pass(c) _get_server_pass(c,1)
-#define get_local_pass(c) _get_server_pass(c,0)
-
 /* this happens infrequent enough that we just open it each time we need to
    instead of leaving it open */
 static char *
-_get_server_pass (const char *host, int remote)
+get_server_pass (const char *host, char **localPass /* optional */ )
 {
     char path[_POSIX_PATH_MAX], *av[3], *pass = 0;
     int ac;
     FILE *fp;
+
+    if (localPass)
+	*localPass = 0;
 
     snprintf (path, sizeof (path), "%s/servers", Config_Dir);
     fp = fopen (path, "r");
@@ -39,30 +39,37 @@ _get_server_pass (const char *host, int remote)
 	if (Buf[0] == '#' || Buf[0] == '\n'
 	    || (Buf[0] == '\r' || Buf[1] == '\n'))
 	    continue;
+	/* each line is composed of: <server> <password> [ <mypass> ] */
 	ac = split_line (av, FIELDS (av), Buf);
 	if (ac > 1)
 	{
 	    if (!strcasecmp (host, av[0]))
 	    {
-		if (remote)
-		{
-		    /* return the remote server's expected password */
-		    pass = STRDUP (av[1]);
-		}
-		else
-		{
-		    /* return the password specifically for this server,
-		       or the default password if none is specified */
-		    pass = STRDUP ((ac > 2) ? av[2] : Server_Pass);
-		}
+		/* return the remote server's expected password */
+		pass = STRDUP (av[1]);
 		if (!pass)
-		    OUTOFMEMORY ("_get_server_pass");
+		{
+		    OUTOFMEMORY ("get_server_pass");
+		    break;
+		}
+		if (localPass && ac > 2)
+		{
+		    *localPass = STRDUP (av[2]);
+		    if (!*localPass)
+		    {
+			OUTOFMEMORY ("get_server_pass");
+			/* force the operation to fail so there is no
+			   possibility of sniffing the default password */
+			FREE (pass);
+			pass = 0;
+		    }
+		}
 		break;
 	    }
 	}
 	else
 	{
-	    log ("_get_server_pass(): too few parameters for server %s",
+	    log ("get_server_pass(): too few parameters for server %s",
 		 (ac > 0) ? av[0] : "<unknown>");
 	}
     }
@@ -76,7 +83,7 @@ HANDLER (server_login)
 {
     char *fields[3];
     char hash[33];
-    char *pass;
+    char *pass, *localPass = 0;
     unsigned int ip;
     struct md5_ctx md;
     int compress;
@@ -129,7 +136,7 @@ HANDLER (server_login)
 		 con->host);
 
     /* see if there is any entry for this server */
-    if ((pass = get_server_pass (con->host)) == 0)
+    if ((pass = get_server_pass (con->host, &localPass)) == 0)
     {
 	log ("server_login(): no entry for server %s", con->host);
 	send_cmd (con, MSG_SERVER_ERROR, "Permission Denied");
@@ -191,17 +198,8 @@ HANDLER (server_login)
 		       strlen (con->opt.auth->sendernonce), &md);
     md5_process_bytes (con->opt.auth->nonce, strlen (con->opt.auth->nonce),
 		       &md);
-    /* look up the pass to use with this server, or use the default if none
-       is specified */
-    pass = get_local_pass (fields[0]);
-    if(!pass)
-    {
-	/* should only happen upon memory failure */
-	log("server_login(): could not find local password for link (fatal)");
-	con->destroy = 1;
-	return;
-    }
-    md5_process_bytes (pass, strlen (pass), &md);
+    ASSERT (localPass != 0);
+    md5_process_bytes (localPass, strlen (localPass), &md);
     md5_finish_ctx (&md, hash);
     expand_hex (hash, 16);
     hash[32] = 0;
@@ -239,7 +237,7 @@ HANDLER (server_login_ack)
     }
 
     /* look up the entry in our peer servers database */
-    pass = get_server_pass (con->host);
+    pass = get_server_pass (con->host, NULL);
     if (!pass)
     {
 	log ("server_login_ack(): unable to find server %s", con->host);
