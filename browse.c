@@ -191,7 +191,7 @@ HANDLER (browse_new)
     if(pkt)
     {
 	results = atoi (pkt);
-	if(results>Max_Browse_Result)
+	if(Max_Browse_Result>0 && results>Max_Browse_Result)
 	    results=Max_Browse_Result;
     }
     if (ISUSER (user->con))
@@ -208,6 +208,8 @@ HANDLER (browse_new)
 	    hash_foreach (user->con->uopt->files,
 			  (hash_callback_t) create_file_list, &list);
 	    dir[0] = 0;
+	    if(results==0)
+		results=0x7fffffff;	/* hack, we really mean unlimited */
 	    for (tmpList = list; tmpList && results;
 		    tmpList = tmpList->next, results--)
 	    {
