@@ -273,7 +273,7 @@ send_queued_data (CONNECTION *con)
 		    con->sendbufcompressed = con->sendbuflen;
 
 		    log ("send_queued_data(): compressed %d bytes into %d (%d%%).",
-			l, datasize, (100 * (l - datasize)) / l);
+			l, datasize, (100 * (datasize - l)) / l);
 		}
 		else
 		{
@@ -315,7 +315,12 @@ send_queued_data (CONNECTION *con)
 	    return;
 	}
 	con->sendbuflen -= l;
-	con->sendbufcompressed -= l;
+#if HAVE_LIBZ
+	if (con->sendbufcompressed >= l)
+	    con->sendbufcompressed -= l;
+	else
+	    con->sendbufcompressed = 0;
+#endif /* HAVE_LIBZ */
 
 	/* shift any data that was left down to the begin of the buf */
 	/* TODO: this should probably be implemented as a circular buffer to
