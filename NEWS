@@ -1,4 +1,4 @@
-[opennap 0.21]
+[opennap 0.22]
 
 MySQL is no longer used in opennap.  The users and servers databaseses are
 now handled as a flat text files.  The location of these files is controlled

@@ -1,4 +1,373 @@
+2000-03-17  drscholl  <drscholl@users.sourceforge.net>
+
+	* /cvsroot/opennap/opennap/kill_user.c, /cvsroot/opennap/opennap/unmuzzle.c:
+	allow any user to kill/unmuzzle a user that is below their level
+
+	* /cvsroot/opennap/opennap/napster.txt, /cvsroot/opennap/opennap/server_links.c:
+	server_links() should allow the command to be issued by a remote user.
+
+	updated the text for message 300 in napster.txt
+
+	* /cvsroot/opennap/opennap/download.c, /cvsroot/opennap/opennap/login.c, /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/opennap.spec, /cvsroot/opennap/opennap/util.c:
+	added print_args() utility function for use in dumping the input command for
+	error messages
+
+	* /cvsroot/opennap/opennap/README, /cvsroot/opennap/opennap/announce.c, /cvsroot/opennap/opennap/configure.in, /cvsroot/opennap/opennap/opennap.h:
+	wallop() was using the wrong tag for the response to the client
+
+	* /cvsroot/opennap/opennap/handler.c:
+	fixed error in encapsulated() where it was using con->sendbuf instead of
+	con->recvbuf to get the packet to relay
+
+	* /cvsroot/opennap/opennap/README, /cvsroot/opennap/opennap/free_user.c, /cvsroot/opennap/opennap/login.c, /cvsroot/opennap/opennap/opennap.h:
+	removed log message from free_user()
+
+	* /cvsroot/opennap/opennap/NEWS, /cvsroot/opennap/opennap/README, /cvsroot/opennap/opennap/ban.c, /cvsroot/opennap/opennap/init.c, /cvsroot/opennap/opennap/login.c, /cvsroot/opennap/opennap/napster.txt, /cvsroot/opennap/opennap/network.c, /cvsroot/opennap/opennap/part.c, /cvsroot/opennap/opennap/search.c, /cvsroot/opennap/opennap/textdb.c, /cvsroot/opennap/opennap/AUTHORS:
+	incorporated OS/2 port from Brian Smit <dbsoft@technologist.com>.
+
+	fixes to compile cleanly under Solaris 2.7 with egcs 1.1.2
+
+	updated REAMDE with list of supported operating systems.
+
+	* /cvsroot/opennap/opennap/handler.c, /cvsroot/opennap/opennap/search.c:
+	fixed memory leak in remote search functions if the server that we received
+	the search request from splits before we send the ack for the search
+
+	* /cvsroot/opennap/opennap/README, /cvsroot/opennap/opennap/announce.c, /cvsroot/opennap/opennap/handler.c, /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/part_channel.c, /cvsroot/opennap/opennap/public.c, /cvsroot/opennap/opennap/util.c:
+	fixed bug in encapsulated() where the complete packet was not correctly
+	relayed when the recipient of the message is not local.
+
+	added format_message() utility function
+
+	* /cvsroot/opennap/opennap/buffer.c:
+	minor modifications to buffer_decompress() to avoid unecessary operations
+
+	* /cvsroot/opennap/opennap/browse.c, /cvsroot/opennap/opennap/buffer.c, /cvsroot/opennap/opennap/client_quit.c, /cvsroot/opennap/opennap/handler.c, /cvsroot/opennap/opennap/upload_complete.c:
+	removed additional extraneous logging messages
+
+	rewrote the buffer_compress() routine in hopes of solving the server link
+	problem.
+
+	* /cvsroot/opennap/opennap/download.c, /cvsroot/opennap/opennap/handler.c, /cvsroot/opennap/opennap/main.c, /cvsroot/opennap/opennap/search.c:
+	removed many log messages that are no longer really necessary.
+
+	dispatch_command() will now dump the contents of the input buffer when it
+	detects a command that is unknown, and will automatically close the
+	connection to another server upon this error
+
+2000-03-16  drscholl  <drscholl@users.sourceforge.net>
+
+	* /cvsroot/opennap/opennap/add_file.c, /cvsroot/opennap/opennap/announce.c, /cvsroot/opennap/opennap/ban.c, /cvsroot/opennap/opennap/buffer.c, /cvsroot/opennap/opennap/change.c, /cvsroot/opennap/opennap/download.c, /cvsroot/opennap/opennap/free_user.c, /cvsroot/opennap/opennap/handler.c, /cvsroot/opennap/opennap/join.c, /cvsroot/opennap/opennap/kill_user.c, /cvsroot/opennap/opennap/level.c, /cvsroot/opennap/opennap/login.c, /cvsroot/opennap/opennap/main.c, /cvsroot/opennap/opennap/muzzle.c, /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/part.c, /cvsroot/opennap/opennap/public.c, /cvsroot/opennap/opennap/remove_connection.c, /cvsroot/opennap/opennap/remove_file.c, /cvsroot/opennap/opennap/search.c, /cvsroot/opennap/opennap/server_connect.c, /cvsroot/opennap/opennap/server_links.c, /cvsroot/opennap/opennap/server_login.c, /cvsroot/opennap/opennap/server_usage.c, /cvsroot/opennap/opennap/topic.c, /cvsroot/opennap/opennap/unmuzzle.c, /cvsroot/opennap/opennap/util.c:
+	made the server list a real LIST instead of an array.  removed global
+	Num_Servers.  pass_message_args() will now return without doing anything if
+	there are no connected servers so that each handler routine doesn't have to
+	check for Servers!=0.
+
+2000-03-15  drscholl  <drscholl@users.sourceforge.net>
+
+	* /cvsroot/opennap/opennap/level.c:
+	fixed broken log message causing a segfault
+
+	* /cvsroot/opennap/opennap/buffer.c, /cvsroot/opennap/opennap/level.c:
+	level() should register the nick if not present in the local db and the user
+	level is moderator or higher.
+
+	* /cvsroot/opennap/opennap/join.c:
+	the 406 join message should only be sent to local users
+
+	* /cvsroot/opennap/opennap/join.c, /cvsroot/opennap/opennap/privmsg.c:
+	fixed sequence of commands generated by the join commmand.
+
+	removed commented out code from privmsg.c
+
+	* /cvsroot/opennap/opennap/join.c:
+	fixed coredump on log message when a user has reached max channel membership
+
+2000-03-14  drscholl  <drscholl@users.sourceforge.net>
+
+	* /cvsroot/opennap/opennap/public.c:
+	fixed bug with relaying the emote command to remote servers
+
+	* /cvsroot/opennap/opennap/handler.c, /cvsroot/opennap/opennap/login.c, /cvsroot/opennap/opennap/opennap.h:
+	added register_user() command (10200) to allow admins to force registration
+	of user accounts
+
+	* /cvsroot/opennap/opennap/login.c:
+	user_ip() should use strtoul() to convert the string ip into an integer.
+
+	* /cvsroot/opennap/opennap/join.c, /cvsroot/opennap/opennap/login.c, /cvsroot/opennap/opennap/server_connect.c, /cvsroot/opennap/opennap/server_login.c:
+	modified join() to alloc the memory required before sending any messages to
+	clients so that if memory runs out we can recover the state.
+
+	server_connect() should allow duplicate connects to the same host on
+	different ports.
+
+	user_ip() should case the result of strtol() to unsigned int.
+
+	server_login() should notify local admins when another server attempts to
+	join
+
+2000-03-12  drscholl  <drscholl@users.sourceforge.net>
+
+	* /cvsroot/opennap/opennap/login.c:
+	register_nick() should only fail if the user is already logged in.
+
+2000-03-11  drscholl  <drscholl@users.sourceforge.net>
+
+	* /cvsroot/opennap/opennap/search.c:
+	need to keep a local flag in the DSEARCH struct for use with checking where
+	to send the final ACK in remote_search_end.  if the local user logs off then
+	search->con will be invalid so we can't use ISUSER(search->con) to decide.
+
+2000-03-10  drscholl  <drscholl@users.sourceforge.net>
+
+	* /cvsroot/opennap/opennap/Makefile.am, /cvsroot/opennap/opennap/Makefile.in, /cvsroot/opennap/opennap/configure, /cvsroot/opennap/opennap/handler.c, /cvsroot/opennap/opennap/opennap.spec, /cvsroot/opennap/opennap/sample.servers, /cvsroot/opennap/opennap/sample.users, /cvsroot/opennap/opennap/textdb.c:
+	handle_connection() should loop around read() when getting a packet header
+	since some clients send it in two pieces
+
+	added sample users and servers files, and a rpm spec file for building a
+	binary package for Red Hat users.
+
+	* /cvsroot/opennap/opennap/handler.c:
+	fixed partial packet header reading again.
+
+	* /cvsroot/opennap/opennap/handler.c:
+	fix to read the packet header in multiple pieces
+
+	* /cvsroot/opennap/opennap/handler.c:
+	check to see if 4 bytes of the header have been read after the initial
+	read
+
+	* /cvsroot/opennap/opennap/handler.c:
+	write a nul (\0) char at the end of the data in handle_connection() when
+	an error is detected so that the log message is readable
+
+	* /cvsroot/opennap/opennap/handler.c:
+	tag and len should be unsigned short integers
+
+	* /cvsroot/opennap/opennap/add_file.c:
+	fix to abort nicely if the user hash table can't be allocated
+
+	* /cvsroot/opennap/opennap/buffer.c, /cvsroot/opennap/opennap/handler.c, /cvsroot/opennap/opennap/main.c, /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/remove_connection.c:
+	rewrote input handler to avoid allocating a new buffer every time data is
+	read.  instead, a single buffer is reused and extended if required.  all
+	input is processed as it is read now instead of breaking the reading and
+	processing into two steps.
+
+	* /cvsroot/opennap/opennap/list.c, /cvsroot/opennap/opennap/list.h:
+	added macro LIST_NEW() as a wrapper around list_new() so that it gets
+	inlined when DEBUG is turned on.
+
+2000-03-09  drscholl  <drscholl@users.sourceforge.net>
+
+	* /cvsroot/opennap/opennap/hotlist.c:
+	fixed hotlist bug.  the hotlist entry was not being removed from the user's
+	personal list in the CONNECTION struct
+
+	* /cvsroot/opennap/opennap/hotlist.c, /cvsroot/opennap/opennap/opennap.h:
+	more debugging to find the hotlist problem.
+
+	* /cvsroot/opennap/opennap/README, /cvsroot/opennap/opennap/hotlist.c, /cvsroot/opennap/opennap/list.c, /cvsroot/opennap/opennap/list.h, /cvsroot/opennap/opennap/sample.conf, /cvsroot/opennap/opennap/util.c:
+	added list_validate() function to be used in tracking down the hotlist bug
+
+	* /cvsroot/opennap/opennap/hotlist.c, /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/remove_connection.c, /cvsroot/opennap/opennap/util.c:
+	simplified hotlist removal code by calling list_delete() instead of
+	iterating through the list.
+
+	need to set con->uopt.hotlist to 0 after call list_free() to avoid ASSERTing
+	in cancel_search()
+
+	* /cvsroot/opennap/opennap/list.c:
+	called FREE on the wrong pointer in list_delete()
+
+	* /cvsroot/opennap/opennap/util.c:
+	seed the random number context with as many bytes as are read, even if less
+	than requested.
+
+	* /cvsroot/opennap/opennap/add_file.c, /cvsroot/opennap/opennap/hotlist.c:
+	forgot to set hotlist->magic when creating a new entry
+
+	forgot to set list->data when adding a file to the db
+
+	* /cvsroot/opennap/opennap/add_file.c, /cvsroot/opennap/opennap/hotlist.c, /cvsroot/opennap/opennap/join.c, /cvsroot/opennap/opennap/list.c, /cvsroot/opennap/opennap/list.h, /cvsroot/opennap/opennap/remove_connection.c, /cvsroot/opennap/opennap/search.c, /cvsroot/opennap/opennap/textdb.c, /cvsroot/opennap/opennap/userdb.c:
+	removed all use of list_new() and list_append() to track down the memory
+	leak.  the debug info should now show where the leaked memory is being
+	allocated.
+
+	* /cvsroot/opennap/opennap/napster.txt, /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/remove_connection.c, /cvsroot/opennap/opennap/search.c, /cvsroot/opennap/opennap/util.c:
+	[napster.txt] changed text for 404 message to describe it as a generic error message
+
+	[util.c] split_line should eat extra whitespace between fields
+
+	when a local user quits, any pending searches should be marked as invalid so
+	that when the results come back the ->con pointer in the DSEARCH structure
+	is not used.
+	rather than for a specific value.
+
+	* /cvsroot/opennap/opennap/search.c:
+	should have compiled before committing the last fix.
+
+	* /cvsroot/opennap/opennap/search.c:
+	duplicate tokens should not be added to the list in tokenize(). this makes
+	the search function return the same file multiple times.
+
+	* /cvsroot/opennap/opennap/change.c, /cvsroot/opennap/opennap/debug.c, /cvsroot/opennap/opennap/join.c, /cvsroot/opennap/opennap/list.c, /cvsroot/opennap/opennap/login.c, /cvsroot/opennap/opennap/main.c, /cvsroot/opennap/opennap/part.c:
+	reformatted some code with indent
+
+	fixed memory leak in reginfo() where userdb_free() was not called.
+
+	* /cvsroot/opennap/opennap/add_file.c, /cvsroot/opennap/opennap/debug.c:
+	commented out memory dump from debug_cleanup()
+
+	reformatted the code in add_file.c
+
+2000-03-08  drscholl  <drscholl@users.sourceforge.net>
+
+	* /cvsroot/opennap/opennap/login.c:
+	db->lastSeen was set from get_level() when it should be atol()
+
+	* /cvsroot/opennap/opennap/login.c:
+	db->nick was not set when creating a new db entry in reginfo()
+
+	* /cvsroot/opennap/opennap/download.c, /cvsroot/opennap/opennap/login.c, /cvsroot/opennap/opennap/resume.c, /cvsroot/opennap/opennap/search.c, /cvsroot/opennap/opennap/synch.c, /cvsroot/opennap/opennap/upload_complete.c:
+	changed most instances of %lu to %u since we only use 32-bit integers.
+
+	* /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/search.c, /cvsroot/opennap/opennap/util.c, /cvsroot/opennap/opennap/handler.c, /cvsroot/opennap/opennap/main.c:
+	only use /dev/random to seed the random context.  on servers the system
+	random pool gets eaten up too fast.
+
+	* /cvsroot/opennap/opennap/debug.c, /cvsroot/opennap/opennap/search.c, /cvsroot/opennap/opennap/server_login.c, /cvsroot/opennap/opennap/userdb.c:
+	fixed to handle generate_search_id() returning NULL.
+
+2000-03-07  drscholl  <drscholl@users.sourceforge.net>
+
+	* /cvsroot/opennap/opennap/util.c:
+	add_client did not set the .id member when growing the array.
+
+	* /cvsroot/opennap/opennap/login.c:
+	user->pass was not free'd if there was an error during login
+
+	* /cvsroot/opennap/opennap/debug.c, /cvsroot/opennap/opennap/join.c:
+	no need to test for block->file being NULL when we are only referencing
+	a static memory block.
+
+	muzzled users should not be allowed to join chat channels
+
+	* /cvsroot/opennap/opennap/debug.c:
+	debug code doesn't need to strdup() the file passed in, it can simply
+	reference it since it is static memory.
+
+	got rid of the .prev pointer in the BLOCK struct.  we can walk the list of
+	block with a BLOCK** pointer instead.
+
+	* /cvsroot/opennap/opennap/TODO, /cvsroot/opennap/opennap/download.c, /cvsroot/opennap/opennap/upload_complete.c:
+	fixed upload_ok() to use send_user() instead of send_cmd() since the
+	downloader could be on a remote server.
+
+	removed PostgreSQL from the TODO list since we no longer use a SQL db.
+
+	* /cvsroot/opennap/opennap/announce.c, /cvsroot/opennap/opennap/kill_user.c, /cvsroot/opennap/opennap/main.c, /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/remove_connection.c, /cvsroot/opennap/opennap/search.c, /cvsroot/opennap/opennap/server_links.c, /cvsroot/opennap/opennap/upload_complete.c, /cvsroot/opennap/opennap/util.c:
+	Modified the main loop to stop shifiting down the CONNECTION array to fill
+	the holes.  add_client() will insert new connections into the holes, or
+	grow the array if its all full.  Added new global Max_Clients which should
+	be used in any contruct that needs to loop over all local connections,
+	avoiding the entries that are set to NULL (holes).
+
+	* /cvsroot/opennap/opennap/buffer.c, /cvsroot/opennap/opennap/main.c:
+	use a new local variable numClients for the loop test constructs since
+	Num_Clients gets changed by the accept_connection().  this may be the cause
+	of all those immediate disconnects.
+
+	* /cvsroot/opennap/opennap/search.c:
+	use a faster algorithm for walking the list when deleting invalid entries
+	from the files list
+
+	* /cvsroot/opennap/opennap/search.c:
+	tokenize() should ignore common words because they are not useful in
+	searching
+
+	fdb_collect_garbage() will now print messages about bins with more than
+	10,000 entries so that they can be considered for addition to the ignore
+	list
+
+	* /cvsroot/opennap/opennap/AUTHORS, /cvsroot/opennap/opennap/configure.in, /cvsroot/opennap/opennap/init.c, /cvsroot/opennap/opennap/main.c, /cvsroot/opennap/opennap/network.c, /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/timer.c:
+	solaris port (jones@users.sourceforge.net)
+
+	* /cvsroot/opennap/opennap/add_file.c, /cvsroot/opennap/opennap/browse.c, /cvsroot/opennap/opennap/client_quit.c, /cvsroot/opennap/opennap/download.c, /cvsroot/opennap/opennap/handler.c, /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/remove_file.c, /cvsroot/opennap/opennap/server_login.c, /cvsroot/opennap/opennap/synch.c, /cvsroot/opennap/opennap/upload_complete.c, /cvsroot/opennap/opennap/util.c, /cvsroot/opennap/opennap/whois.c:
+	added the ability to download files and browse users on other servers
+
+	server stats for users/files/size is again global for all linked servers
+
+2000-03-06  drscholl  <drscholl@users.sourceforge.net>
+
+	* /cvsroot/opennap/opennap/add_file.c, /cvsroot/opennap/opennap/announce.c, /cvsroot/opennap/opennap/ban.c, /cvsroot/opennap/opennap/browse.c, /cvsroot/opennap/opennap/change.c, /cvsroot/opennap/opennap/client_quit.c, /cvsroot/opennap/opennap/download.c, /cvsroot/opennap/opennap/handler.c, /cvsroot/opennap/opennap/hash.c, /cvsroot/opennap/opennap/join.c, /cvsroot/opennap/opennap/kill_user.c, /cvsroot/opennap/opennap/level.c, /cvsroot/opennap/opennap/login.c, /cvsroot/opennap/opennap/main.c, /cvsroot/opennap/opennap/muzzle.c, /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/part.c, /cvsroot/opennap/opennap/ping.c, /cvsroot/opennap/opennap/privmsg.c, /cvsroot/opennap/opennap/public.c, /cvsroot/opennap/opennap/remove_connection.c, /cvsroot/opennap/opennap/remove_file.c, /cvsroot/opennap/opennap/search.c, /cvsroot/opennap/opennap/server_connect.c, /cvsroot/opennap/opennap/server_links.c, /cvsroot/opennap/opennap/server_login.c, /cvsroot/opennap/opennap/server_usage.c, /cvsroot/opennap/opennap/synch.c, /cvsroot/opennap/opennap/topic.c, /cvsroot/opennap/opennap/unmuzzle.c, /cvsroot/opennap/opennap/upload_complete.c, /cvsroot/opennap/opennap/userdb.c, /cvsroot/opennap/opennap/util.c, /cvsroot/opennap/opennap/whois.c:
+	server message are no longer automatically forwarded by handle_connection().
+	each handler is now responsible for forwarding the message if necessary.
+
+	implemented the ability to search on remote servers so that the entire file
+	database isn't replicated on every server.
+
+	several of the server query functions now take an optional server argument
+	to get the status of a remote server rather than the one the client is
+	connected to.
+
+	* /cvsroot/opennap/opennap/sample.conf, /cvsroot/opennap/opennap/config.c, /cvsroot/opennap/opennap/init.c, /cvsroot/opennap/opennap/main.c, /cvsroot/opennap/opennap/network.c, /cvsroot/opennap/opennap/opennap.h:
+	added max_data_size and max_rss_size configuration variables to adjust
+	sytem limits on memory usage per process
+
+	* /cvsroot/opennap/opennap/change.c, /cvsroot/opennap/opennap/server_connect.c:
+	fixes to compile cleanly with debugging turned off
+
+	* /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/textdb.c, /cvsroot/opennap/opennap/util.c:
+	added `#define USE_CRLF 1' for use on win32 to write \r\n at the end of each
+	line in the database
+
+	modified next_arg() to use space, \r, \n and \t as word separators, and to
+	set the argument to 0 when hitting the \0 in the source string to avoid
+	returning an extra empty string
+
+	* /cvsroot/opennap/opennap/Makefile.in, /cvsroot/opennap/opennap/add_file.c, /cvsroot/opennap/opennap/ban.c, /cvsroot/opennap/opennap/buffer.c, /cvsroot/opennap/opennap/configure, /cvsroot/opennap/opennap/configure.in, /cvsroot/opennap/opennap/hotlist.c, /cvsroot/opennap/opennap/login.c, /cvsroot/opennap/opennap/main.c, /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/public.c, /cvsroot/opennap/opennap/server_connect.c, /cvsroot/opennap/opennap/server_login.c, /cvsroot/opennap/opennap/synch.c, /cvsroot/opennap/opennap/textdb.c, /cvsroot/opennap/opennap/timer.c, /cvsroot/opennap/opennap/userdb.c, /cvsroot/opennap/opennap/util.c:
+	created logerr() macro as a wrapper for libc errors
+
+	used OUTOFMEMORY() macro when memory errors occur
+
+	don't use next_arg() in public() because it will strip leading space from
+	the user's message
+
+2000-03-04  drscholl  <drscholl@users.sourceforge.net>
+
+	* /cvsroot/opennap/opennap/Makefile.am, /cvsroot/opennap/opennap/README, /cvsroot/opennap/opennap/config.c, /cvsroot/opennap/opennap/configure.in, /cvsroot/opennap/opennap/main.c, /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/sample.conf, /cvsroot/opennap/opennap/textdb.c, /cvsroot/opennap/opennap/textdb.h, /cvsroot/opennap/opennap/userdb.c:
+	removed all variables pertaining to mysql
+
+	updated the installation instructions to reference the new flat text file
+	user and server databases
+
+	* /cvsroot/opennap/opennap/Makefile.am, /cvsroot/opennap/opennap/Makefile.in, /cvsroot/opennap/opennap/change.c, /cvsroot/opennap/opennap/compress.c, /cvsroot/opennap/opennap/config.c, /cvsroot/opennap/opennap/configure, /cvsroot/opennap/opennap/configure.in, /cvsroot/opennap/opennap/create_db.sql, /cvsroot/opennap/opennap/db.c, /cvsroot/opennap/opennap/init.c, /cvsroot/opennap/opennap/level.c, /cvsroot/opennap/opennap/login.c, /cvsroot/opennap/opennap/main.c, /cvsroot/opennap/opennap/opennap.h, /cvsroot/opennap/opennap/sample.conf, /cvsroot/opennap/opennap/server_connect.c, /cvsroot/opennap/opennap/server_login.c, /cvsroot/opennap/opennap/textdb.c, /cvsroot/opennap/opennap/textdb.h, /cvsroot/opennap/opennap/userdb.c, /cvsroot/opennap/opennap/whois.c:
+	removed all references to MySQL from the code base.
+
+	added flat file text database for use with user and server lists.
+
 2000-03-03  drscholl  <drscholl@users.sourceforge.net>
+
+	* /cvsroot/opennap/opennap/search.c:
+	reenable code to reject search matches for a user's own files
+
+	search term for equality is "EQUAL TO", not "EQUALS" according to the
+	protocol specification.
+
+	added error reporting to the client if the comparison operation in a search
+	string is unknown.
+
+	* /cvsroot/opennap/opennap/getopt.c, /cvsroot/opennap/opennap/main.c:
+	added copyright notice to getopt.c
+
+	fixed broken usage() output
+
+	* /cvsroot/opennap/opennap/ChangeLog, /cvsroot/opennap/opennap/Makefile.in, /cvsroot/opennap/opennap/NEWS, /cvsroot/opennap/opennap/README:
+	ChangeLog is now generated by rcs2log.
+
+	Moved contents of the NEWS file into README.  NEWS is for user visible
+	changes in accordance with the GNU standards.
 
 	* /cvsroot/opennap/opennap/Makefile.am, /cvsroot/opennap/opennap/opennap.dsp, /cvsroot/opennap/opennap/opennap.opt, /cvsroot/opennap/opennap/opennap.plg:
 	integrated updated visual c++ files
