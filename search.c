@@ -379,7 +379,7 @@ generate_qualifier (char *d, int dsize, char *attr, int min, int max,
 	snprintf (d, dsize, " %s \"%s\" %d",
 		  attr, (min == max) ? "EQUAL TO" : "AT LEAST", min);
     else if (max < hardmax)
-	snprintf (d, dsize, " %s \"AT MOST\" %d", attr, max);
+	snprintf (d, dsize, " %s \"AT BEST\" %d", attr, max);
 }
 
 #define MAX_SPEED 10
@@ -571,7 +571,7 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    n = atoi (av[i + 1]);
 	    if (!strcasecmp ("at least", av[i]))
 		parms.minbitrate = n;
-	    else if (!strcasecmp ("at most", av[i]))
+	    else if (!strcasecmp ("at best", av[i]))
 		parms.maxbitrate = n;
 	    else if (!strcasecmp ("equal to", av[i]))
 		parms.minbitrate = parms.maxbitrate = n;
@@ -597,7 +597,7 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    n = atoi (av[i + 1]);
 	    if (!strcasecmp ("at least", av[i]))
 		parms.minfreq = n;
-	    else if (!strcasecmp ("at most", av[i]))
+	    else if (!strcasecmp ("at best", av[i]))
 		parms.maxfreq = n;
 	    else if (!strcasecmp ("equal to", av[i]))
 		parms.minfreq = parms.maxfreq = n;
