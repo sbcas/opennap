@@ -47,6 +47,9 @@ list of buffers instead of calling realloc()
 modified buffer_compress() to allocate a 16k buffer and compress as much data
 as will fit in it.
 
+wrote a custom db for storing the shared files. MySQL is now only used for
+account management.
+
 Changes from 0.11
 =================
 

@@ -109,7 +109,7 @@ main (int argc, char **argv)
 	perror ("bind");
 	exit (1);
     }
-    if (listen (s, 5) < 0)
+    if (listen (s, 50) < 0)
     {
 	perror ("listen");
 	exit (1);

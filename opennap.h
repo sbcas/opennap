@@ -207,6 +207,16 @@ typedef struct {
     int count;	/* number of files in the list */
 } FLIST;
 
+/* content-type */
+enum {
+    CT_AUDIO,	/* default */
+    CT_VIDEO,
+    CT_APPLICATION,
+    CT_IMAGE,
+    CT_TEXT,
+    CT_UNKNOWN
+};
+
 /* core database entry */
 typedef struct
 {
@@ -221,7 +231,8 @@ typedef struct
     unsigned short duration;
     unsigned short frequency;
     unsigned int refcount : 8;	/* how many references to this structure? */
-    unsigned int valid : 8;	/* is this a valid file? */
+    unsigned int valid : 1;	/* is this a valid file? */
+    unsigned int type : 7;
 } DATUM;
 
 typedef enum {
@@ -267,7 +278,7 @@ extern time_t Server_Start;
 extern unsigned int Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
 
-extern char Buf[1024];
+extern char Buf[2048];
 
 extern CONNECTION **Clients;	/* locally connected clients */
 extern int Num_Clients;
@@ -288,6 +299,7 @@ extern HASH *File_Table;
 extern HASH *MD5;
 
 extern char *Levels[LEVEL_ELITE + 1];
+extern char *Content_Types[CT_UNKNOWN];
 
 #define set_tag(b,n) set_val(b+2,n)
 #define set_len set_val

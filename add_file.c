@@ -28,7 +28,7 @@ compute_soundex (char *d, int dsize, const char *s)
     }
     dsize--;			/* save room for the terminatin nul (\0) */
 
-    while (*s && !isalpha ((unsigned char)*s))
+    while (*s && !isalpha ((unsigned char) *s))
 	s++;
     if (!*s)
     {
@@ -36,13 +36,13 @@ compute_soundex (char *d, int dsize, const char *s)
 	return;
     }
 
-    *d++ = toupper ((unsigned char)*s);
+    *d++ = toupper ((unsigned char) *s);
     dsize--;
     s++;
 
     while (*s && dsize > 0)
     {
-	switch (tolower ((unsigned char)*s))
+	switch (tolower ((unsigned char) *s))
 	{
 	case 'b':
 	case 'p':
@@ -105,7 +105,7 @@ compute_soundex (char *d, int dsize, const char *s)
 	    }
 	    break;
 	default:
-	    if (!isalpha ((unsigned char)*s))
+	    if (!isalpha ((unsigned char) *s))
 	    {
 		/* pad short words with 0's */
 		while (n < 3 && dsize > 0)
@@ -117,7 +117,7 @@ compute_soundex (char *d, int dsize, const char *s)
 		n = 0;		/* reset */
 		/* skip forward until we find the next word */
 		s++;
-		while (*s && !isalpha ((unsigned char)*s))
+		while (*s && !isalpha ((unsigned char) *s))
 		    s++;
 		if (!*s)
 		{
@@ -130,7 +130,7 @@ compute_soundex (char *d, int dsize, const char *s)
 		    dsize--;
 		    if (dsize > 0)
 		    {
-			*d++ = toupper ((unsigned char)*s);
+			*d++ = toupper ((unsigned char) *s);
 			dsize--;
 		    }
 		}
@@ -157,7 +157,7 @@ compute_soundex (char *d, int dsize, const char *s)
 #endif
 
 static void
-fdb_add (HASH *table, char *key, DATUM *d)
+fdb_add (HASH * table, char *key, DATUM * d)
 {
     FLIST *files;
 
@@ -175,7 +175,7 @@ fdb_add (HASH *table, char *key, DATUM *d)
 }
 
 static void
-share_common (USER *user, int fsize /* file size in kbytes */)
+share_common (USER * user, int fsize /* file size in kbytes */ )
 {
     user->shared++;
 
@@ -187,6 +187,27 @@ share_common (USER *user, int fsize /* file size in kbytes */)
     Num_Files++;
 }
 
+/* common code for inserting a file into the various hash tables */
+static void
+insert_datum (DATUM * info, char *av)
+{
+    LIST *tok;
+
+    /* split the filename into words */
+    info->tokens = tokenize (av);
+
+    /* add this entry to the hash table for this user's files */
+    hash_add (info->user->files, info->filename, info);
+    info->refcount++;
+
+    /* add this entry to the global file list */
+    for (tok = info->tokens; tok; tok = tok->next)
+	fdb_add (File_Table, tok->data, info);
+
+    /* index by md5 hash */
+    fdb_add (MD5, info->hash, info);
+}
+
 /* 100 [ :<nick> ] <filename> <md5sum> <size> <bitrate> <frequency> <time>
    client adding file to the shared database */
 HANDLER (add_file)
@@ -194,7 +215,6 @@ HANDLER (add_file)
     char *av[6];
     USER *user;
     DATUM *info;
-    LIST *tok;
 
     (void) tag;
     (void) len;
@@ -219,7 +239,7 @@ HANDLER (add_file)
 	log ("add_file: wrong number of fields in message");
 	if (con->class == CLASS_USER)
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		    "invalid parameter data to add a file");
+		      "invalid parameter data to add a file");
 	return;
     }
 
@@ -242,50 +262,9 @@ HANDLER (add_file)
     info->frequency = atoi (av[4]);
     info->duration = atoi (av[5]);
     info->valid = 1;
-    /* split the filename into words */
-    info->tokens = tokenize (av[0]);
+    info->type = CT_AUDIO;
 
-    /* add this entry to the hash table for this user's files */
-    hash_add (user->files, info->filename, info);
-    info->refcount++;
-
-    /* add this entry to the global file list */
-    for (tok = info->tokens; tok; tok = tok->next)
-	fdb_add (File_Table, tok->data, info);
-
-    /* index by md5 hash */
-    fdb_add (MD5, info->hash, info);
-
-#if 0
-    /* skip over the leading path name to get just the filename.  we compute
-       the soundex hash of the filename to support soundex searching in
-       the clients */
-    p = strrchr (field[0], '\\');
-    if (!p)
-	p = field[0];
-    else
-	p++;			/* skip the backslash */
-    compute_soundex (soundex, sizeof (soundex), p);
-
-    /* sql will take DOS path names with backslashes to mean the escape
-       char, so we have to escape them here */
-    fudge_path (field[0], path, sizeof (path));
-
-    /* form the SQL request */
-    snprintf (Buf, sizeof (Buf),
-	      "INSERT INTO library VALUES('%s','%s',%s,'%s',%s,%s,%s,%d,'%s','audio/mp3')",
-	      user->nick, path, field[2], field[1],
-	      field[3], field[4], field[5], user->speed, soundex);
-
-    if (mysql_query (Db, Buf) != 0)
-    {
-	sql_error ("add_file", Buf);
-	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "error adding file to database");
-	return;
-    }
-#endif
+    insert_datum (info, av[0]);
 
     /* if this is a local connection, pass this information to our peer
        servers.  note that we prepend `:<nick>' so that the peer servers
@@ -293,20 +272,30 @@ HANDLER (add_file)
     if (con->class == CLASS_USER && Num_Servers)
     {
 	pass_message_args (con, MSG_CLIENT_ADD_FILE,
-		":%s \"%s\" %s %d %d %d %d", user->nick,
-		info->filename, info->hash,
-		info->size, info->bitrate, info->frequency,
-		info->duration);
+			   ":%s \"%s\" %s %d %d %d %d", user->nick,
+			   info->filename, info->hash,
+			   info->size, info->bitrate, info->frequency,
+			   info->duration);
     }
 
     share_common (user, info->size / 1024);
 }
 
+char *Content_Types[] = {
+    "audio",
+    "video",
+    "application",
+    "image",
+    "text"
+};
+
 /* 10300 [ :<user> ] "<filename>" <size> <hash> <content-type> */
 HANDLER (share_file)
 {
-    char *field[4], path[256], soundex[256], *p;
+    char *av[4];
     USER *user;
+    DATUM *info;
+    int i, type;
 
     (void) len;
     (void) tag;
@@ -316,7 +305,7 @@ HANDLER (share_file)
     if (pop_user (con, &pkt, &user) != 0)
 	return;
 
-    if (split_line (field, sizeof (field) / sizeof (char *), pkt) != 4)
+    if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 4)
     {
 	log ("share_file(): wrong number of fields");
 	if (user->con)
@@ -325,47 +314,40 @@ HANDLER (share_file)
     }
 
     /* make sure the content-type looks correct */
-    if (strncasecmp ("audio/", field[3], 6) &&
-	strncasecmp ("image/", field[3], 6) &&
-	strncasecmp ("video/", field[3], 6) &&
-	strncasecmp ("application/", field[3], 11) &&
-	strncasecmp ("text/", field[3], 5))
+    type = -1;
+    for (i = 0; i < CT_UNKNOWN; i++)
     {
-	log ("share_file(): not a MIME type: %s", field[3]);
+	if (!strcasecmp (Content_Types[i], av[3]))
+	{
+	    type = i;
+	    break;
+	}
+    }
+    if (type == -1)
+    {
+	log ("share_file(): not a valid type: %s", av[3]);
 	if (user->con)
 	    send_cmd (user->con, MSG_SERVER_NOSUCH,
-		      "%s is not a valid MIME content-type", field[3]);
+		      "%s is not a valid type", av[3]);
 	return;
     }
 
-#if 0
-    fudge_path (field[0], path, sizeof (path));
-    p = strrchr (field[0], '\\');
-    if (p)
-	p++;
-    else
-	p = field[0];
-    compute_soundex (soundex, sizeof (soundex), p);
-    snprintf (Buf, sizeof (Buf),
-	      "INSERT INTO library VALUES ('%s','%s',%s,'%s',0,0,0,%d,'%s','%s')",
-	      user->nick, path, field[1], field[2], user->speed, soundex,
-	      field[3]);
-    if (mysql_query (Db, Buf) != 0)
-    {
-	sql_error ("share_file", Buf);
-	if (user->con)
-	    send_cmd (user->con, MSG_SERVER_NOSUCH,
-		      "error adding file to db");
-	return;
-    }
-#endif
+    info = CALLOC (1, sizeof (DATUM));
+    info->user = user;
+    info->filename = STRDUP (av[0]);
+    info->size = atoi (av[1]);
+    info->hash = STRDUP (av[2]);
+    info->type = type;
+    info->valid = 1;
+
+    insert_datum (info, av[0]);
 
     if (con->class == CLASS_USER && Num_Servers)
     {
-	pass_message_args (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %s %s %s",
-			   user->nick, field[0], field[1], field[2],
-			   field[3]);
+	pass_message_args (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %d %s %s",
+			   user->nick, info->filename, info->size,
+			   info->hash, Content_Types[info->type]);
     }
 
-    share_common (user, strtol (field[1], 0, 10) / 1024);
+    share_common (user, info->size / 1024);
 }

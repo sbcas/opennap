@@ -20,6 +20,7 @@ typedef struct {
     int maxfreq;
     int minspeed;
     int maxspeed;
+    int type;		/* -1 means any type */
 } SEARCH;
 
 /* returns 0 if the match is not acceptable, nonzero if it is */
@@ -40,6 +41,8 @@ search_callback (DATUM *match, SEARCH *parms)
         return 0;
     if (match->frequency > parms->maxfreq)
         return 0;
+    if (parms->type != -1 && parms->type != match->type)
+	return 0;	/* wrong content type */
 
     /* notify the user we found a match */
     send_cmd (parms->con, MSG_SERVER_SEARCH_RESULT,
@@ -346,6 +349,7 @@ HANDLER (search)
     parms.maxspeed = 10;
     parms.maxbitrate = 0xffff;
     parms.maxfreq = 0xffff;
+    parms.type = CT_AUDIO;	/* search for audio by default */
 
     /* parse the request */
     for (i = 0; i < ac; i++)
@@ -377,6 +381,25 @@ HANDLER (search)
 		log ("search(): client requested a maximum of %d results",
 			max_results);
 		max_results = Max_Search_Results;
+	    }
+	}
+	else if (!strcasecmp ("type", av[i]))
+	{
+	    i++;
+	    parms.type = -1;
+	    for (n = 0; n < CT_UNKNOWN; n++)
+	    {
+		if (!strcasecmp (av[i], Content_Types[n]))
+		{
+		    parms.type = n;
+		    break;
+		}
+	    }
+	    if (parms.type == -1)
+	    {
+		send_cmd (con, MSG_SERVER_NOSUCH, "%s is an invalid type",
+			av[i]);
+		goto done;
 	    }
 	}
 	else if (!strcasecmp ("linespeed", av[i]))
@@ -430,22 +453,9 @@ HANDLER (search)
 		parms.minfreq = parms.maxfreq = n;
 	    i++;
 	}
-#if 0
-	else if (!strcasecmp ("type", av[i]))
-	{
-	    i++;
-	    if (strcasecmp (av[i], "any") != 0)
-	    {
-		format_request (av[i], data, sizeof (data));
-		append_string (Buf, sizeof (Buf), " && type LIKE '%%%s%%'",
-			data);
-	    }
-	    gottype = 1;
-	}
-#endif
 	else
 	{
-	    log ("search: unknown search field: %s", av[i]);
+	    log ("search(): unknown search field: %s", av[i]);
 	    send_cmd (con, MSG_SERVER_NOSUCH, "invalid search request");
 	    goto done;
 	}

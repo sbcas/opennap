@@ -87,7 +87,7 @@ int Num_Servers = 0;
 int Num_Files = 0;
 int Num_Gigs = 0;		/* in kB */
 int SigCaught = 0;
-char Buf[1024];			/* global scratch buffer */
+char Buf[2048];			/* global scratch buffer */
 
 /* global channel list */
 HASH *Channels;

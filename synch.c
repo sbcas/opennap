@@ -20,16 +20,14 @@ sync_file (DATUM *info, CONNECTION *con)
 {
     ASSERT (validate_connection (con));
 
-    //if (!strcasecmp (row[IDX_TYPE], "audio/mp3"))
+    if (info->type == CT_AUDIO)
     send_cmd (con, MSG_CLIENT_ADD_FILE, ":%s \"%s\" %s %d %hu %hu %hu",
 	    info->user->nick, info->filename, info->hash, info->size,
 	    info->bitrate, info->frequency, info->duration);
-#if 0
     else
-	send_cmd (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %s %s %s",
-		row[IDX_NICK], row[IDX_FILENAME], row[IDX_SIZE],
-		row[IDX_MD5], row[IDX_TYPE]);
-#endif
+	send_cmd (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %d %s %s",
+		info->user->nick, info->filename, info->size,
+		info->hash, Content_Types[info->type]);
 }
 
 static void
