@@ -41,7 +41,7 @@ sync_reginfo (USERDB * db)
 		       Levels[db->level], db->created, db->lastSeen);
 }
 
-/* <nick> <pass> <port> <client-info> <speed> [ <email> ] */
+/* <nick> <pass> <port> <client-info> <speed> [email] [build] */
 HANDLER (login)
 {
     char *av[7];
@@ -55,8 +55,6 @@ HANDLER (login)
 
     if (ISUSER (con))
     {
-	log ("login(): recived command %d from a logged in user: %s", tag,
-	     pkt);
 	send_cmd (con, MSG_SERVER_NOSUCH, "you are already logged in");
 	return;
     }
@@ -130,7 +128,7 @@ HANDLER (login)
 	return;
     }
 
-    if (!db && tag != MSG_CLIENT_REGISTER)
+    if (!db && tag != MSG_CLIENT_LOGIN_REGISTER)
     {
 	if(Server_Flags&ON_REGISTERED_ONLY)
 	{
@@ -139,10 +137,10 @@ HANDLER (login)
 	    return;
 	}
 	if(Server_Flags&ON_AUTO_REGISTER)
-	    tag=MSG_CLIENT_REGISTER;
+	    tag=MSG_CLIENT_LOGIN_REGISTER;
     }
     /* check for attempt to register a nick that is already taken */
-    else if (db && tag == MSG_CLIENT_REGISTER)
+    else if (db && tag == MSG_CLIENT_LOGIN_REGISTER)
     {
 	log ("login(): %s is already registered", av[0]);
 	if (con->class == CLASS_UNKNOWN)
