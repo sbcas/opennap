@@ -610,7 +610,7 @@ HANDLER (register_user)
 	return;
     }
     db->nick = STRDUP (av[0]);
-    db->password = STRDUP (av[1]);
+    db->password = generate_pass (av[1]);
     db->email = STRDUP (av[2]);
     if (!db->nick || !db->password || !db->email)
     {
