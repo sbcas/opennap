@@ -105,6 +105,21 @@ free_flist (FLIST * ptr)
     FREE (ptr);
 }
 
+/* returns nonzero if there is already the token specified by `s' in the
+   list */
+static int
+duplicate (LIST *list, const char *s)
+{
+    ASSERT (s != 0);
+    for (; list; list = list->next)
+    {
+	ASSERT (list->data != 0);
+	if (!strcmp (s, list->data))
+	    return 1;
+    }
+    return 0;
+}
+
 /* consider the apostrophe to be part of the word since it doesn't make
    sense on its own */
 #define WORD_CHAR(c) (isalnum(c)||c=='\'')
@@ -152,6 +167,14 @@ tokenize (char *s)
 	    !strcmp ("documents", s) ||
 	    !strcmp ("winamp", s) ||
 	    !strcmp ("mp3s", s))
+	{
+	    s = ptr;
+	    continue;
+	}
+	/* don't add duplicate tokens to the list.  this will cause searches
+	   on files that have the same token more than once to show up how
+	   ever many times the token appears in the filename */
+	if (duplicate (s))
 	{
 	    s = ptr;
 	    continue;
