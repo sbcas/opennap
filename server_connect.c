@@ -88,7 +88,7 @@ try_connect (char *host, int port)
 HANDLER (server_connect)
 {
     USER *user;
-    char *fields[2];
+    char *fields[3];
     int argc;
 
     ASSERT (validate_connection (con));

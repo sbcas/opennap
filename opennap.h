@@ -298,6 +298,7 @@ void set_val (char *d, unsigned short val);
 
 /* utility routines */
 void add_client (CONNECTION *);
+void add_random_bytes (char *, int);
 void add_server (CONNECTION *);
 void *array_add (void *, int *, void *);
 void *array_remove (void *, int *, void *);
@@ -313,6 +314,7 @@ void free_user (USER *);
 void fudge_path (const char *, char *, int);
 char *generate_nonce (void);
 int init_db (void);
+void init_random (void);
 void log (const char *fmt, ...);
 char *my_ntoa (unsigned long);
 USER *new_user (void);

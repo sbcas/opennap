@@ -1184,6 +1184,34 @@ echo "$ac_t""MySQL library files are in $MYSQLLIBDIR" 1>&6
 
 
 
+ac_safe=`echo "/dev/random" | sed 'y%./+-%__p_%'`
+echo $ac_n "checking for /dev/random""... $ac_c" 1>&6
+echo "configure:1190: checking for /dev/random" >&5
+if eval "test \"`echo '$''{'ac_cv_file_$ac_safe'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  if test "$cross_compiling" = yes; then
+    { echo "configure: error: Cannot check for file existence when cross compiling" 1>&2; exit 1; }
+else
+  if test -r /dev/random; then
+    eval "ac_cv_file_$ac_safe=yes"
+  else
+    eval "ac_cv_file_$ac_safe=no"
+  fi
+fi
+fi
+if eval "test \"`echo '$ac_cv_file_'$ac_safe`\" = yes"; then
+  echo "$ac_t""yes" 1>&6
+  cat >> confdefs.h <<\EOF
+#define HAVE_DEV_RANDOM 1
+EOF
+
+else
+  echo "$ac_t""no" 1>&6
+
+fi
+
+
 ac_cv_warnings=yes
 # Check whether --enable-warnings or --disable-warnings was given.
 if test "${enable_warnings+set}" = set; then

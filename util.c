@@ -13,6 +13,9 @@
 #include <errno.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/time.h>
+#include "global.h"
+#include "md5.h"
 #include "opennap.h"
 #include "debug.h"
 
@@ -223,13 +226,35 @@ void
 send_queued_data (CONNECTION *con)
 {
     int l;
+    struct timeval t;
+    fd_set wfd;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
+    
+    if (con->sendbuflen == 0)
+	return; /* nothing to do */
+
+    /* see if we are ready for writing */
+    t.tv_sec = 0;
+    t.tv_usec = 0;
+    FD_ZERO (&wfd);
+    FD_SET (con->fd, &wfd);
+    switch (select (con->fd + 1, 0, &wfd, 0, &t))
+    {
+	case -1:
+	    log ("send_queued_data(): select: %s (errno %d).", strerror (errno), errno);
+	    con->sendbuflen = 0;
+	    remove_connection (con);
+	    return;
+	case 0:
+	    return; /* not ready yet */
+    }
+
     /* write as much of the queued data as we can */
     l = write (con->fd, con->sendbuf, con->sendbuflen);
     if (l == -1)
     {
-	log ("flush_queued_data(): write: %s", strerror (errno));
+	log ("flush_queued_data(): write: %s (errno %d).", strerror (errno), errno);
 	con->sendbuflen = 0; /* avoid an infinite loop */
 	remove_connection (con);
 	return;
@@ -264,12 +289,51 @@ expand_hex (char *v, int vsize)
     }
 }
 
+#ifndef HAVE_DEV_RANDOM
+static int Stale_Random = 1;
+static MD5_CTX Random_Context;
+
+void
+init_random (void)
+{
+    MD5Init (&Random_Context);
+    Stale_Random = 1;
+}
+
+void
+add_random_bytes (char *s, int ssize)
+{
+    MD5Update (&Random_Context, (unsigned char *) s, (unsigned int) ssize);
+    Stale_Random = 0;
+}
+
+static void
+get_random_bytes (char *d, int dsize)
+{
+    char buf[16];
+
+    ASSERT (Stale_Random == 0);
+    ASSERT (dsize <= 16);
+    MD5Final ((unsigned char *) buf, &Random_Context);
+    memcpy (d, buf, dsize);
+    Stale_Random = 1;
+    MD5Init (&Random_Context);
+    MD5Update (&Random_Context, (unsigned char *) buf, 16);
+}
+#endif /* ! HAVE_DEV_RANDOM */
+
 char *
 generate_nonce (void)
 {
+#ifdef HAVE_DEV_RANDOM
     int f;
+#endif /* HAVE_DEV_RANDOM */
     char *nonce;
 
+    nonce = MALLOC (17);
+    nonce[16] = 0;
+
+#if HAVE_DEV_RANDOM
     /* generate our own nonce value */
     f = open ("/dev/random", O_RDONLY);
     if (f < 0)
@@ -277,9 +341,6 @@ generate_nonce (void)
 	log ("generate_nonce(): /dev/random: %s", strerror (errno));
 	return NULL;
     }
-
-    nonce = MALLOC (17);
-    nonce[16] = 0;
 
     if (read (f, nonce, 8) != 8)
     {
@@ -290,6 +351,9 @@ generate_nonce (void)
     }
 
     close (f);
+#else
+    get_random_bytes (nonce, 8);
+#endif
 
     /* expand the binary data into hex for transport */
     expand_hex (nonce, 8);

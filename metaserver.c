@@ -115,6 +115,7 @@ main (int argc, char **argv)
 	    break;
 	}
 	write (f, hosts[i], strlen(hosts[i]));
+	write (f, "\n", 1);
 	i = (i+1) % numhosts;
 	close (f);
     }

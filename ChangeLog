@@ -16,6 +16,14 @@ search() was sending the host using %d instead of %lu
 server_connect() should check the return from split_line() to get the number
 of arguments
 
+metaserver should write a \n after the ip:port
+
+send_queued_data() should return without doing anything if there is no data
+to send
+
+added check for /dev/random and substitute simple random number generation
+on systems without it
+
 Changes from 0.08
 =================
 

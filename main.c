@@ -198,6 +198,10 @@ handle_connection (CONNECTION *con)
     memcpy (&len, con->recvhdr, 2);
     memcpy (&tag, con->recvhdr + 2, 2);
 
+#ifndef HAVE_DEV_RANDOM
+    add_random_bytes (con->recvhdr, 4);
+#endif /* !HAVE_DEV_RANDOM */
+
 #if WORDS_BIGENDIAN
     /* need to convert to big endian */
     len = BSWAP16 (len);
@@ -249,6 +253,11 @@ handle_connection (CONNECTION *con)
 	    remove_connection (con);
 	    return;
 	}
+
+#ifndef HAVE_DEV_RANDOM
+    add_random_bytes (con->recvdata + con->recvbytes - 4, l);
+#endif /* !HAVE_DEV_RANDOM */
+
 	con->recvbytes += l;
     }
 
@@ -479,6 +488,10 @@ main (int argc, char **argv)
     }
 
     log ("listening on port %d", Server_Port);
+
+#ifndef HAVE_DEV_RANDOM
+    init_random ();
+#endif /* !HAVE_DEV_RANDOM */
 
     /* main event loop */
     while (!SigCaught)

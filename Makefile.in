@@ -258,48 +258,6 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
-add_file.o: add_file.c opennap.h hash.h debug.h
-announce.o: announce.c opennap.h hash.h debug.h
-ban.o: ban.c opennap.h hash.h debug.h
-browse.o: browse.c opennap.h hash.h debug.h
-change.o: change.c opennap.h hash.h debug.h
-client_quit.o: client_quit.c opennap.h hash.h debug.h
-config.o: config.c opennap.h hash.h debug.h
-db.o: db.c opennap.h hash.h
-debug.o: debug.c debug.h
-download.o: download.c opennap.h hash.h debug.h
-free_user.o: free_user.c opennap.h hash.h debug.h
-hash.o: hash.c hash.h debug.h
-hotlist.o: hotlist.c opennap.h hash.h debug.h
-join.o: join.c opennap.h hash.h debug.h
-kill_user.o: kill_user.c opennap.h hash.h debug.h
-level.o: level.c opennap.h hash.h debug.h
-list_channels.o: list_channels.c opennap.h hash.h debug.h
-list_users.o: list_users.c opennap.h hash.h debug.h
-login.o: login.c opennap.h hash.h debug.h
-main.o: main.c opennap.h hash.h debug.h
-md5c.o: md5c.c global.h md5.h
-metaserver.o: metaserver.c
-motd.o: motd.c opennap.h hash.h debug.h
-muzzle.o: muzzle.c opennap.h hash.h debug.h
-part.o: part.c opennap.h hash.h debug.h
-part_channel.o: part_channel.c opennap.h hash.h debug.h
-ping.o: ping.c opennap.h hash.h debug.h
-privmsg.o: privmsg.c opennap.h hash.h debug.h
-public.o: public.c opennap.h hash.h debug.h
-remove_connection.o: remove_connection.c opennap.h hash.h debug.h
-remove_file.o: remove_file.c opennap.h hash.h debug.h
-resume.o: resume.c opennap.h hash.h debug.h
-search.o: search.c opennap.h hash.h
-server_connect.o: server_connect.c opennap.h hash.h debug.h
-server_login.o: server_login.c opennap.h hash.h debug.h global.h md5.h
-synch.o: synch.c opennap.h hash.h debug.h
-topic.o: topic.c opennap.h hash.h debug.h
-unmuzzle.o: unmuzzle.c opennap.h hash.h debug.h
-upload_complete.o: upload_complete.c opennap.h hash.h debug.h
-util.o: util.c opennap.h hash.h debug.h
-whois.o: whois.c opennap.h hash.h debug.h
-
 info-am:
 info: info-am
 dvi-am:
