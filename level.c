@@ -14,7 +14,7 @@ HANDLER (level)
 {
     char *sender = 0, *fields[2];
     USER *user;
-    int level;
+    int level, ac;
     USERDB *db;
 
     (void) tag;
@@ -43,9 +43,12 @@ HANDLER (level)
 	}
     }
 
-    if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 2)
+    if ((ac = split_line (fields, sizeof (fields) / sizeof (char *), pkt)) != 2)
     {
 	log ("level(): malformed client request");
+	print_args (ac, fields);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of parameters");
 	return;
     }
 
@@ -57,19 +60,25 @@ HANDLER (level)
 	log ("level(): user synch error, can't locate user %s", fields[0]);
 	return;
     }
-
     ASSERT (validate_user (user));
-
     if ((level = get_level (fields[1])) == -1)
     {
 	log ("level(): tried to set %s to unknown level %s",
 	     user->nick, fields[1]);
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "no such level as %s",
-		      fields[1]);
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s: invalid level", fields[1]);
 	return;
     }
-
+    if (user->level == level)
+    {
+	log ("level(): %s is already level %s", user->nick, Levels[level]);
+	if (ISUSER (con))
+	{
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is already level %s.",
+		    user->nick, Levels[level]);
+	}
+	return;
+    }
     /* check for privilege */
     if (ISUSER (con))
     {
@@ -127,8 +136,7 @@ HANDLER (level)
 	char email[64];
 
 	/* no local user db entry.  this nick probably should be registered */
-	log ("level(): %s is not locally registered, creating entry",
-	     user->nick);
+	log ("level(): %s is not registered, creating entry", user->nick);
 	db = CALLOC (1, sizeof (USERDB));
 	if (!db)
 	{

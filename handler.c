@@ -389,7 +389,9 @@ handle_connection (CONNECTION * con)
 	if (con->class == CLASS_UNKNOWN &&
 	    (tag != MSG_CLIENT_LOGIN && tag != MSG_CLIENT_LOGIN_REGISTER &&
 	     tag != MSG_CLIENT_REGISTER && tag != MSG_SERVER_LOGIN &&
-	     tag != MSG_SERVER_LOGIN_ACK && tag != MSG_SERVER_ERROR && tag != 4))	/* unknown: v2.0 beta 5a sends this? */
+	     tag != MSG_SERVER_LOGIN_ACK && tag != MSG_SERVER_ERROR &&
+	     tag != 4 &&	/* unknown: v2.0 beta 5a sends this? */
+	     tag != 300))
 	{
 	    log ("handle_connection(): %s is not registered", con->host);
 	    *(con->recvbuf->data + con->recvbuf->consumed + 4 + len) = 0;

@@ -493,7 +493,7 @@ main (int argc, char **argv)
 	{
 	    int j;
 
-	    log ("main(): shrinking connection arrarys");
+	    log ("main(): shrinking connection arrays");
 	    for (i = 0, j = 0; i < Max_Clients; i++)
 	    {
 		if (Clients[i])
