@@ -192,7 +192,8 @@ HANDLER (add_file)
     {
 	log ("add_file: wrong number of fields in message");
 	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of fields");
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		    "invalid parameter data to add a file");
 	return;
     }
 

@@ -111,7 +111,8 @@ HANDLER(upload_end)
     ASSERT (validate_connection (con));
     user = transfer_count_wrapper (con, pkt, MSG_CLIENT_UPLOAD_END);
     ASSERT (validate_user (user));
-    user->uploads--;
+    if (user->uploads > 0)
+	user->uploads--;
 }
 
 /* 218 [ :<user> ] */
@@ -138,7 +139,8 @@ HANDLER(download_end)
     ASSERT (validate_connection (con));
     user = transfer_count_wrapper (con, pkt, MSG_CLIENT_DOWNLOAD_END);
     ASSERT (validate_user (user));
-    user->downloads--;
+    if (user->downloads > 0)
+	user->downloads--;
 }
 
 /* 600 <user> */
