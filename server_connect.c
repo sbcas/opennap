@@ -118,12 +118,13 @@ HANDLER (server_connect)
     else if (con->class == CLASS_USER)
     {
 	/* pass the message on the target server */
+	ASSERT (argc == 3);
 	pass_message_args (con, MSG_CLIENT_CONNECT, ":%s %s %s %s",
 	    user->nick, fields[0], fields[1], fields[2]);
     }
 
     notify_mods ("%s requested server link from %s to %s:%s",
-	user->nick, fields[2] ? fields[2] : Server_Name, fields[0], fields[1]);
+	user->nick, argc == 3 ? fields[2] : Server_Name, fields[0], fields[1]);
 }
 
 #if 0
