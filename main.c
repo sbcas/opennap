@@ -267,8 +267,10 @@ handle_connection (CONNECTION * con)
 	 tag != MSG_CLIENT_REGISTER && tag != MSG_SERVER_LOGIN &&
 	 tag != MSG_SERVER_LOGIN_ACK && tag != MSG_SERVER_ERROR))
     {
-	log ("handle_connection(): %s is not registered, closing connection",
+	log ("handle_connection: %s is not registered, closing connection",
 	     con->host);
+	log ("handle_connection: tag=%hu, len=%hu, data=%d",
+		tag, len, con->recvbuf->data + con->recvbuf->consumed + 4);
 	remove_connection (con);
 	return;
     }

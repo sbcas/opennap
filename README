@@ -109,6 +109,15 @@ already specify the user name, such as the login request (2), are not
 prefixed.  Each request handler should have a comment at the beginning
 specifying what input it expects.
 
+* Extensions to messages
+
+200	search [CLIENT]
+
+	opennap supports the
+		SOUNDEX CONTAINS "..."
+ 	search string for looking up files from the database using a sound
+	hash
+
 * Non-standard messages
 
 The following messages are not present in the official napster servers, but
