@@ -1,3 +1,8 @@
+[opennap 0.32]
+
+fixes bug in channel_op() which allowed any user to gain channel operator
+status on any channel
+
 [opennap 0.31]
 
 added new flags 'z' and 'c' to global user list to display all muzzled and
