@@ -144,13 +144,19 @@ HANDLER (level)
 	{
 	    db->nick = STRDUP (user->nick);
 	    db->password = generate_pass (user->pass);
+#if EMAIL
 	    snprintf (Buf, sizeof (Buf), "anon@%s", Server_Name);
 	    db->email = STRDUP (Buf);
+#endif
 	    db->level = level;
 	    db->created = Current_Time;
 	    db->lastSeen = Current_Time;
 	}
-	if (!db || !db->nick || !db->email || !db->password)
+	if (!db || !db->nick || !db->password
+#if EMAIL
+	    || !db->email
+#endif
+	    )
 	{
 	    OUTOFMEMORY ("level");
 	    return;

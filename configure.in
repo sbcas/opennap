@@ -40,4 +40,11 @@ AC_ARG_ENABLE(resume, [  --enable-resume	Turn on support for resume],
 AC_DEFINE(RESUME)
 fi])
 
+dnl support for saving email address is turned off by default
+AC_ARG_ENABLE(email, [  --enable-email	Turn on support for saving client
+email addresses],
+[if test $enableval=yes; then
+AC_DEFINE(EMAIL)
+fi])
+
 AC_OUTPUT(Makefile)

@@ -306,11 +306,14 @@ BAN;
 #define ON_MUZZLED 0x0001
 #define ON_CLOAKED 0x0002
 
+/* 20 (+4) bytes */
 typedef struct
 {
     char *nick;
     char *password;
+#if EMAIL
     char *email;
+#endif
     unsigned short level;
     unsigned short flags;
     time_t created;
@@ -702,7 +705,9 @@ HANDLER (ban);
 HANDLER (banlist);
 HANDLER (browse);
 HANDLER (change_data_port);
+#if EMAIL
 HANDLER (change_email);
+#endif
 HANDLER (change_speed);
 HANDLER (change_pass);
 HANDLER (channel_ban);

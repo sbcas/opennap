@@ -94,7 +94,12 @@ HANDLER (whois)
 	rsp = append_string (rsp, " %d %d %s %d %d",
 			     user->totaldown, user->totalup,
 			     my_ntoa (user->host), user->conport, user->port);
-	rsp = append_string (rsp, " %s", db ? db->email : "unknown");
+#if EMAIL
+#define EmailAddr(db) db?db->email:"unknown"
+#else
+#define EmailAddr(db) "unknown"
+#endif
+	rsp = append_string (rsp, " %s", EmailAddr(db));
     }
     /* admins and above see the server the user is connected to.  this is
        only admin+ since the windows client would likely barf if present.

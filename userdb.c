@@ -43,8 +43,10 @@ userdb_free (USERDB * p)
     {
 	if (p->nick)
 	    FREE (p->nick);
+#if EMAIL
 	if (p->email)
 	    FREE (p->email);
+#endif
 	if (p->password)
 	    FREE (p->password);
 	FREE (p);
@@ -94,9 +96,15 @@ userdb_init (void)
 		    u->password = generate_pass (av[1]);
 		else
 		    u->password = STRDUP (av[1]);
+#if EMAIL
 		u->email = STRDUP (av[2]);
+#endif
 	    }
-	    if (!u || !u->nick || !u->password || !u->email)
+	    if (!u || !u->nick || !u->password
+#if EMAIL
+		|| !u->email
+#endif
+		)
 	    {
 		OUTOFMEMORY ("userdb_init");
 		if (u)
@@ -154,7 +162,11 @@ dump_userdb (USERDB * db, FILE * fp)
     fputc (' ', fp);
     fputs (db->password, fp);
     fputc (' ', fp);
+#if EMAIL
     fputs (db->email, fp);
+#else
+    fputs ("unknown", fp);	/* dummy value to keep file format the same */
+#endif
     fputc (' ', fp);
     fputs (Levels[db->level], fp);
     fputc (' ', fp);

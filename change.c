@@ -87,6 +87,7 @@ HANDLER (change_pass)
     db->password = generate_pass (pkt);
 }
 
+#if EMAIL
 /* 702 [ :<user> ] <email>
    change email address */
 HANDLER (change_email)
@@ -115,6 +116,7 @@ HANDLER (change_email)
     FREE (db->email);
     db->email = STRDUP (pkt);
 }
+#endif
 
 /* 613 [ :<sender> ] <user> <port> [ <reason> ]
    admin request to change a user's data port */

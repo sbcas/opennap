@@ -104,12 +104,18 @@ HANDLER (muzzle)
 	    {
 		db->nick = STRDUP (user->nick);
 		db->password = generate_pass (user->pass);
+#if EMAIL
 		snprintf (Buf, sizeof (Buf), "anon@%s", Server_Name);
 		db->email = STRDUP (Buf);
+#endif
 		db->level = user->level;
 		db->created = Current_Time;
 		db->lastSeen = Current_Time;
-		if (db->nick && db->password && db->email)
+		if (db->nick && db->password
+#if EMAIL
+		    && db->email
+#endif
+		    )
 		{
 		    if (hash_add (User_Db, db->nick, db))
 			userdb_free (db);

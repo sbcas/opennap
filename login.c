@@ -39,7 +39,12 @@ sync_reginfo (USERDB * db)
     log ("sync_reginfo(): sending registration info to peers");
     pass_message_args (NULL, MSG_SERVER_REGINFO,
 		       ":%s %s %s %s %s %d %d", Server_Name,
-		       db->nick, db->password, db->email,
+		       db->nick, db->password,
+#if EMAIL
+		       db->email,
+#else
+		       "unknown",
+#endif
 		       Levels[db->level], db->created, db->lastSeen);
 }
 
@@ -307,6 +312,7 @@ HANDLER (login)
 	{
 	    db->nick = STRDUP (av[0]);
 	    db->password = generate_pass (av[1]);
+#if EMAIL
 	    if (ac > 5)
 		db->email = STRDUP (av[5]);
 	    else
@@ -314,8 +320,13 @@ HANDLER (login)
 		snprintf (Buf, sizeof (Buf), "anon@%s", Server_Name);
 		db->email = STRDUP (Buf);
 	    }
+#endif
 	}
-	if (!db || !db->nick || !db->password || !db->email)
+	if (!db || !db->nick || !db->password
+#if EMAIL
+	    || !db->email
+#endif
+	    )
 	{
 	    OUTOFMEMORY ("login");
 	    if (con->class == CLASS_UNKNOWN)
@@ -386,9 +397,11 @@ HANDLER (login)
 	con->uopt->usermode = LOGALL_MODE;
 	con->user = user;
 	/* send the login ack */
+#if EMAIL
 	if (db)
 	    send_cmd (con, MSG_SERVER_EMAIL, "%s", db->email);
 	else
+#endif
 	    send_cmd (con, MSG_SERVER_EMAIL, "anon@%s", Server_Name);
 	show_motd (con, 0, 0, NULL);
 	server_stats (con, 0, 0, NULL);
@@ -609,7 +622,9 @@ HANDLER (reginfo)
 	}
 	/* update our record */
 	FREE (db->password);
+#if EMAIL
 	FREE (db->email);
+#endif
     }
     else
     {
@@ -643,8 +658,14 @@ HANDLER (reginfo)
 
     /* this is already the MD5-hashed password, just copy it */
     db->password = STRDUP (fields[1]);
+#if EMAIL
     db->email = STRDUP (fields[2]);
-    if (!db->password || !db->email)
+#endif
+    if (!db->password
+#if EMAIL
+	|| !db->email
+#endif
+	)
     {
 	OUTOFMEMORY ("reginfo");
 	return;
@@ -727,8 +748,14 @@ HANDLER (register_user)
     }
     db->nick = STRDUP (av[0]);
     db->password = generate_pass (av[1]);
+#if EMAIL
     db->email = STRDUP (av[2]);
-    if (!db->nick || !db->password || !db->email)
+#endif
+    if (!db->nick || !db->password
+#if EMAIL
+	|| !db->email
+#endif
+	)
     {
 	OUTOFMEMORY ("register_user");
 	FREE (db);
