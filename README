@@ -1,7 +1,7 @@
-opennap v0.24 (ALPHA)
+opennap v0.25 (ALPHA)
 the open source (TM) napster server
 =====================
-April 13, 2000
+April 17, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -10,7 +10,7 @@ Email: opennap-dev@lists.sourceforge.net
 opennap is an Open Source(TM) server implementation of the popular
 Napster protocol.  It is written in ANSI C and was designed to run on Unix
 platforms.  So far this server has only been tested on:
-	* Linux (i386 and alpha)
+	* Linux (i386, alpha, sparc)
 	* BSDI
 	* FreeBSD
 	* Solaris
@@ -54,7 +54,9 @@ development of the server.
   2.  create at least one elite (server operator) nick to use on the server
 
 	edit /usr/local/share/opennap/users (c:\opennap\users on Win32)
-	add:
+	add the following lines:
+
+		:version 1
 		<nick> <password> <email> Elite 0 0
 
       where <nick> is the nick you want to use, <email> is your email address
@@ -67,6 +69,9 @@ development of the server.
 	1,wNmMEV+L,pGma3IflsSxFulv2jucmew
       this is the string that gets put in the `users' file for the
       <password> field.
+
+      The string ":version 1" MUST be present as the first line of the file,
+      or else opennap will not understand it.
 
       When you log into the server with your client, you should see a
       message from the server:

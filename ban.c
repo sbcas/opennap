@@ -41,32 +41,41 @@ free_ban (BAN * b)
 /* 612 [ :<sender> ] <user|ip> [ "<reason>" ] */
 HANDLER (ban)
 {
-    USER *sender;
     BAN *b;
     LIST *list;
     int ac = -1;
-    char *av[2];
+    char *av[2], *sender;
 
-    (void) tag;
     (void) len;
-
     ASSERT (validate_connection (con));
-    if (pop_user (con, &pkt, &sender) != 0)
-	return;
+    /* servers have to sync bans, so we don't authenticate the sender,
+       we assume the other servers do their job */
+    if (ISSERVER (con))
+    {
+	if (*pkt != ':')
+	{
+	    log ("ban(): missing sender name for server message");
+	    return;
+	}
+	pkt++;
+	sender=next_arg(&pkt);
+    }
+    else
+    {
+	/* make sure this user has privilege */
+	if (con->user->level < LEVEL_MODERATOR)
+	{
+	    permission_denied (con);
+	    return;
+	}
+	sender=con->user->nick;
+    }
     if (pkt)
 	ac = split_line (av, FIELDS (av), pkt);
     if (ac < 1)
     {
 	log ("ban(): too few parameters");
 	unparsable (con);
-	return;
-    }
-    /* make sure this user has privilege */
-    ASSERT (validate_user (sender));
-    if (sender->level < LEVEL_MODERATOR)
-    {
-	if (ISUSER (con))
-	    permission_denied (con);
 	return;
     }
     /* check to see if this user is already banned */
@@ -78,16 +87,15 @@ HANDLER (ban)
 	    log ("ban(): %s is already banned", av[0]);
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already banned",
-			  av[0]);
+			av[0]);
 	    return;
 	}
     }
 
     if (ac > 1)
-	pass_message_args (con, tag, ":%s %s \"%s\"", sender->nick, av[0],
-			   av[1]);
+	pass_message_args (con, tag, ":%s %s \"%s\"", sender, av[0], av[1]);
     else
-	pass_message_args (con, tag, ":%s %s", sender->nick, av[0]);
+	pass_message_args (con, tag, ":%s %s", sender, av[0]);
 
     do
     {
@@ -96,7 +104,7 @@ HANDLER (ban)
 	    break;
 	if (!(b->target = STRDUP (av[0])))
 	    break;
-	if (!(b->setby = STRDUP (sender->nick)))
+	if (!(b->setby = STRDUP (sender)))
 	    break;
 	if (!(b->reason = STRDUP (ac > 1 ? av[1] : "")))
 	    break;
@@ -108,8 +116,7 @@ HANDLER (ban)
 	    break;
 	list->data = b;
 	Bans = list_append (Bans, list);
-	notify_mods (BANLOG_MODE, "%s banned %s: %s", sender->nick, av[0],
-		     b->reason);
+	notify_mods (BANLOG_MODE, "%s banned %s: %s", sender, av[0], b->reason);
 	return;
     }
     while (1);
