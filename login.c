@@ -186,14 +186,22 @@ HANDLER (login)
 		/* remove the old entry */
 		if(ISUSER(user->con))
 		{
+		    CONNECTION *tempCon;
+
 		    /* TODO: there is a numeric for this somewhere */
 		    send_cmd(user->con,MSG_SERVER_NOSUCH,
 			    "You were killed by %s: ghost",Server_Name);
-		    remove_user(user->con);
 		    user->con->uopt = 0;
 		    user->con->destroy=1;
-		    /* avoid free'g con->user in remove_connection() */
-		    user->con->class = CLASS_UNKNOWN;
+		    /* save a pointer to the CONNECTION struct for use
+		       after the remove_user() call since `user' gets
+		       free'd */
+		    tempCon = user->con;
+		    /* this MUST come last because it free's user */
+		    remove_user(user->con);
+		    /* avoid free'g con->user in remove_connection().  do
+		       this here to avoid the ASSERT() in remove_user() */
+		    tempCon->class = CLASS_UNKNOWN;
 		}
 		else
 		    hash_remove(Users,user->nick);
