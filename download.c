@@ -297,10 +297,9 @@ HANDLER (queue_limit)
 	return;
     }
     ASSERT (validate_user (recip));
+    /* locally connected, deliver final message */
     if (recip->con)
     {
-	/* locally connected, deliver final message */
-
 	/* look up the filesize in the db */
 	fudge_path (av[1], path, sizeof (path));
 	snprintf (Buf, sizeof (Buf),
@@ -317,15 +316,20 @@ HANDLER (queue_limit)
 	result = mysql_store_result (Db);
 	ASSERT (result != 0);
 	row = mysql_fetch_row (result);
-	ASSERT (row != 0);
-	ASSERT (validate_connection (recip->con));
-	send_cmd (recip->con, MSG_SERVER_LIMIT, "%s \"%s\" %s %s",
-		sender->nick, av[1], row[0], av[2]);
+	if (mysql_num_rows (result) > 0)
+	{
+	    ASSERT (validate_connection (recip->con));
+	    send_cmd (recip->con, MSG_SERVER_LIMIT, "%s \"%s\" %s %s",
+		    sender->nick, av[1], row[0], av[2]);
+	}
+	else
+	    log ("queue_limit(): mysql_num_rows returned 0");
 	mysql_free_result (result);
+
     }
+    /* send to peer servers for delivery */
     else if (Num_Servers && con->class == CLASS_USER)
     {
-	/* send to peer servers for delivery */
 	pass_message_args (con, MSG_CLIENT_LIMIT, ":%s %s \"%s\" %s",
 		sender->nick, av[0], av[1], av[2]);
     }
