@@ -68,6 +68,12 @@ HANDLER (change_pass)
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;
+    if (!pkt || !*pkt)
+    {
+	log("change_pass(): missing new password");
+	unparsable(con);
+	return;
+    }
     /* pass this along even if it is not locally registered.  the user db
      * is distributed so a record for it may reside on another server */
     pass_message_args (con, tag, ":%s %s", user->nick, pkt);
@@ -92,6 +98,12 @@ HANDLER (change_email)
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;
+    if (!pkt || !*pkt)
+    {
+	log("change_email(): missing new email address");
+	unparsable(con);
+	return;
+    }
     pass_message_args (con, tag, ":%s %s", user->nick, pkt);
     db = hash_lookup (User_Db, user->nick);
     if (!db)

@@ -658,5 +658,6 @@ HANDLER (check_port)
     (void) tag;
     (void) len;
     (void) pkt;
+    (void) con;
     /* just ignore this message for now */
 }
