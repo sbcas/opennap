@@ -267,6 +267,7 @@ send_queued_data (CONNECTION *con)
 		set_val (con->sendbuf + con->sendbuflen,
 			MSG_SERVER_COMPRESSED_DATA);
 		con->sendbuflen += 2;
+		ASSERT (l < 65535);
 		set_val (con->sendbuf + con->sendbuflen, l); /* uncompressed size */
 		con->sendbuflen += 2;
 

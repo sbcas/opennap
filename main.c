@@ -100,7 +100,7 @@ HANDLER (server_stats)
 
 typedef struct
 {
-    int message;
+    unsigned long message;
     void (*handler) (CONNECTION *, char *);
 }
 HANDLER;
@@ -185,10 +185,10 @@ dispatch_command (CONNECTION *con, unsigned short tag, unsigned short len)
 	}
     }
 
-    log ("dispatch_command(): unknown message: tag=%d, length=%d, data=%s",
+    log ("dispatch_command(): unknown message: tag=%hu, length=%hu, data=%s",
 	tag, len, len ? con->recvdata : "(empty)");
 
-    send_cmd (con, MSG_SERVER_NOSUCH, "unknown command code %d", tag);
+    send_cmd (con, MSG_SERVER_NOSUCH, "unknown command code %hu", tag);
 }
 
 static void
@@ -247,19 +247,8 @@ handle_connection (CONNECTION *con)
     /* make sure we don't buffer overflow */
     if (len > con->recvdatamax)
     {
-#if 0
-	if (len > 512)
-	{
-	    /* if we receive a message with length longer than this, there
-	       is probably something wrong, and we don't want to allocate
-	       all of our memory */
-	    log ("handle_connection(): %d byte message from %s", len, con->host);
-	    remove_connection (con);
-	    return;
-	}
-#endif
-	con->recvdatamax = len + 1; /* allow for the trailing \0 we add */
-	con->recvdata = REALLOC (con->recvdata, con->recvdatamax);
+	con->recvdatamax = len;
+	con->recvdata = REALLOC (con->recvdata, con->recvdatamax + 1);
     }
 
     /* read the data portion of the message */
@@ -267,7 +256,8 @@ handle_connection (CONNECTION *con)
        data arrives in separate packets */
     while (con->recvbytes - 4 < len)
     {
-	l = read (con->fd, con->recvdata + con->recvbytes - 4, len - con->recvbytes + 4);
+	l = read (con->fd, con->recvdata + con->recvbytes - 4,
+		len - con->recvbytes + 4);
 	if (l == -1)
 	{
 	    if (errno == EAGAIN)
@@ -293,11 +283,12 @@ handle_connection (CONNECTION *con)
 	}
 
 #ifndef HAVE_DEV_RANDOM
-    add_random_bytes (con->recvdata + con->recvbytes - 4, l);
+	add_random_bytes (con->recvdata + con->recvbytes - 4, l);
 #endif /* !HAVE_DEV_RANDOM */
 
 	con->recvbytes += l;
     }
+    ASSERT (con->recvbytes == len + 4);
 
     /* require that the client register before doing anything else */
     if (con->class == CLASS_UNKNOWN &&
@@ -305,7 +296,7 @@ handle_connection (CONNECTION *con)
 	 tag != MSG_CLIENT_REGISTER && tag != MSG_SERVER_LOGIN &&
 	 tag != MSG_SERVER_LOGIN_ACK))
     {
-	log ("main(): %s is not registered, closing connection",
+	log ("handle_connection(): %s is not registered, closing connection",
 	     con->host);
 	remove_connection (con);
 	goto done;
@@ -326,10 +317,8 @@ handle_connection (CONNECTION *con)
 
 done:
 
-    /* reset to 0 since we got all of the data we desired.  `len' contains
-       the lenght of the packet body */
+    /* reset to 0 since we got all of the data we desired */
     con->recvbytes = 0;
-
 }
 
 static void
