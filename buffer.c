@@ -52,32 +52,6 @@ buffer_queue (BUFFER *b, char *d, int dsize)
     return r;
 }
 
-#if 0
-static void
-check_stream (BUFFER *b)
-{
-    ushort len, tag;
-    int offset = b->consumed;
-    BUFFER *c = b;
-
-    while (offset + 4 <= c->datasize)
-    {
-	memcpy (&len, c->data + offset, 2);
-	offset+=2;
-	memcpy (&tag, c->data + offset, 2);
-	offset+=2;
-	if (tag == 100)
-	{
-	    if (*(c->data + offset) != ':')
-	    {
-		ASSERT (0);
-	    }
-	}
-	offset += len;
-    }
-}
-#endif
-
 /* ensure that at least 'n' bytes exist in the first buffer fragment */
 void
 buffer_group (BUFFER *b, int n)
@@ -144,10 +118,6 @@ buffer_consume (BUFFER *b, int n)
 {
     ASSERT (buffer_validate (b));
     ASSERT (b->consumed + n <= b->datasize);
-    if (b->consumed + n > b->datasize)
-    {
-	ASSERT (0);
-    }
     b->consumed += n;
     if (b->consumed >= b->datasize)
     {
