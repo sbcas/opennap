@@ -940,6 +940,13 @@ HANDLER (channel_voice)
 	}
 	return;
     }
+    if (sender && sender->level < LEVEL_MODERATOR
+	&& !is_chanop (chan, sender))
+    {
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		      "channel voice failed: permission denied");
+    }
     pass_message_args (con, tag, ":%s %s %s", senderName, chan->name, pkt);
     while (pkt)
     {
