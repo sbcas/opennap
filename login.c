@@ -7,8 +7,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <mysql.h>
-#include <netinet/in.h> /* for `struct in_addr' */
-#include <arpa/inet.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -110,7 +108,8 @@ HANDLER (login)
     if (con->class == CLASS_UNKNOWN)
     {
 	/* save the ip address of this client */
-	user->host = inet_addr (con->host);
+	user->host = con->ip;
+	/* user->conport = con->port; */
 
 	/* pass this information to our peer servers */
 	if (Num_Servers)

@@ -85,6 +85,11 @@ typedef enum
 }
 CLASS;
 
+/* this flag is set when we are in the process of connect()ing to another
+   server, so that we know to select() the socket to complete the
+   link */
+#define FLAG_CONNECTING	1
+
 struct _connection
 {
 #ifdef DEBUG
@@ -92,7 +97,7 @@ struct _connection
 #endif
     short id;			/* offset into the Client[] arrary for this
 				   instance */
-    short flags;		/* flags for the connection */
+    unsigned short flags;	/* flags for the connection */
     int fd;			/* socket for this connection */
     unsigned long ip;
     char *host;			/* host from which this connection originates */
@@ -312,7 +317,9 @@ void add_random_bytes (char *, int);
 void add_server (CONNECTION *);
 void *array_add (void *, int *, void *);
 void *array_remove (void *, int *, void *);
+int check_connect_status (int);
 void close_db (void);
+void complete_connect (CONNECTION *con);
 void config (const char *);
 void config_defaults (void);
 void dispatch_command (CONNECTION *con, unsigned short tag, unsigned short len);
@@ -327,11 +334,14 @@ char *generate_nonce (void);
 int init_db (void);
 void init_random (void);
 void log (const char *fmt, ...);
+unsigned long lookup_ip (const char *host);
+int make_tcp_connection (const char *host, int port, unsigned long *ip);
 char *my_ntoa (unsigned long);
 USER *new_user (void);
 CHANNEL *new_channel (void);
-HOTLIST *new_hotlist (void);
 CONNECTION *new_connection (void);
+HOTLIST *new_hotlist (void);
+int new_tcp_socket (void);
 void nosuchuser (CONNECTION *, char *);
 void notify_mods (const char *, ...);
 void part_channel (CHANNEL *, USER *);
@@ -345,6 +355,7 @@ size_t read_bytes (int, char *, size_t);
 void remove_connection (CONNECTION *);
 void remove_user (CONNECTION *);
 void send_cmd (CONNECTION *, unsigned long msgtype, const char *fmt, ...);
+int set_nonblocking (int);
 int split_line (char **template, int templatecount, char *pkt);
 void show_motd (CONNECTION * con);
 void send_queued_data (CONNECTION *con);

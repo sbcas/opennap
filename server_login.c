@@ -2,10 +2,8 @@
    This is free software distributed under the terms of the
    GNU Public License. */
 
-#include <netdb.h>
 #include <unistd.h>
 #include <mysql.h>
-#include <arpa/inet.h>
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
@@ -21,15 +19,16 @@ extern MYSQL *Db;
 HANDLER (server_login)
 {
     char *fields[2];
-    struct hostent *he;
-    struct in_addr ip;
+    unsigned long ip;
     MD5_CTX md5;
     char hash[33];
 
     ASSERT (VALID (con));
     if (con->class != CLASS_UNKNOWN)
     {
-	log ("server_login(): reregistration is not supported");
+	log ("server_login(): %s tried to login, but is already registered",
+		con->host);
+	send_cmd (con, MSG_SERVER_NOSUCH, "reregistration is not supported");
 	remove_connection (con);
 	return;
     }
@@ -38,35 +37,25 @@ HANDLER (server_login)
 
     if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 2)
     {
-	log ("server_login(): wrong number of feilds");
+	log ("server_login(): wrong number of fields");
+	send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of fields");
 	remove_connection (con);
 	return;
     }
 
     /* make sure this connection is coming from where they say they are */
     /* TODO: make this nonblocking for the rest of the server */
-    log ("server_login(): doing reverse lookup");
-    he = gethostbyname (fields[0]);
-    if (!he)
+    ip = lookup_ip (fields[0]);
+
+    if (ip != con->ip)
     {
-	log ("server_login(): unable to find ip address for %s", fields[0]);
+	send_cmd (con, MSG_SERVER_NOSUCH,
+		"your ip address does not match that name");
+	log ("server_login(): %s does not resolve to %s", fields[0],
+		my_ntoa (con->ip));
 	remove_connection (con);
-	endhostent();
 	return;
     }
-
-    memcpy (&ip, &he->h_addr[0], he->h_length);
-
-    if (ip.s_addr != con->ip)
-    {
-	log ("server_login(): dns name does not match ip for connection (%s != %s)",
-		inet_ntoa (ip), he->h_name);
-	remove_connection (con);
-	endhostent();
-	return;
-    }
-
-    endhostent();
 
     FREE (con->host);
     con->host = STRDUP (fields[0]);
@@ -112,11 +101,13 @@ HANDLER (server_login_ack)
 
     if (con->class != CLASS_UNKNOWN)
     {
+	send_cmd (con, MSG_SERVER_NOSUCH, "reregistration is not supported");
 	log ("server_login_ack(): already registered!");
 	return;
     }
     if (!con->nonce || !con->sendernonce)
     {
+	send_cmd (con, MSG_SERVER_NOSUCH, "you must login first");
 	log ("server_login_ack(): received ACK with no LOGIN?");
 	remove_connection (con); /* FATAL */
 	return;
@@ -127,6 +118,7 @@ HANDLER (server_login_ack)
 	"SELECT password FROM servers WHERE name = '%s'", con->host);
     if (mysql_query (Db, Buf) != 0)
     {
+	send_cmd (con, MSG_SERVER_NOSUCH, "sql error");
 	sql_error ("server_login",Buf);
 	remove_connection (con);
 	return;
@@ -137,6 +129,7 @@ HANDLER (server_login_ack)
     if (mysql_num_rows (result) != 1)
     {
 	log ("server_login_ack(): expected 1 row returned from sql query");
+	permission_denied (con);
 	mysql_free_result (result);
 	remove_connection (con);
 	return;
@@ -159,6 +152,7 @@ HANDLER (server_login_ack)
     {
 	log ("server_login_ack(): incorrect response for server %s",
 		con->host);
+	permission_denied (con);
 	remove_connection (con);
 	return;
     }

@@ -213,9 +213,11 @@ handle_connection (CONNECTION *con)
 	    {
 		/* no data waiting, wail until next call to try and read
 		   the rest of the packet header */
+#if 0
 		log ("handle_connection(): read %d bytes of header, waiting...",
 			con->recvbytes);
 		return;
+#endif
 	    }
 	    log ("handle_connection(): %s (errno %d)", strerror (errno), errno);
 	    remove_connection (con);
@@ -266,8 +268,10 @@ handle_connection (CONNECTION *con)
 	    {
 		/* no data pending, wait until next round for more data to
 		   come in */
+#if 0
 		log ("handle_connection(): read %d of %d bytes from packet, waiting...",
 			con->recvbytes - 4, len);
+#endif
 		return;
 	    }
 	    log ("handle_connection(): read error %d (%s) from %s", errno,
@@ -411,7 +415,7 @@ main (int argc, char **argv)
     int n;			/* number of ready sockets */
     int f;			/* new socket for incoming connection */
     int port = 0, maxfd;
-    fd_set set;
+    fd_set set, wset;
     struct sigaction sa;
     char *config_file = 0;
     socklen_t sinsize;
@@ -476,12 +480,9 @@ main (int argc, char **argv)
     Hotlist = hash_init (257, (hash_destroy) free_hotlist);
 
     /* create the incoming connections socket */
-    s = socket (PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    s = new_tcp_socket ();
     if (s < 0)
-    {
-	perror ("socket");
 	exit (1);
-    }
 
     n = 1;
     if(setsockopt (s, SOL_SOCKET, SO_REUSEADDR, &n, sizeof (n))!=0)
@@ -516,6 +517,7 @@ main (int argc, char **argv)
     while (!SigCaught)
     {
 	FD_ZERO (&set);
+	FD_ZERO (&wset);
 	maxfd = s;
 	FD_SET (s, &set);
 
@@ -536,7 +538,14 @@ main (int argc, char **argv)
 		}
 		n++;
 
-		FD_SET (Clients[i]->fd, &set);
+		if (Clients[i]->flags & FLAG_CONNECTING)
+		{
+		    FD_SET (Clients[i]->fd, &wset);
+		}
+		else
+		{
+		    FD_SET (Clients[i]->fd, &set);
+		}
 		if (Clients[i]->fd > maxfd)
 		    maxfd = Clients[i]->fd;
 	    }
@@ -547,7 +556,7 @@ main (int argc, char **argv)
 	t.tv_sec = Stat_Click;
 	t.tv_usec = 0;
 
-	n = select (maxfd + 1, &set, NULL, NULL, &t);
+	n = select (maxfd + 1, &set, &wset, NULL, &t);
 
 	if (n < 0)
 	{
@@ -568,7 +577,6 @@ main (int argc, char **argv)
 	    {
 		CONNECTION *cli;
 
-
 		cli = new_connection ();
 		cli->fd = f;
 		cli->ip = sin.sin_addr.s_addr;
@@ -578,8 +586,7 @@ main (int argc, char **argv)
 			sin.sin_port);
 		add_client (cli);
 
-		if (fcntl (f, F_SETFL, O_NONBLOCK) != 0)
-		    log ("main(): fcntl error (%s)", strerror (errno));
+		set_nonblocking (f);
 
 		/* make sure this ip is not banned */
 		for (i = 0; i < Ban_Size; i++)
@@ -609,10 +616,19 @@ main (int argc, char **argv)
 	       sure to check for a valid pointer before checking for input
 	       from it.  the holes are reclaimed in a loop above (see
                comment there for more information) */
-	    if (Clients[i] && FD_ISSET (Clients[i]->fd, &set))
+	    if (Clients[i])
 	    {
-		n--;	/* keep track of how many requests we've handled */
-		handle_connection (Clients[i]);
+		if ((Clients[i]->flags & FLAG_CONNECTING) &&
+			FD_ISSET (Clients[i]->fd, &wset))
+		{
+		    complete_connect (Clients[i]);
+		    n--;	/* keep track of how many we've handled */
+		}
+		else if (FD_ISSET (Clients[i]->fd, &set))
+		{
+		    n--;	/* keep track of how many we've handled */
+		    handle_connection (Clients[i]);
+		}
 	    }
 	}
 

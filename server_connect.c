@@ -4,15 +4,8 @@
 
    $Id$ */
 
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <mysql.h>
 #include "opennap.h"
 #include "debug.h"
@@ -22,49 +15,18 @@ extern MYSQL *Db;
 static void
 try_connect (char *host, int port)
 {
-    struct hostent *he;
-    struct sockaddr_in sin;
-    unsigned long ip;
     int f;
     CONNECTION *cli;
+    unsigned long ip;
 
     log ("try_connect(): attempting to establish server connection to %s:%d",
 	    host, port);
 
-    /* attempt a connection */
-    memset (&sin, 0, sizeof (sin));
-    sin.sin_family = AF_INET;
-    sin.sin_port = htons (port);
-    he = gethostbyname(host);
-    if (!he)
-    {
-	log ("try_connect(): can't find ip for host %s", host);
+    /* attempt a connection.  we do this nonblocking so that the server
+       doesn't halt if it takes a long time to connect */
+    f = make_tcp_connection (host, port, &ip);
+    if (f == -1)
 	return;
-    }
-    memcpy (&ip, &he->h_addr[0], he->h_length);
-    endhostent ();
-    sin.sin_addr.s_addr = ip;
-
-    f=socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
-    if(f<0)
-    {
-	log("server_connect(): socket: %s", strerror (errno));
-	return;
-    }
-    if (connect(f,(struct sockaddr*)&sin,sizeof(sin))<0)
-    {
-	log("server_connect(): connect: %s", strerror (errno));
-	close (f);
-	return;
-    }
-
-    /* set the socket to be nonblocking */
-    if (fcntl (f, F_SETFL, O_NONBLOCK) != 0)
-    {
-	log("server_connect(): fcntl: %s", strerror (errno));
-	close (f);
-	return;
-    }
 
     cli = new_connection ();
     cli->class = CLASS_UNKNOWN; /* not authenticated yet */
@@ -72,17 +34,32 @@ try_connect (char *host, int port)
     cli->host = STRDUP (host);
     cli->nonce = generate_nonce ();
     cli->ip = ip;
+    cli->flags |= FLAG_CONNECTING;
 
     add_client (cli);
+}
+
+void
+complete_connect (CONNECTION *con)
+{
+    if (check_connect_status (con->fd) != 0)
+    {
+	remove_connection (con);
+	return;
+    }
+
+    con->flags &= ~FLAG_CONNECTING; /* connected now */
 
     /* send the login request */
     ASSERT (Server_Name != 0);
-    send_cmd (cli, MSG_SERVER_LOGIN, "%s %s", Server_Name, cli->nonce);
+    send_cmd (con, MSG_SERVER_LOGIN, "%s %s", Server_Name, con->nonce);
 
     /* we handle the response to the login request in the main event loop so
        that we don't block while waiting for th reply.  if the server does
        not accept our connection it will just drop it and we will detect
        it by the normal means that every other connection is checked */
+
+    log ("complete_connect(): connection to %s established.", con->host);
 }
 
 /* process client request to link another server */
