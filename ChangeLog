@@ -1,4 +1,133 @@
+2000-04-28  drscholl  <drscholl@users.sourceforge.net>
+
+	* change.c, join.c, public.c, whois.c:
+	publics and emotes should not be cloaked when the channel level is mod+
+
+	whois should show Cloaked state for privileged users
+
+	whois should hide channel membership for nonprivileged users when they
+	perform a whois on a cloaked user
+
+	added a period at the end of the notification of cloak status.
+
+	* change.c, level.c, login.c, muzzle.c, opennap.h, unmuzzle.c, userdb.c:
+	changed muzzle field in USERDB to flags and use the ON_* bitmasks instead
+	of individual fields.
+
+	cloak state is now saved in the userdb and restored when the user logs back
+	in.
+
+	* README, handler.c, opennap.h, server_links.c:
+	added ping_server() command (10116)
+
+2000-04-27  drscholl  <drscholl@users.sourceforge.net>
+
+	* README, privmsg.c:
+	added cloak to the list of operserv commands
+
+	* Makefile.in, change.c, kick.c, kill_user.c, list_users.c, muzzle.c, opennap.h, serverlib.c, unmuzzle.c:
+	kill, muzzle, unmuzzle and kick should not display the issuer's nick if they
+	are cloaked
+
+	cloak() should call notify_mods()
+
+	* README, TODO, browse.c, change.c, channel.c, handler.c, join.c, muzzle.c, napster.txt, opennap.h, part_channel.c, patchnap.c, privmsg.c, public.c, whois.c:
+	updated napster.txt with new findings from the linux nap v1.0 beta
+
+	changed numeric for the kick command to 829, per nap v1.0 beta
+
+	changed numerics for channel ban, unban and list per nap v1.0 beta
+
+	renamed chanban, chanunban, chanbanlist operserv commands to cban, cunban
+	and cbanlist.
+
+	added cbanclear to operserv commands
+
+	added the clear channel ban list command (424)
+
+	added the cloak user command (625).  for cloaked users, parts/joins are not
+	sent and public messages show up as being from `Operator' instead of the
+	real nick that sent it.
+
+	added stub routine for global user list.
+
+	updated patchnap.c for linux nap v1.0 beta
+
+	* FAQ, README, privmsg.c:
+	added chanban and chanunban commands to operserv
+
+	added FAQ about max_browse_result/client_queue_length
+
+	* Makefile.in, channel.c:
+	fixed channel ban notify_mods() messages which were missing channel names
+
+	* README, ban.c, channel.c, configure, configure.in, handler.c, join.c, opennap.h, serverlib.c, util.c:
+	added first cut at channel bans
+
+2000-04-26  drscholl  <drscholl@users.sourceforge.net>
+
+	* Makefile.in, login.c, muzzle.c:
+	changed notification messages in login() wrt restoring muzzled state to
+	match those in the muzzle() command.
+
+	fixed muzzle() to allow for automatic server muzzling by avoiding a call to
+	pop_user(), which assumes a real user issued the command
+
+	* napster.txt:
+	updated protocol spec with additional info from Thomas van der Heijden
+	<thom@bart.nl>
+
+	* whois.c:
+	consolodated the whois response formation instead of separate commands for
+	each case.  now normal users can see whether another user is muzzled
+
+	* login.c, muzzle.c, opennap.h, unmuzzle.c, userdb.c:
+	muzzle status is now saved in the user db so that it gets restored when the
+	user logs in again
+
+	* mkpass.c, opennap.h, usermode.c, util.c, Makefile.in, announce.c, configure, configure.in, handler.c, init.c, main.c:
+	added WALLOP user mode to disable wallops
+
+	use srand() and rand() to generate random numbers instead of hashing input
+	data with md5.  the md5 code seems to generate lots of unaligned memory
+	accesses on alpha, and it really isnt critical to have cryptographic quality
+	random numbers.  it should also reduce the cpu usage since it no longer has
+	to hash all input.
+
+	* join.c:
+	added support for automatic creation of rollover channels for predefined
+	channels
+
+	* login.c:
+	check for get_level() == -1 in reginfo()
+
+2000-04-25  drscholl  <drscholl@users.sourceforge.net>
+
+	* main.c, opennap.h:
+	Num_Gigs should be unsigned int to prevent a negative count when going about
+	2TB library size.
+
+2000-04-24  drscholl  <drscholl@users.sourceforge.net>
+
+	* TODO, userdb.c:
+	check for valid level when reading the userdb from disk
+
+2000-04-20  drscholl  <drscholl@users.sourceforge.net>
+
+	* ban.c, synch.c:
+	fixed loading and saving of bans to get the correct ban type
+
+2000-04-19  drscholl  <drscholl@users.sourceforge.net>
+
+	* Makefile.in, opennap.dsp, opennap.opt:
+	updated win32 projects files for 0.25
+
 2000-04-18  drscholl  <drscholl@users.sourceforge.net>
+
+	* ChangeLog, Makefile.am:
+	post 0.25 release commit
+
+	forgot to add sample.channels to EXTRA_DIST in Makefile.am
 
 	* NEWS, README, TODO, configure, sample.conf:
 	final changes for 0.25 release
