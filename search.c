@@ -63,65 +63,6 @@ search_callback (DATUM *match, SEARCH *parms)
     return 1;/* accept match */
 }
 
-static LIST *
-new_list (void)
-{
-    LIST *ptr = CALLOC (1, sizeof (LIST));
-    if (!ptr)
-	log ("new_list(): OUT OF MEMORY");
-    return ptr;
-}
-
-LIST *
-list_append (LIST * l, void *data)
-{
-    LIST *r = l;
-
-    if (!l)
-    {
-        l = r = new_list ();
-	if (!r)
-	    return 0;
-    }
-    else
-    {
-        while (l->next)
-            l = l->next;
-        l->next = new_list ();
-	if (!l->next)
-	    return r;
-        l = l->next;
-    }
-    l->data = data;
-    return r;
-}
-
-static LIST *
-list_concat (LIST *a, LIST *b)
-{
-    if (!a)
-	return b;
-    while (a && a->next)
-	a = a->next;
-    a->next = b;
-    return a;
-}
-
-void
-list_free (LIST *l, list_destroy_t cb)
-{
-    LIST *t;
-
-    while (l)
-    {
-	t = l;
-	l = l->next;
-	if (cb)
-	    cb (t->data);
-	FREE (t);
-    }
-}
-
 void
 free_flist (FLIST *ptr)
 {
@@ -159,7 +100,7 @@ tokenize (char *s)
 	}
         if (cur)
         {
-            cur->next = new_list ();
+            cur->next = list_new (0);
 	    if (!cur->next)
 	    {
 		FREE (t);
@@ -169,7 +110,7 @@ tokenize (char *s)
         }
         else
 	{
-            cur = r = new_list ();
+            cur = r = list_new (0);
 	    if (!cur)
 	    {
 		FREE (t);

@@ -25,9 +25,10 @@ extern MYSQL *Db;
 HANDLER (whois)
 {
     USER *user;
-    int i, l;
+    int l;
     char *chanlist;
     time_t online;
+    LIST *chan;
 
     (void) tag;
     (void) len;
@@ -62,24 +63,22 @@ HANDLER (whois)
 
     ASSERT (validate_user (user));
 
-    chanlist = STRDUP (" ");
-
     /* build the channel list this user belongs to */
-    for (i = 0; i < user->numchannels; i++)
+    Buf[0] = 0;
+    for (chan = user->channels; chan; chan = chan->next)
     {
-	l = strlen (chanlist);
-	chanlist = REALLOC (chanlist, l + strlen (user->channels[i]->name) + 2);
-	strcat (chanlist, user->channels[i]->name);
-	strcat (chanlist, " ");
+	l = strlen (Buf);
+	snprintf (Buf + l, sizeof (Buf) - l, "%s%s",
+		(l>0)?" ":"", ((CHANNEL*)chan->data)->name);
     }
+    chanlist = STRDUP (Buf);
 
-    online = (int) (time (0) - user->connected);
+    online = (int) (Current_Time - user->connected);
     if (con->user->level < LEVEL_MODERATOR)
     {
 	send_cmd (con, MSG_SERVER_WHOIS_RESPONSE,
 		WHOIS_FMT, user->nick, Levels[user->level],
-		online,
-		chanlist, user->shared, user->downloads, user->uploads,
+		online, chanlist, user->shared, user->downloads, user->uploads,
 		user->speed, user->clientinfo);
     }
     else if (con->user->level > LEVEL_MODERATOR)
@@ -109,16 +108,16 @@ HANDLER (whois)
     /* notify privileged users when someone requests their info */
     if (user->level >= LEVEL_MODERATOR)
     {
-	if (user->con)
+	ASSERT (validate_connection (user->con));
+	if (user->local)
 	{
-	    ASSERT (validate_connection (user->con));
 	    send_cmd (user->con, MSG_SERVER_NOSUCH,
 		    "%s has requested your info", con->user->nick);
 	}
 	else
 	{
-	    ASSERT (validate_connection (user->serv));
-	    send_cmd (user->serv, MSG_SERVER_REMOTE_ERROR,
+	    ASSERT (user->con->class == CLASS_SERVER);
+	    send_cmd (user->con, MSG_SERVER_REMOTE_ERROR,
 		    "%s %s has requested your info",
 		    user->nick, con->user->nick);
 	}

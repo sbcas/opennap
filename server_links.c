@@ -34,13 +34,13 @@ HANDLER (server_links)
     for (i = 0; i < Num_Servers; i++)
     {
 	if (Servers[i]->recvbuf)
-	    send_cmd (user->con, MSG_SERVER_LINKS, "%s %d %d %d %d",
+	    send_cmd (con, MSG_SERVER_LINKS, "%s %d %d %d %d",
 		Servers[i]->host, Servers[i]->port,
 		Servers[i]->recvbuf->datamax,
 		Servers[i]->recvbuf->datasize,
 		Servers[i]->recvbuf->consumed);
 	else
-	    send_cmd (user->con, MSG_SERVER_LINKS, "%s %d 0 0 0",
+	    send_cmd (con, MSG_SERVER_LINKS, "%s %d 0 0 0",
 		Servers[i]->host, Servers[i]->port,
 		Servers[i]->recvbuf->datamax,
 		Servers[i]->recvbuf->datasize,
@@ -51,5 +51,5 @@ HANDLER (server_links)
 	 */
     }
 
-    send_cmd (user->con, MSG_SERVER_LINKS, "");
+    send_cmd (con, MSG_SERVER_LINKS, "");
 }

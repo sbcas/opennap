@@ -33,35 +33,46 @@ try_connect (char *host, int port)
 
     cli = new_connection ();
     if (!cli)
-    {
-	log ("try_connect(): closing connection");
-	CLOSE (f);
-	return;
-    }
+	goto error;
     cli->class = CLASS_UNKNOWN; /* not authenticated yet */
     cli->fd = f;
     cli->host = STRDUP (host);
     if (!cli->host)
     {
 	log ("try_connect(): ERROR: OUT OF MEMORY");
-	log ("try_connect(): closing connection");
-	CLOSE (f);
-	FREE (cli);
-	return;
+	goto error;
     }
-    cli->nonce = generate_nonce ();
-    if (!cli->nonce)
+    cli->server_login = 1;
+    if ((cli->opt.auth = CALLOC (1, sizeof (AUTH))) == 0)
+    {
+	log ("try_connect(): OUT OF MEMORY");
+	goto error;
+    }
+    cli->opt.auth->nonce = generate_nonce ();
+    if (!cli->opt.auth->nonce)
     {
 	log ("try_connect(): could not generate nonce, closing connection");
-	CLOSE (f);
-	FREE (cli->host);
-	FREE (cli);
-	return;
+	goto error;
     }
     cli->ip = ip;
-    cli->flags |= FLAG_CONNECTING;
-
+    cli->connecting = 1;
     add_client (cli);
+    return;
+error:
+    log ("try_connect(): closing connection");
+    CLOSE (f);
+    if (cli)
+    {
+	if (cli->host)
+	    FREE (cli->host);
+	if (cli->opt.auth)
+	{
+	    if (cli->opt.auth->nonce)
+		FREE (cli->opt.auth->nonce);
+	    FREE (cli->opt.auth);
+	}
+	FREE (cli);
+    }
 }
 
 void
@@ -72,13 +83,14 @@ complete_connect (CONNECTION *con)
 	con->destroy = 1;
 	return;
     }
-
-    con->flags &= ~FLAG_CONNECTING; /* connected now */
+    con->connecting = 0; /* connected now */
 
     /* send the login request */
     ASSERT (Server_Name != 0);
-    send_cmd (con, MSG_SERVER_LOGIN, "%s %s %d", Server_Name, con->nonce,
-	Compression_Level);
+    ASSERT (con->server_login == 1);
+    ASSERT (con->opt.auth != 0);
+    send_cmd (con, MSG_SERVER_LOGIN, "%s %s %d", Server_Name,
+	    con->opt.auth->nonce, Compression_Level);
 
     /* we handle the response to the login request in the main event loop so
        that we don't block while waiting for th reply.  if the server does
@@ -99,6 +111,7 @@ HANDLER (server_connect)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
+    CHECK_USER_CLASS ("server_connect");
     if (pop_user (con, &pkt, &user) != 0)
 	return;
     ASSERT (validate_user (user));
@@ -126,8 +139,8 @@ HANDLER (server_connect)
 	    {
 		log ("server_connect(): %s tried to link server %s, but it is already connected",
 			user->nick, fields[0]);
-		if (user->con)
-		    send_cmd (user->con, MSG_SERVER_NOSUCH,
+		if (con->class == CLASS_USER)
+		    send_cmd (con, MSG_SERVER_NOSUCH,
 			    "server %s is already connected", fields[0]);
 		return;
 	    }
@@ -273,7 +286,7 @@ HANDLER (server_version)
     }
     if (!*pkt || !strcmp (Server_Name, pkt))
     {
-	if (user->con)
+	if (user->local)
 	{
 	    send_cmd (user->con, MSG_SERVER_NOSUCH, "--");
 	    send_cmd (user->con, MSG_SERVER_NOSUCH, "%s %s", PACKAGE, VERSION);
@@ -281,8 +294,9 @@ HANDLER (server_version)
 	}
 	else
 	{
-	    ASSERT (0);
-	    log ("server_version(): haven't implemented sending error messages to remote users");
+	    send_cmd (user->con, MSG_SERVER_REMOTE_ERROR, "%s --", user->nick);
+	    send_cmd (user->con, MSG_SERVER_REMOTE_ERROR, "%s %s %s", user->nick, PACKAGE, VERSION);
+	    send_cmd (user->con, MSG_SERVER_REMOTE_ERROR, "%s --", user->nick);
 	}
     }
 }

@@ -21,7 +21,7 @@ HANDLER (level)
 {
     char *sender = 0, *fields[2];
     USER *user;
-    LEVEL level;
+    int level;
     MYSQL_RES	*result;
 
     (void) tag;
@@ -112,7 +112,7 @@ HANDLER (level)
     user->level = level;
 
     /* if local, notify the user of their change in status */
-    if (user->con)
+    if (user->local)
     {
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
 		"%s changed your level to %s (%d).",

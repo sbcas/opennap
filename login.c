@@ -42,7 +42,7 @@ HANDLER (login)
     int i, n, numfields, speed;
     MYSQL_RES *result;
     MYSQL_ROW row = 0;
-    LEVEL level = LEVEL_USER;
+    int level = LEVEL_USER;
 
     (void) len;
     ASSERT (validate_connection (con));
@@ -112,7 +112,7 @@ HANDLER (login)
 
 	    /* issue a KILL for this user if we have one of them locally
 	       connected */
-	    if (user->con)
+	    if (user->local)
 	    {
 		/* pass this message to everyone */
 		pass_message_args (NULL, MSG_CLIENT_KILL,
@@ -289,6 +289,7 @@ HANDLER (login)
     user->speed = speed;
     user->connected = time (0);
     user->level = LEVEL_USER;	/* default */
+    user->con = con;
 
     /* initialize the hash table to hold this user's shared files */
     user->files = hash_init (257, (hash_destroy) free_datum);
@@ -314,6 +315,7 @@ HANDLER (login)
 	user->host = con->ip;
 	user->conport = con->port;
 	user->server = STRDUP (Server_Name);
+	user->local = 1;
 
 	/* pass this information to our peer servers */
 	if (Num_Servers)
@@ -326,18 +328,9 @@ HANDLER (login)
 
 	con->class = CLASS_USER;
 	con->user = user;
-	user->con = con;
 	send_cmd (con, MSG_SERVER_EMAIL, user->email);
 	show_motd (con, 0, 0, NULL);
 	server_stats (con, 0, 0, NULL);
-    }
-    else
-    {
-	/* all we need to do here is store which connection this user is
-	   behind.  this is needed so that if the server splits, we know
-	   to remove this user from the global user list */
-	ASSERT (con->class == CLASS_SERVER);
-	user->serv = con;
     }
 
     /* we do this after sending the login/email ack (7) to avoid confusing the
@@ -363,12 +356,15 @@ HANDLER (login)
     if (hotlist)
     {
 	/* notify users */
-	int i;
+	LIST *u;
 
-	ASSERT (hotlist->numusers > 0);
-	for (i = 0; i < hotlist->numusers; i++)
-	    send_cmd (hotlist->users[i], MSG_SERVER_USER_SIGNON, "%s %d",
-		user->nick, user->speed);
+	ASSERT (hotlist->users != 0);
+	for (u=hotlist->users; u; u = u->next)
+	{
+	    ASSERT (validate_connection (u->data));
+	    send_cmd (u->data, MSG_SERVER_USER_SIGNON, "%s %d",
+		    user->nick, user->speed);
+	}
     }
 }
 

@@ -20,7 +20,7 @@
 void
 part_channel (CHANNEL * chan, USER * user)
 {
-    int i;
+    int i, len;
 
     ASSERT (validate_channel (chan));
     ASSERT (validate_user (user));
@@ -29,15 +29,19 @@ part_channel (CHANNEL * chan, USER * user)
     chan->users = array_remove (chan->users, &chan->numusers, user);
 
     /* notify other members of this channel that this user has parted */
+    snprintf (Buf+4,sizeof(Buf)-4,"%s %s %d %d",
+	    chan->name, user->nick, user->shared, user->speed);
+    set_tag(Buf,MSG_SERVER_PART);
+    len=strlen(Buf+4);
+    set_len(Buf,len);
     for (i = 0; i < chan->numusers; i++)
     {
 	/* we only notify local clients */
-	if (chan->users[i]->con)
+	if (chan->users[i]->local)
 	{
 	    ASSERT (validate_user (chan->users[i]));
 	    ASSERT (validate_connection (chan->users[i]->con));
-	    send_cmd (chan->users[i]->con, MSG_SERVER_PART, "%s %s %d %d",
-		      chan->name, user->nick, user->shared, user->speed);
+	    queue_data (chan->users[i]->con, Buf, len + 4);
 	}
     }
 

@@ -38,7 +38,7 @@ HANDLER (upload_ok)
 	return;
     }
 
-    if (sender->port == 0 || recip->con)
+    if (sender->port == 0 || recip->local)
     {
 	/* pull the hash from the data base */
 	info = hash_lookup (sender->files, av[1]);
@@ -62,7 +62,7 @@ HANDLER (upload_ok)
 		  recip->nick, recip->host, recip->port, av[1], info->hash,
 		  recip->speed);
     }
-    else if (recip->con)
+    else if (recip->local)
     {
 	/* local connection */
 	send_cmd (recip->con, MSG_SERVER_FILE_READY /* 204 */ ,
@@ -73,8 +73,8 @@ HANDLER (upload_ok)
     {
 	/* send this message to the server the recip is on */
 	log ("upload_ok(): %s is remote, relaying message", recip->nick);
-	ASSERT (recip->serv != 0);
-	send_cmd (recip->serv, MSG_CLIENT_UPLOAD_OK, ":%s %s \"%s\"",
+	ASSERT (recip->con->class == CLASS_SERVER);
+	send_cmd (recip->con, MSG_CLIENT_UPLOAD_OK, ":%s %s \"%s\"",
 		  sender->nick, recip->nick, av[1]);
     }
 }

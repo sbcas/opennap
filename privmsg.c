@@ -46,7 +46,7 @@ HANDLER (privmsg)
     ASSERT (validate_user (user));
 
     /*  locally connected user */
-    if (user->con)
+    if (user->local)
     {
 	ASSERT (validate_connection (user->con));
 
@@ -58,8 +58,8 @@ HANDLER (privmsg)
 	/* pass the message on to our peers since the recipient isn't
 	   local.  we know which server the client is behind, so we just
 	   need to send one copy */
-	ASSERT (user->serv != 0);
-	send_cmd (user->serv, MSG_CLIENT_PRIVMSG, ":%s %s %s",
+	ASSERT (user->con->class == CLASS_SERVER);
+	send_cmd (user->con, MSG_CLIENT_PRIVMSG, ":%s %s %s",
 		sender->nick, user->nick, pkt);
     }
 }
@@ -84,7 +84,7 @@ HANDLER (priv_errmsg)
 	return;
     }
     ASSERT (validate_user (user));
-    if (user->con)
+    if (user->local)
     {
 	/* local user, deliver message */
 	ASSERT (validate_connection (user->con));

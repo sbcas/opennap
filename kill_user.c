@@ -105,7 +105,7 @@ HANDLER (kill_user)
 
     /* forcefully close the client connection if local, otherwise remove
        from global user list */
-    if (user->con)
+    if (user->local)
     {
 	user->con->destroy = 1;
 	/* notify user they were killed */

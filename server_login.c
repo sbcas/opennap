@@ -28,6 +28,7 @@ HANDLER (server_login)
     unsigned int ip;
     struct md5_ctx md;
     char hash[33];
+    int compress;
 
     (void) tag;
     (void) len;
@@ -67,25 +68,34 @@ HANDLER (server_login)
 
     FREE (con->host);
     con->host = STRDUP (fields[0]);
-    con->sendernonce = STRDUP (fields[1]);
-    con->compress = atoi (fields[2]);
-    if (con->compress < 0 || con->compress > 9)
+
+    con->server_login = 1;
+    if ((con->opt.auth = CALLOC (1, sizeof (AUTH))) == 0)
     {
-	log ("server_login: invalid compression level (%d) from %s",
-	    con->compress, con->host);
-	send_cmd (con, MSG_SERVER_ERROR, "invalid compression level %d",
-	    con->compress);
-	con->compress = 0;
+	log ("server_login(): OUT OF MEMORY");
 	con->destroy = 1;
 	return;
     }
+    con->opt.auth->sendernonce = STRDUP (fields[1]);
+    compress = atoi (fields[2]);
+    if (compress < 0 || compress > 9)
+    {
+	log ("server_login: invalid compression level (%d) from %s",
+	    compress, con->host);
+	send_cmd (con, MSG_SERVER_ERROR, "invalid compression level %d",
+	    compress);
+	con->destroy = 1;
+	return;
+    }
+    con->compress = compress;
+
     /* take the minimum of the two values */
     if (con->compress > Compression_Level)
 	con->compress = Compression_Level;
 
-    if (!con->nonce)
+    if (!con->opt.auth->nonce)
     {
-	if ((con->nonce = generate_nonce ()) == NULL)
+	if ((con->opt.auth->nonce = generate_nonce ()) == NULL)
 	{
 	    send_cmd (con, MSG_SERVER_ERROR, "unable to generate nonce");
 	    con->destroy = 1;
@@ -93,15 +103,15 @@ HANDLER (server_login)
 	}
 
 	/* respond with our own login request */
-	send_cmd (con, MSG_SERVER_LOGIN, "%s %s %d", Server_Name, con->nonce,
-	    con->compress);
+	send_cmd (con, MSG_SERVER_LOGIN, "%s %s %d", Server_Name,
+		con->opt.auth->nonce, con->compress);
     }
 
     /* send our challenge response */
     /* hash the peers nonce, our nonce and then our password */
     md5_init_ctx (&md);
-    md5_process_bytes (con->sendernonce, strlen (con->sendernonce), &md);
-    md5_process_bytes (con->nonce, strlen (con->nonce), &md);
+    md5_process_bytes (con->opt.auth->sendernonce, strlen (con->opt.auth->sendernonce), &md);
+    md5_process_bytes (con->opt.auth->nonce, strlen (con->opt.auth->nonce), &md);
     md5_process_bytes (Server_Pass, strlen (Server_Pass), &md);
     md5_finish_ctx (&md, hash);
     expand_hex (hash, 16);
@@ -131,9 +141,9 @@ HANDLER (server_login_ack)
 	log ("server_login_ack(): already registered!");
 	return;
     }
-    if (!con->nonce || !con->sendernonce)
+    if (!con->server_login)
     {
-	send_cmd (con, MSG_SERVER_ERROR, "you must login first");
+	send_cmd (con, MSG_SERVER_ERROR, "You must login first");
 	log ("server_login_ack(): received ACK with no LOGIN?");
 	con->destroy = 1;
 	return;
@@ -165,8 +175,8 @@ HANDLER (server_login_ack)
 
     /* check the peers challenge response */
     md5_init_ctx (&md5);
-    md5_process_bytes (con->nonce, strlen (con->nonce), &md5);
-    md5_process_bytes (con->sendernonce, strlen (con->sendernonce), &md5);
+    md5_process_bytes (con->opt.auth->nonce, strlen (con->opt.auth->nonce), &md5);
+    md5_process_bytes (con->opt.auth->sendernonce, strlen (con->opt.auth->sendernonce), &md5);
     md5_process_bytes (row[0], strlen (row[0]), &md5); /* password for them */
     md5_finish_ctx (&md5, hash);
     expand_hex (hash, 16);
@@ -179,12 +189,18 @@ HANDLER (server_login_ack)
 	log ("server_login_ack(): incorrect response for server %s",
 		con->host);
 	log ("server_login_ack(): remote nonce=%s, my nonce=%s, their hash=%s, expected hash=%s",
-		con->sendernonce, con->nonce, pkt, hash);
+		con->opt.auth->sendernonce, con->opt.auth->nonce, pkt, hash);
 
 	permission_denied (con);
 	con->destroy = 1;
 	return;
     }
+
+    /* done with authentication, free resources */
+    FREE (con->opt.auth->nonce);
+    FREE (con->opt.auth->sendernonce);
+    FREE (con->opt.auth);
+    con->server_login = 0;
 
     /* set the recv/send buffer length to 16k for server links */
     set_tcp_buffer_len (con->fd, 16384);

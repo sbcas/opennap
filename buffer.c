@@ -380,62 +380,50 @@ init_compress (CONNECTION *con, int level)
     int n;
 
     ASSERT (validate_connection (con));
-    ASSERT (con->class == CLASS_SERVER);
-    con->zip = CALLOC (1, sizeof (ZIP));
-    if (!con->zip)
+    ASSERT (ISSERVER (con));
+    con->sopt->zin = CALLOC (1, sizeof (z_stream));
+    if (!con->sopt->zin)
     {
 	log ("init_compress(): ERROR: OUT OF MEMORY");
 	return;
     }
-    con->zip->zin = CALLOC (1, sizeof (z_stream));
-    if (!con->zip->zin)
+    con->sopt->zout = CALLOC (1, sizeof (z_stream));
+    if (!con->sopt->zout)
     {
-	FREE (con->zip);
-	log ("init_compress(): ERROR: OUT OF MEMORY");
-	return;
-    }
-    con->zip->zout = CALLOC (1, sizeof (z_stream));
-    if (!con->zip->zout)
-    {
-	FREE (con->zip->zin);
-	FREE (con->zip);
+	FREE (con->sopt->zin);
 	log ("init_compress(): ERROR: OUT OF MEMORY");
 	return;
     }
 
-    n = inflateInit (con->zip->zin);
+    n = inflateInit (con->sopt->zin);
     if (n != Z_OK)
     {
 	log ("init_compress: inflateInit: %s (%d)",
-		NONULL (con->zip->zin->msg), n);
+		NONULL (con->sopt->zin->msg), n);
     }
-    n = deflateInit (con->zip->zout, level);
+    n = deflateInit (con->sopt->zout, level);
     if (n != Z_OK)
     {
 	log ("init_compress: deflateInit: %s (%d)",
-		NONULL (con->zip->zout->msg), n);
+		NONULL (con->sopt->zout->msg), n);
     }
 
     log ("init_compress: compressing server stream at level %d", level);
 }
 
 void
-finalize_compress (ZIP *zip)
+finalize_compress (SERVER *serv)
 {
     int n;
 
-    n = deflateEnd (zip->zout);
+    n = deflateEnd (serv->zout);
     if (n != Z_OK)
-	log ("finalize_compress: deflateEnd: %s (%d)", NONULL (zip->zout->msg), n);
-    n = inflateEnd (zip->zin);
+	log ("finalize_compress: deflateEnd: %s (%d)", NONULL (serv->zout->msg), n);
+    n = inflateEnd (serv->zin);
     if (n != Z_OK)
-	log ("finalize_compress: inflateEnd: %s (%d)", NONULL (zip->zin->msg), n);
-
-    buffer_free (zip->outbuf);
-    buffer_free (zip->inbuf);
-    FREE (zip->zin);
-    FREE (zip->zout);
-    FREE (zip);
+	log ("finalize_compress: inflateEnd: %s (%d)", NONULL (serv->zin->msg), n);
+    FREE (serv->zin);
+    FREE (serv->zout);
 }
 #endif
 
@@ -447,13 +435,12 @@ send_queued_data (CONNECTION *con)
     ASSERT (validate_connection (con));
 
 #if HAVE_LIBZ
-    if (con->class == CLASS_SERVER)
+    if (ISSERVER (con))
     {
 	BUFFER *r;
 
-	ASSERT (con->zip != 0);
-	if (con->zip->outbuf &&
-	    (r = buffer_compress (con->zip->zout, &con->zip->outbuf)))
+	if (con->sopt->outbuf &&
+	    (r = buffer_compress (con->sopt->zout, &con->sopt->outbuf)))
 	    con->sendbuf = buffer_append (con->sendbuf, r);
     }
 #endif
@@ -503,9 +490,11 @@ void
 queue_data (CONNECTION *con, char *s, int ssize)
 {
     ASSERT (validate_connection (con));
-    if (con->zip)
+    if (ISSERVER (con))
+    {
 	/* for a server connection, allocate chunks of 16k bytes */
-	con->zip->outbuf = buffer_queue (con->zip->outbuf, s, ssize, 16384);
+	con->sopt->outbuf = buffer_queue (con->sopt->outbuf, s, ssize, 16384);
+    }
     else
 	/* for a client connection, allocate chunks of 1k bytes */
 	con->sendbuf = buffer_queue (con->sendbuf, s, ssize, 1024);

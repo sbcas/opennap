@@ -49,7 +49,7 @@ HANDLER (unmuzzle)
     notify_mods ("%s unmuzzled %s.", sender->nick, user->nick);
 
     /* notify the user they have been unmuzzled */
-    if (user->con)
+    if (user->local)
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
 	    "You have been unmuzzled by %s", sender->nick);
 }

@@ -280,8 +280,8 @@ HANDLER (add_file)
     {
 	log ("add_file(): %s is already sharing %d files", user->nick,
 		user->shared);
-	if (user->con)
-	    send_cmd (user->con, MSG_SERVER_NOSUCH,
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH,
 		      "You may only share %d files.", Max_Shared);
 	return;
     }
@@ -361,8 +361,8 @@ HANDLER (share_file)
     {
 	log ("add_file(): %s is already sharing %d files", user->nick,
 		user->shared);
-	if (user->con)
-	    send_cmd (user->con, MSG_SERVER_NOSUCH,
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH,
 		      "You may only share %d files.", Max_Shared);
 	return;
     }
@@ -370,8 +370,8 @@ HANDLER (share_file)
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 4)
     {
 	log ("share_file(): wrong number of fields");
-	if (user->con)
-	    send_cmd (user->con, MSG_SERVER_NOSUCH, "wrong number of fields");
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of fields");
 	return;
     }
 
@@ -388,9 +388,8 @@ HANDLER (share_file)
     if (type == -1)
     {
 	log ("share_file(): not a valid type: %s", av[3]);
-	if (user->con)
-	    send_cmd (user->con, MSG_SERVER_NOSUCH,
-		      "%s is not a valid type", av[3]);
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not a valid type", av[3]);
 	return;
     }
 

@@ -17,9 +17,10 @@ server_split (USER *user, CONNECTION *con)
 {
     ASSERT (validate_user (user));
     ASSERT (validate_connection (con));
+    ASSERT (con->class == CLASS_SERVER);
 
     /* check to see if this user was behind the server that just split */
-    if (user->serv == con)
+    if (user->con == con)
     {
 	/* on split, we have to notify our peer servers that this user
 	   is no longer online */
@@ -38,24 +39,28 @@ remove_connection (CONNECTION *con)
     /* close socket */
     CLOSE (con->fd);
 
-    if (con->class == CLASS_USER)
+    if (ISUSER (con))
     {
-	int i;
+	LIST *u, **h;
 
 	/* remove user from global list */
 	ASSERT (validate_user (con->user));
 	hash_remove (Users, con->user->nick);
 
 	/* if this user had hotlist entries, remove them from the lists */
-	for (i = 0; i < con->hotlistsize; i++)
+	for (u = con->uopt.hotlist; u; u = u->next)
 	{
-	    con->hotlist[i]->users = array_remove (con->hotlist[i]->users,
-		    &con->hotlist[i]->numusers, con);
-	    if (con->hotlist[i]->numusers == 0)
-		hash_remove (Hotlist, con->hotlist[i]->nick);
+	    for (h = &((HOTLIST*)u->data)->users; *h; h = &(*h)->next)
+	    {
+		if ((*h)->data == con)
+		{
+		    list_remove (h);
+		    break;
+		}
+	    }
 	}
-	if (con->hotlist)
-	    FREE (con->hotlist);
+
+	list_free (con->uopt.hotlist, 0);
     }
     else if (con->class == CLASS_SERVER)
     {
@@ -80,24 +85,34 @@ remove_connection (CONNECTION *con)
 	   entire hash table does not need to be optimized the way we split
 	   out the server connections. */
 	hash_foreach (Users, (hash_callback_t) server_split, con);
-    }
 
-    /* destroy authentication information */
-    if (con->sendernonce)
-	FREE (con->sendernonce);
-    if (con->nonce)
-	FREE (con->nonce);
+#if HAVE_LIBZ
+	finalize_compress (con->sopt);
+#endif
+	buffer_free (con->sopt->inbuf);
+	buffer_free (con->sopt->outbuf);
+    }
+    else
+    {
+	ASSERT (con->class == CLASS_UNKNOWN);
+	if (con->server_login)
+	{
+	    if (con->opt.auth)
+	    {
+		if (con->opt.auth->nonce)
+		    FREE (con->opt.auth->nonce);
+		if (con->opt.auth->sendernonce)
+		    FREE (con->opt.auth->sendernonce);
+		FREE (con->opt.auth);
+	    }
+	}
+    }
 
     /* common data */
     if (con->host)
 	FREE (con->host);
     buffer_free (con->sendbuf);
     buffer_free (con->recvbuf);
-#if HAVE_LIBZ
-    if (con->zip)
-	finalize_compress (con->zip);
-#endif
-
     /* just create a hole where this client was for now.  the main() event
        loop will fill in the holes when appropriate.  we don't do this
        here because there are many places, such as kill_user() where a

@@ -18,7 +18,7 @@ HANDLER (join)
 {
     USER *user;
     CHANNEL *chan;
-    int i;
+    LIST *list;
 
     (void) tag;
     (void) len;
@@ -29,11 +29,11 @@ HANDLER (join)
     ASSERT (validate_user (user));
 
     /* enforce a maximum channels per user */
-    if (user->numchannels == Max_User_Channels)
+    if (list_count (user->channels) > Max_User_Channels)
     {
 	if (con->class == CLASS_USER)
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		"maximum number of channels is %d.", Max_User_Channels);
+		"Maximum number of channels is %d.", Max_User_Channels);
 	return;
     }
 
@@ -48,32 +48,43 @@ HANDLER (join)
 	    return;
 	}
 	chan = new_channel ();
+	if (!chan)
+	    return; /* out of memory */
 	chan->name = STRDUP (pkt);
-	chan->created = Current_Time;
+	if (!chan->name)
+	{
+	    OUTOFMEMORY ("join");
+	    FREE (chan);
+	    return;
+	}
+	/* set the default topic */
 	snprintf (Buf, sizeof (Buf), "Welcome to the %s channel.",
 	    chan->name);
 	chan->topic = STRDUP (Buf);
+	if (!chan->topic)
+	{
+	    OUTOFMEMORY ("join");
+	    FREE (chan->name);
+	    FREE (chan);
+	    return;
+	}
 	hash_add (Channels, chan->name, chan);
 	log ("join(): creating channel %s", chan->name);
     }
-    else
+    /* ensure that this user isn't already on this channel */
+    else if (list_find (user->channels, chan))
     {
-	/* ensure that this user isn't already on this channel */
-	for (i = 0; i < user->numchannels; i++)
-	{
-	    if (user->channels[i] == chan)
-	    {
-		log ("user %s is already on channel %s", user->nick,
-		    chan->name);
-		return;
-	    }
-	}
+	log ("user %s is already on channel %s", user->nick, chan->name);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		    "You are already a member of channel %s", chan->name);
+	return;
     }
 
     ASSERT (validate_channel (chan));
 
     /* if local user */
-    if (con->class == CLASS_USER)
+    if (ISUSER (con))
     {
 	/* notify other servers of this join */
 	if (Num_Servers)
@@ -87,34 +98,37 @@ HANDLER (join)
     }
 
     /* add this channel to the USER channel list */
-    user->channels = array_add (user->channels, &user->numchannels, chan);
+    user->channels = list_append (user->channels, chan);
 
-    if (con->class == CLASS_USER)
+    if (ISUSER (con))
     {
 	/* send the client the list of current users in the channel */
-	for (i = 0; i < chan->numusers; i++)
+	for (list = chan->users; list; list = list->next)
 	{
+	    USER *chanUser = list->data;
+
 	    send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST, "%s %s %d %d",
-		      chan->name, chan->users[i]->nick,
-		      chan->users[i]->shared, chan->users[i]->speed);
+		      chan->name, chanUser->nick,
+		      chanUser->shared, chanUser->speed);
 	}
     }
 
     /* add this user to the members list */
-    chan->users = array_add (chan->users, &chan->numusers, user);
+    chan->users = alist_append (chan->users, user);
 
     /* notify other members of the channel that this user has joined */
-    for (i = 0; i < chan->numusers; i++)
+    for (list = chan->users; list; list = list->next)
     {
 	/* we only send to our locally connected clients */
-	if (chan->users[i]->con)
+	if (((USER *) list->data)->local)
 	{
-	    send_cmd (chan->users[i]->con, MSG_SERVER_JOIN, "%s %s %d %d",
-		      chan->name, user->nick, user->shared, user->speed);
+	    send_cmd (((USER *) list->data)->con, MSG_SERVER_JOIN,
+		    "%s %s %d %d",
+		    chan->name, user->nick, user->shared, user->speed);
 	}
     }
 
-    if (con->class == CLASS_USER)
+    if (ISUSER (con))
     {
 	/* send end of channel list message */
 	/* NOTE: for some reason this is the way the napster.com servers send

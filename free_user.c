@@ -11,12 +11,12 @@
 void
 free_user (USER * user)
 {
-    int i;
     HOTLIST *hotlist;
+    LIST *list;
 
     ASSERT (validate_user (user));
 
-    if (user->con && Num_Servers)
+    if (user->local && Num_Servers)
     {
 	/* local user, notify peers of this user's departure */
 	log ("free_user(): sending QUIT message for user %s", user->nick);
@@ -32,13 +32,13 @@ free_user (USER * user)
     /* remove this user from any channels they were on */
     if (user->channels)
     {
-	for (i = 0; i < user->numchannels; i++)
+	for (list = user->channels; list; list = list->next)
 	{
 	    /* notify locally connected clients in the same channel that
 	       this user has parted */
-	    part_channel (user->channels[i], user);
+	    part_channel (list->data, user);
 	}
-	FREE (user->channels);
+	list_free (user->channels, 0);
     }
 
     ASSERT (Num_Files >= user->shared);
@@ -51,10 +51,9 @@ free_user (USER * user)
     if (hotlist)
     {
 	ASSERT (validate_hotlist (hotlist));
-	ASSERT (hotlist->numusers > 0);
-	for (i = 0; i < hotlist->numusers; i++)
-	    send_cmd (hotlist->users[i], MSG_SERVER_USER_SIGNOFF, "%s",
-		user->nick);
+	ASSERT (hotlist->users != 0);
+	for (list = hotlist->users; list; list = list->next)
+	    send_cmd (list->data, MSG_SERVER_USER_SIGNOFF, "%s", user->nick);
     }
 
     FREE (user->nick);

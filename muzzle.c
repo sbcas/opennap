@@ -55,12 +55,10 @@ HANDLER (muzzle)
     }
 
     /* notify the user they have been muzzled */
-    if (user->con)
+    if (user->local)
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-	    "You have been muzzled by %s: %s", sender->nick,
-	    reason ? reason : "");
+	    "You have been muzzled by %s: %s", sender->nick, NONULL(reason));
 
     /* notify mods+ of this action */
-    notify_mods ("%s has muzzled %s: %s", sender->nick, user->nick,
-	reason ? reason : "");
+    notify_mods ("%s has muzzled %s: %s", sender->nick, user->nick,NONULL(reason));
 }

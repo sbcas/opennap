@@ -468,9 +468,9 @@ main (int argc, char **argv)
 		n++;
 
 		/* check sockets for writing */
-		if ((Clients[i]->flags & FLAG_CONNECTING) ||
+		if ((Clients[i]->connecting) ||
 		    (Clients[i]->sendbuf ||
-		     (Clients[i]->zip && Clients[i]->zip->outbuf)))
+		     (ISSERVER (Clients[i]) && Clients[i]->sopt->outbuf)))
 		    CHECKWRITE(i);
 
 		/* always check for incoming data */
@@ -485,8 +485,8 @@ main (int argc, char **argv)
 		   buffers so we dont block on select().  the incomplete
 		   flag is checked here to avoid busy waiting when we really
 		   do need more data from the client connection */
-		if ((Clients[i]->incomplete == 0 && Clients[i]->recvbuf) ||
-		    (Clients[i]->zip && Clients[i]->zip->inbuf))
+		if ((!Clients[i]->incomplete && Clients[i]->recvbuf) ||
+		    (ISSERVER(Clients[i]) && Clients[i]->sopt->inbuf))
 		    pending++;
 	    }
 	}
@@ -546,7 +546,7 @@ main (int argc, char **argv)
 	/* read incoming data into buffers, but don't process it */
 	for (i = 0; !SigCaught && n > 0 && i < Num_Clients; i++)
 	{
-	    if ((Clients[i]->flags & FLAG_CONNECTING) && WRITABLE (i))
+	    if (Clients[i]->connecting && WRITABLE (i))
 	    {
 		complete_connect (Clients[i]);
 		n--;	/* keep track of how many we've handled */
@@ -555,9 +555,7 @@ main (int argc, char **argv)
 	    {
 		n--;	/* keep track of how many we've handled */
 		f = buffer_read (Clients[i]->fd,
-		    (Clients[i]->zip !=
-		     0) ? &Clients[i]->zip->
-		    inbuf : &Clients[i]->recvbuf);
+			(ISSERVER(Clients[i]) ? &Clients[i]->sopt->inbuf : &Clients[i]->recvbuf));
 		if (f <= 0)
 		{
 		    if (f == 0)
@@ -590,7 +588,7 @@ main (int argc, char **argv)
 	    {
 		/* if there is input pending, handle it now */
 		if (Clients[i]->recvbuf ||
-		    (Clients[i]->zip && Clients[i]->zip->inbuf))
+		    (ISSERVER(Clients[i]) && Clients[i]->sopt->inbuf))
 		    handle_connection (Clients[i]);
 	    }
 	}
@@ -601,13 +599,13 @@ main (int argc, char **argv)
 	/* write out data and reap dead client connections */
 	for (i = 0; !SigCaught && i < Num_Clients; i++)
 	{
-	    if (Clients[i]->zip)
+	    if (ISSERVER (Clients[i]))
 	    {
 		/* server - strategy is call send_queued_data() if there
 		   there is data to be compressed, or if the socket is
 		   writable and there is some compressed output */
 		if (Clients[i]->sendbuf
-		    || (Clients[i]->zip->outbuf && WRITABLE (i)))
+		    || (Clients[i]->sopt->outbuf && WRITABLE (i)))
 		{
 		    if (send_queued_data (Clients[i]) == -1)
 			Clients[i]->destroy = 1;

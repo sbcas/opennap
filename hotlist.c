@@ -14,7 +14,7 @@ HANDLER (add_hotlist)
 {
     HOTLIST *hotlist;
     USER *user;
-    int i;
+    LIST *list;
 
     (void) tag;
     (void) len;
@@ -42,9 +42,9 @@ HANDLER (add_hotlist)
     ASSERT (validate_hotlist (hotlist));
 
     /* make sure this user isn't already listed */
-    for (i = 0; i < hotlist->numusers; i++)
+    for (list = hotlist->users; list; list = list->next)
     {
-	if (hotlist->users[i] == con)
+	if (list->data == con)
 	{
 #if 0
 	    log ("add_hotlist(): %s is already on %s's hotlist (%d)",
@@ -55,10 +55,10 @@ HANDLER (add_hotlist)
     }
 
     /* add this user to the list of users waiting for notification */
-    hotlist->users = array_add (hotlist->users, &hotlist->numusers, con);
+    hotlist->users = list_append (hotlist->users, con);
 
     /* add the hotlist entry to this particular users list */
-    con->hotlist = array_add (con->hotlist, &con->hotlistsize, hotlist);
+    con->uopt.hotlist = list_append (con->uopt.hotlist, hotlist);
 
     /* ack the user who requested this */
     /* this seems unnecessary, but its what the official server does... */
@@ -78,8 +78,8 @@ HANDLER (add_hotlist)
 /* packet contains: <user> */
 HANDLER (remove_hotlist)
 {
-    int i;
     HOTLIST *h = 0;
+    LIST **list;
 
     (void) tag;
     (void) len;
@@ -87,31 +87,25 @@ HANDLER (remove_hotlist)
     CHECK_USER_CLASS ("remove_hotlist");
 
     /* find the user in this user's hotlist */
-    for (i = 0; i < con->hotlistsize; i++)
+    for (list = &con->uopt.hotlist; *list; list = &(*list)->next)
     {
-	ASSERT (validate_hotlist (con->hotlist[i]));
-	if (strcmp (con->hotlist[i]->nick, pkt) == 0)
+	h = (*list)->data;
+	if (!strcasecmp (pkt, h->nick))
 	{
-	    h = con->hotlist[i];
-	    break;
+	    list_remove (list);
+	    /* remove issuing user from the global list to notify */
+	    h->users = list_delete (h->users, con);
+	    /* if no more users are waiting for notification, destroy
+	       the entry */
+	    if (!h->users)
+		hash_remove (Hotlist, h->nick);
+	    return;
 	}
     }
-    if (!h)
-    {
-	log ("remove_hotlist(): user %s is not on %s's hotlist", pkt,
+    log ("remove_hotlist(): user %s is not on %s's hotlist", pkt,
 	    con->user->nick);
-	return; /* not found */
-    }
-
-    /* remove target user from issuing user's list */
-    con->hotlist = array_remove (con->hotlist, &con->hotlistsize, h);
-
-    /* remove issuing user from the global list to notify */
-    h->users = array_remove (h->users, &h->numusers, con);
-
-    /* if no more users are waiting for notification, destroy the entry */
-    if (h->numusers == 0)
-	hash_remove (Hotlist, h->nick);
+    send_cmd (con, MSG_SERVER_NOSUCH,
+	    "Could not find user %s in your hotlist.", pkt);
 }
 
 void

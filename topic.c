@@ -111,7 +111,7 @@ HANDLER (topic)
 
     for (i = 0; i < chan->numusers; i++)
     {
-	if (chan->users[i]->con)
+	if (chan->users[i]->local)
 	    queue_data (chan->users[i]->con, Buf, l);
     }
 }

@@ -84,16 +84,16 @@ HANDLER (public)
     if (i == user->numchannels)
     {
 	/* user is not a member of this channel */
-	if (user->con)
-	    send_cmd (user->con, MSG_SERVER_NOSUCH,
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH,
 		"you are not on channel %s", chan->name);
 	return;
     }
 
     if (user->muzzled)
     {
-	if (user->con)
-	    send_cmd (user->con, MSG_SERVER_NOSUCH, "You are muzzled.");
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "You are muzzled.");
 	return;
     }
 
@@ -106,7 +106,7 @@ HANDLER (public)
 
     /* send this message to everyone in the channel */
     for (i = 0; i < chan->numusers; i++)
-	if (chan->users[i]->con)
+	if (chan->users[i]->local)
 	    queue_data (chan->users[i]->con, Buf, 4 + l);
 	else
 	    remote++;
@@ -171,7 +171,7 @@ HANDLER (emote)
 
     /* send this message to all channel members */
     for (i = 0; i < chan->numusers; i++)
-	if (chan->users[i]->con)
+	if (chan->users[i]->local)
 	    queue_data (chan->users[i]->con, Buf, buflen);
 
     /* pass message to peer servers */

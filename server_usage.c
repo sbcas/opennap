@@ -19,6 +19,7 @@ HANDLER (server_usage)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
+    CHECK_USER_CLASS ("server_usage");
 
     if (pop_user (con, &pkt, &user) != 0)
         return;

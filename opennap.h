@@ -16,6 +16,9 @@
 #include <zlib.h>
 #endif /* HAVE LIBZ */
 #include "hash.h"
+#include "list.h"
+
+#define OUTOFMEMORY(f) log("%s(): OUT OF MEMORY at %s:%d", f, __FILE__, __LINE__)
 
 #define MAGIC_USER 0xeaee402a
 #define MAGIC_CHANNEL 0xa66544cb
@@ -52,17 +55,6 @@ struct _buffer
     BUFFER *next;
 };
 
-/* this is not used when compiling without compression, but it makes the
-   main event loop simpiler to code if we still define this here */
-typedef struct {
-#if HAVE_LIBZ
-    z_streamp zin;	/* input stream decompressor */
-    z_streamp zout;	/* output stream compressor */
-#endif
-    BUFFER *outbuf;	/* compressed output buffer */
-    BUFFER *inbuf;	/* uncompressed input buffer */
-} ZIP;
-
 typedef struct _connection CONNECTION;
 typedef struct _user USER;
 typedef struct _channel CHANNEL;
@@ -75,19 +67,17 @@ struct _channel
 #endif
     char *name;
     char *topic;
-    USER **users;
-    int numusers;
-    time_t created;
+    LIST *users;
 };
 
 /* user level */
-typedef enum {
+enum {
     LEVEL_LEECH,
     LEVEL_USER,
     LEVEL_MODERATOR,
     LEVEL_ADMIN,
     LEVEL_ELITE
-} LEVEL;
+};
 
 struct _user
 {
@@ -95,44 +85,60 @@ struct _user
     unsigned int magic;
 #endif
     char *nick;
-    char *pass;			/* password for this user */
+    char *pass;			/* password for this user, needed for sync */
     char *clientinfo;
     char *email;		/* user's email address */
     char *server;		/* which server the user is connected to */
+
     unsigned short uploads;	/* no. of uploads in progress */
     unsigned short downloads;	/* no. of downloads in progress */
-    unsigned short speed;	/* link speed */
+
+    unsigned int level : 3;	/* user level */
+    unsigned int speed : 4;	/* link speed */
+    unsigned int local : 1;	/* nonzero if locally connected */
+    unsigned int muzzled : 1;	/* non-zero if this user is muzzled */
+    unsigned int xxx : 7;	/* unused */
     unsigned short shared;	/* # of shared files */
+
     unsigned short totalup;	/* total number of uploads */
     unsigned short totaldown;	/* total number of downloads */
+
     unsigned int libsize;	/* approximate size of shared files in kB */
     unsigned int host;		/* ip of user in network byte order */
+
     unsigned short port;	/* data port client is listening on */
     unsigned short conport;	/* remote port for connection to server */
-    LEVEL level;		/* user level */
+
     time_t connected;		/* time at which the user connected */
-    int muzzled;		/* non-zero if this user is muzzled */
-
     HASH *files;		/* db entries for this user's shared files */
-
-    CHANNEL **channels;		/* channels of which this user is a member */
-    int numchannels;		/* number of channels */
-    CONNECTION *con;		/* if locally connected */
-    CONNECTION *serv;		/* the server behind which this user lies */
+    LIST *channels;		/* channels of which this user is a member */
+    CONNECTION *con;		/* local connection, or server which this
+				   user is behind */
 };
 
-typedef enum
+enum
 {
     CLASS_UNKNOWN,
     CLASS_USER,
     CLASS_SERVER
-}
-CLASS;
+};
 
-/* this flag is set when we are in the process of connect()ing to another
-   server, so that we know to select() the socket to complete the
-   link */
-#define FLAG_CONNECTING	1
+#define ISSERVER(c)	((c)->class==CLASS_SERVER)
+#define ISUSER(c)	((c)->class == CLASS_USER)
+
+typedef struct {
+#if HAVE_LIBZ
+    z_streamp zin;	/* input stream decompressor */
+    z_streamp zout;	/* output stream compressor */
+#endif
+    BUFFER *outbuf;	/* compressed output buffer */
+    BUFFER *inbuf;	/* uncompressed input buffer */
+} SERVER;
+
+typedef struct {
+    char *nonce;
+    char *sendernonce;
+} AUTH;
 
 struct _connection
 {
@@ -141,45 +147,41 @@ struct _connection
 #endif
     short id;			/* offset into the Client[] arrary for this
 				   instance */
-    unsigned short flags;	/* flags for the connection */
+    unsigned short port;	/* remote port */
     int fd;			/* socket for this connection */
-    unsigned int ip;
-    unsigned int port;		/* remote port */
+    unsigned int ip;		/* ip for this connection */
     char *host;			/* host from which this connection originates */
-    CLASS class;		/* type of connection, server or client */
     USER *user;			/* pointer to the user associated with this
 				   connection, if CLASS_USER */
-
     BUFFER *sendbuf;		/* output buffer */
+    BUFFER *recvbuf;		/* input buffer */
 
-    /* the next three fields make up 4 bytes and should be grouped together
-       to keep memory alignment correct */
+    union {
+#define uopt opt
+	/* hotlist for user.  this is the list of users they wish to be
+	   notified about when they log in or out.  note that this is just
+	   a pointer to the _single_ global entry stored in the Hotlist
+	   hash table.  the actual HOTLIST* pointer should only be freed
+	   when hotlist->numusers is zero.  */
+	LIST *hotlist;
+	/* parameters for server->server connection */
+#define sopt opt.server
+	SERVER *server;
+	AUTH *auth;
+    } opt;
 
-    short compress;		/* compression level for this connection */
-    char destroy;		/* connection should be destoyed in
+    unsigned int connecting : 1;
+    unsigned int incomplete : 1;
+    unsigned int destroy : 1;	/* connection should be destoyed in
 				   handle_connection().  because h_c() caches
 				   a copy of the CONNECTION pointer, we can't
 				   remove it from inside a handler, so we mark
 				   it here and have it removed at a later time 
 				   when it is safe */
-    char incomplete;		/* not enough data present to form a complete
-				   packet */
-
-    ZIP *zip;			/* compression stream state */
-
-    BUFFER *recvbuf;		/* input buffer */
-
-    /* server authentication */
-    char *nonce;
-    char *sendernonce;
-
-    /* hotlist for user.  this is the list of users they wish to be
-       notified about when they log in or out.  note that this is just a
-       pointer to the _single_ global entry stored in the Hotlist hash table.
-       the actual HOTLIST* pointer should only be freed when hotlist->numusers
-       is zero.  */
-    HOTLIST **hotlist;
-    int hotlistsize;		/* number of hotlist entries */
+    unsigned int class : 2;	/* connection class (unknown, user, server) */
+    unsigned int compress : 4;	/* compression level for this connection */
+    unsigned int server_login : 1;	/* server login in progress */
+    unsigned int xxx : 7;	/* unused */
 };
 
 /* hotlist entry */
@@ -189,15 +191,7 @@ struct _hotlist
     unsigned int magic;
 #endif
     char *nick;		/* user being monitored */
-    CONNECTION **users;	/* list of local clients requesting notification */
-    int numusers;	/* number of local clients requesting notification */
-};
-
-typedef struct list LIST;
-struct list
-{
-    void *data;
-    struct list *next;
+    LIST *users;
 };
 
 /* list of DATUM entries, used in the global file list */
@@ -250,7 +244,6 @@ typedef struct _ban {
     time_t when;
 } BAN;
 
-typedef void (*list_destroy_t) (void *);
 typedef void (*timer_t) (void *);
 
 extern char *Motd_Path;
@@ -470,7 +463,7 @@ void config_defaults (void);
 void exec_timers (time_t);
 void expand_hex (char *, int);
 void fdb_garbage_collect (HASH *);
-void finalize_compress (ZIP *);
+void finalize_compress (SERVER *);
 void free_ban (BAN *);
 void free_channel (CHANNEL *);
 void free_config (void);
@@ -485,8 +478,6 @@ void init_compress (CONNECTION *, int);
 int init_db (void);
 void init_random (void);
 int init_server (const char *);
-LIST *list_append (LIST *, void *);
-void list_free (LIST *, list_destroy_t);
 void log (const char *fmt, ...);
 unsigned int lookup_ip (const char *host);
 int make_tcp_connection (const char *host, int port, unsigned int *ip);

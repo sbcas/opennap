@@ -36,10 +36,13 @@ HANDLER (ping)
     }
     ASSERT (validate_user (user));
 
-    if (user->con) /* local user */
+    if (user->local)
 	send_cmd (user->con, tag, "%s%s%s", orig->nick, pkt ? " " : "",
 		NONULL (pkt));
     else if (con->class == CLASS_USER) /* remote user */
-	send_cmd (user->serv, tag, ":%s %s%s%s", orig->nick, user->nick,
+    {
+	ASSERT (user->con->class == CLASS_SERVER);
+	send_cmd (user->con, tag, ":%s %s%s%s", orig->nick, user->nick,
 		pkt ? " " : "", NONULL (pkt));
+    }
 }

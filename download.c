@@ -82,7 +82,7 @@ HANDLER (download)
 
     /* if the client holding the file is a local user, send the request
        directly */
-    if (user->con)
+    if (user->local)
     {
 	send_cmd (user->con, MSG_SERVER_UPLOAD_REQUEST, "%s \"%s\"",
 		con->user->nick, av[1]);
@@ -91,7 +91,7 @@ HANDLER (download)
     else
     {
 	log ("download(): %s is remote, relaying request", user->nick);
-	send_cmd (user->serv, MSG_SERVER_UPLOAD_REQUEST, ":%s %s \"%s\"",
+	send_cmd (user->con, MSG_SERVER_UPLOAD_REQUEST, ":%s %s \"%s\"",
 	    con->user->nick, user->nick, av[1]);
     }
 }
@@ -233,7 +233,7 @@ HANDLER (data_port_error)
 	    sender->nick, user->nick, my_ntoa (user->host), user->port);
 
     /* if local, notify the target of the error */
-    if (user->con)
+    if (user->local)
 	send_cmd (user->con, MSG_SERVER_DATA_PORT_ERROR, "%s", sender->nick);
 }
 
@@ -268,7 +268,7 @@ HANDLER (upload_request)
     ASSERT (validate_user (recip));
 
     /* if local user, deliver the message */
-    if (recip->con)
+    if (recip->local)
     {
 	send_cmd (recip->con, MSG_SERVER_UPLOAD_REQUEST /* 607 */, "%s \"%s\"",
 	    av[0] + 1, av[2]);
@@ -311,7 +311,7 @@ HANDLER (queue_limit)
     }
     ASSERT (validate_user (recip));
     /* locally connected, deliver final message */
-    if (recip->con)
+    if (recip->local)
     {
 	ASSERT (validate_connection (recip->con));
 

@@ -155,13 +155,12 @@ handle_connection (CONNECTION * con)
 
 #if HAVE_LIBZ
     /* decompress server input stream */
-    if (con->class == CLASS_SERVER)
+    if (ISSERVER (con))
     {
 	BUFFER *b;
 
-	ASSERT (con->zip != 0);
-	if (con->zip->inbuf
-	    && (b = buffer_uncompress (con->zip->zin, &con->zip->inbuf)))
+	if (con->sopt->inbuf
+	    && (b = buffer_uncompress (con->sopt->zin, &con->sopt->inbuf)))
 	    con->recvbuf = buffer_append (con->recvbuf, b);
     }
 #endif /* HAVE_LIBZ */

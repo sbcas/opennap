@@ -194,7 +194,7 @@ pop_user (CONNECTION *con, char **pkt, USER **user)
 	/* this should not return a user who is local to us.  if so, it
 	   means that some other server has passed us back a message we
 	   sent to them */
-	if ((*user)->con)
+	if ((*user)->local)
 	{
 	    log ("pop_user(): fatal error, received server message for local user!");
 	    return -1;
@@ -355,7 +355,8 @@ validate_connection (CONNECTION *con)
 	ASSERT_RETURN_IF_FAIL (buffer_validate (con->sendbuf), 0);
     if (con->recvbuf)
 	ASSERT_RETURN_IF_FAIL (buffer_validate (con->recvbuf), 0);
-    ASSERT_RETURN_IF_FAIL (con->hotlistsize == 0 || VALID_LEN (con->hotlist, sizeof (HOTLIST *) * con->hotlistsize), 0);
+    if (ISUSER (con))
+	ASSERT_RETURN_IF_FAIL (con->uopt.hotlist == 0 || VALID_LEN (con->uopt.hotlist, sizeof (LIST)), 0);
     return 1;
 }
 
@@ -390,8 +391,7 @@ validate_hotlist (HOTLIST *h)
     ASSERT_RETURN_IF_FAIL (VALID_LEN (h, sizeof (HOTLIST)), 0);
     ASSERT_RETURN_IF_FAIL (h->magic == MAGIC_HOTLIST, 0);
     ASSERT_RETURN_IF_FAIL (VALID (h->nick), 0);
-    ASSERT_RETURN_IF_FAIL ((h->users != 0) ^ (h->numusers == 0), 0);
-    ASSERT_RETURN_IF_FAIL (h->numusers == 0 || VALID_LEN (h->users, sizeof (CONNECTION *) * h->numusers), 0);
+    ASSERT_RETURN_IF_FAIL (h->users == 0 || VALID_LEN (h->users, sizeof (LIST)), 0);
     return 1;
 }
 #endif

@@ -163,7 +163,7 @@ HANDLER (alter_port)
     user->port = p;
 
     /* if local user, send them the message */
-    if (user->con)
+    if (user->local)
 	send_cmd (user->con, MSG_CLIENT_ALTER_PORT, "%d", p);
 
     /* if a local admin issued the command, pass it to our peer servers.
