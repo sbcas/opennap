@@ -28,10 +28,10 @@ HANDLER (privmsg)
     ASSERT (validate_user (sender));
 
     /* check to see if the recipient of the message is local */
-    ptr = next_arg (&pkt);
+    ptr = next_arg_noskip (&pkt);
     if (!pkt)
     {
-	log ("privmsg(): malformed message from %s: %s", sender->nick, pkt);
+	log ("privmsg(): malformed message from %s", sender->nick);
 	return;
     }
 
@@ -53,7 +53,7 @@ HANDLER (privmsg)
 	/*reconsitute the msg */
 	send_cmd (user->con, MSG_CLIENT_PRIVMSG, "%s %s", sender->nick, pkt);
     }
-    else if (con->class == CLASS_USER)
+    else
     {
 	/* pass the message on to our peers since the recipient isn't
 	   local.  we know which server the client is behind, so we just
@@ -64,6 +64,8 @@ HANDLER (privmsg)
     }
 }
 
+/* this is not needed, use send_user() instead */
+#if 0
 /* 10404 <user> <message>
    This message is used by servers to send a 404 message to a user on a remote
    server. */
@@ -91,3 +93,4 @@ HANDLER (priv_errmsg)
 	send_cmd (user->con, MSG_SERVER_NOSUCH, "%s", pkt);
     }
 }
+#endif

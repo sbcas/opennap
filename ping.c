@@ -39,9 +39,10 @@ HANDLER (ping)
     if (user->local)
 	send_cmd (user->con, tag, "%s%s%s", orig->nick, pkt ? " " : "",
 		NONULL (pkt));
-    else if (con->class == CLASS_USER) /* remote user */
+    else
     {
-	ASSERT (user->con->class == CLASS_SERVER);
+	/* send the message to the server which this user appears to be
+	   behind */
 	send_cmd (user->con, tag, ":%s %s%s%s", orig->nick, user->nick,
 		pkt ? " " : "", NONULL (pkt));
     }

@@ -12,28 +12,27 @@
 #include "opennap.h"
 #include "debug.h"
 
-/* user sent a public message to a channel */
-/* server sends: <channel> <nick> <text> */
-/* client sends: <channel> <text> */
+/* [ :<sender> ] <channel> <text> */
+/*  public message to a channel */
 HANDLER (public)
 {
     CHANNEL *chan;
-    USER *user, *chanUser;
+    USER *chanUser, *sender;
     LIST *list;
-    int l, remote = 0;
+    int l;
     char *ptr;
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-
+    if(pop_user(con,&pkt,&sender))
+	return;
+    ASSERT (validate_user(sender));
     /* can't use split line here because the text field is considered all
        one item */
-
     /* extract the channel name. NOTE: we don't use next_arg() here because
        it will strip leading space from the text being sent */
-    ptr = pkt;
-    pkt = strchr (pkt, ' ');
+    ptr=next_arg_noskip(&pkt);
     if (!pkt)
     {
 	log ("public(): too few fields");
@@ -41,7 +40,6 @@ HANDLER (public)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "too few parameters for command");
 	return;
     }
-    *pkt++ = 0;
 
     /* find the channel this message is going to */
     chan = hash_lookup (Channels, ptr);
@@ -60,54 +58,32 @@ HANDLER (public)
     }
     ASSERT (validate_channel (chan));
 
-    if (ISSERVER (con))
-    {
-	/* find the USER struct for the sender */
-	/* extract the channel name. NOTE: we don't use next_arg() here because
-	   it will strip leading space from the text being sent */
-	ptr = pkt;
-	pkt = strchr (pkt, ' ');
-	if (!pkt)
-	{
-	    log ("public(): server message has too few fields");
-	    return;
-	}
-	*pkt++ = 0;
-	user = hash_lookup (Users, ptr);
-	if (!user)
-	{
-	    log ("public(): could not find user %s", ptr);
-	    return;
-	}
-    }
-    else
-	user = con->user;
-
-    ASSERT (validate_user (user));
-
     /* make sure this user is a member of the channel */
-    list = list_find (user->channels, chan);
+    list = list_find (sender->channels, chan);
     if (!list)
     {
 	/* user is not a member of this channel */
+	log ("public(): %s is not a member of channel %s", sender->nick,
+		chan->name);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
 		"you are not on channel %s", chan->name);
-	else
-	    log ("public(): %s is not a member of channel %s", user->nick,
-		chan->name);
 	return;
     }
 
-    if (user->muzzled)
+    if (sender->muzzled)
     {
+	log("public(): %s is muzzled", sender->nick);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "You are muzzled.");
 	return;
     }
 
+    if (Num_Servers)
+	pass_message_args(con,tag,":%s %s %s", sender->nick, chan->name, pkt);
+
     /* format the message */
-    snprintf (Buf + 4, sizeof (Buf) - 4, "%s %s %s", chan->name, user->nick,
+    snprintf (Buf + 4, sizeof (Buf) - 4, "%s %s %s", chan->name, sender->nick,
 	      pkt);
     l = strlen (Buf + 4);
     set_len (Buf, l);
@@ -119,16 +95,7 @@ HANDLER (public)
 	chanUser = list->data;
 	if (chanUser->local)
 	    queue_data (chanUser->con, Buf, 4 + l);
-	else
-	    remote++;
     }
-
-    /* if a local user, pass this message to our peer servers */
-    /* this is an optimization for the case where all the users on a given
-       channel are local.  we don't send the message to our peer servers if
-       we detect this case */
-    if (con->class == CLASS_USER && remote)
-	pass_message (con, Buf, 4 + l);
 }
 
 /* 824 [ :<user> ] <channel> "<text>" */
@@ -136,7 +103,7 @@ HANDLER (emote)
 {
     USER *user, *chanUser;
     CHANNEL *chan;
-    int buflen, remote = 0;
+    int buflen;
     char *av[2];
     LIST *list;
 
@@ -145,6 +112,12 @@ HANDLER (emote)
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
 	return;
+    if(user->muzzled)
+    {
+	if(ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"You are muzzled");
+	return;
+    }
 
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
     {
@@ -169,6 +142,9 @@ HANDLER (emote)
 	return;
     }
 
+    if(Num_Servers)
+	pass_message_args(con,tag,":%s %s \"%s\"",user->nick,chan->name,pkt);
+
     /* since we send the same data to multiple clients, format the data once
        and queue it up directly */
     set_tag (Buf, MSG_CLIENT_EMOTE);
@@ -184,12 +160,5 @@ HANDLER (emote)
 	chanUser = list->data;
 	if (chanUser->local)
 	    queue_data (chanUser->con, Buf, buflen);
-	else
-	    remote++; /* we have to send this to other servers */
     }
-
-    /* pass message to peer servers */
-    if (ISUSER (con) && Num_Servers && remote)
-	pass_message_args (con, MSG_CLIENT_EMOTE, ":%s %s \"%s\"",
-		user->nick, chan->name, av[1]);
 }

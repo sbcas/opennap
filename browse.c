@@ -50,10 +50,13 @@ HANDLER (browse)
     }
     ASSERT (validate_user (user));
 
-    data.count = 0;
-    data.con = con;
-    data.user = user;
-    hash_foreach (user->files, (hash_callback_t) browse_callback, &data);
+    if(user->files)
+    {
+	data.count = 0;
+	data.con = con;
+	data.user = user;
+	hash_foreach (user->files, (hash_callback_t) browse_callback, &data);
+    }
 
     /* send end of browse list message */
     send_cmd (con, MSG_SERVER_BROWSE_END, "%s", user->nick);

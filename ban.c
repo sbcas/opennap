@@ -54,15 +54,12 @@ HANDLER (ban)
 	return;
     }
 
-    ban = pkt;
-    pkt = strchr (pkt, ' ');
-    if (pkt)
-	*pkt++ = 0;
-    /* if a local user, pass this to our peers */
-    if (con->class == CLASS_USER && Num_Servers)
+    ban=next_arg(&pkt);
+
+    if (Num_Servers)
     {
 	pass_message_args (con, MSG_CLIENT_BAN, ":%s %s %s",
-		sender->nick, ban, pkt ? pkt : "");
+		sender->nick, ban, NONULL(pkt));
     }
 
     do
@@ -80,7 +77,6 @@ HANDLER (ban)
 	/* determine if this ban is on an ip or a user */
 	b->type = (is_ip (ban)) ? BAN_IP : BAN_USER;
 	Ban = array_add (Ban, &Ban_Size, b);
-
 	notify_mods ("%s banned %s: %s", sender->nick, ban, NONULL (pkt));
 	return;
     }
@@ -112,7 +108,7 @@ HANDLER (unban)
 	return;
     if (user->level < LEVEL_MODERATOR)
     {
-	if (con->class == CLASS_USER)
+	if (ISUSER (con))
 	    permission_denied (con);
 	return;
     }
@@ -120,17 +116,15 @@ HANDLER (unban)
 	if (!strcasecmp (pkt, Ban[i]->target))
 	{
 	    free_ban (Ban[i]);
-	    if (Num_Servers && con->class == CLASS_USER)
-	    {
+	    if (Num_Servers)
 		pass_message_args (con, MSG_CLIENT_UNBAN, ":%s %s",
 			user->nick, pkt);
-	    }
 	    Ban_Size--;
 	    notify_mods ("%s removed the ban on %s", user->nick, pkt);
 	    return;
 	}
-    if (con->class == CLASS_USER)
-	send_cmd (con, MSG_SERVER_NOSUCH, "there is no ban on %s", pkt);
+    if (ISUSER (con))
+	send_cmd (con, MSG_SERVER_NOSUCH, "There is no ban on %s", pkt);
 }
 
 /* 615 */

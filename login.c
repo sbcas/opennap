@@ -39,7 +39,7 @@ invalid_password (const char *s)
 	if (ISSPACE (*s))
 	    return 1;
     }
-    return ((count > 0));
+    return ((count == 0));
 }
 
 static void
@@ -258,7 +258,8 @@ HANDLER (login)
 
 	/* set the default userlevel */
 	user->level = db->level;
-	log ("login(): set %s to level %s", user->nick, Levels[user->level]);
+	if(user->level != LEVEL_USER)
+	    log ("login(): set %s to level %s", user->nick, Levels[user->level]);
     }
     else if (tag == MSG_CLIENT_LOGIN_REGISTER)
     {
@@ -286,14 +287,6 @@ HANDLER (login)
 
 	if (userdb_store (db))
 	    log ("login(): userdb_store failed (ignored)");
-    }
-
-    /* initialize the hash table to hold this user's shared files */
-    user->files = hash_init (257, (hash_destroy) free_datum);
-    if (!user->files)
-    {
-	OUTOFMEMORY ("login");
-	goto failed;
     }
 
     if (hash_add (Users, user->nick, user))
@@ -339,22 +332,22 @@ HANDLER (login)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "%s set your level to %s (%d).",
 		      Server_Name, Levels[user->level], user->level);
 	}
-
-	/* pass this information to our peer servers */
-	if (Num_Servers)
-	{
-	    pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
-		    av[0], av[1], av[2], av[3], av[4]);
-	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %lu %hu %s",
-		    av[0], user->host, user->conport, Server_Name);
-	    if (user->level != LEVEL_USER)
-		pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
-				   ":%s %s %s", Server_Name, user->nick,
-				   Levels[user->level]);
-	}
     }
 
     userdb_free (db);
+
+    /* pass this information to our peer servers */
+    if (Num_Servers)
+    {
+	pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
+		av[0], av[1], av[2], av[3], av[4]);
+	if (ISUSER(con))
+	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %lu %hu %s",
+		    av[0], user->host, user->conport, Server_Name);
+	if (user->level != LEVEL_USER)
+	    pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
+		    ":%s %s %s", Server_Name, user->nick, Levels[user->level]);
+    }
 
     /* check the global hotlist to see if there are any users waiting to be
        informed of this user signing on */
@@ -417,6 +410,11 @@ HANDLER (user_ip)
 	log ("user_ip(): could not find struct for %s", field[0]);
 	return;
     }
+
+    if(Num_Servers>1)
+	pass_message_args(con,tag,"%s %s %s %s", user->nick,
+		field[1],field[2],field[3]);
+
     user->host = strtoul (field[1], 0, 10);
     user->host = BSWAP32 (user->host);
     user->conport = strtoul (field[2], 0, 10);
@@ -496,9 +494,11 @@ HANDLER (reginfo)
 	FREE (db->email);
     }
     else
-    {
 	db = CALLOC (1, sizeof (USERDB));
-    }
+
+    if (Num_Servers > 1)
+	pass_message_args(con,tag,":%s %s %s %s %s %s %s",
+		server,fields[0],fields[1],fields[2],fields[3],fields[4],fields[5]);
 
     db->password = STRDUP (fields[1]);
     db->email = STRDUP (fields[2]);

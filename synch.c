@@ -15,6 +15,7 @@ char *Levels[LEVEL_ELITE+1] = {
     "Elite"
 };
 
+#if 0
 static void
 sync_file (DATUM *info, CONNECTION *con)
 {
@@ -29,6 +30,7 @@ sync_file (DATUM *info, CONNECTION *con)
 		info->user->nick, info->filename, info->size,
 		info->hash, Content_Types[info->type]);
 }
+#endif
 
 static void
 sync_user (USER *user, CONNECTION *con)
@@ -70,8 +72,10 @@ sync_user (USER *user, CONNECTION *con)
 		user->nick, ((CHANNEL *) list->data)->name);
     }
 
+#if 0
     /* sync the files for this user */
     hash_foreach (user->files, (hash_callback_t) sync_file, con);
+#endif
 }
 
 void

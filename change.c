@@ -29,13 +29,12 @@ HANDLER (change_data_port)
     if (port >= 0 && port <= 65535)
     {
 	user->port = port;
-	if (con->class == CLASS_USER && Num_Servers)
+	if (Num_Servers)
 	{
-	    pass_message_args (con, MSG_CLIENT_CHANGE_DATA_PORT, ":%s %d",
-		    user->nick, user->port);
+	    pass_message_args (con, tag, ":%s %d", user->nick, user->port);
 	}
     }
-    else if (con->class == CLASS_USER)
+    else if (ISUSER (con))
 	send_cmd (con, MSG_SERVER_NOSUCH, "invalid data port");
 }
 
@@ -55,14 +54,10 @@ HANDLER (change_speed)
     if (spd >= 0 && spd <= 10)
     {
 	user->speed = spd;
-	/* if a local user, pass this info to our peer servers */
-	if (con->class == CLASS_USER && Num_Servers)
-	{
-	    pass_message_args (con, MSG_CLIENT_CHANGE_SPEED, ":%s %d",
-		    user->nick, spd);
-	}
+	if (Num_Servers)
+	    pass_message_args (con, tag, ":%s %d", user->nick, spd);
     }
-    else if (con->class == CLASS_USER)
+    else if (ISUSER (con))
 	send_cmd (con, MSG_SERVER_NOSUCH, "invalid speed");
 }
 
@@ -77,6 +72,8 @@ HANDLER (change_pass)
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;
+    if (Num_Servers)
+	pass_message_args(con,tag,"%s",pkt);
     db=userdb_fetch(user->nick);
     if(!db)
     {
@@ -102,6 +99,8 @@ HANDLER (change_email)
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;
+    if (Num_Servers)
+	pass_message_args(con,tag,"%s",pkt);
     db=userdb_fetch(user->nick);
     if(!db)
     {
@@ -170,13 +169,9 @@ HANDLER (alter_port)
     if (user->local)
 	send_cmd (user->con, MSG_CLIENT_ALTER_PORT, "%d", p);
 
-    /* if a local admin issued the command, pass it to our peer servers.
-       note that we do this even if the target was local, because all servers
-       need to know what the new port is */
-    if (con->class == CLASS_USER && Num_Servers)
-	pass_message_args (con, MSG_CLIENT_ALTER_PORT, ":%s %s %d",
-		sender->nick, user->nick, p);
+    if (Num_Servers)
+	pass_message_args (con, tag, ":%s %s %d", sender->nick, user->nick, p);
 
     notify_mods ("%s changed %s's data port to %d: %s", sender->nick,
-	    user->nick, p, pkt ? pkt : "");
+	    user->nick, p, NONULL(pkt));
 }

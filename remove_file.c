@@ -7,7 +7,7 @@
 #include "opennap.h"
 #include "debug.h"
 
-/* 102 [ :<user> ] <filename> */
+/* 102 <filename> */
 HANDLER (remove_file)
 {
     USER	*user;
@@ -17,16 +17,12 @@ HANDLER (remove_file)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-
-    if (pop_user (con, &pkt, &user) != 0)
-	return;
-    ASSERT (validate_user (user));
-
+    CHECK_USER_CLASS("remove_file");
+    user=con->user;
     if (user->shared == 0)
     {
 	log ("remove_file(): user %s is not sharing any files", user->nick);
-	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "you aren't sharing any files");
+	send_cmd (con, MSG_SERVER_NOSUCH, "you aren't sharing any files");
 	return;
     }
 
@@ -35,8 +31,7 @@ HANDLER (remove_file)
     if (!info)
     {
 	log ("remove_file(): user %s is not sharing %s", user->nick, pkt);
-	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "you are not sharing that file");
+	send_cmd (con, MSG_SERVER_NOSUCH, "you are not sharing that file");
 	return;
     }
 
@@ -50,9 +45,4 @@ HANDLER (remove_file)
 
     /* this invokes free_datum() indirectly */
     hash_remove (user->files, info->filename);
-
-    /* if a local user, pass this message to our peer servers */
-    if (Num_Servers && con->class == CLASS_USER)
-	pass_message_args (con, MSG_CLIENT_REMOVE_FILE, ":%s %s",
-	    user->nick, pkt);
 }

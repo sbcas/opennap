@@ -423,6 +423,10 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_LOGIN_ACK		10011	/* server login response */
 #define MSG_SERVER_USER_IP		10013	/* ip for user */
 #define MSG_SERVER_REGINFO		10014	/* registration info */
+#define MSG_SERVER_REMOTE_SEARCH	10015
+#define MSG_SERVER_REMOTE_SEARCH_RESULT	10016
+#define MSG_SERVER_REMOTE_SEARCH_END	10017
+#define MSG_SERVER_ENCAPSULATED		10018
 #define MSG_CLIENT_CONNECT		10100
 #define MSG_CLIENT_DISCONNECT		10101
 #define MSG_CLIENT_KILL_SERVER		10110
@@ -484,6 +488,7 @@ void free_timers (void);
 void free_user (USER *);
 char *generate_nonce (void);
 int get_level (const char *);
+int get_random_bytes (char *d, int);
 void handle_connection (CONNECTION *);
 void init_compress (CONNECTION *, int);
 int init_db (void);
@@ -499,6 +504,7 @@ CONNECTION *new_connection (void);
 HOTLIST *new_hotlist (void);
 int new_tcp_socket (void);
 char *next_arg (char **);
+char *next_arg_noskip (char **);
 time_t next_timer (void);
 void nosuchuser (CONNECTION *, char *);
 void notify_mods (const char *, ...);
@@ -512,9 +518,10 @@ void queue_data (CONNECTION *, char *, int);
 size_t read_bytes (int, char *, size_t);
 void remove_connection (CONNECTION *);
 void remove_user (CONNECTION *);
-void send_cmd (CONNECTION *, unsigned int msgtype, const char *fmt, ...);
 int safe_realloc (void **, int);
+void send_cmd (CONNECTION *, unsigned int msgtype, const char *fmt, ...);
 int send_queued_data (CONNECTION *con);
+void send_user (USER *, int, char *fmt, ...);
 int set_keepalive (int, int);
 int set_data_size (int);
 int set_max_connections (int);
@@ -557,6 +564,7 @@ HANDLER (download);
 HANDLER (download_end);
 HANDLER (download_start);
 HANDLER (emote);
+HANDLER (encapsulated);
 HANDLER (join);
 HANDLER (kill_user);
 HANDLER (kill_server);
@@ -569,11 +577,13 @@ HANDLER (nuke_user);
 HANDLER (part);
 HANDLER (ping);
 HANDLER (privmsg);
-HANDLER (priv_errmsg);
 HANDLER (public);
 HANDLER (queue_limit);
 HANDLER (reginfo);
 HANDLER (register_nick);
+HANDLER (remote_search);
+HANDLER (remote_search_result);
+HANDLER (remote_search_end);
 HANDLER (remove_file);
 HANDLER (remove_hotlist);
 HANDLER (remove_server);

@@ -42,10 +42,7 @@ HANDLER (part)
 	return;
     }
 
-    user->channels = list_delete (user->channels, chan);
-
-    /* if local, notify our peer servers that this client has parted */
-    if (ISUSER (con) && Num_Servers)
+    if (Num_Servers)
     {
 	/* NOTE: we use the MSG_CLIENT_PART(401) message instead of
 	   passing MSG_SERVER_PART(407) to pass between servers because we
@@ -55,6 +52,8 @@ HANDLER (part)
 	pass_message_args (con, MSG_CLIENT_PART, ":%s %s",
 		user->nick, chan->name);
     }
+
+    user->channels = list_delete (user->channels, chan);
 
     /* remove user from the channel members list and notify local clients */
     part_channel (chan, user);

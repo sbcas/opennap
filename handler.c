@@ -17,6 +17,44 @@ HANDLER (server_stats)
 	      Num_Gigs / (1024 * 1024));
 }
 
+/* 10018 :<server> <target> <packet>
+   allows a server to send an arbitrary message to a remote user */
+HANDLER (encapsulated)
+{
+    char *nick, ch, *ptr;
+    USER *user;
+
+    (void)tag;
+    ASSERT (validate_connection(con));
+    CHECK_SERVER_CLASS("encapsulated");
+    if(*pkt!=':')
+    {
+	log("encapsulated(): server message does not begin with a colon (:)");
+	return;
+    }
+    nick=strchr(pkt+1, ' ');
+    nick++;
+    ptr=strchr(nick, ' ');
+    ch=*ptr;
+    *ptr=0;
+    user=hash_lookup(Users,nick);
+    if(!user)
+    {
+	log("encapsulated(): no such user %s", nick);
+	return;
+    }
+    if(user->local)
+    {
+	ptr++;
+	queue_data(user->con,ptr,len - (ptr - pkt));
+    }
+    else if (Num_Servers > 1)
+    {
+	*ptr=ch;
+	pass_message(con,pkt,len);
+    }
+}
+
 typedef struct
 {
 	unsigned int message;
@@ -83,22 +121,21 @@ static HANDLER Protocol[] = {
 
     /* non-standard messages */
     {MSG_CLIENT_QUIT, client_quit},
-    {MSG_SERVER_LOGIN, server_login},
-    {MSG_SERVER_LOGIN, server_login},
-    {MSG_SERVER_LOGIN_ACK, server_login_ack},
+    {MSG_SERVER_LOGIN, server_login},		/* 10010 */
+    {MSG_SERVER_LOGIN_ACK, server_login_ack},	/* 10011 */
     {MSG_SERVER_USER_IP, user_ip},		/* 10013 */
     {MSG_SERVER_REGINFO, reginfo },		/* 10014 */
+    {MSG_SERVER_REMOTE_SEARCH, remote_search},	/* 10015 */
+    {MSG_SERVER_REMOTE_SEARCH_RESULT, remote_search_result},	/* 10016 */
+    {MSG_SERVER_REMOTE_SEARCH_END, remote_search_end},	/* 10017 */
+    {MSG_SERVER_ENCAPSULATED, encapsulated },	/* 10018 */
     {MSG_CLIENT_CONNECT, server_connect},	/* 10100 */
     {MSG_CLIENT_DISCONNECT, server_disconnect},	/* 10101 */
     {MSG_CLIENT_KILL_SERVER, kill_server},	/* 10110 */
     {MSG_CLIENT_REMOVE_SERVER, remove_server},	/* 10111 */
     {MSG_CLIENT_LINKS, server_links },		/* 10112 */
     {MSG_CLIENT_USAGE_STATS, server_usage },	/* 10115 */
-#if 0
-    {MSG_SERVER_COMPRESSED_DATA, compressed_data},	/* 10200 */
-#endif
     {MSG_CLIENT_SHARE_FILE, share_file},
-    {MSG_SERVER_REMOTE_ERROR, priv_errmsg},	/* 10404 */
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
 
@@ -234,6 +271,9 @@ handle_connection (CONNECTION * con)
 	return;
     }
 
+    /* we no longer pass ALL message through, its up to each handler
+       routine to pass it along if required... */
+#if 0
     /* if we received this message from a peer server, pass it
        along to the other servers behind us.  the ONLY messages we don't
        propogate are an ACK from a peer server that we've requested a link
@@ -242,6 +282,7 @@ handle_connection (CONNECTION * con)
 	tag != MSG_SERVER_ERROR && tag != MSG_SERVER_NOSUCH && Num_Servers)
 	pass_message (con, con->recvbuf->data + con->recvbuf->consumed,
 		      4 + len);
+#endif
 
     dispatch_command (con, tag, len,
 		      con->recvbuf->data + con->recvbuf->consumed + 4);

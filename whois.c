@@ -35,7 +35,7 @@ HANDLER (whois)
 	if (db)
 	{
 	    send_cmd (con, MSG_SERVER_WHOWAS, "%s %s %d", db->nick,
-		      db->level, db->lastSeen);
+		      Levels[db->level], db->lastSeen);
 	    userdb_free (db);
 	}
 	else
@@ -91,17 +91,8 @@ HANDLER (whois)
     if (user->level >= LEVEL_MODERATOR)
     {
 	ASSERT (validate_connection (user->con));
-	if (user->local)
-	{
-	    send_cmd (user->con, MSG_SERVER_NOSUCH,
-		    "%s has requested your info", con->user->nick);
-	}
-	else
-	{
-	    ASSERT (user->con->class == CLASS_SERVER);
-	    send_cmd (user->con, MSG_SERVER_REMOTE_ERROR,
-		    "%s %s has requested your info",
-		    user->nick, con->user->nick);
-	}
+
+	send_user (user, MSG_SERVER_NOSUCH,
+		"%s has requested your info", con->user->nick);
     }
 }

@@ -67,7 +67,7 @@ remove_connection (CONNECTION *con)
 
 	list_free (con->uopt.hotlist, 0);
     }
-    else if (con->class == CLASS_SERVER)
+    else if (ISSERVER (con))
     {
 	/* if we detect that a server has quit, we need to remove all users
 	   that were behind this server.  we do this by searching the User
@@ -96,6 +96,7 @@ remove_connection (CONNECTION *con)
 #endif
 	buffer_free (con->sopt->inbuf);
 	buffer_free (con->sopt->outbuf);
+	FREE (con->sopt);
     }
     else
     {

@@ -8,7 +8,7 @@
 #include "debug.h"
 
 /* handle notification that a user has quit */
-/* packet contains just <user> */
+/* <user> */
 HANDLER (client_quit)
 {
     USER *user;
@@ -28,6 +28,7 @@ HANDLER (client_quit)
     {
 	log ("client_quit(): received remote QUIT for user %s", user->nick);
 	hash_remove (Users, user->nick);
+	pass_message_args(con,tag,"%s",user->nick);
     }
     else
 	log ("client_quit(): recieved QUIT for local user %s!", user->nick);

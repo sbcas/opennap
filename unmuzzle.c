@@ -38,13 +38,9 @@ HANDLER (unmuzzle)
 
     user->muzzled = 0;
 
-    /* if the user that issued the command is local, notify our peer servers */
-    if (con->class == CLASS_USER && Num_Servers)
-    {
-	ASSERT (VALID (con->user));
+    if (Num_Servers)
 	pass_message_args (con, MSG_CLIENT_UNMUZZLE, ":%s %s",
-		  con->user->nick, user->nick);
-    }
+		  sender->nick, user->nick);
 
     notify_mods ("%s unmuzzled %s.", sender->nick, user->nick);
 

@@ -75,7 +75,12 @@ void *
 hash_lookup (HASH * table, const char *key)
 {
     HASHENT *he;
-    unsigned int sum = hash_string (table, key);
+    unsigned int sum;
+
+    if (!table)
+	return 0;
+    ASSERT (key!=0);
+    sum = hash_string (table, key);
     he = table->bucket[sum];
 
     for (; he; he = he->next)

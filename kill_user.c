@@ -25,7 +25,7 @@ notify_mods (const char *fmt, ...)
     set_len (Buf, len);
     for (i = 0; i < Num_Clients; i++)
     {
-	if (Clients[i]->class == CLASS_USER &&
+	if (Clients[i] && Clients[i]->class == CLASS_USER &&
 		Clients[i]->user->level >= LEVEL_MODERATOR)
 	    queue_data (Clients[i], Buf, len + 4);
     }
@@ -89,12 +89,9 @@ HANDLER (kill_user)
 	return;
     }
 
-    /* local user issued the kill, notify peers */
-    if (con->class == CLASS_USER && Num_Servers)
-    {
+    if (Num_Servers)
 	pass_message_args (con, MSG_CLIENT_KILL, ":%s %s %s",
-	    con->user->nick, user->nick, NONULL (pkt));
-    }
+	    killernick, user->nick, NONULL (pkt));
 
     /* log this action */
     log ("kill_user(): %s killed user %s: %s", killernick, user->nick,
@@ -110,7 +107,7 @@ HANDLER (kill_user)
 	user->con->destroy = 1;
 	/* notify user they were killed */
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-	    "you have been killed by %s: %s", killernick, NONULL (pkt));
+	    "You have been killed by %s: %s", killernick, NONULL (pkt));
     }
     /* remote user, just remove from the global list */
     else

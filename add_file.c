@@ -211,6 +211,12 @@ insert_datum (DATUM * info, char *av)
     /* split the filename into words */
     tokens = tokenize (av);
 
+    if (!info->user->files)
+    {
+	/* create the hash table */
+	info->user->files = hash_init (257, (hash_destroy) free_datum);
+    }
+
     /* add this entry to the hash table for this user's files */
     hash_add (info->user->files, info->filename, info);
     info->refcount++;
@@ -290,7 +296,7 @@ HANDLER (add_file)
     }
 
     /* make sure this isn't a duplicate */
-    if (hash_lookup (user->files, av[0]))
+    if (user->files && hash_lookup (user->files, av[0]))
     {
 	log ("add_file(): duplicate for user %s: %s", user->nick, av[0]);
 	if (con->class == CLASS_USER)
@@ -311,6 +317,9 @@ HANDLER (add_file)
 
     insert_datum (info, av[0]);
 
+    /* searching is now distributed, so only the local server has
+       knowledge of this user's files */
+#if 0
     /* if this is a local connection, pass this information to our peer
        servers.  note that we prepend `:<nick>' so that the peer servers
        know who is adding the file. */
@@ -322,6 +331,7 @@ HANDLER (add_file)
 			   info->size, info->bitrate, info->frequency,
 			   info->duration);
     }
+#endif
 
     share_common (user, info->size / 1024);
 }
@@ -395,13 +405,5 @@ HANDLER (share_file)
     info->valid = 1;
 
     insert_datum (info, av[0]);
-
-    if (con->class == CLASS_USER && Num_Servers)
-    {
-	pass_message_args (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %d %s %s",
-			   user->nick, info->filename, info->size,
-			   info->hash, Content_Types[info->type]);
-    }
-
     share_common (user, info->size / 1024);
 }

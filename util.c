@@ -240,28 +240,46 @@ add_random_bytes (char *s, int ssize)
     md5_process_bytes (s, ssize, &Random_Context);
     Stale_Random = 0;
 }
+#endif /* !HAVE_DEV_RANDOM */
 
-static void
+int
 get_random_bytes (char *d, int dsize)
 {
+#ifdef HAVE_DEV_RANDOM
+    int f;
+
+    f = open ("/dev/random", O_RDONLY);
+    if (f < 0)
+    {
+	log ("generate_nonce(): /dev/random: %s", strerror (errno));
+	return -1;
+    }
+
+    if (read (f, d, dsize) != dsize)
+    {
+	log ("get_random_bytes(): could not read enough random bytes");
+	close (f);
+	return -1;
+    }
+
+    close (f);
+    return 0;
+#else
     char buf[16];
 
     ASSERT (Stale_Random == 0);
     ASSERT (dsize <= 16);
-    md5_finish_ctx (&Random_Context, buf);
+    md5_read_ctx (&Random_Context, buf);
     memcpy (d, buf, dsize);
-    Stale_Random = 1;
-    md5_init_ctx (&Random_Context);
-    md5_process_bytes (buf, 16, &Random_Context);
+    md5_process_bytes (buf, 16, &Random_Context);	/* feedback */
+    return 0;
+#endif /* HAVE_DEV_RANDOM */
 }
-#endif /* ! HAVE_DEV_RANDOM */
 
+    /* generate our own nonce value */
 char *
 generate_nonce (void)
 {
-#if HAVE_DEV_RANDOM
-    int f;
-#endif /* HAVE_DEV_RANDOM */
     char *nonce;
 
     nonce = MALLOC (17);
@@ -272,27 +290,11 @@ generate_nonce (void)
     }
     nonce[16] = 0;
 
-#if HAVE_DEV_RANDOM
-    /* generate our own nonce value */
-    f = open ("/dev/random", O_RDONLY);
-    if (f < 0)
+    if (get_random_bytes (nonce, 8) == -1)
     {
-	log ("generate_nonce(): /dev/random: %s", strerror (errno));
-	return NULL;
+	FREE(nonce);
+	return 0;
     }
-
-    if (read (f, nonce, 8) != 8)
-    {
-	log ("generate_nonce(): could not read enough random bytes");
-	close (f);
-	FREE (nonce);
-	return NULL;
-    }
-
-    close (f);
-#else
-    get_random_bytes (nonce, 8);
-#endif
 
     /* expand the binary data into hex for transport */
     expand_hex (nonce, 8);
@@ -469,6 +471,17 @@ log (const char *fmt, ...)
     fputc ('\n', stdout);
 }
 
+/* like next_arg(), except we don't skip over additional whitespace */
+char *
+next_arg_noskip (char **s)
+{
+    char *r = *s;
+    *s=strchr(r, ' ');
+    if(*s)
+	*(*s)++=0;
+    return r;
+}
+
 char *
 next_arg (char **s)
 {
@@ -506,4 +519,42 @@ safe_realloc (void **ptr, int bytes)
 	return -1;
     *ptr = t;
     return 0;
+}
+
+/* this function sends a command to an arbitrary user without the caller
+   needing to know if its a local client or not */
+void
+send_user (USER *user, int tag, char *fmt, ...)
+{
+    int len, offset;
+    va_list ap;
+
+    if (user->local)
+    {
+	/* deliver directly */
+	va_start(ap, fmt);
+	vsnprintf(Buf+4,sizeof(Buf)-4,fmt,ap);
+	va_end(ap);
+	set_tag(Buf,tag);
+	len=strlen(Buf+4);
+	set_len(Buf,len);
+    }
+    else
+    {
+	/* encapsulate and send to remote server */
+	log("send_user(): %s is remote, relaying to %s", user->nick,
+		user->con->host);
+	snprintf(Buf+4,sizeof(Buf)-4,":%s %s ", Server_Name, user->nick);
+	offset=strlen(Buf+4);
+	set_tag(Buf,MSG_SERVER_ENCAPSULATED);
+	va_start(ap, fmt);
+	vsnprintf(Buf+8+offset,sizeof(Buf)-8-offset,fmt,ap);
+	va_end(ap);
+	set_tag(Buf+4+offset,tag);
+	len=strlen(Buf+8+offset);
+	set_len(Buf+4+offset,len);
+	len += offset + 4;
+	set_len(Buf,len);
+    }
+    queue_data(user->con,Buf,len+4);
 }

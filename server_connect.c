@@ -142,7 +142,7 @@ HANDLER (server_connect)
 	}
 	try_connect (fields[0], atoi (fields[1]));
     }
-    else if (con->class == CLASS_USER)
+    else if (Num_Servers)
     {
 	/* pass the message on the target server */
 	ASSERT (argc == 3);
@@ -180,26 +180,26 @@ HANDLER (server_disconnect)
     for (i = 0; i < Num_Servers; i++)
 	if (!strcasecmp (Servers[i]->host, pkt))
 	    break;
-    if (i == Num_Servers)
-    {
-	if (con->class == CLASS_USER)
-	    pass_message_args (con, MSG_CLIENT_DISCONNECT, ":%s %s %s",
+    if (Num_Servers)
+	pass_message_args (con, MSG_CLIENT_DISCONNECT, ":%s %s %s",
 		user->nick, pkt, reason ? reason : "disconnect");
-	return;
-    }
     notify_mods ("%s disconnected server %s: %s", user->nick, pkt,
-	reason ? reason : "");
-    serv = Servers[i];
-    Servers = array_remove (Servers, &Num_Servers, Servers[i]);
-    /*  notify the main loop to shut down this connection */
-    con->destroy = 1;
+	    NONULL(reason));
+    /* if its a locally connected server, shut it down now */
+    if(i<Num_Servers)
+    {
+	serv = Servers[i];
+	Servers = array_remove (Servers, &Num_Servers, Servers[i]);
+	serv->destroy = 1;
+    }
 }
 
-/* 10110 [ :<user> ] <server> <reason> */
+/* 10110 [ :<user> ] <server> [ <reason> ] */
+/* force the server process to die */
 HANDLER (kill_server)
 {
     USER *user;
-    char *reason;
+    char *server;
 
     (void) tag;
     (void) len;
@@ -209,22 +209,24 @@ HANDLER (kill_server)
     ASSERT (validate_user (user));
     if (user->level < LEVEL_ELITE)
     {
+	log("kill_server(): %s attempted to kill the server", user->nick);
 	if (con->class == CLASS_USER)
 	    permission_denied (con);
 	return;
     }
-    reason = strchr (pkt, ' ');
-    if (reason)
-	*reason++ = 0;
+    server=next_arg(&pkt);
 
-    if (con->class == CLASS_USER)
-    	pass_message_args (con, MSG_CLIENT_KILL_SERVER, ":%s %s %s",
-	    user->nick, pkt, reason ? reason : "");
-    notify_mods ("%s killed server %s: %s", user->nick, pkt,
-	reason ? reason : "");
+    if(Num_Servers)
+	pass_message_args (con, MSG_CLIENT_KILL_SERVER, ":%s %s %s",
+		user->nick, server, NONULL(pkt));
+    notify_mods ("%s killed server %s: %s", user->nick, server,
+	    NONULL(pkt));
 
-    if (!strcasecmp (pkt, Server_Name))
+    if (!strcasecmp (server, Server_Name))
+    {
+	log("kill_server(): shutdown by %s: %s", user->nick, NONULL(pkt));
 	SigCaught = 1; /* this causes the main event loop to exit */
+    }
 }
 
 /* 10111 <server> [ <reason> ] */
@@ -283,19 +285,12 @@ HANDLER (server_version)
     }
     if (!*pkt || !strcmp (Server_Name, pkt))
     {
-	if (user->local)
-	{
-	    send_cmd (user->con, MSG_SERVER_NOSUCH, "--");
-	    send_cmd (user->con, MSG_SERVER_NOSUCH, "%s %s", PACKAGE, VERSION);
-	    send_cmd (user->con, MSG_SERVER_NOSUCH, "--");
-	}
-	else
-	{
-	    send_cmd (user->con, MSG_SERVER_REMOTE_ERROR, "%s --", user->nick);
-	    send_cmd (user->con, MSG_SERVER_REMOTE_ERROR, "%s %s %s", user->nick, PACKAGE, VERSION);
-	    send_cmd (user->con, MSG_SERVER_REMOTE_ERROR, "%s --", user->nick);
-	}
+	send_user (user, MSG_SERVER_NOSUCH, "--");
+	send_user (user, MSG_SERVER_NOSUCH, "%s %s", PACKAGE, VERSION);
+	send_user (user, MSG_SERVER_NOSUCH, "--");
     }
+    else if (Num_Servers)
+	pass_message_args(con,tag,":%s %s", user->nick, pkt);
 }
 
 /* 404 <message> */

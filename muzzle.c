@@ -12,7 +12,7 @@
 HANDLER (muzzle)
 {
     USER *sender, *user;
-    char *reason;
+    char *nick;
 
     (void) tag;
     (void) len;
@@ -23,15 +23,13 @@ HANDLER (muzzle)
 
     ASSERT (validate_user (sender));
 
-    reason = strchr (pkt, ' ');
-    if (reason)
-	*reason++ = 0;
+    nick=next_arg(&pkt);
 
     /* find the user to be muzzled */
-    user = hash_lookup (Users, pkt);
+    user = hash_lookup (Users, nick);
     if (!user)
     {
-	if (con->class == CLASS_USER)
+	if (ISUSER(con))
 	    nosuchuser (con, pkt);
 	return;
     }
@@ -40,25 +38,24 @@ HANDLER (muzzle)
     /* ensure that this user has privilege to execute the command */
     if (sender->level < LEVEL_ELITE && user->level >= sender->level)
     {
-	if (con->class == CLASS_USER)
+	if (ISUSER(con))
 	    permission_denied (con);
 	return;
     }
 
-    user->muzzled = 1;
-
-    if (con->class == CLASS_USER && Num_Servers)
+    if (Num_Servers)
     {
-	ASSERT (validate_user (con->user));
 	pass_message_args (con, MSG_CLIENT_MUZZLE, ":%s %s %s",
-	    con->user->nick, user->nick, reason ? reason : "");
+	    sender->nick, user->nick, NONULL(pkt));
     }
+
+    user->muzzled = 1;
 
     /* notify the user they have been muzzled */
     if (user->local)
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-	    "You have been muzzled by %s: %s", sender->nick, NONULL(reason));
+	    "You have been muzzled by %s: %s", sender->nick, NONULL(pkt));
 
     /* notify mods+ of this action */
-    notify_mods ("%s has muzzled %s: %s", sender->nick, user->nick,NONULL(reason));
+    notify_mods ("%s has muzzled %s: %s", sender->nick, user->nick,NONULL(pkt));
 }

@@ -7,10 +7,11 @@
    $Id$ */
 
 #include <time.h>
+#include <string.h>
 #include "opennap.h"
 #include "debug.h"
 
-/* 10115 */
+/* 10115 [ :<user> ] [ <server> ] */
 HANDLER (server_usage)
 {
     USER *user;
@@ -20,7 +21,6 @@ HANDLER (server_usage)
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("server_usage");
-
     if (pop_user (con, &pkt, &user) != 0)
         return;
 
@@ -31,10 +31,16 @@ HANDLER (server_usage)
         return; /* no privilege */
     }
     
-    mem_used = MEMORY_USED;
+    if(!*pkt||!strcasecmp(pkt,Server_Name))
+    {
+	mem_used = MEMORY_USED;
 
-    send_cmd (user->con, MSG_SERVER_USAGE_STATS, "%d %d %d %d %d %d %d %d %d",
-	Num_Clients - Num_Servers, Num_Servers, Users->dbsize, Num_Files,
-	Num_Gigs, Channels->dbsize, Server_Start, time (0) - Server_Start,
-	mem_used);
+	send_cmd (user->con, MSG_SERVER_USAGE_STATS,
+		"%d %d %d %d %d %d %d %d %d",
+		Num_Clients - Num_Servers, Num_Servers, Users->dbsize,
+		Num_Files, Num_Gigs, Channels->dbsize, Server_Start,
+		time (0) - Server_Start, mem_used);
+    }
+    else
+	pass_message_args(con,tag,":%s %s", user->nick, pkt);
 }

@@ -82,11 +82,11 @@ HANDLER (level)
 	    return;
 	}
 	sender = con->user->nick;
-
-	if (Num_Servers)
-	    pass_message_args (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s",
-			       con->user->nick, user->nick, fields[1]);
     }
+
+    if (Num_Servers)
+	pass_message_args (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s",
+		sender, user->nick, Levels[level]);
 
     notify_mods ("%s set %s's user level to %s (%d).", sender, user->nick,
 	    Levels[level], level);

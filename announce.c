@@ -27,15 +27,14 @@ HANDLER (announce)
 	user = con->user;
     else
     {
-	char *ptr = pkt;
-	ASSERT (con->class == CLASS_SERVER);
-	pkt = strchr (ptr, ' ');
+	char *ptr;
+	ASSERT (ISSERVER (con));
+	ptr=next_arg_noskip(&pkt);
 	if (!pkt)
 	{
 	    log ("announce(): too few arguments in server message");
 	    return;
 	}
-	*pkt++ = 0;
 	user = hash_lookup (Users, ptr);
 	if (!user)
 	{
@@ -62,13 +61,14 @@ HANDLER (announce)
     l += 4;
 
     /* pass the message to our peer servers if a local user sent it */
-    if (con->class == CLASS_USER && Num_Servers)
+    if (Num_Servers)
 	pass_message (con, Buf, l);
 
     /* broadcast the message to our local users */
     for (i = 0; i < Num_Clients; i++)
     {
-	if (Clients[i] && Clients[i]->class == CLASS_USER)
+	ASSERT(Clients[i]!=0);
+	if (ISUSER (Clients[i]))
 	    queue_data (Clients[i], Buf, l);
     }
 }
@@ -91,22 +91,20 @@ HANDLER (wallop)
 	    permission_denied (con);
 	    return;
 	}
-	if (Num_Servers)
-	    pass_message_args (con, MSG_SERVER_ANNOUNCE, "%s %s",
-		con->user->nick, pkt);
 	ptr = con->user->nick;
     }
     else
     {
-	ptr = pkt;
-	pkt = strchr (pkt, ' ');
+	ptr = next_arg_noskip(&pkt);
 	if (!pkt)
 	{
 	    log ("wallop(): malformed message from %s", pkt);
 	    return;
 	}
-	*pkt++ = 0;
     }
+
+    if (Num_Servers)
+	pass_message_args (con, MSG_SERVER_ANNOUNCE, "%s %s", ptr, pkt);
 
     /* deliver message to local users */
     for (i = 0; i < Num_Clients; i++)

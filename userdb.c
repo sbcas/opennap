@@ -120,7 +120,6 @@ userdb_store (USERDB * db)
     list = list_append (list, create);
     snprintf (last, sizeof (last), "%d", (int) db->lastSeen);
     list = list_append (list, last);
-    result = textdb_new_result (User_Db, list);
     if ((result = textdb_new_result (User_Db, list)) == 0)
     {
 	log ("userdb_store(): textdb_new_result failed");

@@ -6,11 +6,12 @@
 
    $Id$ */
 
+#include <string.h>
 #include "opennap.h"
 #include "debug.h"
 
 /* process client request for server links */
-/* 10112 [ :<user> ] */
+/* 10112 [ :<user> ] [ <server> ] */
 HANDLER (server_links)
 {
     USER *user;
@@ -31,25 +32,25 @@ HANDLER (server_links)
 	return;			/* no privilege */
     }
 
-    for (i = 0; i < Num_Servers; i++)
+    if (!*pkt || !strcasecmp(Server_Name,pkt))
     {
-	if (Servers[i]->recvbuf)
-	    send_cmd (con, MSG_SERVER_LINKS, "%s %d %d %d %d",
-		Servers[i]->host, Servers[i]->port,
-		Servers[i]->recvbuf->datamax,
-		Servers[i]->recvbuf->datasize,
-		Servers[i]->recvbuf->consumed);
-	else
-	    send_cmd (con, MSG_SERVER_LINKS, "%s %d 0 0 0",
-		Servers[i]->host, Servers[i]->port,
-		Servers[i]->recvbuf->datamax,
-		Servers[i]->recvbuf->datasize,
-		Servers[i]->recvbuf->consumed);
-	/*
-	not yet.
-	pass_message_args (con, MSG_CLIENT_LINK_REQUEST, ":%s", user->nick);
-	 */
+	for (i = 0; i < Num_Servers; i++)
+	{
+	    if (Servers[i]->recvbuf)
+		send_user (user, MSG_SERVER_LINKS, "%s %d %d %d %d",
+			Servers[i]->host, Servers[i]->port,
+			Servers[i]->recvbuf->datamax,
+			Servers[i]->recvbuf->datasize,
+			Servers[i]->recvbuf->consumed);
+	    else
+		send_user (user, MSG_SERVER_LINKS, "%s %d 0 0 0",
+			Servers[i]->host, Servers[i]->port,
+			Servers[i]->recvbuf->datamax,
+			Servers[i]->recvbuf->datasize,
+			Servers[i]->recvbuf->consumed);
+	    send_user (user, MSG_SERVER_LINKS, "");
+	}
     }
-
-    send_cmd (con, MSG_SERVER_LINKS, "");
+    else if(Num_Servers)
+	pass_message_args(con,tag,":%s %s",user->nick,pkt);
 }

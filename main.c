@@ -310,7 +310,7 @@ main (int argc, char **argv)
     int i;			/* generic counter */
     int n;			/* number of ready sockets */
     int sp;			/* stats port */
-    int f, pending = 0, port = 0, iface = INADDR_ANY;
+    int f, pending = 0, port = 0, iface = INADDR_ANY, nolisten = 0;
 #if HAVE_POLL
     struct pollfd *ufd = 0;
     int ufdsize = 0;		/* real number of pollfd structs allocated */
@@ -329,10 +329,13 @@ main (int argc, char **argv)
 
     /* printf("%d\n", sizeof(DATUM)); */
 
-    while ((n = getopt (argc, argv, "c:hl:p:v")) != EOF)
+    while ((n = getopt (argc, argv, "c:hl:p:vD")) != EOF)
     {
 	switch (n)
 	{
+	    case 'D':
+		nolisten++;
+		break;
 	    case 'c':
 		config_file = optarg;
 		break;
@@ -402,15 +405,18 @@ main (int argc, char **argv)
 
     log ("listening on %s port %d", my_ntoa (Interface), Server_Port);
 
-    /* listen on port 8889 for stats reporting */
-    if ((sp = new_tcp_socket ()) == -1)
-	exit (1);
-    if (bind_interface (sp, Interface, 8889))
-	exit (1);
-    if (listen (sp, BACKLOG))
+    if (!nolisten)
     {
-	perror ("listen");
-	exit (1);
+	/* listen on port 8889 for stats reporting */
+	if ((sp = new_tcp_socket ()) == -1)
+	    exit (1);
+	if (bind_interface (sp, Interface, 8889))
+	    exit (1);
+	if (listen (sp, BACKLOG))
+	{
+	    perror ("listen");
+	    exit (1);
+	}
     }
 
 #ifndef HAVE_DEV_RANDOM

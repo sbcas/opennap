@@ -11,15 +11,50 @@
 #include "opennap.h"
 #include "debug.h"
 #include "md5.h"
+#include "textdb.h"
+
+/* this happens infrequent enough that we just open it each time we need to
+   instead of leaving it open */
+static char *
+get_server_pass (const char *host)
+{
+    TEXTDB *db;
+    TEXTDB_RES *result;
+    char *pass = 0;
+
+    db = textdb_init (Server_Db_Path);
+    if (db)
+    {
+	result = textdb_fetch (db, host);
+	if (result)
+	{
+	    if (list_count (result->columns) < 2)
+	    {
+		log ("get_server_pass(): bogus entry for server %s",
+		     (char *) result->columns->data);
+	    }
+	    else
+		pass = STRDUP (result->columns->next->data);
+	    textdb_free_result (result);
+	}
+	textdb_close (db);
+    }
+    else
+    {
+	log ("get_server_pass(): textdb_init failed");
+    }
+    return pass;
+}
 
 /* process a request to establish a peer server connection */
 /* <name> <nonce> <compression> */
 HANDLER (server_login)
 {
     char *fields[3];
+    char hash[33];
+    char *pass;
     unsigned int ip;
     struct md5_ctx md;
-    char hash[33];
     int compress;
 
     (void) tag;
@@ -28,7 +63,7 @@ HANDLER (server_login)
     if (con->class != CLASS_UNKNOWN)
     {
 	log ("server_login(): %s tried to login, but is already registered",
-		con->host);
+	     con->host);
 	send_cmd (con, MSG_SERVER_ERROR, "reregistration is not supported");
 	con->destroy = 1;
 	return;
@@ -38,7 +73,7 @@ HANDLER (server_login)
 
     if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 3)
     {
-	log ("server_login: wrong number of fields");
+	log ("server_login(): wrong number of fields");
 	send_cmd (con, MSG_SERVER_ERROR, "wrong number of fields");
 	con->destroy = 1;
 	return;
@@ -51,42 +86,49 @@ HANDLER (server_login)
     if (ip != con->ip)
     {
 	send_cmd (con, MSG_SERVER_ERROR,
-		"your ip address does not match that name");
+		  "your ip address does not match that name");
 	log ("server_login(): %s does not resolve to %s", fields[0],
-		my_ntoa (con->ip));
+	     my_ntoa (con->ip));
 	con->destroy = 1;
 	return;
     }
+
+    /* see if there is any entry for this server */
+    if ((pass = get_server_pass (con->host)) == 0)
+    {
+	log ("server_login(): no entry for server %s", con->host);
+	send_cmd (con, MSG_SERVER_ERROR, "Permission Denied");
+	con->destroy = 1;
+	return;
+    }
+    FREE (pass);
 
     FREE (con->host);
     con->host = STRDUP (fields[0]);
 
-    con->server_login = 1;
-    if ((con->opt.auth = CALLOC (1, sizeof (AUTH))) == 0)
-    {
-	OUTOFMEMORY ("server_login");
-	con->destroy = 1;
-	return;
-    }
-    con->opt.auth->sendernonce = STRDUP (fields[1]);
     compress = atoi (fields[2]);
     if (compress < 0 || compress > 9)
     {
 	log ("server_login: invalid compression level (%d) from %s",
-	    compress, con->host);
+	     compress, con->host);
 	send_cmd (con, MSG_SERVER_ERROR, "invalid compression level %d",
-	    compress);
+		  compress);
 	con->destroy = 1;
 	return;
     }
-    con->compress = compress;
 
-    /* take the minimum of the two values */
-    if (con->compress > Compression_Level)
-	con->compress = Compression_Level;
-
-    if (!con->opt.auth->nonce)
+    /* if this is a new request, set up the authentication info now */
+    if (!con->server_login)
     {
+	con->server_login = 1;
+	if ((con->opt.auth = CALLOC (1, sizeof (AUTH))) == 0)
+	{
+	    OUTOFMEMORY ("server_login");
+	    con->destroy = 1;
+	    return;
+	}
+
+	log ("server_login(): peer initiated connection, sending login request");
 	if ((con->opt.auth->nonce = generate_nonce ()) == NULL)
 	{
 	    send_cmd (con, MSG_SERVER_ERROR, "unable to generate nonce");
@@ -96,14 +138,30 @@ HANDLER (server_login)
 
 	/* respond with our own login request */
 	send_cmd (con, MSG_SERVER_LOGIN, "%s %s %d", Server_Name,
-		con->opt.auth->nonce, con->compress);
+		  con->opt.auth->nonce, con->compress);
     }
+
+    con->opt.auth->sendernonce = STRDUP (fields[1]);
+    if(!con->opt.auth->sendernonce)
+    {
+	OUTOFMEMORY("server_login");
+	con->destroy=1;
+	return;
+    }
+
+    con->compress = compress;
+
+    /* take the minimum of the two values */
+    if (con->compress > Compression_Level)
+	con->compress = Compression_Level;
 
     /* send our challenge response */
     /* hash the peers nonce, our nonce and then our password */
     md5_init_ctx (&md);
-    md5_process_bytes (con->opt.auth->sendernonce, strlen (con->opt.auth->sendernonce), &md);
-    md5_process_bytes (con->opt.auth->nonce, strlen (con->opt.auth->nonce), &md);
+    md5_process_bytes (con->opt.auth->sendernonce,
+		       strlen (con->opt.auth->sendernonce), &md);
+    md5_process_bytes (con->opt.auth->nonce, strlen (con->opt.auth->nonce),
+		       &md);
     md5_process_bytes (Server_Pass, strlen (Server_Pass), &md);
     md5_finish_ctx (&md, hash);
     expand_hex (hash, 16);
@@ -113,13 +171,14 @@ HANDLER (server_login)
     send_cmd (con, MSG_SERVER_LOGIN_ACK, hash);
 
     /* now we wait for the peers ACK */
-    log ("server_login: sent login ACK");
+    log ("server_login(): sent login ACK");
 }
 
 HANDLER (server_login_ack)
 {
     struct md5_ctx md5;
     char hash[33];
+    char *pass;
 
     (void) tag;
     (void) len;
@@ -140,54 +199,37 @@ HANDLER (server_login_ack)
     }
 
     /* look up the entry in our peer servers database */
-#if 0
-    snprintf (Buf, sizeof (Buf),
-	"SELECT password FROM servers WHERE name = '%s'", con->host);
-    if (mysql_query (Db, Buf) != 0)
+    pass = get_server_pass (con->host);
+    if (!pass)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "sql error");
-	sql_error ("server_login",Buf);
+	log ("server_login_ack(): unable to find server %s", con->host);
+	send_cmd (con, MSG_SERVER_ERROR, "Permission Denied");
 	con->destroy = 1;
 	return;
     }
-
-    result = mysql_store_result (Db);
-
-    if (mysql_num_rows (result) != 1)
-    {
-	log ("server_login_ack(): expected 1 row returned from sql query");
-	permission_denied (con);
-	mysql_free_result (result);
-	con->destroy = 1;
-	return;
-    }
-
-    row = mysql_fetch_row (result);
-#endif
 
     /* check the peers challenge response */
     md5_init_ctx (&md5);
-    md5_process_bytes (con->opt.auth->nonce, strlen (con->opt.auth->nonce), &md5);
-    md5_process_bytes (con->opt.auth->sendernonce, strlen (con->opt.auth->sendernonce), &md5);
-#if 0
-    md5_process_bytes (row[0], strlen (row[0]), &md5); /* password for them */
-#endif
+    md5_process_bytes (con->opt.auth->nonce, strlen (con->opt.auth->nonce),
+		       &md5);
+    md5_process_bytes (con->opt.auth->sendernonce,
+		       strlen (con->opt.auth->sendernonce), &md5);
+    md5_process_bytes (pass, strlen (pass), &md5);	/* password for them */
     md5_finish_ctx (&md5, hash);
     expand_hex (hash, 16);
     hash[32] = 0;
 
-#if 0
-    mysql_free_result (result);
-#endif
+    FREE (pass);
 
     if (strcmp (hash, pkt) != 0)
     {
 	log ("server_login_ack(): incorrect response for server %s",
-		con->host);
-	log ("server_login_ack(): remote nonce=%s, my nonce=%s, their hash=%s, expected hash=%s",
-		con->opt.auth->sendernonce, con->opt.auth->nonce, pkt, hash);
+	     con->host);
+	log
+	    ("server_login_ack(): remote nonce=%s, my nonce=%s, their hash=%s, expected hash=%s",
+	     con->opt.auth->sendernonce, con->opt.auth->nonce, pkt, hash);
 
-	permission_denied (con);
+	send_cmd (con, MSG_SERVER_ERROR, "Permission Denied");
 	con->destroy = 1;
 	return;
     }
@@ -206,6 +248,7 @@ HANDLER (server_login_ack)
     notify_mods ("server %s has joined.", con->host);
 
     con->class = CLASS_SERVER;
+    con->opt.server = CALLOC (1, sizeof (SERVER));
 #if HAVE_LIBZ
     /* set up the compression handlers for this connection */
     init_compress (con, con->compress);

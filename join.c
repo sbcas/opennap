@@ -32,7 +32,7 @@ HANDLER (join)
     /* enforce a maximum channels per user */
     if (list_count (user->channels) > Max_User_Channels)
     {
-	if (con->class == CLASS_USER)
+	if (ISUSER(con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
 		"Maximum number of channels is %d.", Max_User_Channels);
 	return;
@@ -84,16 +84,12 @@ HANDLER (join)
 
     ASSERT (validate_channel (chan));
 
+    if (Num_Servers)
+	pass_message_args(con,tag,":%s %s",user->nick,chan->name);
+
     /* if local user */
     if (ISUSER (con))
     {
-	/* notify other servers of this join */
-	if (Num_Servers)
-	{
-	    pass_message_args (con, MSG_CLIENT_JOIN, ":%s %s", user->nick,
-		chan->name);
-	}
-
 	/* notify client of success */
 	send_cmd (con, MSG_SERVER_JOIN_ACK, "%s", chan->name);
     }

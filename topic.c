@@ -21,7 +21,7 @@ HANDLER (topic)
     CHANNEL *chan;
     int l;
     USER *chanUser;
-    char *chanName;
+    char *chanName, *nick;
     LIST *list;
 
     (void) tag;
@@ -31,14 +31,13 @@ HANDLER (topic)
     /* don't use pop_user() because the server can set a channel topic */
     if (con->class == CLASS_SERVER)
     {
-	/* just skip the topic */
-	pkt = strchr (pkt, ' ');
+	pkt++;
+	nick=next_arg(&pkt);
 	if (!pkt)
 	{
 	    log("topic(): too few fields in server message");
 	    return;
 	}
-	pkt++;
     }
     else
     {
@@ -51,6 +50,7 @@ HANDLER (topic)
 	    log ("topic(): %s has no privilege", con->user->nick);
 	    return;
 	}
+	nick=con->user->nick;
     }
 
     /* don't use split line because the topic could be multi-word */
@@ -84,12 +84,9 @@ HANDLER (topic)
 	return;
     }
 
-    /* if local user, notify our peers of this change */
-    if (Num_Servers && ISUSER (con))
-    {
+    if (Num_Servers)
 	pass_message_args (con, MSG_SERVER_TOPIC, ":%s %s %s",
-		con->user->nick, chan->name, chan->topic);
-    }
+		nick, chan->name, chan->topic);
 
     /* notify the rest of the channel of the topic change. there should
        probably be another message type which contains the nick who changed
