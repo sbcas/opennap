@@ -42,6 +42,9 @@ be sent to the server
 client connections should be closed from handler routines by setting
 the .destroy membery instead of calling remove_connection()
 
+added a new command 10115 for getting some useful information about the
+server (colten edwards)
+
 Changes from 0.11
 =================
 

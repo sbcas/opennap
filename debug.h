@@ -29,6 +29,7 @@
 #define CLEANUP debug_cleanup
 #define VALID(p) debug_valid(p,1)
 #define VALID_LEN debug_valid
+#define MEMORY_USED debug_usage()
 
 /* internal functions, DO NOT CALL DIRECTLY -- use the above macros */
 void debug_init (void);
@@ -39,6 +40,7 @@ void *debug_realloc (void *, int, const char *, int);
 char *debug_strdup (const char *, const char *, int);
 void debug_cleanup (void);
 int debug_valid (void *, int);
+int debug_usage (void);
 
 #else
 
@@ -52,6 +54,7 @@ int debug_valid (void *, int);
 #define VALID(p)
 #define VALID_LEN(p,l)
 #define ASSERT(p)
+#define MEMORY_USED -1
 
 #endif /* DEBUG */
 

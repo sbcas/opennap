@@ -344,4 +344,9 @@ debug_valid (void *ptr, int len)
     return ((len <= block->len));
 }
 
+int
+debug_usage (void)
+{
+    return Memory_Usage;
+}
 #endif /* DEBUG */

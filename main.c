@@ -187,6 +187,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_KILL_SERVER, kill_server},	/* 10110 */
     {MSG_CLIENT_REMOVE_SERVER, remove_server},	/* 10111 */
     {MSG_SERVER_REGINFO, reginfo },		/* 10114 */
+    {MSG_CLIENT_USAGE_STATS, server_usage },	/* 10115 */
 #if 0
     {MSG_SERVER_COMPRESSED_DATA, compressed_data},	/* 10200 */
 #endif
