@@ -1,3 +1,17 @@
+2000-04-18  drscholl  <drscholl@users.sourceforge.net>
+
+	* NEWS, README, TODO, configure, sample.conf:
+	final changes for 0.25 release
+
+	* ChangeLog, channel.c, configure.in, login.c, opennap.h, sample.channels, search.c:
+	added "live" to the list of words to ignore in searches
+
+	restored full ChangeLog
+
+	updated version to 0.25
+
+	allow the channels file to contain blank lines
+
 2000-04-17  drscholl  <drscholl@users.sourceforge.net>
 
 	* README, ban.c, sample.conf:
