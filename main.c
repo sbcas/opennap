@@ -51,6 +51,7 @@ int Max_Shared;
 int Max_Connections;
 int Nick_Expire;
 int Check_Expire;
+unsigned int Interface = INADDR_ANY;
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;
@@ -509,7 +510,6 @@ version (void)
 int
 main (int argc, char **argv)
 {
-    struct sockaddr_in sin;
     int s;			/* server socket */
     int i;			/* generic counter */
     int n;			/* number of ready sockets */
@@ -524,7 +524,6 @@ main (int argc, char **argv)
 #endif /* HAVE_POLL */
     char *config_file = 0;
     time_t next_update = 0;
-    unsigned int iface = INADDR_ANY;	/* ip address to listen on */
 
     while ((n = getopt (argc, argv, "c:hl:p:v")) != EOF)
     {
@@ -534,7 +533,7 @@ main (int argc, char **argv)
 		config_file = optarg;
 		break;
 	    case 'l':
-		iface = inet_addr (optarg);
+		Interface = inet_addr (optarg);
 		break;
 	    case 'p':
 		port = atoi (optarg);
@@ -593,15 +592,8 @@ main (int argc, char **argv)
 	exit (1);
     }
 
-    memset (&sin, 0, sizeof (sin));
-    sin.sin_port = htons (Server_Port);
-    sin.sin_addr.s_addr = iface;
-    sin.sin_family = AF_INET;
-    if (bind (s, (struct sockaddr *) &sin, sizeof (sin)) < 0)
-    {
-	perror ("bind");
+    if (bind_interface (s, Interface, Server_Port) == -1)
 	exit (1);
-    }
 
     if (listen (s, BACKLOG) < 0)
     {

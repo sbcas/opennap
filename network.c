@@ -73,6 +73,23 @@ set_keepalive (int f, int on)
 }
 
 int
+bind_interface (int fd, unsigned int ip, int port)
+{
+    struct sockaddr_in sin;
+
+    memset (&sin, 0, sizeof (sin));
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = ip;
+    sin.sin_port = htons (port);
+    if (bind (fd, (struct sockaddr *) &sin, sizeof (sin)) < 0)
+    {
+	log ("bind_interface(): bind: %s (errno %d)", strerror (errno), errno);
+	return -1;
+    }
+    return 0;
+}
+
+int
 make_tcp_connection (const char *host, int port, unsigned int *ip)
 {
     struct sockaddr_in sin;
@@ -89,6 +106,11 @@ make_tcp_connection (const char *host, int port, unsigned int *ip)
 	return -1;
     if (set_nonblocking (f) == -1)
 	return -1;
+
+    /* if an interface was specify, bind to it before connecting */
+    if (Interface)
+	bind_interface (f, Interface, 0);
+
     /* turn on TCP/IP keepalive messages */
     set_keepalive (f, 1);
     log ("make_tcp_connection: connecting to %s:%hu",

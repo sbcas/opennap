@@ -218,6 +218,7 @@ extern int Max_Shared;
 extern int Max_Connections;
 extern int Nick_Expire;
 extern int Check_Expire;
+extern unsigned int Interface;
 
 extern unsigned int Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
@@ -373,6 +374,7 @@ void add_random_bytes (char *, int);
 void add_server (CONNECTION *);
 void *array_add (void *, int *, void *);
 void *array_remove (void *, int *, void *);
+int bind_interface (int, unsigned int, int);
 BUFFER *buffer_append (BUFFER *, BUFFER *);
 BUFFER *buffer_consume (BUFFER *, int);
 void buffer_free (BUFFER *);
