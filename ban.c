@@ -37,13 +37,14 @@ free_ban (BAN * b)
     }
 }
 
-/* 612 [ :<sender> ] <user|ip> [ <reason> ] */
+/* 612 [ :<sender> ] <user|ip> [ "<reason>" ] */
 HANDLER (ban)
 {
     USER *sender;
-    char *ban;
     BAN *b;
     LIST *list;
+    int ac = -1;
+    char *av[2];
 
     (void) tag;
     (void) len;
@@ -51,7 +52,14 @@ HANDLER (ban)
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender) != 0)
 	return;
-
+    if(pkt)
+	ac=split_line(av,FIELDS(av),pkt);
+    if(ac<1)
+    {
+	log("ban(): too few parameters");
+	unparsable(con);
+	return;
+    }
     /* make sure this user has privilege */
     ASSERT (validate_user (sender));
     if (sender->level < LEVEL_MODERATOR)
@@ -60,44 +68,44 @@ HANDLER (ban)
 	    permission_denied (con);
 	return;
     }
-    ban = next_arg (&pkt);
     /* check to see if this user is already banned */
     for (list = Bans; list; list = list->next)
     {
 	b = list->data;
-	if (!strcasecmp (ban, b->target))
+	if (!strcasecmp (av[0], b->target))
 	{
-	    log ("ban(): %s is already banned", ban);
+	    log ("ban(): %s is already banned", av[0]);
 	    if (ISUSER (con))
-		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already banned",
-			  ban);
+		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already banned", av[0]);
 	    return;
 	}
     }
 
-    pass_message_args (con, tag, ":%s %s %s", sender->nick, ban,
-		       NONULL (pkt));
+    if(ac>1)
+	pass_message_args (con, tag, ":%s %s \"%s\"", sender->nick, av[0], av[1]);
+    else
+	pass_message_args (con, tag, ":%s %s", sender->nick, av[0]);
 
     do
     {
 	/* create structure and add to global ban list */
 	if (!(b = CALLOC (1, sizeof (BAN))))
 	    break;
-	if (!(b->target = STRDUP (ban)))
+	if (!(b->target = STRDUP (av[0])))
 	    break;
 	if (!(b->setby = STRDUP (sender->nick)))
 	    break;
-	if (!(b->reason = STRDUP (NONULL (pkt))))
+	if (!(b->reason = STRDUP (ac > 1 ? av[1] : "")))
 	    break;
 	b->when = Current_Time;
 	/* determine if this ban is on an ip or a user */
-	b->type = (is_ip (ban)) ? BAN_IP : BAN_USER;
+	b->type = (is_ip (av[0])) ? BAN_IP : BAN_USER;
 	list = CALLOC (1, sizeof (LIST));
 	if (!list)
 	    break;
 	list->data = b;
 	Bans = list_append (Bans, list);
-	notify_mods (BANLOG_MODE, "%s banned %s: %s", sender->nick, ban, NONULL (pkt));
+	notify_mods (BANLOG_MODE, "%s banned %s: %s", sender->nick, av[0], b->reason);
 	return;
     }
     while (1);
@@ -109,12 +117,14 @@ HANDLER (ban)
 	FREE (list);
 }
 
-/* 614 [ :<sender> ] <nick|ip> */
+/* 614 [ :<sender> ] <nick|ip> [ "<reason>" ] */
 HANDLER (unban)
 {
     USER *user;
     LIST **list, *tmpList;
     BAN *b;
+    int ac = -1;
+    char *av[2];
 
     (void) tag;
     (void) len;
@@ -122,6 +132,14 @@ HANDLER (unban)
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
 	return;
+    if(pkt)
+	ac=split_line(av,FIELDS(av),pkt);
+    if(ac<1)
+    {
+	log("unban(): too few parameters");
+	unparsable(con);
+	return;
+    }
     if (user->level < LEVEL_MODERATOR)
     {
 	if (ISUSER (con))
@@ -131,15 +149,20 @@ HANDLER (unban)
     for (list = &Bans; *list; list = &(*list)->next)
     {
 	b = (*list)->data;
-	if (!strcasecmp (pkt, b->target))
+	if (!strcasecmp (av[0], b->target))
 	{
 	    tmpList = *list;
 	    *list = (*list)->next;
 	    FREE (tmpList);
-	    notify_mods (BANLOG_MODE, "%s removed ban on %s", user->nick, b->target);
-	    pass_message_args (con, tag, ":%s %s", user->nick, b->target);
+	    notify_mods (BANLOG_MODE, "%s removed ban on %s: %s",
+			 user->nick, b->target, ac > 1 ? av[1] : "");
+	    if (ac > 1)
+		pass_message_args (con, tag, ":%s %s \"%s\"", user->nick,
+				   b->target, av[1]);
+	    else
+		pass_message_args (con, tag, ":%s %s", user->nick, b->target);
 	    free_ban (b);
-	    break;
+	    return;
 	}
     }
     if (ISUSER (con))
@@ -164,7 +187,7 @@ HANDLER (banlist)
 	if (ban->type == BAN_IP)
 	    send_cmd (con, MSG_SERVER_IP_BANLIST /* 616 */ ,
 		      "%s %s \"%s\" %ld", ban->target, ban->setby,
-		      NONULL (ban->reason), ban->when);
+		      ban->reason, ban->when);
     }
     for (list = Bans; list; list = list->next)
     {

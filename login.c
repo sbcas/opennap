@@ -328,8 +328,8 @@ HANDLER (login)
     {
 	/* do this before setting the user level so this user is not
 	   notified twice */
-	notify_mods (LEVELLOG_MODE, "%s set %s's user level to %s (%d)", Server_Name,
-		     user->nick, Levels[db->level], db->level);
+	notify_mods (LEVELLOG_MODE, "%s set %s's user level to %s (%d)",
+		     Server_Name, user->nick, Levels[db->level], db->level);
 	user->level = db->level;
 	if (ISUSER (con))
 	{
@@ -592,8 +592,7 @@ HANDLER (register_user)
     }
     /* pass the plain text password here */
     pass_message_args (con, tag, ":%s %s %s %s %s",
-		       sender->nick, av[0], av[1], av[2],
-		       ac > 3 ? av[3] : "");
+		       sender->nick, av[0], av[1], av[2], ac > 3 ? av[3] : "");
 
     db = CALLOC (1, sizeof (USERDB));
     if (!db)

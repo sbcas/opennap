@@ -49,7 +49,7 @@ HANDLER (whois)
     {
 	l = strlen (Buf);
 	snprintf (Buf + l, sizeof (Buf) - l, " %s",
-		((CHANNEL*)chan->data)->name);
+		  ((CHANNEL *) chan->data)->name);
     }
     if (!Buf[0])
     {
@@ -65,24 +65,27 @@ HANDLER (whois)
     if (sender->level < LEVEL_MODERATOR)
     {
 	send_user (sender, MSG_SERVER_WHOIS_RESPONSE,
-		WHOIS_FMT, user->nick, Levels[user->level],
-		online, chanlist, user->shared, user->downloads, user->uploads,
-		user->speed, user->clientinfo);
+		   WHOIS_FMT, user->nick, Levels[user->level],
+		   online, chanlist, user->shared, user->downloads,
+		   user->uploads, user->speed, user->clientinfo);
     }
     else
     {
-	db=hash_lookup(User_Db, user->nick);
+	db = hash_lookup (User_Db, user->nick);
 
 	/* we show admins the server which a user is connected to */
 	send_user (sender, MSG_SERVER_WHOIS_RESPONSE,
-		   "%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %s %d %d %s %s%s%s",
+		   "%s \"%s\" %d \"%s\" \"%s\" %d %d %d %d \"%s\" %d %d %s %d %d %s %s%s%s",
 		   user->nick, Levels[user->level], online, chanlist,
+		   user->muzzled ? "Muzzled" : "Active",
 		   user->shared, user->downloads, user->uploads,
 		   user->speed, user->clientinfo, user->totaldown,
 		   user->totalup, my_ntoa (user->host),
 		   user->conport, user->port, db ? db->email : "unknown",
 		   sender->level > LEVEL_MODERATOR ? " " : "",
-		   sender->level > LEVEL_MODERATOR ? (user->server ? user->server : Server_Name) : "");
+		   sender->level >
+		   LEVEL_MODERATOR ? (user->server ? user->
+				      server : Server_Name) : "");
     }
     FREE (chanlist);
 
@@ -92,6 +95,6 @@ HANDLER (whois)
 	ASSERT (validate_connection (user->con));
 
 	send_user (user, MSG_SERVER_NOSUCH,
-		"%s has requested your info", con->user->nick);
+		   "%s has requested your info", con->user->nick);
     }
 }

@@ -7,10 +7,12 @@
 #include "opennap.h"
 #include "debug.h"
 
-/* [ :<nick> ] <user> */
+/* [ :<nick> ] <user> [ "<reason>" ] */
 HANDLER (unmuzzle)
 {
     USER *sender, *user;
+    int ac = -1;
+    char *av[2];
 
     (void) tag;
     (void) len;
@@ -18,13 +20,20 @@ HANDLER (unmuzzle)
 
     if (pop_user (con, &pkt, &sender) != 0)
 	return;
-
+    if (pkt)
+	ac = split_line (av, FIELDS (av), pkt);
+    if (ac < 1)
+    {
+	log ("muzzle(): too few parameters");
+	print_args (ac, av);
+	unparsable (con);
+	return;
+    }
     /* find the target of the unmuzzle */
-    user = hash_lookup (Users, pkt);
+    user = hash_lookup (Users, av[0]);
     if (!user)
     {
-	if (con->class == CLASS_USER)
-	    nosuchuser (con, pkt);
+	nosuchuser (con, av[0]);
 	return;
     }
     ASSERT (validate_user (user));
@@ -32,22 +41,27 @@ HANDLER (unmuzzle)
     if (sender->level <= user->level && sender->level != LEVEL_ELITE)
     {
 	log ("unmuzzle(): %s has no privilege to unmuzzle %s",
-	    sender->nick, user->nick);
-	if (ISUSER (con))
-	    permission_denied (con);
+	     sender->nick, user->nick);
+	permission_denied (con);
 	return;
     }
 
     user->muzzled = 0;
 
     /* relay to peer servers */
-    pass_message_args (con, MSG_CLIENT_UNMUZZLE, ":%s %s",
-		       sender->nick, user->nick);
+    if (ac > 1)
+	pass_message_args (con, MSG_CLIENT_UNMUZZLE, ":%s %s \"%s\"",
+			   sender->nick, user->nick, av[1]);
+    else
+	pass_message_args (con, MSG_CLIENT_UNMUZZLE, ":%s %s",
+			   sender->nick, user->nick);
 
-    notify_mods (MUZZLELOG_MODE, "%s unmuzzled %s.", sender->nick, user->nick);
+    notify_mods (MUZZLELOG_MODE, "%s unmuzzled %s: %s", sender->nick,
+		 user->nick, ac > 1 ? av[1] : "");
 
     /* notify the user they have been unmuzzled */
     if (user->local)
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
-		  "You have been unmuzzled by %s", sender->nick);
+		  "You have been unmuzzled by %s: %s", sender->nick,
+		  ac > 1 ? av[1] : "");
 }

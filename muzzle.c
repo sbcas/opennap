@@ -13,7 +13,7 @@ HANDLER (muzzle)
 {
     USER *sender, *user;
     char *av[2];
-    int ac;
+    int ac = -1;
 
     (void) tag;
     (void) len;
@@ -24,13 +24,13 @@ HANDLER (muzzle)
 
     ASSERT (validate_user (sender));
 
-    ac=split_line(av,FIELDS(av),pkt);
-    if(ac<1)
+    if (pkt)
+	ac = split_line (av, FIELDS (av), pkt);
+    if (ac < 1)
     {
-	log("muzzle(): too few parameters");
-	print_args(ac,av);
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"parameters are unparsable");
+	log ("muzzle(): too few parameters");
+	print_args (ac, av);
+	unparsable (con);
 	return;
     }
 
@@ -53,7 +53,7 @@ HANDLER (muzzle)
     }
 
     /* relay to peer servers */
-    if(ac==2)
+    if (ac > 1)
 	pass_message_args (con, MSG_CLIENT_MUZZLE, ":%s %s \"%s\"",
 			   sender->nick, user->nick, av[1]);
     else
@@ -66,9 +66,9 @@ HANDLER (muzzle)
     if (user->local)
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
 		  "You have been muzzled by %s: %s", sender->nick,
-		  ac==2?av[1]:"");
+		  ac > 1 ? av[1] : "");
 
     /* notify mods+ of this action */
-    notify_mods (MUZZLELOG_MODE, "%s has muzzled %s: %s", sender->nick, user->nick,
-		 ac==2?av[1]:"");
+    notify_mods (MUZZLELOG_MODE, "%s has muzzled %s: %s", sender->nick,
+		 user->nick, ac > 1 ? av[1] : "");
 }
