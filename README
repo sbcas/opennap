@@ -1,6 +1,47 @@
-opennap - the open source napster server
-========================================
-Last updated February 25, 2000
+opennap v0.20 (ALPHA)
+the open source (TM) napster server
+=====================
+March 2, 2000
+
+http://opennap.sourceforge.net
+IRC: #opennap on irc.openprojects.net
+Email: opennap-dev@lists.sourceforge.net
+
+opennap is an Open Source(TM) server implementation of the popular
+Napster protocol.  It is written in ANSI C and was designed to run on Unix
+platforms and uses a MySQL (www.mysql.org) server to handle the search
+requests.  So far this server has only been tested on:
+	* Red Hat Linux 6.1 (i686) running MySQL 3.23.32
+	* Red Hat Linux 6.0 (Alpha) running MySQL 3.23.32
+	* BSDI 4.1
+	* Windows 2000 (MS VC++)
+Minimal porting should be required for compilation on other Unix variants
+(if you do a port, please send patches to drscholl@users.sourceforge.net)
+
+Since Napster is not an open specification, much of the internals of the
+servers are specific to this implementation.  In particular, I don't expect
+that this server will interoperate with the official Napster servers once they
+are linked together.  Given that I can't run tcpdump between those servers,
+I can't see how they are communicating.  I'm hoping that with the proliferation
+of servers outside of napster.com, they might be willing to open up their
+specification to make sure all the clients can interoperate.  However, this
+server should be compliant with the several currently available Unix Napster
+clients.
+
+Main differences from the official napster servers:
+* servers can be linked together
+* normal users can create channels
+* source code is freely available
+
+What's included?
+* opennap server
+* metaserver for directing clients to server groups
+* protocol specification
+* SOURCE CODE!
+
+There is also a mailing list opennap-admin@lists.sourceforge.net for people
+running live servers to share information not directly related to the
+development of the server.
 
 * For a description of the napster protocol, please see the file 'napster.txt'
   included with this distribution.

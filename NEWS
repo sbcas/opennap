@@ -1,43 +1,38 @@
-opennap v0.20 (ALPHA)
-=====================
-February 28, 2000
+[opennap 0.20]
 
-http://opennap.sourceforge.net
-IRC: #opennap on irc.openprojects.net
-Email: opennap-dev@lists.sourceforge.net
+opennap will now listen on port 8889 in addition to the client connection
+port.  When a connection is made to port 8889 it will display some
+information about the status of the server, similar the the stats command
+in the napster protocol.  This is intended to be usesful for clients to
+query various servers to see their stats without having to log into each
+one.
 
-opennap is an Open Source(TM) server implementation of the popular
-Napster protocol.  It is written in ANSI C and was designed to run on Unix
-platforms and uses a MySQL (www.mysql.org) server to handle the search
-requests.  So far this server has only been tested on:
-	* Red Hat Linux 6.1 (i686) running MySQL 3.23.32
-	* Red Hat Linux 6.0 (Alpha) running MySQL 3.23.32
-	* BSDI 4.1
-	* Win32 (using MS VC++ 6.0)
-Minimal porting should be required for compilation on other Unix variants
-(if you do a port, please send patches to drscholl@users.sourceforge.net)
+added max_nick_length configuration variable which controls the maximum
+length a nickname is allowed to be (default: 32).  It can be set to 0
+to indicate no maximum.  The protocol itself doesn't care how long nicks
+are, but this puts a cap for readability in clients.
 
-Since Napster is not an open specification, much of the internals of the
-servers are specific to this implementation.  In particular, I don't expect
-that this server will interoperate with the official Napster servers once they
-are linked together.  Given that I can't run tcpdump between those servers,
-I can't see how they are communicating.  I'm hoping that with the proliferation
-of servers outside of napster.com, they might be willing to open up their
-specification to make sure all the clients can interoperate.  However, this
-server should be compliant with the several currently available Unix Napster
-clients.
+added --with-fd-setsize configure option to allow select() based systems
+with a small default value (such as 256 under BSDI) to compile with a higher
+maximum for more connections.
 
-Main differences from the official napster servers:
-* servers can be linked together
-* normal users can create channels
-* source code is freely available
+added new configuration variable connection_hard_limit to specify the
+maximum number of connections that the process will ever be able to support
+(default: 1024).  Note that this is different from the max_connections
+variable which controls how many connections are allowed at the given
+moment.  The reason for this variable is that on some systems you are
+not allowed to increase the hard limit of file descriptors for a process
+unless you have root privileges.  If run as root, opennap consults
+connection_hard_limit to set the hard limit before dropping root privileges.
 
-What's included?
-* opennap server
-* metaserver for directing clients to server groups
-* protocol specification
-* SOURCE CODE!
+as described above, opennap can now be run as root when more file
+descriptors per process than default is required.  new variables `uid' and
+`gid' were added to specify the user and group to run as after changing
+the resouce limits.  By default, opennap will attempt to find the uid/gid
+for `nobody/nobody' and run as such.
 
-There is also a mailing list opennap-admin@lists.sourceforge.net for people
-running live servers to share information not directly related to the
-development of the server.
+opennap has been ported to Windows 2000 thanks to Damian Hodgkiss.
+
+MySQL is no longer used to store the file database.  A custom memory based
+solution was used in order to speed up the searches.  This requires more
+memory, but the load is very low when searching.
