@@ -446,9 +446,9 @@ HANDLER (register_nick)
     {
 	log ("register_nick(): %s is already registered", pkt);
 	send_cmd (con, MSG_SERVER_REGISTER_FAIL, "");
+	return;
     }
-    else
-	send_cmd (con, MSG_SERVER_REGISTER_OK, "");
+    send_cmd (con, MSG_SERVER_REGISTER_OK, "");
 }
 
 /* 10114 :<server> <nick> <password> <level> <email> <created> <lastseen> */

@@ -320,11 +320,12 @@ HANDLER (nuke)
 	    permission_denied (con);
 	return;
     }
-    db->nuked = 1;
     pass_message_args (con, tag, ":%s %s", sender->nick, pkt);
     notify_mods ("%s nuked %s's account", sender->nick, pkt);
+    hash_remove(User_Db, pkt);
 }
 
+#if 0
 /* 624 [ :<sender> ] <user>
    un-nuke a user's account */
 HANDLER (unnuke)
@@ -367,3 +368,4 @@ HANDLER (unnuke)
     pass_message_args (con, tag, ":%s %s", sender->nick, pkt);
     notify_mods ("%s restored %s's account", sender->nick, pkt);
 }
+#endif

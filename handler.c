@@ -42,8 +42,18 @@ HANDLER (encapsulated)
 	return;
     }
     nick = strchr (pkt + 1, ' ');
+    if (!nick)
+    {
+	log ("encapsulated(): missing target nick");
+	return;
+    }
     nick++;
     ptr = strchr (nick, ' ');
+    if(!ptr)
+    {
+	log("encapsulated(): missing encapsulated packet");
+	return;
+    }
     ch = *ptr;
     *ptr = 0;
     user = hash_lookup (Users, nick);
@@ -117,7 +127,9 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_MOTD, show_motd},		/* 621 */
     {MSG_CLIENT_MUZZLE, muzzle},		/* 622 */
     {MSG_CLIENT_UNMUZZLE, unmuzzle},		/* 623 */
+#if 0
     {MSG_CLIENT_UNNUKE, unnuke},		/* 624 */
+#endif
     {MSG_CLIENT_ALTER_SPEED, alter_speed},	/* 625 */
     {MSG_CLIENT_DATA_PORT_ERROR, data_port_error},	/* 626 */
     {MSG_CLIENT_WALLOP, wallop},		/* 627 */
