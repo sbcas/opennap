@@ -66,14 +66,14 @@ compute_soundex (char *d, int dsize, const char *s)
        doing anything */
     if (dsize < 4)
     {
-	ASSERT (0); /* this is a programming error */
+	ASSERT (0);		/* this is a programming error */
 	if (dsize > 0)
 	    *d = 0;
 	return;
     }
-    dsize--; /* save room for the terminatin nul (\0) */
+    dsize--;			/* save room for the terminatin nul (\0) */
 
-    while (*s && !isalpha(*s))
+    while (*s && !isalpha (*s))
 	s++;
     if (!*s)
     {
@@ -89,102 +89,102 @@ compute_soundex (char *d, int dsize, const char *s)
     {
 	switch (tolower (*s))
 	{
-	    case 'b':
-	    case 'p':
-	    case 'f':
-	    case 'v':
-		if (n < 3)
+	case 'b':
+	case 'p':
+	case 'f':
+	case 'v':
+	    if (n < 3)
+	    {
+		*d++ = '1';
+		dsize--;
+		n++;
+	    }
+	    break;
+	case 'c':
+	case 's':
+	case 'k':
+	case 'g':
+	case 'j':
+	case 'q':
+	case 'x':
+	case 'z':
+	    if (n < 3)
+	    {
+		*d++ = '2';
+		dsize--;
+		n++;
+	    }
+	    break;
+	case 'd':
+	case 't':
+	    if (n < 3)
+	    {
+		*d++ = '3';
+		dsize--;
+		n++;
+	    }
+	    break;
+	case 'l':
+	    if (n < 3)
+	    {
+		*d++ = '4';
+		dsize--;
+		n++;
+	    }
+	    break;
+	case 'm':
+	case 'n':
+	    if (n < 3)
+	    {
+		*d++ = '5';
+		dsize--;
+		n++;
+	    }
+	    break;
+	case 'r':
+	    if (n < 3)
+	    {
+		*d++ = '6';
+		dsize--;
+		n++;
+	    }
+	    break;
+	default:
+	    if (!isalpha (*s))
+	    {
+		/* pad short words with 0's */
+		while (n < 3 && dsize > 0)
 		{
-		    *d++ = '1';
+		    *d++ = '0';
 		    dsize--;
 		    n++;
 		}
-		break;
-	    case 'c':
-	    case 's':
-	    case 'k':
-	    case 'g':
-	    case 'j':
-	    case 'q':
-	    case 'x':
-	    case 'z':
-		if (n < 3)
-		{
-		    *d++ = '2';
-		    dsize--;
-		    n++;
-		}
-		break;
-	    case 'd':
-	    case 't':
-		if (n < 3)
-		{
-		    *d++ = '3';
-		    dsize--;
-		    n++;
-		}
-		break;
-	    case 'l':
-		if (n < 3)
-		{
-		    *d++ = '4';
-		    dsize--;
-		    n++;
-		}
-		break;
-	    case 'm':
-	    case 'n':
-		if (n < 3)
-		{
-		    *d++ = '5';
-		    dsize--;
-		    n++;
-		}
-		break;
-	    case 'r':
-		if (n < 3)
-		{
-		    *d++ = '6';
-		    dsize--;
-		    n++;
-		}
-		break;
-	    default:
-		if (!isalpha (*s))
-		{
-		    /* pad short words with 0's */
-		    while (n < 3 && dsize > 0)
-		    {
-			*d++ = '0';
-			dsize--;
-			n++;
-		    }
-		    n = 0; /* reset */
-		    /* skip forward until we find the next word */
+		n = 0;		/* reset */
+		/* skip forward until we find the next word */
+		s++;
+		while (*s && !isalpha (*s))
 		    s++;
-		    while (*s && !isalpha (*s))
-			s++;
-		    if (!*s)
-		    {
-			*d = 0;
-			return;
-		    }
+		if (!*s)
+		{
+		    *d = 0;
+		    return;
+		}
+		if (dsize > 0)
+		{
+		    *d++ = ',';
+		    dsize--;
 		    if (dsize > 0)
 		    {
-			*d++ = ',';
+			*d++ = toupper (*s);
 			dsize--;
-			if (dsize > 0)
-			{
-			    *d++ = toupper (*s);
-			    dsize--;
-			}
 		    }
 		}
-		/* else it's a vowel and we ignore it */
-		break;
+	    }
+	    /* else it's a vowel and we ignore it */
+	    break;
 	}
 	/* skip over duplicate letters */
-	while (*(s+1) == *s)
+	while (*(s + 1) == *s)
 	    s++;
 
 	/* next letter */
@@ -198,6 +198,19 @@ compute_soundex (char *d, int dsize, const char *s)
 	n++;
     }
     *d = 0;
+}
+
+static void
+share_common (USER *user, int fsize /* file size in kbytes */)
+{
+    user->shared++;
+
+    /* to avoid rounding errors in the total approximate size, we first
+       subtract what we know this client has contributed, then recalculate
+       the size in gigabytes */
+    user->libsize += fsize;
+    Num_Gigs += fsize;		/* this is actually kB, not gB */
+    Num_Files++;
 }
 
 /* adds a file to the database */
@@ -232,7 +245,7 @@ HANDLER (add_file)
     {
 	if (user->con)
 	    send_cmd (user->con, MSG_SERVER_NOSUCH,
-		    "You may only share %d files.", Max_Shared);
+		      "You may only share %d files.", Max_Shared);
 	return;
     }
     /* sql will take DOS path names with backslashes to mean the escape
@@ -246,7 +259,7 @@ HANDLER (add_file)
     if (!p)
 	p = field[0];
     else
-	p++; /* skip the backslash */
+	p++;			/* skip the backslash */
     compute_soundex (soundex, sizeof (soundex), p);
 
     /* form the SQL request */
@@ -259,7 +272,8 @@ HANDLER (add_file)
     {
 	sql_error ("add_file", Buf);
 	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "error adding file to database");
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		      "error adding file to database");
 	return;
     }
 
@@ -267,25 +281,18 @@ HANDLER (add_file)
     log ("add_file(): user %s added file %s", user->nick, path);
 #endif
 
-    user->shared++;
-
-    /* to avoid rounding errors in the total approximate size, we first
-       subtract what we know this client has contributed, then recalculate
-       the size in gigabytes */
-    fsize = atol (field[2]) / 1024; /* file size in kB */
-    user->libsize += fsize;
-    Num_Gigs += fsize; /* this is actually kB, not gB */
-    Num_Files++;
-
     /* if this is a local connection, pass this information to our peer
        servers.  note that we prepend `:<nick>' so that the peer servers
        know who is adding the file. */
     if (con->class == CLASS_USER && Num_Servers)
     {
 	pass_message_args (con, MSG_CLIENT_ADD_FILE,
-		":%s \"%s\" %s %s %s %s %s", user->nick, field[0], field[1],
-		field[2], field[3], field[4], field[5]);
+			   ":%s \"%s\" %s %s %s %s %s", user->nick, field[0],
+			   field[1], field[2], field[3], field[4], field[5]);
     }
+
+    fsize = atol (field[2]) / 1024;	/* file size in kB */
+    share_common (user, fsize);
 }
 
 /* 10300 [ :<user> ] "<filename>" <size> <hash> <content-type> */
@@ -304,7 +311,7 @@ HANDLER (share_file)
 
     if (split_line (field, sizeof (field) / sizeof (char *), pkt) != 4)
     {
-	log ("share_file: wrong number of fields");
+	log ("share_file(): wrong number of fields");
 	if (user->con)
 	    send_cmd (user->con, MSG_SERVER_NOSUCH, "wrong number of fields");
 	return;
@@ -312,39 +319,43 @@ HANDLER (share_file)
 
     /* make sure the content-type looks correct */
     if (strncasecmp ("audio/", field[3], 6) &&
-	    strncasecmp ("image/", field[3], 6) &&
-	    strncasecmp ("video/", field[3], 6) &&
-	    strncasecmp ("application/", field[3], 11) &&
-	    strncasecmp ("text/", field[3], 5))
+	strncasecmp ("image/", field[3], 6) &&
+	strncasecmp ("video/", field[3], 6) &&
+	strncasecmp ("application/", field[3], 11) &&
+	strncasecmp ("text/", field[3], 5))
     {
-	log ("share_file: not a MIME type: %s", field[3]);
+	log ("share_file(): not a MIME type: %s", field[3]);
 	if (user->con)
 	    send_cmd (user->con, MSG_SERVER_NOSUCH,
-		    "%s is not a valid MIME content-type", field[3]);
+		      "%s is not a valid MIME content-type", field[3]);
 	return;
     }
 
     fudge_path (field[0], path, sizeof (path));
-    p=strrchr(field[0],'\\');
-    if(p)
+    p = strrchr (field[0], '\\');
+    if (p)
 	p++;
     else
-	p=field[0];
-    compute_soundex(soundex,sizeof(soundex), p);
+	p = field[0];
+    compute_soundex (soundex, sizeof (soundex), p);
     snprintf (Buf, sizeof (Buf),
-	    "INSERT INTO library VALUES ('%s','%s','%s','%s',0,0,0,%d,'%s','%s')",
-	    user->nick, field[0], field[1], field[2], user->speed, soundex,
-	    field[3]);
+	      "INSERT INTO library VALUES ('%s','%s',%s,'%s',0,0,0,%d,'%s','%s')",
+	      user->nick, path, field[1], field[2], user->speed, soundex,
+	      field[3]);
     if (mysql_query (Db, Buf) != 0)
     {
 	sql_error ("share_file", Buf);
 	if (user->con)
-	    send_cmd (user->con, MSG_SERVER_NOSUCH, "error adding file to db");
+	    send_cmd (user->con, MSG_SERVER_NOSUCH,
+		      "error adding file to db");
 	return;
     }
     if (con->class == CLASS_USER && Num_Servers)
     {
 	pass_message_args (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %s %s %s",
-		user->nick, field[0], field[1], field[2], field[3]);
+			   user->nick, field[0], field[1], field[2],
+			   field[3]);
     }
+
+    share_common (user, strtol (field[1], 0, 10) / 1024);
 }

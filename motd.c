@@ -17,7 +17,12 @@ show_motd (CONNECTION * con)
     FILE *f;
     size_t l;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
+    /* we print the version info here so that clients can enable features
+       only present in this server, but without disturbing the windows
+       client */
+    send_cmd (con, MSG_SERVER_MOTD, "VERSION %s %s", PACKAGE, VERSION);
+
     f = fopen (Motd_Path, "r");
     if (!f)
     {

@@ -1,3 +1,19 @@
+Changes from 0.11
+=================
+
+added support for using poll() instead of select() on systems that support
+it
+
+server now prints "VERSION opennap <version>" as the first line of the MOTD.
+it is intended that clients can use this information to enable optional
+features that only work with this version of the server, but without
+disturbing the official windows client
+
+fixed bug in share_file() where the escaped filename was not inserted into
+the db
+
+fixed bug where the argument to the TYPE search parameter was not skipped
+
 Changes from 0.10
 =================
 added max_connections config variable
