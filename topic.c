@@ -37,6 +37,7 @@ HANDLER (topic)
 	    log ("topic(): too few fields in server message");
 	    return;
 	}
+
     }
     else
     {
@@ -53,23 +54,35 @@ HANDLER (topic)
 	nosuchchannel(con);
 	return;
     }
-    ASSERT (validate_channel (chan));
-    if (ISUSER (con) && list_find (con->user->channels, chan) == 0)
-    {
-	send_cmd (con, MSG_SERVER_NOSUCH,
-		  "You are not a member of channel %s", chanName);
-	return;
-    }
 
     if (pkt)
     {
-	/* check to make sure this user has privilege to change topic */
-	if (ISUSER (con) && con->user->level < LEVEL_MODERATOR &&
-	    !is_chanop (chan, con->user))
+	/* check for permission to change the topic */
+	if (ISUSER(con))
 	{
-	    permission_denied (con);
-	    return;
+	    if(con->user->level < chan->level)
+	    {
+		permission_denied(con);
+		return;
+	    }
+	    if(con->user->level < LEVEL_MODERATOR)
+	    {
+		if(!list_find(con->user->channels,chan))
+		{
+		    send_cmd(con,MSG_SERVER_NOSUCH,
+			    "topic change failed: you are not on channel %s",
+			    chan->name);
+		    return;
+		}
+		if(!(chan->flags & ON_CHANNEL_TOPIC) && !is_chanop(chan,con->user))
+		{
+		    send_cmd(con,MSG_SERVER_NOSUCH,
+			    "topic change failed: permission denied");
+		    return;
+		}
+	    }
 	}
+
 	if (chan->topic)
 	    FREE (chan->topic);
 	/* if the topic is too long, truncate it */

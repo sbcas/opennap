@@ -111,7 +111,8 @@ sync_chan (CHANNEL * chan, CONNECTION * con)
 		Server_Name, chan->name,
 		(chan->flags & ON_CHANNEL_PRIVATE) ? " +PRIVATE" : "",
 		(chan->flags & ON_CHANNEL_MODERATED) ? " +MODERATED" : "",
-		(chan->flags & ON_CHANNEL_INVITE) ? " +INVITE" : "");
+		(chan->flags & ON_CHANNEL_INVITE) ? " +INVITE" : "",
+		(chan->flags & ON_CHANNEL_TOPIC) ? " +TOPIC" : "");
 }
 
 static void

@@ -767,7 +767,8 @@ HANDLER (channel_mode)
 		    chan->name,
 		    (chan->flags & ON_CHANNEL_PRIVATE) ? " +PRIVATE" : "",
 		    (chan->flags & ON_CHANNEL_MODERATED) ? " +MODERATED" : "",
-		    (chan->flags & ON_CHANNEL_INVITE) ? " +INVITE" : "");
+		    (chan->flags & ON_CHANNEL_INVITE) ? " +INVITE" : "",
+		    (chan->flags & ON_CHANNEL_TOPIC) ? " +TOPIC" : "");
 	return;
     }
     while (pkt)
@@ -781,6 +782,8 @@ HANDLER (channel_mode)
 	    bit = ON_CHANNEL_MODERATED;
 	else if (!strcasecmp ("INVITE", arg + 1))
 	    bit = ON_CHANNEL_INVITE;
+	else if (!strcasecmp ("TOPIC", arg + 1))
+	    bit = ON_CHANNEL_TOPIC;
 	else
 	{
 	    if (ISUSER (con))
@@ -821,10 +824,12 @@ HANDLER (channel_mode)
     {
 	char msg[512];
 
+	chan->timestamp = Current_Time;
 	msg[0] = 0;
 	add_flag(msg,sizeof(msg),"PRIVATE",ON_CHANNEL_PRIVATE,onmask,offmask);
 	add_flag(msg,sizeof(msg),"MODERATED",ON_CHANNEL_MODERATED,onmask,offmask);
 	add_flag(msg,sizeof(msg),"INVITE",ON_CHANNEL_INVITE,onmask,offmask);
+	add_flag(msg,sizeof(msg),"TOPIC",ON_CHANNEL_TOPIC,onmask,offmask);
 
 	notify_ops (chan, "%s changed mode on channel %s:%s",
 		    senderName, chan->name, msg);

@@ -87,10 +87,11 @@ struct _chanuser
 };
 
 /* bitmask values for the channel flags */
-#define ON_CHANNEL_USER		1	/* user created channel */
-#define ON_CHANNEL_PRIVATE	2	/* private (hidden) channel */
-#define ON_CHANNEL_MODERATED	4	/* moderated channel */
-#define ON_CHANNEL_INVITE	8	/* invitation required */
+#define ON_CHANNEL_USER		(1<<0)	/* user created channel */
+#define ON_CHANNEL_PRIVATE	(1<<1)	/* private (hidden) channel */
+#define ON_CHANNEL_MODERATED	(1<<2)	/* moderated channel */
+#define ON_CHANNEL_INVITE	(1<<3)	/* invitation required */
+#define ON_CHANNEL_TOPIC	(1<<4)	/* topic can be set by any member */
 
 struct _channel
 {
@@ -101,9 +102,9 @@ struct _channel
     char *topic;		/* current topic of discussion */
     LIST *ops;			/* list of operators for the channel */
     LIST *users;		/* list of users on the channel */
-    short limit;		/* max number of users allowed */
-    unsigned char flags;	/* true if a user created channel */
-    unsigned char level;	/* minimum level to enter channel */
+    unsigned short limit;	/* max number of users allowed */
+    unsigned int flags:13;	/* channel flags */
+    unsigned int level:3;	/* minimum level to enter channel */
     LIST *bans;			/* channel specific bans */
     time_t timestamp;		/* used to sync servers */
     LIST *invited;		/* invited users */

@@ -406,6 +406,7 @@ are implemented as additional functionality in the opennap server.
 		PRIVATE		- makes the channel not show up in the list
 		MODERATED	- only ops and mods+ can speak in public
 		INVITE		- channel is invite only
+		TOPIC		- if set, any user may change the topic
 
 10210	invite user to a channel [CLIENT, SERVER]
 
