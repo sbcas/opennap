@@ -22,7 +22,7 @@ invalid_channel (const char *s)
 
     while (*s)
     {
-	if (ISSPACE (*s) || !ISPRINT (*s) || *s == ':')
+	if (ISSPACE (*s) || !ISPRINT (*s) || *s == ':' || *s == '%')
 	    return 1;
 	count++;
 	s++;
@@ -251,9 +251,7 @@ HANDLER (channel_level)
     {
 	log ("channel_level(): wrong number of parameters");
 	print_args (ac, av);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "too few parameters for command %d", tag);
+	unparsable (con);
 	return;
     }
     chan = hash_lookup (Channels, av[0]);
@@ -274,21 +272,20 @@ HANDLER (channel_level)
 		  "You are not a member of channel %s", chan->name);
 	return;
     }
-    if (ac == 2)
+    if (ac > 1)
     {
 	level = get_level (av[1]);
 	if (level == -1)
 	{
 	    log ("channel_level(): unknown level %s", av[1]);
 	    if (ISUSER (con))
-		send_cmd (con, MSG_SERVER_NOSUCH, "Invalid level %s", av[1]);
+		send_cmd (con, MSG_SERVER_NOSUCH, "invalid level %s", av[1]);
 	    return;
 	}
 	if (ISUSER (con) && level > con->user->level)
 	{
-	    log
-		("channel_level(): %s no privilege for channel %s to level %s",
-		 con->user->nick, Levels[level]);
+	    log ("channel_level(): %s no privilege for %s to %s",
+		 con->user->nick, chan->name, Levels[level]);
 	    permission_denied (con);
 	    return;
 	}

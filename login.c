@@ -22,7 +22,7 @@ invalid_nick (const char *s)
 	return 1;
     while (*s)
     {
-	if (!ISPRINT (*s) || ISSPACE (*s) || *s == ':')
+	if (!ISPRINT (*s) || ISSPACE (*s) || *s == ':' || *s == '%')
 	    return 1;
 	count++;
 	s++;

@@ -82,13 +82,14 @@ HANDLER (level)
 	}
 	if (user->level == level)
 	{
+	    log ("level(): %s is already %s", user->nick, Levels[level]);
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already %s",
 			  user->nick, Levels[level]);
 	    return;
 	}
 	if (ISUSER (user->con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
+	    send_cmd (user->con, MSG_SERVER_NOSUCH,
 		      "%s changed your user level to %s (%d)",
 		      sender, Levels[level], level);
 	/* delay setting user->level until after the notify_mods() call */
