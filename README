@@ -137,16 +137,16 @@ are implemented as additional functionality in the opennap server.
 	authenticate without the plaintext passwords traversing the network
 
 
-10012	client request to connect to server
+10012	client request to connect to server [CLIENT]
 
-	<server-name> <port>
+	<server-name> <port> [ <remote-server> ]
 
 	client is requesting that local server establish a connection with
 	the server running at <server-name>:<port>
 
 10013	user ip [SERVER]
 
-	<user> <ip>
+	<user> <ip> <port> <server>
 
 	this message is used for a server to pass the ip address of a
 	locally connected client to its peer servers, since that information
@@ -163,7 +163,7 @@ are implemented as additional functionality in the opennap server.
 
 10101	server disconnect [CLIENT]
 
-	<server> <reason>
+	<server> <reason> [ <remote-server> ]
 
 	delink current server from <server>.
 	must be admin or high level to execute this command

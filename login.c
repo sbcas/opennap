@@ -84,7 +84,7 @@ HANDLER (login)
 	    if (con->class == CLASS_USER)
 	    {
 		send_cmd (con, MSG_SERVER_NOSUCH,
-			"You are banned from this server (%s)",
+			"You are banned from this server: %s",
 			Ban[i]->reason ? Ban[i]->reason : "banned");
 		remove_connection (con);
 	    }
@@ -116,8 +116,8 @@ HANDLER (login)
 	{
 	    pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
 		    field[0], field[1], field[2], field[3], field[4]);
-	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %lu",
-		    field[0], user->host);
+	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %lu %hu %s",
+		    field[0], user->host, user->conport, Server_Name);
 	}
 
 	con->class = CLASS_USER;
@@ -228,16 +228,16 @@ HANDLER (login)
     }
 }
 
-/* 10013 <user> <ip> */
+/* 10013 <user> <ip> <port> <server> */
 /* peer server is sending us the ip address for a locally connected client */
 HANDLER (user_ip)
 {
-    char *field[2];
+    char *field[4];
     USER *user;
 
     ASSERT (VALID (con));
     CHECK_SERVER_CLASS ("user_ip");
-    if (split_line (field, sizeof (field) / sizeof (char* ), pkt) != 2)
+    if (split_line (field, sizeof (field) / sizeof (char* ), pkt) != 4)
     {
 	log ("user_ip(): wrong number of arguments");
 	return;
@@ -249,4 +249,6 @@ HANDLER (user_ip)
 	return;
     }
     user->host = strtoul (field[1], 0, 10);
+    user->conport = strtoul (field[2], 0, 10);
+    user->server = STRDUP (field[3]);
 }

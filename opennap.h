@@ -57,6 +57,7 @@ struct _user
     char *nick;
     char *clientinfo;
     char *email;		/* user's email address */
+    char *server;		/* which server the user is connected to */
     unsigned short uploads;	/* no. of uploads in progress */
     unsigned short downloads;	/* no. of downloads in progress */
     unsigned short speed;	/* link speed */
