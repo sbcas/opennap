@@ -330,7 +330,7 @@ main (int argc, char **argv)
 	}
     }
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__EMX__)
     /* check whether to run in the background */
     if (Server_Flags & ON_BACKGROUND)
     {

@@ -21,6 +21,10 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifdef __EMX__
+#include <stdlib.h>
+#define _POSIX_PATH_MAX _MAX_PATH
+#endif /* __EMX__ */
 #include "opennap.h"
 #include "debug.h"
 
@@ -90,7 +94,9 @@ init_server (const char *cf)
     sigaction (SIGTERM, &sa, NULL);
     sigaction (SIGINT, &sa, NULL);
     sigaction (SIGPIPE, &sa, NULL);
+#ifndef __EMX__
     sa.sa_flags = SA_RESTART;
+#endif /* ! __EMX__ */
     sigaction (SIGUSR1, &sa, NULL);
 #endif /* !WIN32 */
 
