@@ -40,7 +40,7 @@ userdb_init (const char *path)
 }
 
 void
-userdb_free (USERDB *p)
+userdb_free (USERDB * p)
 {
     if (p)
     {
@@ -68,71 +68,71 @@ userdb_fetch (const char *nick)
 	return 0;
     if (list_count (result->columns) < 6)
     {
-	log("userdb_fetch(): too few columns in entry for user %s",
-		(char*)result->columns->data);
+	log ("userdb_fetch(): too few columns in entry for user %s",
+	     (char *) result->columns->data);
 	textdb_free_result (result);
 	return 0;
     }
-    user=CALLOC(1,sizeof(USERDB));
-    if(!user)
+    user = CALLOC (1, sizeof (USERDB));
+    if (!user)
     {
-	log("userdb_fetch(): OUT OF MEMORY");
+	log ("userdb_fetch(): OUT OF MEMORY");
 	return 0;
     }
-    list=result->columns;
+    list = result->columns;
     user->nick = STRDUP (list->data);
-    list=list->next;
+    list = list->next;
     user->password = STRDUP (list->data);
-    list=list->next;
+    list = list->next;
     user->email = STRDUP (list->data);
-    list=list->next;
+    list = list->next;
     user->level = get_level (list->data);
     if (user->level == -1)
 	user->level = LEVEL_USER;
-    list=list->next;
+    list = list->next;
     user->created = atol (list->data);
-    list=list->next;
+    list = list->next;
     user->lastSeen = atol (list->data);
     if (!user->nick || !user->password || !user->email)
     {
-	log("userdb_fetch(): OUT OF MEMORY");
-	userdb_free(user);
-	user=0;
+	log ("userdb_fetch(): OUT OF MEMORY");
+	userdb_free (user);
+	user = 0;
     }
-    textdb_free_result(result);
+    textdb_free_result (result);
     return user;
 }
 
 int
-userdb_store (USERDB *db)
+userdb_store (USERDB * db)
 {
     LIST *list;
     char create[16], last[16];
     int err = 0;
-    TEXTDB_RES	*result;
+    TEXTDB_RES *result;
 
-    list=list_append(0,db->nick);
-    list=list_append(list,db->password);
-    list=list_append(list,db->email);
-    list=list_append(list,Levels[db->level]);
-    snprintf(create,sizeof(create),"%d",(int)db->created);
-    list=list_append(list,create);
-    snprintf(last,sizeof(last),"%d",(int)db->lastSeen);
-    list=list_append(list,last);
+    list = list_append (0, db->nick);
+    list = list_append (list, db->password);
+    list = list_append (list, db->email);
+    list = list_append (list, Levels[db->level]);
+    snprintf (create, sizeof (create), "%d", (int) db->created);
+    list = list_append (list, create);
+    snprintf (last, sizeof (last), "%d", (int) db->lastSeen);
+    list = list_append (list, last);
     result = textdb_new_result (User_Db, list);
-    if(textdb_store(result))
+    if (textdb_store (result))
     {
-	log("userdb_store(): textdb_store failed");
-	err=-1;
+	log ("userdb_store(): textdb_store failed");
+	err = -1;
     }
-    result->columns=0;
-    textdb_free_result(result);
-    list_free(list,0);
+    result->columns = 0;
+    textdb_free_result (result);
+    list_free (list, 0);
     return err;
 }
 
 void
 userdb_close (void)
 {
-    textdb_close(User_Db);
+    textdb_close (User_Db);
 }

@@ -253,10 +253,6 @@ typedef struct {
 typedef void (*timer_t) (void *);
 
 extern char *Motd_Path;
-extern char *Db_Host;
-extern char *Db_User;
-extern char *Db_Pass;
-extern char *Db_Name;
 extern char *Listen_Addr;
 extern char *Server_Name;
 extern char *Server_Pass;
@@ -268,7 +264,6 @@ extern int Server_Queue_Length;
 extern int Client_Queue_Length;
 extern int Max_Search_Results;
 extern int Compression_Level;
-extern int Compression_Threshold;
 extern int Max_Shared;
 extern int Max_Connections;
 extern int Nick_Expire;

@@ -1,7 +1,7 @@
 opennap v0.20 (ALPHA)
 the open source (TM) napster server
 =====================
-March 2, 2000
+March 3, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -9,10 +9,9 @@ Email: opennap-dev@lists.sourceforge.net
 
 opennap is an Open Source(TM) server implementation of the popular
 Napster protocol.  It is written in ANSI C and was designed to run on Unix
-platforms and uses a MySQL (www.mysql.org) server to handle the search
-requests.  So far this server has only been tested on:
-	* Red Hat Linux 6.1 (i686) running MySQL 3.23.32
-	* Red Hat Linux 6.0 (Alpha) running MySQL 3.23.32
+platforms.  So far this server has only been tested on:
+	* Red Hat Linux 6.1 (i686)
+	* Red Hat Linux 6.0 (Alpha)
 	* BSDI 4.1
 	* Windows 2000 (MS VC++)
 Minimal porting should be required for compilation on other Unix variants
@@ -48,75 +47,42 @@ development of the server.
 
 * INSTALLATION
 
-  1.  build and install mysqld plus the client libraries (libmysqlclient.a)
-  2.  build and install opennap
-  3.  create a user and database for opennap to use
+  1.  build and install opennap
+  2.  create at least one elite (server operator) nick to use on the server
 
-	# mysql -u root -p < create_db.sql
-	Enter password:
+	edit /usr/local/share/opennap/users
+	add:
+		<nick> <password> <email> elite 0 0
 
-  4.  change the default password for the mp3 user
+      where <nick> is the nick you want to use, <pass> is the password for
+      the nick, and <email> is your email address (optional, but it must not
+      be empty).
 
-  	mysqladmin -u mp3 -p password 'newpass'
+      When you log into the server with your client, you should see a
+      message from the server:
 
-  5.  create at least one elite (server operator) nick to use on the server
-
-	# mysql -u mp3 -p
-        Enter password:
-
-	mysql> use mp3;
-	mysql> insert into accounts values('nick','pass','elite','email@here.com', 0, 0);
-	mysql> quit;
-
-      where 'nick' is the nick you want to use, 'pass' is the password for
-      the nick.
-
-  6.  edit the opennap config file and change at least the `db_pass' line to
-      correspond to the password you selected above in step #4.  By default,
-      the config file is located in /usr/local/share/opennap/config.
+      * Server: <server name> set your level to Elite (4).
 
 * Linking Servers
 
   1.  you need to add the dns name of the server you wish to allow to connect
-      to your server in the MySQL database.  This needs to be done on both
+      to your server in the database.  This needs to be done on both
       ends, as it does mutual authentication to prevent bogus servers from
       being able to join.
 
-      # mysql -u mp3 -p
-      Enter password:
+	edit /usr/local/share/opennap/servers
+	add:
+		<server name> <password>
 
-      mysql> use mp3;
-      mysql> insert into servers values('other.server.com','password');
-      mysql> quit;
+	where <server name> is the dns name of the server, and <password>
+	is the password for that server to gain access.
 
    2.  connect to your server and gain elite access, and execute the
-       `server connect' command (currently only bx-nap has support for
+       `server connect' command (currently only BWap has support for
        the opennap commands), specifying the host and port to connect to.
 
        In BWap, you would do:
        /admin connect <server> <port>
-
-* Database descriptions
-
-	The following tables are stored in the "mp3" database.
-
-	* Accounts table
-
-		CREATE TABLE accounts (nick VARCHAR(15), password VARCHAR(32),
-			level VARCHAR(9), email VARCHAR(64), created INT,
-			lastseen INT);
-
-		Table used to keep track of user registration
-
-	* Server table
-
-		CREATE TABLE servers (name VARCHAR(32), password VARCHAR(32));
-
-		This table keeps the passwords for its peer servers.  When
-		a server requests linking, we look in this table for the
-		password to expect.  In addition, the dns lookup for
-		'name' MUST match the ip address for the connection to
-		prevent others from using a sniffed password.
 
 * Server to Server messages
 

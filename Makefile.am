@@ -14,4 +14,4 @@ metaserver_SOURCES=metaserver.c
 EXTRA_DIST=sample.conf sample.motd napster.txt .indent.pro \
 	FAQ patchnap.c spyserv.c opennap.dsw opennap.dsp snprintf.c \
 	opennap.opt opennap.plg
-INCLUDES=-I@MYSQLINCDIR@ -DSHAREDIR=\"$(pkgdatadir)\"
+INCLUDES=-DSHAREDIR=\"$(pkgdatadir)\"

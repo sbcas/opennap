@@ -31,10 +31,6 @@ CONFIG;
 #define UL (unsigned long)
 
 static CONFIG Vars[] = {
-    { "db_host", VAR_TYPE_STR, UL &Db_Host, UL "localhost" },
-    { "db_user", VAR_TYPE_STR, UL &Db_User, UL "mp3" },
-    { "db_pass", VAR_TYPE_STR, UL &Db_Pass, UL "passtest" },
-    { "db_name", VAR_TYPE_STR, UL &Db_Name, UL "mp3" },
     { "max_user_channels", VAR_TYPE_INT, UL &Max_User_Channels, 5 },
     { "motd_path", VAR_TYPE_STR, UL &Motd_Path, UL SHAREDIR "/motd" },
     { "server_name", VAR_TYPE_STR, UL &Server_Name, 0 },
@@ -46,7 +42,6 @@ static CONFIG Vars[] = {
     { "client_queue_length", VAR_TYPE_INT, UL &Client_Queue_Length, 102400 },
     { "max_results", VAR_TYPE_INT, UL &Max_Search_Results, 100 },
     { "compression_level", VAR_TYPE_INT, UL &Compression_Level, 1 },
-    { "compression_threshold", VAR_TYPE_INT, UL &Compression_Threshold, 16384 },
     { "max_shared", VAR_TYPE_INT, UL &Max_Shared, 5000 },
     { "max_connections", VAR_TYPE_INT, UL &Max_Connections, FD_SETSIZE },
     { "nick_expire", VAR_TYPE_INT, UL &Nick_Expire, 7776000 /* 90 days */ },

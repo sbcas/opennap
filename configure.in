@@ -12,23 +12,6 @@ AC_EGREP_HEADER(socklen_t, /usr/include/sys/socket.h,
 AC_C_BIGENDIAN
 AC_CHECK_SIZEOF(long)
 
-dnl AC_ARG_WITH(mysql, [  --with-mysql=DIR	MySQL is in DIR/lib/mysql and DIR/include/mysql],
-dnl [MYSQLLIBDIR=$withval/lib/mysql
-dnl MYSQLINCDIR=$withval/include/mysql],
-dnl [if test -d /usr/local/lib/mysql; then
-dnl 	MYSQLLIBDIR=/usr/local/lib/mysql
-dnl 	MYSQLINCDIR=/usr/local/include/mysql
-dnl elif test -d /usr/lib/mysql; then
-dnl 	MYSQLLIBDIR=/usr/lib/mysql
-dnl 	MYSQLINCDIR=/usr/include/mysql
-dnl else
-dnl 	AC_MSG_ERROR(could not locate MySQL installation)
-dnl fi])
-dnl AC_MSG_RESULT(MySQL header files are in $MYSQLINCDIR)
-dnl AC_MSG_RESULT(MySQL library files are in $MYSQLLIBDIR)
-dnl AC_SUBST(MYSQLINCDIR)
-dnl AC_SUBST(MYSQLLIBDIR)
-
 dnl give the option to disable the use of /dev/random even if it exists
 ac_cv_check_random=yes
 AC_ARG_ENABLE(random, [  --disable-random	Do not use /dev/random ],

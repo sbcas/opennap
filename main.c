@@ -33,10 +33,6 @@
 */
 
 char *Motd_Path = 0;
-char *Db_User = 0;
-char *Db_Pass = 0;
-char *Db_Host = 0;
-char *Db_Name = 0;
 char *Listen_Addr = 0;
 char *Server_Name = 0;
 char *Server_Pass = 0;
@@ -49,7 +45,6 @@ int Server_Queue_Length;
 int Client_Queue_Length;
 int Max_Search_Results;
 int Compression_Level;
-int Compression_Threshold;
 int Max_Shared;
 int Max_Connections;
 int Nick_Expire;
