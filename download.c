@@ -60,8 +60,9 @@ HANDLER (download)
 		else
 		{
 		    send_user (sender, MSG_SERVER_FILE_READY /* 204 */ ,
-			       "%s %u %d \"%s\" %s %d", user->nick,
-			       user->ip, user->port, info->filename,
+			       "%s %u %d \"%s%s\" %s %d", user->nick,
+			       user->ip, user->port, info->path->path,
+			       info->filename,
 #if RESUME
 			       info->hash,
 #else
@@ -333,6 +334,6 @@ HANDLER (queue_limit)
     }
 
     /* deliver to user even if remote */
-    send_user (recip, MSG_SERVER_LIMIT, "%s \"%s\" %d %s",
-	       con->user->nick, info->filename, info->size, av[2]);
+    send_user (recip, MSG_SERVER_LIMIT, "%s \"%s%s\" %d %s",
+	       con->user->nick, info->path->path, info->filename, info->size, av[2]);
 }

@@ -97,13 +97,13 @@ insert_datum (DATUM * info, char *av)
 	}
     }
 
+    /* add this entry to the hash table for this user's files */
+    hash_add (info->user->con->uopt->files, av, info);
+    info->refcount++;
+
     /* split the filename into words */
     tokens = tokenize (av);
     ASSERT (tokens != 0);
-
-    /* add this entry to the hash table for this user's files */
-    hash_add (info->user->con->uopt->files, info->filename, info);
-    info->refcount++;
 
     /* add this entry to the global file list.  the data entry currently
        can't be referenced more than 32 times so if there are excess tokens,
@@ -134,6 +134,15 @@ insert_datum (DATUM * info, char *av)
     info->user->sharing = 1;	/* note that we began sharing */
 }
 
+/* new_datum
+ *
+ * path
+ * 	directory component of the shared file
+ * filename
+ * 	basename component of the shared file
+ * hash
+ * 	md5 checksum
+ */
 static DATUM *
 new_datum (char *path, char *filename, char *hash)
 {

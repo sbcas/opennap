@@ -44,9 +44,10 @@ HANDLER (resume)
 	    {
 		ASSERT (validate_user (d->user));
 		send_cmd (con, MSG_SERVER_RESUME_MATCH,
-			  "%s %u %d \"%s\" %s %d %hu",
+			  "%s %u %d \"%s%s\" %s %d %hu",
 			  d->user->nick, d->user->ip, d->user->port,
-			  d->filename, d->hash, d->size, d->user->speed);
+			  d->path->path, d->filename, d->hash, d->size,
+			  d->user->speed);
 	    }
 	}
     }

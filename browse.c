@@ -108,11 +108,14 @@ static void
 create_file_list (DATUM * d, LIST ** p)
 {
     DATUM *f;
+    int n;
 
     while (*p)
     {
 	f = (*p)->data;
-	if (strcasecmp (d->filename, f->filename) <= 0)
+	/* compare the directory components first */
+	n = (d->path==f->path)? 0 : strcasecmp (d->path->path, f->path->path);
+	if(n<0 || (n==0 && strcasecmp (d->filename, f->filename) <= 0))
 	{
 	    LIST *n = CALLOC (1, sizeof (LIST));
 
@@ -125,41 +128,6 @@ create_file_list (DATUM * d, LIST ** p)
     }
     *p = CALLOC (1, sizeof (LIST));
     (*p)->data = d;
-}
-
-static char *
-last_slash (char *s)
-{
-    /* const */ char *p;
-
-    for (;;)
-    {
-	p = strpbrk (s + 1, "/\\");
-	if (!p)
-	    return s;
-	s = p;
-    }
-}
-
-static char *
-dirname (char *d, int dsize, /* const */ char *s)
-{
-    char *p;
-
-    strncpy (d, s, dsize - 1);
-    d[dsize - 1] = 0;
-    p = last_slash (d);
-    *p = 0;
-    return d;
-}
-
-static char *
-basename (char *d, int dsize, /* const */ char *s)
-{
-    s = last_slash (s);
-    strncpy (d, s + 1, dsize - 1);
-    d[dsize - 1] = 0;
-    return d;
 }
 
 /* 10301 [ :<sender> ] <nick>
@@ -199,15 +167,12 @@ HANDLER (browse_new)
 	if (user->con->uopt->files)
 	{
 	    LIST *list = 0, *tmpList;
-	    char dir[_POSIX_PATH_MAX];
-	    char path[_POSIX_PATH_MAX];
-	    char base[_POSIX_PATH_MAX];
 	    char *rsp = 0;
 	    int count = 0;
+	    DATUM *last= 0;
 
 	    hash_foreach (user->con->uopt->files,
 			  (hash_callback_t) create_file_list, &list);
-	    dir[0] = 0;
 	    if(results==0)
 		results=0x7fffffff;	/* hack, we really mean unlimited */
 	    for (tmpList = list; tmpList && results;
@@ -215,21 +180,20 @@ HANDLER (browse_new)
 	    {
 		DATUM *d = tmpList->data;
 
-		dirname (path, sizeof (path), d->filename);
-		basename (base, sizeof (base), d->filename);
-		if (count < 5 && dir[0] && !strcasecmp (dir, path))
+		if(count<5 && last && last->path == d->path)
 		{
 		    /* same directory as previous result, append */
-		    rsp = append_string (rsp, " \"%s\" %s %d %d %d %d", base,
+		    rsp = append_string (rsp, " \"%s\" %s %d %d %d %d",
+			    d->path,
 #if RESUME
-					 d->md5,
+			    d->md5,
 #else
-					 "0",
+			    "0",
 #endif
-					 d->size,
-					 BitRate[d->bitrate],
-					 SampleRate[d->frequency],
-					 d->duration);
+			    d->size,
+			    BitRate[d->bitrate],
+			    SampleRate[d->frequency],
+			    d->duration);
 		    if(!rsp)
 			break;
 		    count++;
@@ -237,29 +201,32 @@ HANDLER (browse_new)
 		else
 		{
 		    /* new directory */
-		    strcpy (dir, path);
 		    if (rsp)
 		    {
 			/* send off the previous buffer command */
 			send_user (sender, MSG_SERVER_BROWSE_RESULT_NEW, "%s",
-				   rsp);
+				rsp);
 			FREE (rsp);
 		    }
 		    rsp = append_string (0, "%s \"%s\" \"%s\" %s %d %d %d %d",
-					 user->nick, dir, base,
+			    user->nick, d->path->path, d->filename,
 #if RESUME
-					 d->md5,
+			    d->md5,
 #else
-					 "0",
+			    "0",
 #endif
-					 d->size,
-					 BitRate[d->bitrate],
-					 SampleRate[d->frequency],
-					 d->duration);
+			    d->size,
+			    BitRate[d->bitrate],
+			    SampleRate[d->frequency],
+			    d->duration);
 		    if (!rsp)
 			break;
 		    count = 0;
 		}
+		/* keep track of the last file we added so the next file
+		 * can easily check if its in the same directory
+		 */
+		last = d;
 	    }
 	    list_free (list, 0);
 
