@@ -291,7 +291,7 @@ HANDLER (channel_level)
 	ASSERT (ac == 1);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "Channel %s is set to level %s.",
-		    Levels[chan->level]);
+		    chan->name, Levels[chan->level]);
 	else
 	    log ("channel_level(): query from server (should not happen)");
     }
