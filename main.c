@@ -470,23 +470,24 @@ main (int argc, char **argv)
 		{
 		    Clients[j] = Clients[i];
 		    Clients[j]->id = j;
+		    Clients[i] = 0;
 		}
 #ifdef HAVE_POLL
 		ufd[j + 2].fd = Clients[j]->fd;
 		ufd[j + 2].events = POLLIN;
 #else
-		FD_SET (Clients[i]->fd, &set);
-		if (Clients[i]->fd > maxfd)
+		FD_SET (Clients[j]->fd, &set);
+		if (Clients[j]->fd > maxfd)
 		    maxfd = Clients[i]->fd;
 #endif /* HAVE_POLL */
 		/* check sockets for writing */
-		if (Clients[i]->connecting || Clients[i]->sendbuf ||
-		     (ISSERVER (Clients[i]) && Clients[i]->sopt->outbuf))
+		if (Clients[j]->connecting || Clients[j]->sendbuf ||
+		     (ISSERVER (Clients[j]) && Clients[j]->sopt->outbuf))
 		{
 #ifdef HAVE_POLL
 		    ufd[j+2].events |= POLLOUT;
 #else
-		    FD_SET (Clients[i]->fd, &wset);
+		    FD_SET (Clients[j]->fd, &wset);
 #endif
 		}
 		j++;
