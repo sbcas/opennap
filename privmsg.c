@@ -39,6 +39,8 @@ operserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_CHANNEL_LIMIT;
     else if (!strcasecmp ("kick", cmd))
 	tag = MSG_CLIENT_KICK_USER;
+    else if (!strcasecmp ("usermode", cmd))
+    	tag = MSG_CLIENT_USER_MODE;
     else if (!strcasecmp ("config", cmd))
 	tag = MSG_CLIENT_SERVER_CONFIG;
     else if (!strcasecmp ("reconfig", cmd))

@@ -295,8 +295,8 @@ HANDLER (channel_level)
 	pass_message_args (con, tag, ":%s %s %s", sender, chan->name,
 			   Levels[level]);
 	chan->level = level;
-	notify_mods ("%s set channel %s to level %s", sender, chan->name,
-		     Levels[level]);
+	notify_mods (CHANNELLOG_MODE, "%s set channel %s to level %s", 
+		sender, chan->name, Levels[level]);
     }
     else
     {
@@ -367,6 +367,6 @@ HANDLER (channel_limit)
     }
     chan->limit = limit;
     pass_message_args (con, tag, ":%s %s %d", sender, chan->name, limit);
-    notify_mods ("%s set limit on channel %s to %d", sender, chan->name,
-		 limit);
+    notify_mods (CHANNELLOG_MODE, "%s set limit on channel %s to %d", 
+    		sender, chan->name, limit);
 }

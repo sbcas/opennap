@@ -319,6 +319,8 @@ HANDLER (login)
 	    goto failed;
 	}
 	con->class = CLASS_USER;
+	con->uopt = CALLOC (1, sizeof (USEROPT));
+	con->uopt->usermode = LOGALL_MODE;
 	con->user = user;
 	/* send the login ack */
 	send_cmd (con, MSG_SERVER_EMAIL, "%s", user->email);
@@ -331,7 +333,7 @@ HANDLER (login)
     {
 	/* do this before setting the user level so this user is not
 	   notified twice */
-	notify_mods ("%s set %s's user level to %s (%d)", Server_Name,
+	notify_mods (LEVELLOG_MODE, "%s set %s's user level to %s (%d)", Server_Name,
 		     user->nick, Levels[db->level], db->level);
 	user->level = db->level;
 	if (ISUSER (con))

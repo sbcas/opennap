@@ -117,7 +117,6 @@ struct _user
 
     unsigned short port;	/* data port client is listening on */
     unsigned short conport;	/* remote port for connection to server */
-
     time_t connected;		/* time at which the user connected */
     HASH *files;		/* db entries for this user's shared files */
     LIST *channels;		/* channels of which this user is a member */
@@ -152,6 +151,21 @@ typedef struct
 }
 AUTH;
 
+/* this struct contains options on a per user basis.  They are not included
+   in the USER struct since they only apply to local connections */
+typedef struct
+{
+    /* bitmask of which server messages a user wishes to receive */
+    unsigned int usermode;
+    /* hotlist for user.  this is the list of users they wish to be
+       notified about when they log in or out.  note that this is just
+       a pointer to the _single_ global entry stored in the Hotlist
+       hash table.  the actual HOTLIST* pointer should only be freed
+       when hotlist->numusers is zero.  */
+    LIST *hotlist;
+}
+USEROPT;
+
 struct _connection
 {
 #ifdef DEBUG
@@ -170,22 +184,18 @@ struct _connection
 
     union
     {
-#define uopt opt
-	/* hotlist for user.  this is the list of users they wish to be
-	   notified about when they log in or out.  note that this is just
-	   a pointer to the _single_ global entry stored in the Hotlist
-	   hash table.  the actual HOTLIST* pointer should only be freed
-	   when hotlist->numusers is zero.  */
-	LIST *hotlist;
+#define uopt opt.useropt
+	USEROPT *useropt;
 	/* parameters for server->server connection */
 #define sopt opt.server
 	SERVER *server;
+	/* this field is used for the authentication phase of server links */
 	AUTH *auth;
     }
     opt;
 
     unsigned int connecting:1;
-    unsigned int incomplete:1;
+    unsigned int incomplete:1;	/* unused */
     unsigned int destroy:1;	/* connection should be destoyed in
 				   handle_connection().  because h_c() caches
 				   a copy of the CONNECTION pointer, we can't
@@ -492,6 +502,8 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_REGISTER_USER	10200
 #define MSG_CLIENT_CHANNEL_LEVEL	10201	/* set min channel user level */
 #define MSG_CLIENT_KICK_USER		10202
+#define MSG_CLIENT_USER_MODE		10203	/* set a user mode */
+#define MSG_SERVER_USER_MODE		10203
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
 
 /* offsets into the row returned for library searches */
@@ -566,7 +578,7 @@ char *next_arg_noskip (char **);
 time_t next_timer (void);
 void nosuchuser (CONNECTION *, char *);
 void nosuchchannel (CONNECTION*);
-void notify_mods (const char *, ...);
+void notify_mods (unsigned int, const char *, ...);
 void part_channel (CHANNEL *, USER *);
 void pass_message (CONNECTION *, char *, size_t);
 void pass_message_args (CONNECTION * con, unsigned int msgtype,
@@ -687,6 +699,7 @@ HANDLER (user_sharing);
 HANDLER (user_speed);
 HANDLER (wallop);
 HANDLER (whois);
+HANDLER (user_mode);
 
 #define CHECK_USER_CLASS(f) if (con->class != CLASS_USER) { log ("%s(): not USER class", f); return; }
 #define CHECK_SERVER_CLASS(f) if(con->class != CLASS_SERVER) { log ("%s(): not SERVER class", f); return; }
@@ -758,5 +771,18 @@ extern char *optarg;
 extern int optind;
 
 #endif /* !WIN32 */
+
+#define ERROR_MODE	0x0001
+#define BANLOG_MODE	0x0002
+#define CHANGELOG_MODE	0x0004
+#define CHANNELLOG_MODE	0x0008
+#define KILLLOG_MODE	0x0010
+#define LEVELLOG_MODE	0x0020
+#define SERVERLOG_MODE	0x0040
+#define MUZZLELOG_MODE	0x0080
+#define PORTLOG_MODE	0x0100
+
+#define LOGALL_MODE (ERROR_MODE|BANLOG_MODE|CHANGELOG_MODE|CHANNELLOG_MODE|\
+	KILLLOG_MODE|LEVELLOG_MODE|SERVERLOG_MODE|MUZZLELOG_MODE|PORTLOG_MODE)
 
 #endif /* opennap_h */

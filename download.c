@@ -233,7 +233,7 @@ HANDLER (data_port_error)
     pass_message_args (con, tag, ":%s %s", sender->nick, user->nick);
 
     notify_mods
-	("Notification from %s: %s (%s) - configured data port %d is unreachable.",
+	(PORTLOG_MODE, "Notification from %s: %s (%s) - configured data port %d is unreachable.",
 	 sender->nick, user->nick, my_ntoa (user->host), user->port);
 
     /* if local, notify the target of the error */

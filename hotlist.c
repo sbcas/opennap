@@ -69,7 +69,7 @@ HANDLER (add_hotlist)
 	return;
     }
     list->data = hotlist;
-    con->uopt.hotlist = list_append (con->uopt.hotlist, list);
+    con->uopt->hotlist = list_append (con->uopt->hotlist, list);
 
     /* ack the user who requested this */
     /* this seems unnecessary, but its what the official server does... */
@@ -104,7 +104,7 @@ HANDLER (remove_hotlist)
     }
     ASSERT (validate_hotlist (hotlist));
     /* remove the hotlist entry from the user's personal list */
-    con->uopt.hotlist = list_delete (con->uopt.hotlist, hotlist);
+    con->uopt->hotlist = list_delete (con->uopt->hotlist, hotlist);
     /* remove the user from the global hotlist */
     hotlist->users = list_delete (hotlist->users, con);
     /* if there are no more waiting users, destroy the global hotlist entry */

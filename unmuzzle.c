@@ -44,7 +44,7 @@ HANDLER (unmuzzle)
     pass_message_args (con, MSG_CLIENT_UNMUZZLE, ":%s %s",
 		       sender->nick, user->nick);
 
-    notify_mods ("%s unmuzzled %s.", sender->nick, user->nick);
+    notify_mods (MUZZLELOG_MODE, "%s unmuzzled %s.", sender->nick, user->nick);
 
     /* notify the user they have been unmuzzled */
     if (user->local)

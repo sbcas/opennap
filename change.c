@@ -155,8 +155,8 @@ HANDLER (alter_port)
     if (user->port != p)
     {
 	/* only log when the port value is actually changed, not resets */
-	notify_mods ("%s changed %s's data port to %d: %s", sender->nick,
-		     user->nick, p, NONULL (pkt));
+	notify_mods (CHANGELOG_MODE, "%s changed %s's data port to %d: %s", 
+		sender->nick, user->nick, p, NONULL (pkt));
 	user->port = p;
     }
 
@@ -223,8 +223,8 @@ HANDLER (alter_pass)
     }
     pass_message_args (con, tag, ":%s %s %s \"%s\"", sender->nick, db->nick,
 		       db->password, av[2]);
-    notify_mods ("%s changed %s's password: %s", sender->nick, db->nick,
-		 av[2]);
+    notify_mods (CHANGELOG_MODE, "%s changed %s's password: %s", 
+	    	sender->nick, db->nick, av[2]);
 }
 
 /* 625 [ :<sender> ] <nick> <speed>
@@ -274,8 +274,8 @@ HANDLER (alter_speed)
     ASSERT (validate_user (user));
     pass_message_args (con, tag, ":%s %s %d", sender->nick, user->nick,
 		       speed);
-    notify_mods ("%s changed %s's speed to %d.", sender->nick, user->nick,
-		 speed);
+    notify_mods (CHANGELOG_MODE, "%s changed %s's speed to %d.", 
+    		sender->nick, user->nick, speed);
 }
 
 /* 611 [ :<sender> ] <user> [ <reason> ]
@@ -321,8 +321,8 @@ HANDLER (nuke)
     }
     pass_message_args (con, tag, ":%s %s %s", sender->nick, db->nick,
 		       NONULL(pkt));
-    notify_mods ("%s nuked %s's account: %s", sender->nick, db->nick,
-		 NONULL (pkt));
+    notify_mods (CHANGELOG_MODE, "%s nuked %s's account: %s", 
+    		sender->nick, db->nick, NONULL (pkt));
     hash_remove(User_Db, db->nick);
 }
 
@@ -367,6 +367,7 @@ HANDLER (unnuke)
     }
     db->nuked = 0;
     pass_message_args (con, tag, ":%s %s", sender->nick, pkt);
-    notify_mods ("%s restored %s's account", sender->nick, pkt);
+    notify_mods (CHANGELOG_MODE, "%s restored %s's account", 
+    		sender->nick, pkt);
 }
 #endif

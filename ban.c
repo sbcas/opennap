@@ -97,7 +97,7 @@ HANDLER (ban)
 	    break;
 	list->data = b;
 	Bans = list_append (Bans, list);
-	notify_mods ("%s banned %s: %s", sender->nick, ban, NONULL (pkt));
+	notify_mods (BANLOG_MODE, "%s banned %s: %s", sender->nick, ban, NONULL (pkt));
 	return;
     }
     while (1);
@@ -136,7 +136,7 @@ HANDLER (unban)
 	    tmpList = *list;
 	    *list = (*list)->next;
 	    FREE (tmpList);
-	    notify_mods ("%s removed ban on %s", user->nick, b->target);
+	    notify_mods (BANLOG_MODE, "%s removed ban on %s", user->nick, b->target);
 	    pass_message_args (con, tag, ":%s %s", user->nick, b->target);
 	    free_ban (b);
 	    break;
@@ -214,10 +214,10 @@ check_ban (CONNECTION * con, const char *target, ban_t type)
 		      NONULL (ban->reason));
 	    if (type == BAN_IP)
 		notify_mods
-		    ("Connection attempt from banned hosts %s (%s): %s",
+		    (BANLOG_MODE, "Connection attempt from banned hosts %s (%s): %s",
 		     target, ban->target, NONULL (ban->reason));
 	    else
-		notify_mods ("Connection from banned user %s (%s): %s",
+		notify_mods (BANLOG_MODE, "Connection from banned user %s (%s): %s",
 			     target, my_ntoa (con->ip), NONULL (ban->reason));
 	    if (con->class == CLASS_UNKNOWN)
 		con->destroy = 1;

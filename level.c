@@ -100,7 +100,7 @@ HANDLER (level)
     pass_message_args (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s",
 		       sender, user->nick, Levels[level]);
 
-    notify_mods ("%s set %s's user level to %s (%d).", sender, user->nick,
+    notify_mods (LEVELLOG_MODE, "%s set %s's user level to %s (%d).", sender, user->nick,
 		 Levels[level], level);
 
     /* we set this after the notify_mods so that the user being changed

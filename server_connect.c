@@ -168,7 +168,7 @@ HANDLER (server_connect)
 			   user->nick, fields[0], fields[1], fields[2]);
     }
 
-    notify_mods ("%s requested server link from %s to %s:%s",
+    notify_mods (SERVERLOG_MODE, "%s requested server link from %s to %s:%s",
 		 user->nick, argc == 3 ? fields[2] : Server_Name, fields[0],
 		 fields[1]);
 }
@@ -211,7 +211,7 @@ HANDLER (server_disconnect)
 
     pass_message_args (con, MSG_CLIENT_DISCONNECT, ":%s %s %s",
 		       user->nick, host, NONULL (pkt));
-    notify_mods ("%s disconnected server %s: %s", user->nick, host,
+    notify_mods (SERVERLOG_MODE, "%s disconnected server %s: %s", user->nick, host,
 		 NONULL (pkt));
 }
 
@@ -239,7 +239,7 @@ HANDLER (kill_server)
 
     pass_message_args (con, MSG_CLIENT_KILL_SERVER, ":%s %s %s",
 		       user->nick, server, NONULL (pkt));
-    notify_mods ("%s killed server %s: %s", user->nick, server, NONULL (pkt));
+    notify_mods (SERVERLOG_MODE, "%s killed server %s: %s", user->nick, server, NONULL (pkt));
 
     if (!strcasecmp (server, Server_Name))
     {
@@ -306,7 +306,7 @@ HANDLER (server_error)
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("server_error");
-    notify_mods ("server %s sent error message: %s", con->host, pkt);
+    notify_mods (ERROR_MODE, "server %s sent error message: %s", con->host, pkt);
 }
 
 static void

@@ -52,7 +52,7 @@ remove_connection (CONNECTION * con)
 	hash_remove (Users, con->user->nick);
 
 	/* if this user had hotlist entries, remove them from the lists */
-	for (u = con->uopt.hotlist; u; u = u->next)
+	for (u = con->uopt->hotlist; u; u = u->next)
 	{
 	    hotlist = u->data;
 	    ASSERT (validate_hotlist (hotlist));
@@ -61,9 +61,10 @@ remove_connection (CONNECTION * con)
 		hash_remove (Hotlist, hotlist->nick);
 	}
 
-	list_free (con->uopt.hotlist, 0);
-	con->uopt.hotlist = 0;	/* need to set this to avoid asserting in
+	list_free (con->uopt->hotlist, 0);
+	con->uopt->hotlist = 0;	/* need to set this to avoid asserting in
 				   cancel_search() */
+	FREE (con->uopt);
 
     }
     else if (ISSERVER (con))
@@ -80,7 +81,7 @@ remove_connection (CONNECTION * con)
 	   would avoid sending it) */
 
 	log ("remove_connection(): server split detected (%s)", con->host);
-	notify_mods ("Server %s has quit.", con->host);
+	notify_mods (SERVERLOG_MODE, "Server %s has quit.", con->host);
 	/* notify our peers this server has quit */
 	pass_message_args (con, MSG_SERVER_QUIT, ":%s %s", Server_Name,
 		con->host);

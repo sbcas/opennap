@@ -86,8 +86,8 @@ HANDLER (kick)
 
     part_channel (chan, user);
 
-    notify_mods ("%s kicked %s out of channel %s: %s", sender->nick,
-		 user->nick, chan->name, ac == 3 ? av[2] : "");
+    notify_mods (CHANNELLOG_MODE, "%s kicked %s out of channel %s: %s",
+	    sender->nick, user->nick, chan->name, ac == 3 ? av[2] : "");
 }
 
 /* 820 [ :<sender> ] <channel> [ "<reason>" ] */
@@ -142,6 +142,6 @@ HANDLER (clear_channel)
 	    part_channel (chan, user);
 	}
     }
-    notify_mods ("%s cleared channel %s: %s", sender->nick, chan->name,
-		 ac > 1 ? av[1] : "");
+    notify_mods (CHANNELLOG_MODE, "%s cleared channel %s: %s", sender->nick,
+	    chan->name, ac > 1 ? av[1] : "");
 }

@@ -69,6 +69,6 @@ HANDLER (muzzle)
 		  ac==2?av[1]:"");
 
     /* notify mods+ of this action */
-    notify_mods ("%s has muzzled %s: %s", sender->nick, user->nick,
+    notify_mods (MUZZLELOG_MODE, "%s has muzzled %s: %s", sender->nick, user->nick,
 		 ac==2?av[1]:"");
 }

@@ -182,7 +182,13 @@ validate_connection (CONNECTION * con)
     if (con->recvbuf)
 	ASSERT_RETURN_IF_FAIL (buffer_validate (con->recvbuf), 0);
     if (ISUSER (con))
-	ASSERT_RETURN_IF_FAIL (list_validate (con->uopt.hotlist), 0);
+    {
+	if (con->uopt)
+	{
+	    ASSERT_RETURN_IF_FAIL (VALID_LEN (con->uopt, sizeof (USEROPT)), 0);
+	    ASSERT_RETURN_IF_FAIL (list_validate (con->uopt->hotlist), 0);
+	}
+    }
     return 1;
 }
 

@@ -12,7 +12,7 @@
 
 /* send a message to all local mods */
 void
-notify_mods (const char *fmt, ...)
+notify_mods (unsigned int level, const char *fmt, ...)
 {
     int i, len;
     va_list ap;
@@ -26,7 +26,8 @@ notify_mods (const char *fmt, ...)
     for (i = 0; i < Max_Clients; i++)
     {
 	if (Clients[i] && ISUSER (Clients[i]) &&
-	    Clients[i]->user->level >= LEVEL_MODERATOR)
+	    Clients[i]->user->level >= LEVEL_MODERATOR &&
+	    (Clients[i]->uopt->usermode & level))
 	    queue_data (Clients[i], Buf, len + 4);
     }
 }
@@ -112,7 +113,7 @@ HANDLER (kill_user)
     log ("kill_user(): %s killed %s: %s", killernick, user->nick, REASON);
 
     /* notify mods+ that this user was killed */
-    notify_mods ("%s killed %s: %s", killernick, user->nick, REASON);
+    notify_mods (KILLLOG_MODE, "%s killed %s: %s", killernick, user->nick, REASON);
 
     /* forcefully close the client connection if local, otherwise remove
        from global user list */
