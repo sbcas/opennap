@@ -1,6 +1,6 @@
 Frequently Asked Questions (FAQ) about opennap
 ==============================================
-Last updated on April 26, 2000.
+Last updated on May 30, 2000.
 
 Q:  What is opennap?
 A:  opennap is an open source server which speaks the napster protocol
@@ -52,3 +52,6 @@ A:  If you have memory to spare, you can increase the value of
     client_queue_length, or alternatively decrease the number of files
     returned by a browse command (max_browse_result) so that it does not cross
     the 100kbytes default limit.
+
+Q:  How do I get my server listed on napigator.com?
+A:  Go to www.napigator.com and look for the section on adding servers.

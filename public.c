@@ -12,6 +12,11 @@
 #include "opennap.h"
 #include "debug.h"
 
+/* static buffer for use by public/emote.  these get called a lot so speed
+   things up by keeping it around.  there is no chance of either of these
+   being called from eachother or used elsewhere so this is safe */
+static char PublicBuf[2048];
+
 /* [ :<sender> ] <channel> <text> */
 /*  public message to a channel */
 HANDLER (public)
@@ -23,7 +28,6 @@ HANDLER (public)
     CHANUSER *chanUser;
 
     (void) tag;
-    (void) len;
     ASSERT (validate_connection (con));
     /* save the starting position of the pkt */
     ptr = pkt;
@@ -54,11 +58,6 @@ HANDLER (public)
 	unparsable (con);
 	return;
     }
-    if (invalid_channel (pkt))
-    {
-	invalid_channel_msg (con);
-	return;
-    }
 
     /* find the channel this message is going to. look the user's joined
        channels since this should be faster than lookup in the hash table */
@@ -73,6 +72,13 @@ HANDLER (public)
     /* relay this message to peer servers */
     pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name, pkt);
 
+    /* the majority of the users in the channel will see this message, so
+       form it one time */
+    len = form_message (PublicBuf, sizeof(PublicBuf), MSG_SERVER_PUBLIC,
+			"%s %s %s", chan->name,
+			sender->cloaked ? "Operator" : sender->nick,
+			pkt);
+
     /* send this message to everyone in the channel */
     for (list = chan->users; list; list = list->next)
     {
@@ -80,11 +86,11 @@ HANDLER (public)
 	ASSERT (chanUser->magic == MAGIC_CHANUSER);
 	if (ISUSER (chanUser->user->con))
 	{
-	    send_cmd (chanUser->user->con, MSG_SERVER_PUBLIC, "%s %s %s",
-		      chan->name, (!sender->cloaked
-				   || chanUser->user->level >
-				   LEVEL_USER) ? sender->nick : "Operator",
-		      pkt);
+	    if(sender->cloaked && chanUser->user->level > LEVEL_USER)
+		send_cmd(chanUser->user->con,MSG_SERVER_PUBLIC,"%s %s %s",
+			 chan->name, sender->nick, pkt);
+	    else
+		queue_data(chanUser->user->con,PublicBuf,len);
 	}
     }
 }
@@ -99,7 +105,6 @@ HANDLER (emote)
     LIST *list;
 
     (void) tag;
-    (void) len;
     ASSERT (validate_connection (con));
     ptr = pkt;			/* save initial location */
     if (pop_user (con, &pkt, &user) != 0)
@@ -126,11 +131,6 @@ HANDLER (emote)
 	unparsable (con);
 	return;
     }
-    if (invalid_channel (av[0]))
-    {
-	invalid_channel_msg (con);
-	return;
-    }
 
     /* find the channel this message is going to. look the user's joined
        channels since this should be faster than lookup in the hash table */
@@ -146,6 +146,12 @@ HANDLER (emote)
     pass_message_args (con, tag, ":%s %s \"%s\"", user->nick, chan->name,
 		       av[1]);
 
+    /* majority of the users see the same message, so form it once */
+    len=form_message(PublicBuf,sizeof(PublicBuf),tag,"%s %s \"%s\"",
+		     chan->name,
+		     user->cloaked ? "Operator" : user->nick,
+		     av[1]);
+
     /* send this message to all channel members */
     for (list = chan->users; list; list = list->next)
     {
@@ -153,10 +159,11 @@ HANDLER (emote)
 	ASSERT (chanUser->magic == MAGIC_CHANUSER);
 	if (ISUSER (chanUser->user->con))
 	{
-	    send_cmd (chanUser->user->con, tag, "%s %s \"%s\"", chan->name,
-		      (!user->cloaked
-		       || chanUser->user->level >
-		       LEVEL_MODERATOR) ? user->nick : "Operator", av[1]);
+	    if(user->cloaked && chanUser->user->level > LEVEL_USER)
+		send_cmd (chanUser->user->con, tag, "%s %s \"%s\"",
+			  chan->name, user->nick, av[1]);
+	    else
+		queue_data(chanUser->user->con,PublicBuf,len);
 	}
     }
 }
