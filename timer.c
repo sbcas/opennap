@@ -7,6 +7,7 @@
    $Id$ */
 
 #include <time.h>
+#include <stdlib.h>
 #include "opennap.h"
 #include "debug.h"
 
