@@ -115,6 +115,7 @@ update_stats (void)
     log ("update_stats(): current time is %s", Buf);
     log ("update_stats(): library is %d KB (%d GB), %d files, %d users",
 	 Num_Gigs, Num_Gigs / (1024 * 1024), Num_Files, Users->dbsize);
+    log ("update_stats(): File_Table contains %d entries", File_Table->dbsize);
     log ("update_stats(): %d local clients, %d linked servers",
 	 Num_Clients - numServers, numServers);
     delta = Current_Time - Last_Click;
