@@ -457,21 +457,40 @@ free_dsearch (DSEARCH * d)
     }
 }
 
+static int
+set_compare(CONNECTION *con, const char *op, int val, int *min, int *max)
+{
+    ASSERT(validate_connection(con));
+    ASSERT(min!=NULL);
+    ASSERT(max!=NULL);
+    if(!strcasecmp(op,"equals"))
+	*min = *max = val;
+    else if(!strcasecmp(op,"at least"))
+	*min = val;
+    else if(!strcasecmp(op,"at best"))
+	*max = val;
+    else if (ISUSER(con))
+    {
+	send_cmd(con,MSG_SERVER_NOSUCH,"%s: invalid comparison for search",
+		op);
+	return 1;
+    }
+    return 0;
+}
+
 /* common code for local and remote searching */
 static void
 search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 {
-    char *av[32];
-    int ac, i, n, max_results = Max_Search_Results, done = 1, local = 0;
+    int i, n, max_results = Max_Search_Results, done = 1, local = 0;
+    int invalid = 0;
     LIST *tokens = 0;
     SEARCH parms;
+    char *arg, *arg1, *ptr;
 
     ASSERT (validate_connection (con));
 
-    ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
-
-    ASSERT (ac != 32);		/* check to see if we had more av */
-
+    /* set defaults */
     memset (&parms, 0, sizeof (parms));
     parms.con = con;
     parms.user = user;
@@ -481,44 +500,59 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
     parms.type = CT_MP3;	/* search for audio/mp3 by default */
     parms.id = id;
 
-    /* parse the request */
-    for (i = 0; i < ac; i++)
+    /* prime the first argument */
+    arg=next_arg(&pkt);
+    while (arg)
     {
-	if (!strcasecmp ("filename", av[i]))
+	if (!strcasecmp ("filename", arg))
 	{
-	    i++;
-	    /* next word should be "contains" */
-	    if (strcasecmp ("contains", av[i]) != 0)
+	    arg=next_arg(&pkt);
+	    arg1=next_arg(&pkt);
+	    if(!arg || !arg1)
 	    {
-		if (ISUSER (con))
-		    send_cmd (con, MSG_SERVER_NOSUCH,
-			      "invalid search request");
-		log
-		    ("search(): error in search string, expected '%s CONTAINS'",
-		     av[i - 1]);
+		invalid=1;
 		goto done;
 	    }
-	    i++;
+	    /* word should be "contains" */
+	    if (strcasecmp ("contains", arg))
+	    {
+		invalid=1;
+		goto done;
+	    }
 	    /* do an implicit AND operation if multiple FILENAME CONTAINS
 	       clauses are specified */
-	    tokens = list_append (tokens, tokenize (av[i]));
+	    tokens = list_append (tokens, tokenize (arg1));
 	}
-	else if (strcasecmp ("max_results", av[i]) == 0)
+	else if (!strcasecmp ("max_results", arg))
 	{
-	    /* the LIMIT clause goes last, so we save it for later
-	       processing */
-	    i++;
-	    max_results = atoi (av[i]);
-	    if (Max_Search_Results && max_results > Max_Search_Results)
+	    arg=next_arg(&pkt);
+	    if(!arg)
+	    {
+		invalid=1;
+		goto done;
+	    }
+	    max_results = strtol (arg, &ptr, 10);
+	    if(*ptr)
+	    {
+		/* not a number */
+		invalid=1;
+		goto done;
+	    }
+	    if (Max_Search_Results > 0 && max_results > Max_Search_Results)
 		max_results = Max_Search_Results;
 	}
-	else if (!strcasecmp ("type", av[i]))
+	else if (!strcasecmp ("type", arg))
 	{
-	    i++;
+	    arg=next_arg(&pkt);
+	    if(!arg)
+	    {
+		invalid=1;
+		goto done;
+	    }
 	    parms.type = -1;
 	    for (n = CT_MP3; n < CT_UNKNOWN; n++)
 	    {
-		if (!strcasecmp (av[i], Content_Types[n]))
+		if (!strcasecmp (arg, Content_Types[n]))
 		{
 		    parms.type = n;
 		    break;
@@ -527,101 +561,60 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    if (parms.type == -1)
 	    {
 		if (ISUSER (con))
-		    send_cmd (con, MSG_SERVER_NOSUCH, "%s is an invalid type",
-			      av[i]);
+		    send_cmd (con, MSG_SERVER_NOSUCH,
+			    "%s: invalid type for search", arg);
 		goto done;
 	    }
 	}
-	else if (!strcasecmp ("linespeed", av[i]))
+	else if ((!strcasecmp ("linespeed", arg) && (i=1)) ||
+		(!strcasecmp("bitrate",arg) && (i=2)) ||
+		(!strcasecmp("freq",arg) && (i=3)))
 	{
-	    i++;
-	    if (i == ac - 1)
+	    int *min, *max;
+
+	    arg=next_arg(&pkt);	/* comparison operation */
+	    arg1=next_arg(&pkt);	/* value */
+	    if(!arg || !arg1)
 	    {
-		if (ISUSER (con))
-		    send_cmd (con, MSG_SERVER_NOSUCH,
-			      "not enough parameters");
+		invalid=1;
 		goto done;
 	    }
-	    n = atoi (av[i + 1]);
-	    if (!strcasecmp ("at least", av[i]))
-		parms.minspeed = n;
-	    else if (!strcasecmp ("at best", av[i]))
-		parms.maxspeed = n;
-	    else if (!strcasecmp ("equal to", av[i]))
-		parms.minspeed = parms.maxspeed = n;
+	    n = strtol (arg1,&ptr,10);
+	    if(*ptr)
+	    {
+		/* not a number */
+		invalid=1;
+		goto done;
+	    }
+	    if(i==1)
+	    {
+		min=&parms.minspeed;
+		max=&parms.maxspeed;
+	    }
+	    else if(i==2)
+	    {
+		min=&parms.minbitrate;
+		max=&parms.maxbitrate;
+	    }
 	    else
 	    {
-		if (ISUSER (con))
-		    send_cmd (con, MSG_SERVER_NOSUCH,
-			      "\"%s\" is an unknown comparison", av[i]);
-		goto done;
+		min=&parms.minfreq;
+		max=&parms.maxfreq;
 	    }
-	    i++;
+	    if(set_compare(con,arg,n,min,max))
+		goto done;
 	}
-	else if (!strcasecmp ("bitrate", av[i]))
+	else if (!strcasecmp("local",arg))
 	{
-	    i++;
-	    if (i == ac - 1)
-	    {
-		if (ISUSER (con))
-		    send_cmd (con, MSG_SERVER_NOSUCH,
-			      "not enough parameters");
-		goto done;
-	    }
-	    n = atoi (av[i + 1]);
-	    if (!strcasecmp ("at least", av[i]))
-		parms.minbitrate = n;
-	    else if (!strcasecmp ("at best", av[i]))
-		parms.maxbitrate = n;
-	    else if (!strcasecmp ("equal to", av[i]))
-		parms.minbitrate = parms.maxbitrate = n;
-	    else
-	    {
-		if (ISUSER (con))
-		    send_cmd (con, MSG_SERVER_NOSUCH,
-			      "\"%s\" is an unknown comparison", av[i]);
-		goto done;
-	    }
-	    i++;
-	}
-	else if (!strcasecmp ("freq", av[i]))
-	{
-	    i++;
-	    if (i == ac - 1)
-	    {
-		if (ISUSER (con))
-		    send_cmd (con, MSG_SERVER_NOSUCH,
-			      "not enough parameters");
-		goto done;
-	    }
-	    n = atoi (av[i + 1]);
-	    if (!strcasecmp ("at least", av[i]))
-		parms.minfreq = n;
-	    else if (!strcasecmp ("at best", av[i]))
-		parms.maxfreq = n;
-	    else if (!strcasecmp ("equal to", av[i]))
-		parms.minfreq = parms.maxfreq = n;
-	    else
-	    {
-		if (ISUSER (con))
-		    send_cmd (con, MSG_SERVER_NOSUCH,
-			      "\"%s\" is an unknown comparison", av[i]);
-		goto done;
-	    }
-	    i++;
-	}
-	else if (!strcasecmp("local",av[i]))
-	{
-	    i++;
 	    local=1;/* only search for files from users on the same server */
 	}
 	else
 	{
-	    log ("search(): unknown search field: %s", av[i]);
-	    if (ISUSER (con))
-		send_cmd (con, MSG_SERVER_NOSUCH, "invalid search request");
+	    log ("search(): %s: unknown search argument", arg);
+	    invalid=1;
 	    goto done;
 	}
+	arg=next_arg(&pkt);	/* skip to next token */
     }
 
     n = fdb_search (File_Table, tokens, max_results, search_callback, &parms);
@@ -690,7 +683,13 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	done = 0;		/* delay sending the end-of-search message */
     }
 
-  done:
+done:
+
+    if(invalid)
+    {
+	if(ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"invalid search request");
+    }
 
     list_free (tokens, 0);
 
