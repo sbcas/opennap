@@ -14,7 +14,6 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/time.h>
-#include "global.h"
 #include "md5.h"
 #include "opennap.h"
 #include "debug.h"
@@ -224,19 +223,19 @@ expand_hex (char *v, int vsize)
 
 #ifndef HAVE_DEV_RANDOM
 static int Stale_Random = 1;
-static MD5_CTX Random_Context;
+static struct md5_ctx Random_Context;
 
 void
 init_random (void)
 {
-    MD5Init (&Random_Context);
+    md5_init_ctx (&Random_Context);
     Stale_Random = 1;
 }
 
 void
 add_random_bytes (char *s, int ssize)
 {
-    MD5Update (&Random_Context, (unsigned char *) s, (unsigned int) ssize);
+    md5_process_bytes (s, ssize, &Random_Context);
     Stale_Random = 0;
 }
 
@@ -247,11 +246,11 @@ get_random_bytes (char *d, int dsize)
 
     ASSERT (Stale_Random == 0);
     ASSERT (dsize <= 16);
-    MD5Final ((unsigned char *) buf, &Random_Context);
+    md5_finish_ctx (&Random_Context, buf);
     memcpy (d, buf, dsize);
     Stale_Random = 1;
-    MD5Init (&Random_Context);
-    MD5Update (&Random_Context, (unsigned char *) buf, 16);
+    md5_init_ctx (&Random_Context);
+    md5_process_bytes (buf, 16, &Random_Context);
 }
 #endif /* ! HAVE_DEV_RANDOM */
 

@@ -2,6 +2,7 @@ dnl $Id$
 AC_INIT(opennap.h)
 AM_INIT_AUTOMAKE(opennap,0.11)
 AM_PROG_CC_STDC
+AC_HEADER_STDC
 AC_C_BIGENDIAN
 
 if test -d /usr/local/lib/mysql; then

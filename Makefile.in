@@ -1,4 +1,4 @@
-# Makefile.in generated automatically by automake 1.4a from Makefile.am
+# Makefile.in generated automatically by automake 1.4 from Makefile.am
 
 # Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
@@ -48,10 +48,9 @@ AUTOMAKE = @AUTOMAKE@
 AUTOHEADER = @AUTOHEADER@
 
 INSTALL = @INSTALL@
-INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@ $(AM_INSTALL_PROGRAM_FLAGS)
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
-INSTALL_STRIP_FLAG =
 transform = @program_transform_name@
 
 NORMAL_INSTALL = :
@@ -68,7 +67,7 @@ PACKAGE = @PACKAGE@
 VERSION = @VERSION@
 
 bin_PROGRAMS = opennap metaserver #spynap
-opennap_SOURCES = opennap.h main.c add_file.c db.c search.c 	motd.c hash.h hash.c privmsg.c browse.c 	debug.c debug.h login.c whois.c free_user.c 	join.c part.c public.c part_channel.c 	announce.c kill_user.c remove_connection.c config.c download.c 	upload_complete.c topic.c muzzle.c unmuzzle.c 	level.c client_quit.c server_login.c server_connect.c synch.c util.c 	md5c.c md5.h global.h hotlist.c remove_file.c list_channels.c 	list_users.c ping.c resume.c change.c ban.c network.c buffer.c
+opennap_SOURCES = opennap.h main.c add_file.c db.c search.c 	motd.c hash.h hash.c privmsg.c browse.c 	debug.c debug.h login.c whois.c free_user.c 	join.c part.c public.c part_channel.c 	announce.c kill_user.c remove_connection.c config.c download.c 	upload_complete.c topic.c muzzle.c unmuzzle.c 	level.c client_quit.c server_login.c server_connect.c synch.c util.c 	md5.c md5.h hotlist.c remove_file.c list_channels.c 	list_users.c ping.c resume.c change.c ban.c network.c buffer.c
 
 #EXTRA_opennap_SOURCES=compress.c	
 #opennap_LDADD=@COMPRESSDOTO@ -L@MYSQLLIBDIR@ -lmysqlclient
@@ -95,7 +94,7 @@ privmsg.o browse.o debug.o login.o whois.o free_user.o join.o part.o \
 public.o part_channel.o announce.o kill_user.o remove_connection.o \
 config.o download.o upload_complete.o topic.o muzzle.o unmuzzle.o \
 level.o client_quit.o server_login.o server_connect.o synch.o util.o \
-md5c.o hotlist.o remove_file.o list_channels.o list_users.o ping.o \
+md5.o hotlist.o remove_file.o list_channels.o list_users.o ping.o \
 resume.o change.o ban.o network.o buffer.o
 opennap_DEPENDENCIES = 
 opennap_LDFLAGS = 
@@ -121,7 +120,7 @@ DEP_FILES =  .deps/add_file.P .deps/announce.P .deps/ban.P \
 .deps/config.P .deps/db.P .deps/debug.P .deps/download.P \
 .deps/free_user.P .deps/hash.P .deps/hotlist.P .deps/join.P \
 .deps/kill_user.P .deps/level.P .deps/list_channels.P \
-.deps/list_users.P .deps/login.P .deps/main.P .deps/md5c.P \
+.deps/list_users.P .deps/login.P .deps/main.P .deps/md5.P \
 .deps/metaserver.P .deps/motd.P .deps/muzzle.P .deps/network.P \
 .deps/part.P .deps/part_channel.P .deps/ping.P .deps/privmsg.P \
 .deps/public.P .deps/remove_connection.P .deps/remove_file.P \
@@ -163,8 +162,8 @@ install-binPROGRAMS: $(bin_PROGRAMS)
 	$(mkinstalldirs) $(DESTDIR)$(bindir)
 	@list='$(bin_PROGRAMS)'; for p in $$list; do \
 	  if test -f $$p; then \
-	    echo "  $(INSTALL_PROGRAM) $(INSTALL_STRIP_FLAG) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`"; \
-	     $(INSTALL_PROGRAM) $(INSTALL_STRIP_FLAG) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+	    echo "  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`"; \
+	     $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
 	  else :; fi; \
 	done
 
@@ -273,7 +272,7 @@ distdir: $(DISTFILES)
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
-	    cp -pr $$d/$$file $(distdir)/$$file; \
+	    cp -pr $$/$$file $(distdir)/$$file; \
 	  else \
 	    test -f $(distdir)/$$file \
 	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
@@ -334,7 +333,7 @@ uninstall: uninstall-am
 all-am: Makefile $(PROGRAMS)
 all-redirect: all-am
 install-strip:
-	$(MAKE) $(AM_MAKEFLAGS) INSTALL_STRIP_FLAG=-s install
+	$(MAKE) $(AM_MAKEFLAGS) AM_INSTALL_PROGRAM_FLAGS=-s install
 installdirs:
 	$(mkinstalldirs)  $(DESTDIR)$(bindir)
 

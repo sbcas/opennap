@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include "opennap.h"
 #include "debug.h"
-#include "global.h"
 #include "md5.h"
 
 extern MYSQL *Db;
@@ -23,7 +22,7 @@ HANDLER (server_login)
 {
     char *fields[3];
     unsigned int ip;
-    MD5_CTX md5;
+    struct md5_ctx md;
     char hash[33];
 
     (void) tag;
@@ -96,11 +95,11 @@ HANDLER (server_login)
 
     /* send our challenge response */
     /* hash the peers nonce, our nonce and then our password */
-    MD5Init (&md5);
-    MD5Update (&md5, (uchar*)con->sendernonce, (uint)strlen (con->sendernonce));
-    MD5Update (&md5, (uchar*)con->nonce, (uint)strlen (con->nonce));
-    MD5Update (&md5, (uchar*)Server_Pass, (uint)strlen (Server_Pass));
-    MD5Final ((uchar*)hash, &md5);
+    md5_init_ctx (&md);
+    md5_process_bytes (con->sendernonce, strlen (con->sendernonce), &md);
+    md5_process_bytes (con->nonce, strlen (con->nonce), &md);
+    md5_process_bytes (Server_Pass, strlen (Server_Pass), &md);
+    md5_finish_ctx (&md, hash);
     expand_hex (hash, 16);
     hash[32] = 0;
 
@@ -115,7 +114,7 @@ HANDLER (server_login_ack)
 {
     MYSQL_RES *result;
     MYSQL_ROW row;
-    MD5_CTX md5;
+    struct md5_ctx md5;
     char hash[33];
 
     (void) tag;
@@ -161,11 +160,11 @@ HANDLER (server_login_ack)
     row = mysql_fetch_row (result);
 
     /* check the peers challenge response */
-    MD5Init (&md5);
-    MD5Update (&md5, (uchar *) con->nonce, (uint) strlen (con->nonce));
-    MD5Update (&md5, (uchar *) con->sendernonce, (uint) strlen (con->sendernonce));
-    MD5Update (&md5, (uchar *) row[0], (uint) strlen (row[0])); /* password for them */
-    MD5Final ((uchar *) hash, &md5);
+    md5_init_ctx (&md5);
+    md5_process_bytes (con->nonce, strlen (con->nonce), &md5);
+    md5_process_bytes (con->sendernonce, strlen (con->sendernonce), &md5);
+    md5_process_bytes (row[0], strlen (row[0]), &md5); /* password for them */
+    md5_finish_ctx (&md5, hash);
     expand_hex (hash, 16);
     hash[32] = 0;
 
