@@ -60,7 +60,7 @@ HANDLER (download)
 	if (con->user->port == 0)
 	{
 	    /* error, both clients are firewalled */
-	    send_cmd (con, MSG_SERVER_FILE_READY,
+	    send_cmd (con, MSG_SERVER_FILE_READY /* 204 */,
 		    "%s %lu %d \"%s\" firewallerror %d", user->nick, user->host,
 		    user->port, fields[1], user->speed);
 	    return;
@@ -101,7 +101,7 @@ HANDLER (download)
 		mysql_free_result (result);
 		return;
 	    }
-	    send_cmd (con, MSG_SERVER_FILE_READY,
+	    send_cmd (con, MSG_SERVER_FILE_READY /* 204 */,
 		    "%s %lu %d \"%s\" %s %d", user->nick, user->host,
 		    user->port, fields[1], row[0], user->speed);
 	    mysql_free_result (result);
@@ -110,7 +110,7 @@ HANDLER (download)
     }
 
     /* send a message to the requestee */
-    log ("download(): REQEST \"%s\" %s => %s",
+    log ("download(): REQUEST \"%s\" %s => %s",
 	fields[1], user->nick, con->user->nick);
 
     /* if the client holding the file is a local user, send the request
