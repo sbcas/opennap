@@ -93,9 +93,12 @@ compute_soundex (char *d, int dsize, const char *s)
 	    case 'p':
 	    case 'f':
 	    case 'v':
-		*d++ = '1';
-		dsize--;
-		n++;
+		if (n < 3)
+		{
+		    *d++ = '1';
+		    dsize--;
+		    n++;
+		}
 		break;
 	    case 'c':
 	    case 's':
@@ -105,31 +108,46 @@ compute_soundex (char *d, int dsize, const char *s)
 	    case 'q':
 	    case 'x':
 	    case 'z':
-		*d++ = '2';
-		dsize--;
-		n++;
+		if (n < 3)
+		{
+		    *d++ = '2';
+		    dsize--;
+		    n++;
+		}
 		break;
 	    case 'd':
 	    case 't':
-		*d++ = '3';
-		dsize--;
-		n++;
+		if (n < 3)
+		{
+		    *d++ = '3';
+		    dsize--;
+		    n++;
+		}
 		break;
 	    case 'l':
-		*d++ = '4';
-		dsize--;
-		n++;
+		if (n < 3)
+		{
+		    *d++ = '4';
+		    dsize--;
+		    n++;
+		}
 		break;
 	    case 'm':
 	    case 'n':
-		*d++ = '5';
-		dsize--;
-		n++;
+		if (n < 3)
+		{
+		    *d++ = '5';
+		    dsize--;
+		    n++;
+		}
 		break;
 	    case 'r':
-		*d++ = '6';
-		dsize--;
-		n++;
+		if (n < 3)
+		{
+		    *d++ = '6';
+		    dsize--;
+		    n++;
+		}
 		break;
 	    default:
 		if (!isalpha (*s))
@@ -314,7 +332,7 @@ HANDLER (share_file)
 	p=field[0];
     compute_soundex(soundex,sizeof(soundex), p);
     snprintf (Buf, sizeof (Buf),
-	    "INSERT INTO library VALUES ('%s',%s,'%s','%s',0,0,0,%d,'%s','%s')",
+	    "INSERT INTO library VALUES ('%s','%s','%s','%s',0,0,0,%d,'%s','%s')",
 	    user->nick, field[0], field[1], field[2], user->speed, soundex,
 	    field[3]);
     if (mysql_query (Db, Buf) != 0)
