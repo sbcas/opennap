@@ -495,12 +495,10 @@ main (int argc, char **argv)
 		OUTOFMEMORY ("main");
 		break;
 	    }
-	    /* mark the new entries as invalid */
 	    while (ufdsize < Max_Clients + 12)
 	    {
+		memset(&ufd[ufdsize], 0, sizeof (struct pollfd));
 		ufd[ufdsize].fd = -1;
-		ufd[ufdsize].events = 0;
-		ufd[ufdsize].revents = 0;
 		ufdsize++;
 	    }
 	}
@@ -543,8 +541,8 @@ main (int argc, char **argv)
 #if HAVE_POLL
 	    else
 	    {
+		memset(&ufd[i+2], 0, sizeof (struct pollfd));
 		ufd[i + 2].fd = -1;	/* unused */
-		ufd[i + 2].events = 0;
 	    }
 #endif
 	}
@@ -552,15 +550,54 @@ main (int argc, char **argv)
 #if HAVE_POLL
 	if ((n = poll (ufd, ufdsize, next_timer () * 1000)) < 0)
 	{
-	    perror ("poll");
-	    break;
+	    int saveerrno = errno;
+
+	    logerr ("main", "poll");
+	    if(saveerrno==EINVAL) {
+		struct sockaddr_in sin;
+		socklen_t sinsize;
+
+		/* try to figure out which argument caused the problem */
+		ASSERT (ufdsize >= Max_Clients+2);
+		ASSERT (VALID_LEN (ufd, sizeof (struct pollfd) * ufdsize));
+		for(i=0;i<ufdsize;i++) {
+		    if(i>1 && i <Max_Clients+2 && Clients[i-2]){
+			ASSERT(ufd[i].fd == Clients[i-2]->fd);
+			sinsize=sizeof(sin);
+			if(getpeername(ufd[i].fd, (struct sockaddr*)&sin,
+				&sinsize)) {
+			    logerr("main","getpeername");
+			    log ("main(): error on fd for %s",
+				Clients[i-2]->host);
+			    remove_connection(Clients[i-2]);
+			}
+		    }
+		    else if(i==0) {
+			ASSERT(ufd[0].fd==s);
+		    } else if(i==1) {
+			ASSERT(ufd[1].fd==sp);
+		    } else {
+			ASSERT(ufd[i].fd==-1);
+			ASSERT(ufd[i].events==0);
+		    }
+		}
+		/* reallocate the ufd structs just to make sure */
+		FREE (ufd);
+		ufdsize=2;
+		ufd=CALLOC(ufdsize,sizeof(struct pollfd));
+		ufd[0].fd=s;
+		ufd[0].events=POLLIN;
+		ufd[1].fd=sp;
+		ufd[1].events=POLLIN;
+		continue;
+	    }
 	}
 #else
 	t.tv_sec = next_timer ();
 	t.tv_usec = 0;
 	if ((n = select (maxfd + 1, &set, &wset, NULL, &t)) < 0)
 	{
-	    perror ("select");
+	    logerr ("main", "select");
 	    continue;
 	}
 #endif /* HAVE_POLL */
