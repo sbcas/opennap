@@ -15,8 +15,8 @@ HANDLER (kick)
     USER *user, *sender;
     CHANNEL *chan;
 
-    ASSERT (validate_connection (con));
     (void) len;
+    ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender))
 	return;
     ac = split_line (av, FIELDS (av), pkt);
@@ -99,6 +99,7 @@ HANDLER (clear_channel)
     int ac;
     char *av[2];
 
+    (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender))
 	return;

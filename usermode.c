@@ -25,9 +25,10 @@ HANDLER (user_mode)
     unsigned int level = 0;
     char *av;
 
+    (void) tag;
+    (void) len;
     CHECK_USER_CLASS ("user_mode");
     ASSERT (validate_connection (con));
-    (void) len;
     if (pop_user (con, &pkt, &sender))
 	return;
     if (!pkt || !*pkt)
