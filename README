@@ -52,6 +52,9 @@ Last updated January 26, 2000
        `server connect' command (currently only bx-nap has support for
        the opennap commands), specifying the host and port to connect to.
 
+       In bx-nap, you would do:
+       /nadmin connect <server> <port>
+
 * Database descriptions
 
 	The following tables are stored in the "mp3" database.
@@ -178,6 +181,8 @@ are implemented as additional functionality in the opennap server.
 	must be elite to execute this command
 
 10200	compressed packet [SERVER]
+
+	[note: this packet is deprecated as of opennap 0.11]
 
 	<len><data>
 

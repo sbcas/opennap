@@ -42,6 +42,7 @@ int Max_Search_Results;
 int Compression_Level;
 int Compression_Threshold;
 int Max_Shared;
+int Max_Connections;
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;
@@ -350,6 +351,39 @@ ip_glob_match (const char *pattern, const char *ip)
 	return ((strcmp (pattern, ip) == 0));
 }
 
+static int
+check_accept (CONNECTION *cli)
+{
+    int i;
+
+    /* check for max connections */
+    if (Num_Clients >= Max_Connections)
+    {
+	log ("check_accept: maximum number of connections (%d) has been reached",
+		Max_Connections);
+	send_cmd (cli, MSG_SERVER_ERROR, "this server is full (%d local connections)",
+		Num_Clients);
+	return 0;
+    }
+
+    /* make sure this ip is not banned */
+    for (i = 0; i < Ban_Size; i++)
+    {
+	if (Ban[i]->type == BAN_IP &&
+		ip_glob_match (Ban[i]->target, cli->host))
+	{
+	    /* TODO: this does not reach all mods, only the one on
+	       this server */
+	    notify_mods ("Connection attempt from banned ip %s", cli->host);
+	    send_cmd (cli, MSG_SERVER_ERROR, "You are banned from this server (%s)",
+		    Ban[i]->reason ? Ban[i]->reason : "banned");
+	    return 0;
+	}
+    }
+
+    return 1;
+}
+
 static void
 usage (void)
 {
@@ -569,23 +603,8 @@ main (int argc, char **argv)
 		set_nonblocking (f);
 		set_keepalive (f, 1); /* enable tcp keepalive messages */
 
-		/* make sure this ip is not banned */
-		for (i = 0; i < Ban_Size; i++)
-		{
-		    if (Ban[i]->type == BAN_IP &&
-			    ip_glob_match (Ban[i]->target, inet_ntoa (sin.sin_addr)))
-		    {
-			/* TODO: this does not reach all mods, only the one on
-			   this server */
-			notify_mods ("Connection attempt from banned ip %s",
-				inet_ntoa (sin.sin_addr));
-			send_cmd (cli, MSG_SERVER_ERROR, "You are banned from this server (%s)",
-				Ban[i]->reason ? Ban[i]->reason : "banned");
-			send_queued_data (cli);
-			remove_connection (cli);
-			break;
-		    }
-		}
+		if (!check_accept (cli))
+		    remove_connection (cli);
 	    }
 	    n--;
 	}
@@ -620,6 +639,9 @@ main (int argc, char **argv)
 	    }
 	}
 
+	if (SigCaught)
+	    break;
+
 	/* handle client requests */
 	for (i = 0; !SigCaught && i < Num_Clients; i++)
 	{
@@ -631,6 +653,9 @@ main (int argc, char **argv)
 		    handle_connection (Clients[i]);
 	    }
 	}
+
+	if (SigCaught)
+	    break;
 
 	/* we should send the clients updated server stats every so often */
 	if (next_update < time (0))
