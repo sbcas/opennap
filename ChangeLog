@@ -29,6 +29,11 @@ mods see some additional information in whois
 
 added client support for server linking/delinking (see README for numerics)
 
+server now notifies clients when login() sets their userlevel
+
+add_hotlist should immediately notify a client of a logged in user,
+otherwise the client won't see them
+
 Changes from 0.07
 =================
 

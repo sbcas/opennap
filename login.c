@@ -158,13 +158,19 @@ HANDLER (login)
 				log ("login(): unknown level %s for %s in accounts table",
 				    row[2], row[0]);
 			    }
-			    /* broadcast the updated userlevel to our peer
-			       servers */
-			    if (user->level > LEVEL_USER && Num_Servers)
+			    if (user->level > LEVEL_USER)
 			    {
-				pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
+				/* broadcast the updated userlevel to our peer
+				   servers */
+				if (Num_Servers)
+				    pass_message_args (con,
+					MSG_CLIENT_SETUSERLEVEL,
 					":%s %s %s", Server_Name,
 					user->nick, row[2]);
+				/* notify users of their change in level */
+				send_cmd (con, MSG_SERVER_NOSUCH,
+				    "server set your level to %s (%s).",
+				    Levels[user->level], user->level);
 			    }
 
 			    log ("login(): set %s to level %s", user->nick,

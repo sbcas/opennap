@@ -9,6 +9,7 @@
 HANDLER (add_hotlist)
 {
     HOTLIST *hotlist;
+    USER *user;
     int i;
 
     ASSERT (validate_connection (con));
@@ -41,6 +42,15 @@ HANDLER (add_hotlist)
     /* ack the user who requested this */
     /* this seems unnecessary, but its what the official server does... */
     send_cmd (con, MSG_SERVER_HOTLIST_ACK, "%s", hotlist->nick);
+
+    /* check to see if this user is on so the client is notified
+       immediately */
+    user = hash_lookup (Users, hotlist->nick);
+    if (user)
+    {
+	send_cmd (con, MSG_SERVER_USER_SIGNON, "%s %d", user->nick,
+	    user->speed);
+    }
 }
 
 /* packet contains: <user> */
