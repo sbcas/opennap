@@ -50,11 +50,9 @@ SEARCH;
 static int
 search_callback (DATUM * match, SEARCH * parms)
 {
-#if 1
     /* don't return matches for a user's own files */
     if (match->user == parms->user)
 	return 0;
-#endif
     if (match->bitrate < parms->minbitrate)
 	return 0;
     if (match->bitrate > parms->maxbitrate)
@@ -341,8 +339,6 @@ fdb_search (HASH * table,
     }
     if (!flist)
 	return 0;		/* no matches */
-    log ("fdb_search(): bin \"%s\" contains %d files", flist->key,
-	 flist->count);
     /* find the list of files which contain all search tokens */
     for (ptok = flist->list; ptok; ptok = ptok->next)
     {
@@ -454,8 +450,6 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
     SEARCH parms;
 
     ASSERT (validate_connection (con));
-
-    log ("search_internal(): %s", pkt);
 
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
 
@@ -614,8 +608,6 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 
     n = fdb_search (File_Table, tokens, max_results, search_callback, &parms);
 
-    log ("search_internal(): %d hits", n);
-
     if (n < max_results)
     {
 	if ((ISSERVER (con) && list_count (Servers) > 1) ||
@@ -625,7 +617,6 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    DSEARCH *dsearch;
 	    LIST *ptr;
 
-	    log ("search_internal(): relaying request to peer servers");
 	    generate_request (Buf, sizeof (Buf), max_results - n, tokens,
 			      &parms);
 	    /* generate a new request structure */
@@ -677,7 +668,6 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    ASSERT (ISSERVER (con));
 	    ASSERT (id != 0);
 	    send_cmd (con, MSG_SERVER_REMOTE_SEARCH_END, "%s", id);
-	    log ("search_internal(): sending final ACK for id %s", id);
 	}
     }
 }
@@ -805,8 +795,7 @@ HANDLER (remote_search_end)
 	/* got the end of the search matches from all our peers, issue
 	   find ack to the server that sent us this request, or deliver
 	   end of search to user */
-	log ("remote_end_match(): sending final ACK for search %s",
-	     search->id);
+
 	/* can't use ISUSER(search->con) here because if the user was local
 	   and logged out, search->con will be an invalid pointer */
 	if (search->local)
@@ -826,11 +815,6 @@ HANDLER (remote_search_end)
 	}
 	Remote_Search = list_delete (Remote_Search, search);
 	free_dsearch (search);
-    }
-    else
-    {
-	log ("remote_end_match(): got %d of %d replies for id %s",
-	     search->count, search->numServers, search->id);
     }
 }
 

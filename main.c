@@ -157,7 +157,7 @@ check_accept (CONNECTION * cli)
 	    ("check_accept: maximum number of connections (%d) has been reached",
 	     Max_Connections);
 	send_cmd (cli, MSG_SERVER_ERROR,
-		  "this server is full (%d local connections)", Num_Clients);
+		  "This server is full (%d local connections)", Num_Clients);
 	return 0;
     }
 
@@ -203,14 +203,15 @@ accept_connection (int s)
 	return;
     }
     cli->fd = f;
+#if 0
     log ("accept_connection(): connection from %s, port %d",
 	 inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
+#endif
     /* if we have a local connection, use the external
        interface so others can download from them */
     if (sin.sin_addr.s_addr == inet_addr ("127.0.0.1"))
     {
-	log
-	    ("accept_connection(): connected via loopback, using external ip");
+	log ("accept_connection(): connected via loopback, using external ip");
 	cli->ip = Server_Ip;
 	cli->host = STRDUP (Server_Name);
     }
@@ -591,8 +592,9 @@ main (int argc, char **argv)
 		{
 		    /* should have flushed everything */
 		    ASSERT (Clients[i]->sendbuf == 0);
-		    log ("main(): closing connection for %s",
-			 Clients[i]->host);
+#if 0
+		    log ("main(): closing connection for %s", Clients[i]->host);
+#endif
 		    remove_connection (Clients[i]);
 		}
 	    }

@@ -11,6 +11,9 @@
 #endif
 #include "opennap.h"
 #include "debug.h"
+#if DEBUG
+#include <ctype.h>
+#endif
 
 HANDLER (server_stats)
 {
@@ -164,7 +167,6 @@ HANDLER (dispatch_command)
 	    (con->recvbuf->data, con->recvbuf->consumed + 4 + len + 1));
     byte = *(pkt + len);
     *(pkt + len) = 0;
-
     for (l = 0; l < Protocol_Size; l++)
     {
 	if (Protocol[l].message == tag)
@@ -172,21 +174,34 @@ HANDLER (dispatch_command)
 	    ASSERT (Protocol[l].handler != 0);
 	    /* note that we pass only the data part of the packet */
 	    Protocol[l].handler (con, tag, len, pkt);
-	    break;
+	    goto done;
 	}
     }
-
-    if (l == Protocol_Size)
+    log ("dispatch_command(): unknown message: tag=%hu, length=%hu, data=%s",
+	tag, len, pkt);
+    send_cmd (con, MSG_SERVER_NOSUCH, "Unknown command code %hu", tag);
+    /* if this is a server connection, shut it down to avoid flooding the
+       other server with these messages */
+    if (ISSERVER (con))
     {
-	log
-	    ("dispatch_command(): unknown message: tag=%hu, length=%hu, data=%s",
-	     tag, len,
-	     len ? (char *) con->recvbuf->data +
-	     con->recvbuf->consumed + 4 : "(empty)");
+#if DEBUG
+	unsigned char ch;
 
-	send_cmd (con, MSG_SERVER_NOSUCH, "unknown command code %hu", tag);
+	/* dump some bytes from the input buffer to see if it helps aid
+	   debugging */
+	fprintf(stdout, "Dump(%d): ",
+	    con->recvbuf->datasize - con->recvbuf->consumed);
+	for (l = con->recvbuf->consumed; l < con->recvbuf->datasize; l++)
+	{
+	    ch=*(con->recvbuf->data + l);
+	    fputc(isprint(ch)?ch:'.',stdout);
+	}
+	fputc('\n',stdout);
+#endif
+	log ("dispatch_command(): shutting down server link");
+	con->destroy = 1;
     }
-
+done:
     /* restore the byte we overwrite at the beginning of this function */
     *(pkt + len) = byte;
 }
@@ -263,7 +278,9 @@ handle_connection (CONNECTION * con)
 	    }
 	    else if (n == 0)
 	    {
+#if 0
 		log ("handle_connection(): EOF from %s", con->host);
+#endif
 		con->destroy = 1;
 		return;
 	    }
@@ -339,9 +356,7 @@ handle_connection (CONNECTION * con)
 	     tag != MSG_CLIENT_REGISTER && tag != MSG_SERVER_LOGIN &&
 	     tag != MSG_SERVER_LOGIN_ACK && tag != MSG_SERVER_ERROR && tag != 4))	/* unknown: v2.0 beta 5a sends this? */
 	{
-	    log
-		("handle_connection(): %s is not registered, closing connection",
-		 con->host);
+	    log ("handle_connection(): %s is not registered", con->host);
 	    *(con->recvbuf->data + con->recvbuf->consumed + 4 + len) = 0;
 	    log ("handle_connection(): tag=%hu, len=%hu, data=%s", tag, len,
 		 con->recvbuf->data + con->recvbuf->consumed + 4);
@@ -362,8 +377,7 @@ handle_connection (CONNECTION * con)
 	    /* shift down unprocessed data */
 	    memmove (con->recvbuf->data,
 		     con->recvbuf->data + con->recvbuf->consumed, n);
-	    log ("handle_connection(): %d unprocessed bytes left in buffer",
-		 n);
+	    log ("handle_connection(): %d unprocessed bytes left in buffer", n);
 	}
 	con->recvbuf->datasize = n;
 	con->recvbuf->consumed = 0;	/* reset */

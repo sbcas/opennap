@@ -30,10 +30,6 @@ HANDLER (download)
     {
 	log ("download(): no such user %s", av[0]);
 	send_user (sender, MSG_SERVER_SEND_ERROR, "%s \"%s\"", av[0], av[1]);
-#if 0
-	send_user (sender, MSG_SERVER_NOSUCH, "[%s] could not find user %s",
-		   Server_Name, av[0]);
-#endif
 	return;
     }
     ASSERT (validate_user (user));
@@ -55,11 +51,6 @@ HANDLER (download)
 			 user->nick, av[1]);
 		    send_user (sender, MSG_SERVER_SEND_ERROR, "%s \"%s\"",
 			       user->nick, av[1]);
-#if 0
-		    send_user (sender, MSG_SERVER_NOSUCH,
-			       "[%s] user %s has no file named \"%s\"",
-			       Server_Name, user->nick, av[1]);
-#endif
 		}
 		else
 		{
@@ -73,10 +64,6 @@ HANDLER (download)
 	    {
 		/* not a local user, we have to relay this request since we
 		   dont' have the file information local */
-#if 0
-		log ("download(): relaying request for %s to %s", user->nick,
-		     user->con->host);
-#endif
 		ASSERT (ISSERVER (user->con));
 		send_cmd (user->con, tag, ":%s %s \"%s\"", sender->nick,
 			  user->nick, av[1]);
@@ -105,10 +92,6 @@ HANDLER (download)
 	}
     }
 
-    /* send a message to the requestee */
-    log ("download(): REQUEST \"%s\" %s => %s", av[1], user->nick,
-	 sender->nick);
-
     /* if the client holding the file is a local user, send the request
        directly */
     if (user->local)
@@ -119,10 +102,6 @@ HANDLER (download)
     /* otherwise pass it to the peer servers for delivery */
     else
     {
-#if 0
-	log ("download(): %s is remote, relaying request to %s", user->nick,
-	     user->con->host);
-#endif
 	/* don't use direct delivery here because the server the client is
 	   connected to needs to consult their db and rewrite this messsage */
 	send_cmd (user->con, MSG_SERVER_UPLOAD_REQUEST, ":%s %s \"%s\"",
@@ -301,9 +280,6 @@ HANDLER (upload_request)
     else
 	pass_message_args (recip->con, MSG_SERVER_UPLOAD_REQUEST,
 			   ":%s %s \"%s\"", av[0] + 1, recip->nick, av[2]);
-
-    log ("upload_request(): REMOTE REQUEST \"%s\" %s => %s",
-	 av[2], recip->nick, av[0] + 1);
 }
 
 /* 619 <nick> <filename> <limit> */
