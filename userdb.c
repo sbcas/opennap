@@ -101,18 +101,15 @@ userdb_init (void)
 static void
 dump_userdb (USERDB * db, FILE * fp)
 {
-    if (!db->nuked)
-    {
-	fputs (db->nick, fp);
-	fputc (' ', fp);
-	fputs (db->password, fp);
-	fputc (' ', fp);
-	fputs (db->email, fp);
-	fputc (' ', fp);
-	fputs (Levels[db->level], fp);
-	fputc (' ', fp);
-	fprintf (fp, "%d %d\r\n", (int) db->created, (int) db->lastSeen);
-    }
+    fputs (db->nick, fp);
+    fputc (' ', fp);
+    fputs (db->password, fp);
+    fputc (' ', fp);
+    fputs (db->email, fp);
+    fputc (' ', fp);
+    fputs (Levels[db->level], fp);
+    fputc (' ', fp);
+    fprintf (fp, "%d %d\r\n", (int) db->created, (int) db->lastSeen);
 }
 
 int
