@@ -218,9 +218,11 @@ debug_free (void *ptr, const char *file, int line)
     debug_overflow (block, "free");
     memset (block->val, FREE_BYTE, block->len);
     free (block->val);
+    free (block);
     Memory_Usage -= block->len;
 }
 
+#if 0
 /* display the contents of an allocated block */
 static void
 debug_dump (BLOCK *block)
@@ -235,6 +237,7 @@ debug_dump (BLOCK *block)
 	fprintf(stderr, "%c", isprint(*((unsigned char*)block->val+i))?*((unsigned char*)block->val+i):'.');
     fputc('\n',stderr);
 }
+#endif
 
 void
 debug_cleanup (void)
@@ -249,7 +252,9 @@ debug_cleanup (void)
 	    debug_overflow (block, "cleanup");
 	    fprintf (stderr, "debug_cleanup: %d bytes allocated at %s:%d\n",
 		    block->len, block->file, block->line);
+#if 0
 	    debug_dump (block);
+#endif
 	}
     }
     if (Memory_Usage)

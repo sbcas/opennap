@@ -161,7 +161,9 @@ fdb_add (HASH * table, char *key, DATUM * d)
 {
     FLIST *files;
 
+    ASSERT (table != 0);
     ASSERT (key != 0);
+    ASSERT (d != 0);
     files = hash_lookup (table, key);
     /* if there is no entry for this particular word, create one now */
     if (!files)
@@ -179,7 +181,12 @@ fdb_add (HASH * table, char *key, DATUM * d)
 	    FREE (files);
 	    return;
 	}
-	hash_add (table, files->key, files);
+	if (hash_add (table, files->key, files))
+	{
+	    FREE (files->key);
+	    FREE (files);
+	    return;
+	}
     }
     files->list = list_append (files->list, d);
     files->count++;
@@ -196,9 +203,6 @@ insert_datum (DATUM * info, char *av)
     ASSERT (info != 0);
     ASSERT (av != 0);
 
-    /* split the filename into words */
-    tokens = tokenize (av);
-
     if (!info->user->files)
     {
 	/* create the hash table */
@@ -209,6 +213,10 @@ insert_datum (DATUM * info, char *av)
     hash_add (info->user->files, info->filename, info);
     info->refcount++;
 
+    /* split the filename into words */
+    tokens = tokenize (av);
+    ASSERT (tokens != 0);
+
     /* add this entry to the global file list */
     for (ptr = tokens; ptr; ptr = ptr->next)
 	fdb_add (File_Table, ptr->data, info);
@@ -218,16 +226,20 @@ insert_datum (DATUM * info, char *av)
     /* index by md5 hash */
     fdb_add (MD5, info->hash, info);
 
-    fsize=info->size/1024;
+    fsize = info->size / 1024;
     info->user->shared++;
     info->user->libsize += fsize;
     Num_Gigs += fsize;		/* this is actually kB, not gB */
     Num_Files++;
 
     /* notify peer servers that this user's file count has increased */
-    if(Num_Servers)
-	pass_message_args(info->user->con,MSG_SERVER_USER_SHARING,"%s %d %d",
-		info->user->nick, info->user->shared, info->user->libsize);
+    /* TODO: this should be changed so that the servers will periodically
+       exchnage user info rather than for each message.  if a user adds
+       5000 files it will send 5000 of these.. */
+    if (Num_Servers)
+	pass_message_args (info->user->con, MSG_SERVER_USER_SHARING,
+			   "%s %d %d", info->user->nick, info->user->shared,
+			   info->user->libsize);
 
 }
 
@@ -279,7 +291,7 @@ HANDLER (add_file)
     if (Max_Shared && user->shared > Max_Shared)
     {
 	log ("add_file(): %s is already sharing %d files", user->nick,
-		user->shared);
+	     user->shared);
 	if (con->class == CLASS_USER)
 	    send_cmd (con, MSG_SERVER_NOSUCH,
 		      "You may only share %d files.", Max_Shared);
@@ -319,7 +331,7 @@ HANDLER (add_file)
 }
 
 char *Content_Types[] = {
-    "mp3",	/* not a real type, but what we use for audio/mp3 */
+    "mp3",			/* not a real type, but what we use for audio/mp3 */
     "audio",
     "video",
     "application",
@@ -346,7 +358,7 @@ HANDLER (share_file)
     if (Max_Shared && user->shared > Max_Shared)
     {
 	log ("add_file(): %s is already sharing %d files", user->nick,
-		user->shared);
+	     user->shared);
 	if (con->class == CLASS_USER)
 	    send_cmd (con, MSG_SERVER_NOSUCH,
 		      "You may only share %d files.", Max_Shared);
@@ -375,7 +387,8 @@ HANDLER (share_file)
     {
 	log ("share_file(): not a valid type: %s", av[3]);
 	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not a valid type", av[3]);
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not a valid type",
+		      av[3]);
 	return;
     }
 
@@ -391,23 +404,23 @@ HANDLER (share_file)
 
 /* 10012 <nick> <shared> <size>
    remote server is notifying us that one of its users is sharing files */
-HANDLER(user_sharing)
+HANDLER (user_sharing)
 {
     char *av[3];
     USER *user;
     int deltanum, deltasize;
 
-    (void)len;
-    ASSERT(validate_connection(con));
-    if(split_line(av,sizeof(av)/sizeof(char*),pkt)!=3)
+    (void) len;
+    ASSERT (validate_connection (con));
+    if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 3)
     {
-	log("user_sharing(): wrong number of arguments");
+	log ("user_sharing(): wrong number of arguments");
 	return;
     }
-    user=hash_lookup(Users,av[0]);
-    if(!user)
+    user = hash_lookup (Users, av[0]);
+    if (!user)
     {
-	log("user_sharing(): no such user %s", av[0]);
+	log ("user_sharing(): no such user %s", av[0]);
 	return;
     }
     deltanum = atoi (av[1]) - user->shared;
@@ -416,6 +429,7 @@ HANDLER(user_sharing)
     deltasize = atoi (av[2]) - user->libsize;
     Num_Gigs += deltasize;
     user->libsize += deltasize;
-    if(Num_Servers>1)
-	pass_message_args(con,tag,"%s %d %d",user->nick,user->shared,user->libsize);
+    if (Num_Servers > 1)
+	pass_message_args (con, tag, "%s %d %d", user->nick, user->shared,
+			   user->libsize);
 }
