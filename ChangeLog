@@ -7,6 +7,10 @@ added support for the change speed command (700)
 
 added support for client initiated 214 stats request
 
+configure will look for mysql in /usr/local as well as /usr
+
+fixed server crash when a user had a hotlist
+
 Changes from 0.07
 =================
 

@@ -1,7 +1,18 @@
 AC_INIT(opennap.h)
-AM_INIT_AUTOMAKE(opennap,0.08)
+AM_INIT_AUTOMAKE(opennap,0.09)
 AM_PROG_CC_STDC
-LIBS="$LIBS -L/usr/lib/mysql"
+
+dnl check for mysql installed in /usr/local
+if test -d /usr/local/lib/mysql; then
+	MYSQLLIBDIR="-L/usr/local/lib/mysql"
+	MYSQLINCDIR="-I/usr/local/include/mysql"
+	AC_SUBST(MYSQLLIBDIR)
+	AC_SUBST(MYSQLINCDIR)
+else
+	MYSQLINCDIR="-I/usr/include/mysql"
+	AC_SUBST(MYSQLINCDIR)
+fi
+
 AC_CHECK_LIB(mysqlclient, mysql_init)
 ac_cv_warnings=yes
 AC_ARG_ENABLE(warnings, [  --disable-warnings	Turn of GCC compiler warnings ],

@@ -234,6 +234,11 @@ void user_input (char *s)
 	    s += 5;
 	    type = 830;
 	}
+	else if (!strncmp("addhotlist", s, 10))
+	{
+	    s += 10;
+	    type = 207;
+	}
 	else if (!strncmp("pdown", s, 5))
 	{
 	    int i;
@@ -574,6 +579,7 @@ usage (void)
     printf ("usage: %s [ -rhv ] [ -s SERVER ] [ -p PORT ] [ -u USER ] [ -d DATAPORT ]\n", PACKAGE);
     puts   ("  -d DATAPORT  specify the local data port to listen on");
     puts   ("  -h		display this help message");
+    puts   ("  -m META		specify metaserver to connect to");
     puts   ("  -r		auto reconnect to server");
     puts   ("  -s SERVER	connect to SERVER");
     puts   ("  -p PORT	connect to PORT");
