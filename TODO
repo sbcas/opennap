@@ -1,9 +1,3 @@
-* flood control
-
-  need some way to prevent the user from flooding the server.  this is a
-  problem since when the user first connects they will likely send a large
-  amount of valid information about the contents of their mp3 library
-
 * add a timeout to check for blocked server connect() call
 
 * find bug which results in negative total library size

@@ -1,4 +1,4 @@
-[opennap 0.36]
+[opennap 0.40]
 
 `*', `?', `.' and `!' are no longer valid chars in nicks.  This is needed to
 support the new expanded ban syntax
@@ -41,6 +41,15 @@ something with 5000+ entries won't likely be used).
 
 Added new config var `eject_when_full' to have opennap kill nonsharing
 clients when the server reaches max_connections.
+
+Added server-side flood protection.  Controlled by two new config variables:
+	flood_commands	number of commands that can be issued
+	flood_time	number of seconds
+If more than `flood_commands' message from a client are received in
+`flood_time' seconds, the server will throttle the rate at which it reads
+commands from the client, and notify the mods+ of the flooding (controlled
+by usermode FLOOD).  Setting `flood_commands' to 0 [default] turns off flood
+control.
 
 [opennap 0.35]
 

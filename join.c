@@ -24,7 +24,7 @@ invalid_channel (const char *s)
     s++;
     while (*s)
     {
-	if (*s < '!' || *s > '~' || strchr ("%$*?\"", *s))
+	if (*s < '!' || *s > '~' || strchr ("%$*?\",", *s))
 	    return 1;
 	count++;
 	s++;

@@ -236,6 +236,7 @@ struct _connection
     opt;
 
     time_t	timer;		/* timer to detect idle connections */
+    time_t	flood;		/* flood protection counter */
 
     unsigned int connecting:1;
     unsigned int destroy:1;	/* connection should be destoyed in
@@ -357,6 +358,8 @@ extern int Collect_Interval;
 extern int Compression_Level;
 extern char *Config_Dir;
 extern time_t Current_Time;
+extern int Flood_Commands;
+extern int Flood_Time;
 extern unsigned int Interface;
 extern time_t Last_Click;
 extern char *Listen_Addr;
@@ -923,9 +926,10 @@ extern int optind;
 #define PORTLOG_MODE	(1<<7)
 #define WALLOPLOG_MODE	(1<<8)
 #define CLOAKLOG_MODE	(1<<9)
+#define FLOODLOG_MODE	(1<<10)
 
 #define LOGALL_MODE (ERROR_MODE|BANLOG_MODE|CHANGELOG_MODE|\
 	KILLLOG_MODE|LEVELLOG_MODE|SERVERLOG_MODE|MUZZLELOG_MODE|PORTLOG_MODE|\
-	WALLOPLOG_MODE|CLOAKLOG_MODE)
+	WALLOPLOG_MODE|CLOAKLOG_MODE|FLOODLOG_MODE)
 
 #endif /* opennap_h */

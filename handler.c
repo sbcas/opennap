@@ -16,6 +16,8 @@
 #include <ctype.h>
 #endif
 
+static char LastFlooder[64] = {0};
+
 /* 214 */
 HANDLER (server_stats)
 {
@@ -460,14 +462,48 @@ handle_connection (CONNECTION * con)
 	    log ("handle_connection(): tag=%hu, len=%hu, data=%s", tag, len,
 		 con->recvbuf->data + con->recvbuf->consumed + 4);
 
+#if 0
 	    /* not sure why the official servers do this, but lets
 	     * be compatible.
 	     */
 	    send_cmd (con, MSG_SERVER_ECHO, "%hu: %s", tag,
 		    con->recvbuf->data + con->recvbuf->consumed + 4);
 
+	    con->recvbuf->consumed += 4 + len;
+	    break;
+#else
+	    send_cmd(con,MSG_SERVER_ERROR,"invalid command");
+	    con->destroy=1;
 	    return;
+#endif
 	}
+
+	    /* do flood protection */
+	if (ISUSER (con) && Flood_Commands > 0 &&
+		tag != MSG_CLIENT_ADD_FILE && tag != MSG_CLIENT_SHARE_FILE &&
+		tag != MSG_CLIENT_REMOVE_FILE)
+	{
+	    if(con->flood<Current_Time)
+		con->flood=Current_Time;
+	    ASSERT(Flood_Commands!=0);
+	    con->flood += Flood_Time/Flood_Commands;
+	    /* if flooding is detected, notify the mods+ and log it.
+	     * keep track of the last flooder so we don't flood everyone
+	     * with log messages
+	     */
+	    if(con->flood >= Current_Time + Flood_Time &&
+		    strcmp (LastFlooder, con->user->nick))
+	    {
+		log("handle_connection(): flooding from %s!%s (numeric = %hu)",
+			con->user->nick, con->host, tag);
+		notify_mods(FLOODLOG_MODE,
+			"Flooding from %s!%s (numeric = %hu)",
+			con->user->nick, con->host, tag);
+		strncpy(LastFlooder,con->user->nick,sizeof(LastFlooder)-1);
+		LastFlooder[sizeof(LastFlooder)-1]=0;
+	    }
+	}
+
 	if (Servers && ISUSER (con))
 	{
 	    /* check for end of share/unshare sequence.  in order to avoid

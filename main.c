@@ -30,6 +30,8 @@
 ** Global Variables
 */
 
+int Flood_Commands;
+int Flood_Time;
 char *Listen_Addr = 0;
 char *Server_Name = 0;
 char *Server_Pass = 0;
@@ -512,17 +514,32 @@ main (int argc, char **argv)
 	{
 	    if (Clients[i])
 	    {
-		FD_SET (Clients[i]->fd, &set);
-		if (Clients[i]->fd > maxfd)
-		    maxfd = Clients[i]->fd;
+		/* only check the socket if the client is not flooding.
+		 * this effectively throttles flooding clients
+		 */
+		if(Flood_Commands == 0 || !ISUSER(Clients[i]) ||
+			Clients[i]->flood < Current_Time + Flood_Time)
+		{
+		    FD_SET (Clients[i]->fd, &set);
+		}
 		/* check sockets for writing */
 #define CheckWrite(p) (p->sendbuf || (ISSERVER(p) && p->sopt->outbuf))
 		if (Clients[i]->connecting || CheckWrite (Clients[i]))
 		    FD_SET (Clients[i]->fd, &wset);
+		if (Clients[i]->fd > maxfd)
+		    maxfd = Clients[i]->fd;
 	    }
 	}
 
 	t.tv_sec = next_timer ();
+	/* if flood control is on, make sure we don't wait longer than the
+	 * flood control interval
+	 */
+	if(Flood_Commands > 0 && t.tv_sec > Flood_Time)
+	{
+	    ASSERT(Flood_Time!=0);
+	    t.tv_sec = Flood_Time;
+	}
 	t.tv_usec = 0;
 	if (select (maxfd + 1, &set, &wset, NULL, &t) < 0)
 	{

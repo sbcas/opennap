@@ -25,7 +25,7 @@ invalid_nick (const char *s)
 	return 1;		/* nick can't begin with # or & (denotes a channel) */
     while (*s)
     {
-	if (*s < '!' || *s > '~' || strchr ("%$*?.!\"", *s))
+	if (*s < '!' || *s > '~' || strchr ("%$*?.!\",", *s))
 	    return 1;
 	count++;
 	s++;

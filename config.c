@@ -76,6 +76,8 @@ static struct config Vars[] = {
     {"search_timeout",VAR_TYPE_INT,UL&Search_Timeout,180},
     {"stats_port",VAR_TYPE_INT,UL&Stats_Port,8889},
     {"eject_when_full",VAR_TYPE_BOOL,ON_EJECT_WHEN_FULL,0},
+    {"flood_commands",VAR_TYPE_INT,UL&Flood_Commands,0},
+    {"flood_time",VAR_TYPE_INT,UL&Flood_Time,0},
 };
 
 static int Vars_Size = sizeof (Vars) / sizeof (struct config);
