@@ -70,13 +70,10 @@ operserv (CONNECTION * con, char *pkt)
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ cloak");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ config");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ connect");
-	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ deop");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ disconnect");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ help");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ killserver");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ links");
-	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ op");
-	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ oplist");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ reconfig");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ register");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ stats");
@@ -130,6 +127,10 @@ chanserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_CHANNEL_LIMIT;
     else if (!strcasecmp ("drop", cmd))
 	tag = MSG_CLIENT_DROP_CHANNEL;
+    else if (!strcasecmp ("op", cmd))
+	tag = MSG_CLIENT_OP;
+    else if (!strcasecmp ("deop", cmd))
+	tag = MSG_CLIENT_DEOP;
     else if (!strcasecmp ("help", cmd))
     {
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
@@ -139,12 +140,16 @@ chanserv (CONNECTION * con, char *pkt)
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ banclear <channel>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ banlist <channel>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ clear <channel>");
+	send_cmd (con, MSG_CLIENT_PRIVMSG,
+		"ChanServ deop <channel> <user> [user ...]");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ drop <channel>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ help");
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
 		  "ChanServ kick <channel> <user> [reason]");
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
 		  "ChanServ limit <channel> <number>");
+	send_cmd (con, MSG_CLIENT_PRIVMSG,
+		"ChanServ op <channel> <user> [user ...]");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ oplist <channel>");
 	send_cmd (con, MSG_CLIENT_PRIVMSG,
 		  "ChanServ topic <channel> [topic]");

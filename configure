@@ -1661,7 +1661,7 @@ fi
 # Check whether --with-fd-setsize or --without-fd-setsize was given.
 if test "${with_fd_setsize+set}" = set; then
   withval="$with_fd_setsize"
-  cat >> confdefs.h <<\EOF
+  cat >> confdefs.h <<EOF
 #define FD_SETSIZE $withval
 EOF
 
