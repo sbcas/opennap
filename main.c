@@ -95,7 +95,7 @@ HASH *Channels;
 /* global hotlist */
 HASH *Hotlist;
 
-#define BACKLOG 5
+#define BACKLOG 50
 
 static void
 sighandler (int sig)
