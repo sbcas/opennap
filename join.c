@@ -27,7 +27,7 @@ invalid_channel (char *s)
 	count++;
 	s++;
     }
-    return ((count > 0));
+    return ((count == 0));
 }
 
 /* handle client request to join channel */
@@ -211,7 +211,7 @@ HANDLER (join)
     }
 }
 
-/* ??? [ :<sender> ] <channel> <level>
+/* 10201 [ :<sender> ] <channel> <level>
    sets the minimum user level required to enter a channel */
 HANDLER (channel_level)
 {
@@ -221,6 +221,7 @@ HANDLER (channel_level)
     char *av[2];
     CHANNEL *chan;
 
+    (void) len;
     ASSERT (validate_connection (con));
     if (ISSERVER (con))
     {
