@@ -58,5 +58,6 @@ free_user (USER * user)
 
     FREE (user->nick);
     FREE (user->clientinfo);
+    FREE (user->server);
     FREE (user);
 }
