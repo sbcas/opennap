@@ -403,47 +403,6 @@ handle_connection (CONNECTION * con)
 	    con->recvbuf->datasize += n;
 	    Bytes_In += n;
 	}
-
-	if (Servers && ISUSER (con))
-	{
-	    /* check for end of share/unshare sequence.  in order to avoid
-	       having to send a single message for each shared file,
-	       the add_file and remove_file commands set a flag noting the
-	       start of a possible series of commands.  this routine checks
-	       to see if the end of the sequence has been reached (a command
-	       other than share/unshare has been issued) and then relays
-	       the final result to the peer servers.
-               NOTE: the only issue with this is that if the user doesn't
-	       issue any commands after sharing files, the information will
-	       never get passed to the peer servers.  This is probably ok
-	       since this case will seldom happen */
-	    if (con->user->sharing)
-	    {
-		if (tag != MSG_CLIENT_ADD_FILE && tag != MSG_CLIENT_SHARE_FILE)
-		{
-		    log("handle_connection(): end of share sequence for %s",
-			con->user->nick);
-		    pass_message_args(con,MSG_SERVER_USER_SHARING,"%s %d %d",
-				      con->user->nick,
-				      con->user->shared,
-				      con->user->libsize);
-		    con->user->sharing = 0;
-		}
-	    }
-	    else if (con->user->unsharing)
-	    {
-		if (tag != MSG_CLIENT_REMOVE_FILE)
-		{
-		    log("handle_connection(): end of unshare sequence for %s",
-			con->user->nick);
-		    pass_message_args(con,MSG_SERVER_USER_SHARING,"%s %d %d",
-				      con->user->nick,
-				      con->user->shared,
-				      con->user->libsize);
-		    con->user->unsharing = 0;
-		}
-	    }
-	}
     }
     /* process as many complete commands as possible.  for a client this
        will be exactly one, but a server link may have sent multiple commands
@@ -487,6 +446,47 @@ handle_connection (CONNECTION * con)
 	    con->recvbuf->data + con->recvbuf->consumed + 4);
 	/* mark data as processed */
 	con->recvbuf->consumed += 4 + len;
+
+	if (Servers && ISUSER (con))
+	{
+	    /* check for end of share/unshare sequence.  in order to avoid
+	       having to send a single message for each shared file,
+	       the add_file and remove_file commands set a flag noting the
+	       start of a possible series of commands.  this routine checks
+	       to see if the end of the sequence has been reached (a command
+	       other than share/unshare has been issued) and then relays
+	       the final result to the peer servers.
+               NOTE: the only issue with this is that if the user doesn't
+	       issue any commands after sharing files, the information will
+	       never get passed to the peer servers.  This is probably ok
+	       since this case will seldom happen */
+	    if (con->user->sharing)
+	    {
+		if (tag != MSG_CLIENT_ADD_FILE && tag != MSG_CLIENT_SHARE_FILE)
+		{
+		    log("handle_connection(): end of share sequence for %s",
+			con->user->nick);
+		    pass_message_args(con,MSG_SERVER_USER_SHARING,"%s %d %d",
+				      con->user->nick,
+				      con->user->shared,
+				      con->user->libsize);
+		    con->user->sharing = 0;
+		}
+	    }
+	    else if (con->user->unsharing)
+	    {
+		if (tag != MSG_CLIENT_REMOVE_FILE)
+		{
+		    log("handle_connection(): end of unshare sequence for %s",
+			con->user->nick);
+		    pass_message_args(con,MSG_SERVER_USER_SHARING,"%s %d %d",
+				      con->user->nick,
+				      con->user->shared,
+				      con->user->libsize);
+		    con->user->unsharing = 0;
+		}
+	    }
+	}
     }
     if (con->recvbuf->consumed)
     {

@@ -23,8 +23,7 @@ free_user (USER * user)
     }
 
     /* this marks all the files this user was sharing as invalid.  they
-       get reaped in the process of searching to avoid having to remove
-       them here */
+       get reaped in the process of garbage collection in the main loop. */
     if (user->files)
 	free_hash (user->files);
 
@@ -43,6 +42,8 @@ free_user (USER * user)
     ASSERT (Num_Files >= user->shared);
     Num_Files -= user->shared;
     Num_Gigs -= user->libsize;	/* this is in kB */
+    if (user->local)
+	Local_Files -= user->shared;
 
     /* check the global hotlist for this user to see if anyone wants notice
        of this user's departure */

@@ -46,6 +46,8 @@ sighandler (int sig)
 	case SIGTERM:
 	    SigCaught = 1;
 	    break;
+	case SIGUSR1:
+	    CLEANUP ();
     }
 }
 #endif
@@ -62,11 +64,14 @@ init_server (const char *cf)
     sigaction (SIGTERM, &sa, NULL);
     sigaction (SIGINT, &sa, NULL);
     sigaction (SIGPIPE, &sa, NULL);
+    sa.sa_flags = SA_RESTART;
+    sigaction (SIGUSR1, &sa, NULL);
 #endif /* !WIN32 */
 
     Current_Time = time (0);
 
     log ("version %s starting", VERSION);
+    log ("pid is %d", getpid ());
 
     Server_Start = Current_Time;
 
