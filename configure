@@ -1629,8 +1629,12 @@ else
   echo "$ac_t""no" 1>&6
 fi
 
+if  -f /usr/local/lib/libadns.a ; then
+	LIBS="$LIBS -L/usr/local/lib"
+	CFLAGS="$CFLAGS -I/usr/local/include"
+fi
 echo $ac_n "checking for adns_init in -ladns""... $ac_c" 1>&6
-echo "configure:1634: checking for adns_init in -ladns" >&5
+echo "configure:1638: checking for adns_init in -ladns" >&5
 ac_lib_var=`echo adns'_'adns_init | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -1638,7 +1642,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-ladns  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1642 "configure"
+#line 1646 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -1649,7 +1653,7 @@ int main() {
 adns_init()
 ; return 0; }
 EOF
-if { (eval echo configure:1653: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:1657: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -1679,12 +1683,12 @@ fi
 for ac_func in mlockall
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
-echo "configure:1683: checking for $ac_func" >&5
+echo "configure:1687: checking for $ac_func" >&5
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1688 "configure"
+#line 1692 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1707,7 +1711,7 @@ $ac_func();
 
 ; return 0; }
 EOF
-if { (eval echo configure:1711: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:1715: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_func_$ac_func=yes"
 else
@@ -1784,7 +1788,6 @@ EOF
 
 fi
 fi
-
 
 
 trap '' 1 2 15

@@ -17,6 +17,11 @@ AC_CHECK_LIB(z, compress2,[LIBS="$LIBS -lz"],
 AC_CHECK_LIB(xnet,gethostbyname)
 AC_CHECK_LIB(nsl,socket)
 AC_CHECK_LIB(socket,gethostbyname)
+dnl look for -ladns in /usr/local/lib
+if [ -f /usr/local/lib/libadns.a ]; then
+	LIBS="$LIBS -L/usr/local/lib"
+	CFLAGS="$CFLAGS -I/usr/local/include"
+fi
 AC_CHECK_LIB(adns,adns_init)
 AC_CHECK_FUNCS(mlockall)
 
@@ -48,13 +53,5 @@ email addresses],
 [if test $enableval=yes; then
 AC_DEFINE(EMAIL)
 fi])
-
-dnl AC_ARG_ENABLE(tresolv,
-dnl 	[  --enable-tresolv	Turn on support for threaded resolver],
-dnl 	[AC_DEFINE(TRESOLV)
-dnl 	dnl some systems have this in libc
-dnl 	AC_CHECK_FUNC(pthread_create,
-dnl 		[],
-dnl 		[AC_CHECK_LIB(pthread, pthread_create)])])
 
 AC_OUTPUT(Makefile)
