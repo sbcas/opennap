@@ -6,6 +6,7 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include "hash.h"
 #include "debug.h"
 

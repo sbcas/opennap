@@ -25,5 +25,3 @@
 
 * server linking is still blocking for some reason, even thought the socket
   is set nonblocking before the connect() call
-
-* add support for detecting buffer overrun in the malloc debugger

@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <mysql.h>
 #include <string.h>
+#include <stdio.h>
 #include "opennap.h"
 #include "debug.h"
 

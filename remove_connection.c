@@ -6,6 +6,7 @@
 
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include "opennap.h"
 #include "debug.h"
 

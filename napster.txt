@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-January 24, 2000
+February 1, 2000
 
 0.  Forward
 
@@ -827,20 +827,14 @@ appropriate, examples of the <data> section for each message are given.
 
 3.  MD5
 
-The MD5 sum on the files for the upload list is computed against exactly
-300000 bytes at the beginning of the file.  I have verified this :)
-Hope this helps :).
-The cmdline client (nap v0.7) does do some validation that the file is
-consistant with what an MP3 should look like, so it looks like it's
-checking the mp3 header for the file (skipping over any ID3 tag at the
-beginning of the file).  You might or might not want to do similar
-checking in your client.  (I can probably provide you with code for this
-since I've dealt with mp3 decoding before).   I know this last bit because
-it refused to compute the md5 sum on any test file I created that wasn't
-made by pulling the first X bytes out of a valid MP3 (ie, sequential
-bytes, or random bytes or anything but valid mp3)
+It looks like the vast majority of the files are hashed using the first
+299,008 bytes of the file.  There have been some cases where the hash
+matches at 300,032 bytes, but no correlation has been drawn as to when that
+happens.  The speculation at this point is that it might have to do with
+the existence of a ID3v2 tag, or perhaps the file was sampled at 48kHz...?
 
-[This section was contributed by JT <jtraub@dragoncat.net>.  -ed]
+Note: the linux nap client (versions 0.7 - 0.9) seem to hash exactly 300,000
+bytes, which is NOT what the official windows client does.
 
 4.  Where to get more help?
 

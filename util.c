@@ -14,6 +14,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <stdlib.h>
 #include "md5.h"
 #include "opennap.h"
 #include "debug.h"

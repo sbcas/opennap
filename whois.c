@@ -8,6 +8,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 #include "opennap.h"
 #include "debug.h"
 

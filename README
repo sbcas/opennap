@@ -1,6 +1,6 @@
 opennap - the open source napster server
 ========================================
-Last updated January 26, 2000
+Last updated February 1, 2000
 
 * For a description of the napster protocol, please see the file 'napster.txt'
   included with this distribution.
@@ -113,10 +113,26 @@ specifying what input it expects.
 
 200	search [CLIENT]
 
-	opennap supports the
-		SOUNDEX CONTAINS "..."
- 	search string for looking up files from the database using a sound
-	hash
+	SOUNDEX CONTAINS "..."
+
+		soundex is a way of (loosely) hashing words to find words
+		that "sound" similar.  opennap supports searching for files
+		in this manner
+
+	TYPE <mime-type>
+
+		opennap supports other media types besides mp3.  by default,
+		searches will only match mp3 files.  a client can however
+		search for other media typs by specify either a full or
+		partial MIME content-type, such as "video" or "image/jpeg"
+		(see message 10300 for adding media to the database).  The
+		special keyword `any' will match any media type in the
+		database.
+
+		The results of the search are returned as with mp3, except
+		the fields for bitrate, sample frequency and length are
+		meaningless (and are set to 0 in this implmentation).  The
+		client can then download as they would any other mp3 file.
 
 * Non-standard messages
 

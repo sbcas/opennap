@@ -45,9 +45,10 @@ int debug_valid (void *, int);
 #define CALLOC calloc
 #define REALLOC realloc
 #define STRDUP strdup
-#define CLEANUP
+#define CLEANUP()
 #define VALID(p)
 #define VALID_LEN(p,l)
+#define ASSERT(p)
 
 #endif /* DEBUG */
 

@@ -8,6 +8,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <stdlib.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -191,6 +192,7 @@ buffer_free (BUFFER *b)
     }
 }
 
+#if DEBUG
 int
 buffer_validate (BUFFER *b)
 {
@@ -202,6 +204,7 @@ buffer_validate (BUFFER *b)
     ASSERT_RETURN_IF_FAIL (b->next == 0 || VALID_LEN (b->next, sizeof (BUFFER*)), 0);
     return 1;
 }
+#endif /* DEBUG */
 
 #if HAVE_LIBZ
 static BUFFER *

@@ -25,6 +25,9 @@ fixes to compile under Red Hat Linux 6.0 (Alpha)
 added -l option to opennap and metaserver to specify a specific ip to listen
 on for incoming connections instead of any device
 
+fixes to compile cleanly without debugging enabled (not recommended at this
+point)
+
 Changes from 0.09
 =================
 

@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include "debug.h"
 
+#ifdef DEBUG
+
 #define MIN(a,b) ((a<b)?a:b)
 
 typedef struct _block
@@ -271,3 +273,5 @@ debug_valid (void *ptr, int len)
     /* ensure that there are at least `len' bytes available */
     return ((len <= block->len));
 }
+
+#endif /* DEBUG */

@@ -7,6 +7,8 @@
 #include <ctype.h>
 #include <string.h>
 #include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "opennap.h"
 #include "debug.h"
 
