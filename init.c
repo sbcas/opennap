@@ -35,8 +35,14 @@ lookup_hostname (void)
 static void
 sighandler (int sig)
 {
-    (void) sig;			/* unused */
-    SigCaught = 1;
+    switch (sig)
+    {
+	case SIGINT:
+	case SIGHUP:
+	case SIGTERM:
+	    SigCaught = 1;
+	    break;
+    }
 }
 
 int
@@ -50,6 +56,7 @@ init_server (const char *cf)
     sigaction (SIGHUP, &sa, NULL);
     sigaction (SIGTERM, &sa, NULL);
     sigaction (SIGINT, &sa, NULL);
+    sigaction (SIGPIPE, &sa, NULL);
 #endif /* !WIN32 */
 
     log ("version %s starting", VERSION);
