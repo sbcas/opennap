@@ -20,7 +20,7 @@ HANDLER (topic)
 {
     CHANNEL *chan;
     int l;
-    char *chanName, *nick;
+    char *chanName, *nick, *ptr;
     LIST *list;
     CHANUSER *chanUser;
 
@@ -78,6 +78,10 @@ HANDLER (topic)
 	    OUTOFMEMORY ("topic");
 	    return;
 	}
+	/* make sure we don't have any wacky characters in the topic */
+	for(ptr=chan->topic;ptr;ptr++)
+	    if(*ptr=='\r' || *ptr=='\n')
+		*ptr=' ';
 	/* relay to peer servers */
 	pass_message_args (con, tag, ":%s %s %s", nick, chan->name, chan->topic);
 
