@@ -441,6 +441,7 @@ void remove_user (CONNECTION *);
 void send_cmd (CONNECTION *, unsigned int msgtype, const char *fmt, ...);
 int set_keepalive (int, int);
 int set_nonblocking (int);
+int set_tcp_buffer_len (int, int);
 int split_line (char **template, int templatecount, char *pkt);
 void send_queued_data (CONNECTION *con);
 void sql_error (const char *function, const char *query);

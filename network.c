@@ -55,6 +55,24 @@ set_nonblocking (int f)
 }
 
 int
+set_tcp_buffer_len (int f, int bytes)
+{
+    if (setsockopt (f, SOL_SOCKET, SO_SNDBUF, SOCKOPTCAST &bytes, sizeof (bytes)) == -1)
+    {
+	log ("set_tcp_buffer_len(): setsockopt: %s (errno %d)",
+		strerror (errno), errno);
+	return -1;
+    }
+    if (setsockopt (f, SOL_SOCKET, SO_RCVBUF, SOCKOPTCAST &bytes, sizeof (bytes)) == -1)
+    {
+	log ("set_tcp_buffer_len(): setsockopt: %s (errno %d)",
+		strerror (errno), errno);
+	return -1;
+    }
+    return 0;
+}
+
+int
 new_tcp_socket (void)
 {
     int f;

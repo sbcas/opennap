@@ -185,7 +185,10 @@ HANDLER (server_login_ack)
 	con->destroy = 1;
 	return;
     }
-		
+
+    /* set the recv/send buffer length to 16k for server links */
+    set_tcp_buffer_len (con->fd, 16384);
+
     log ("server_login(): server %s has joined", con->host);
 
     notify_mods ("server %s has joined.", con->host);
