@@ -43,7 +43,7 @@ search_callback (DATUM *match, SEARCH *parms)
 
     /* notify the user we found a match */
     send_cmd (parms->con, MSG_SERVER_SEARCH_RESULT,
-        "\"%s\" %s %d %d %d %d %d %lu %d",
+        "\"%s\" %s %d %d %d %d %s %lu %d",
         match->filename,
         match->hash,
         match->size,
@@ -180,7 +180,7 @@ token_compare (LIST * pattern, LIST * tokens)
     return 1;
 }
 
-static void
+static int
 fdb_search (HASH *table,
 	LIST *tokens,
 	int maxhits,
@@ -190,6 +190,7 @@ fdb_search (HASH *table,
     LIST *ptok, *last = 0;
     FLIST *flist = 0, *tmp;
     DATUM *d;
+    int hits = 0;
 
     /* find the file list with the fewest files in it */
     for (ptok = tokens; ptok; ptok = ptok->next)
@@ -199,13 +200,13 @@ fdb_search (HASH *table,
 	{
 	    /* if there is no entry for this word in the hash table, then
 	       we know there are no matches */
-	    return;
+	    return 0;
 	}
         if (!flist || tmp->count < flist->count)
             flist = tmp;
     }
     if (!flist)
-	return;	/* no matches */
+	return 0;	/* no matches */
     log ("fdb_search(): bin contains %d files", flist->count);
     /* find the list of files which contain all search tokens */
     ptok = flist->list;
@@ -239,14 +240,15 @@ fdb_search (HASH *table,
             if (cb (d, cbdata))
             {
                 /* callback accepted match */
-                maxhits--;
-                if (maxhits == 0)
+		hits++;
+		if (hits == maxhits)
                     break;              /* finished */
             }
         }
 	last = ptok;
 	ptok = ptok->next;
     }
+    return hits;
 }
 
 /* 200 ... */
@@ -315,7 +317,7 @@ HANDLER (search)
 	    if (i == ac - 1)
 	    {
 		send_cmd (con, MSG_SERVER_NOSUCH, "not enough parameters");
-		return;
+		goto done;
 	    }
 	    n = atoi (av[i+1]);
 	    if (!strcasecmp ("at least", av[i]))
@@ -332,7 +334,7 @@ HANDLER (search)
 	    if (i == ac - 1)
 	    {
 		send_cmd (con, MSG_SERVER_NOSUCH, "not enough parameters");
-		return;
+		goto done;
 	    }
 	    n = atoi (av[i+1]);
 	    if (!strcasecmp ("at least", av[i]))
@@ -349,7 +351,7 @@ HANDLER (search)
 	    if (i == ac - 1)
 	    {
 		send_cmd (con, MSG_SERVER_NOSUCH, "not enough parameters");
-		return;
+		goto done;
 	    }
 	    n = atoi (av[i+1]);
 	    if (!strcasecmp ("at least", av[i]))
@@ -381,7 +383,9 @@ HANDLER (search)
 	}
     }
 
-    fdb_search (File_Table, tokens, max_results, search_callback, &parms);
+    n = fdb_search (File_Table, tokens, max_results, search_callback, &parms);
+
+    log ("search(): %d hits", n);
 
 done:
 
