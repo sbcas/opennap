@@ -103,6 +103,8 @@ HANDLER(upload_start)
     (void) len;
     ASSERT (validate_connection (con));
     user = transfer_count_wrapper (con, pkt, MSG_CLIENT_UPLOAD_START);
+    if (!user)
+	return;
     ASSERT (validate_user (user));
     user->uploads++;
     user->totalup++;
@@ -117,6 +119,8 @@ HANDLER(upload_end)
     (void) len;
     ASSERT (validate_connection (con));
     user = transfer_count_wrapper (con, pkt, MSG_CLIENT_UPLOAD_END);
+    if (!user)
+	return;
     ASSERT (validate_user (user));
     if (user->uploads > 0)
 	user->uploads--;
@@ -131,6 +135,8 @@ HANDLER(download_start)
     (void) len;
     ASSERT (validate_connection (con));
     user = transfer_count_wrapper (con, pkt, MSG_CLIENT_DOWNLOAD_START);
+    if (!user)
+	return;
     ASSERT (validate_user (user));
     user->downloads++;
     user->totaldown++;
@@ -145,6 +151,8 @@ HANDLER(download_end)
     (void) len;
     ASSERT (validate_connection (con));
     user = transfer_count_wrapper (con, pkt, MSG_CLIENT_DOWNLOAD_END);
+    if (!user)
+	return;
     ASSERT (validate_user (user));
     if (user->downloads > 0)
 	user->downloads--;
