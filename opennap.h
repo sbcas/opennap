@@ -265,6 +265,7 @@ extern char *Server_Name;
 extern char *Server_Pass;
 extern int Server_Port;
 extern int SigCaught;	/* flag to control main loop */
+extern int Max_User_Channels;	/* # of channels is a user allowed to join */
 
 extern unsigned long Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */

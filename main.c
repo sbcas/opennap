@@ -35,6 +35,7 @@ char *Db_Name = 0;
 char *Server_Name = 0;
 char *Server_Pass = 0;
 unsigned long Server_Flags = 0;
+int Max_User_Channels = 5;	/* default, can be changed in config */
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;

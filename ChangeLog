@@ -1,3 +1,8 @@
+Changes from 0.09
+=================
+
+added `max_user_channels' as a configuration option
+
 Changes from 0.08
 =================
 

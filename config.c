@@ -29,6 +29,7 @@ static CONFIG Vars[] = {
     {"db_user", VAR_TYPE_STR, (unsigned long) &Db_User},
     {"db_pass", VAR_TYPE_STR, (unsigned long) &Db_Pass},
     {"db_name", VAR_TYPE_STR, (unsigned long) &Db_Name},
+    { "max_user_channels", VAR_TYPE_INT, (unsigned long) &Max_User_Channels },
     {"motd_path", VAR_TYPE_STR, (unsigned long) &Motd_Path},
     {"server_name", VAR_TYPE_STR, (unsigned long) &Server_Name},
     {"server_password", VAR_TYPE_STR, (unsigned long) &Server_Pass},
