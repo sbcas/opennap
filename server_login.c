@@ -32,7 +32,7 @@ HANDLER (server_login)
     {
 	log ("server_login(): %s tried to login, but is already registered",
 		con->host);
-	send_cmd (con, MSG_SERVER_NOSUCH, "reregistration is not supported");
+	send_cmd (con, MSG_SERVER_ERROR, "reregistration is not supported");
 	con->destroy = 1;
 	return;
     }
@@ -53,7 +53,7 @@ HANDLER (server_login)
 
     if (ip != con->ip)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH,
+	send_cmd (con, MSG_SERVER_ERROR,
 		"your ip address does not match that name");
 	log ("server_login(): %s does not resolve to %s", fields[0],
 		my_ntoa (con->ip));
@@ -69,7 +69,7 @@ HANDLER (server_login)
     {
 	log ("server_login: invalid compression level (%d) from %s",
 	    con->compress, con->host);
-	send_cmd (con, MSG_SERVER_NOSUCH, "invalid compression level %d",
+	send_cmd (con, MSG_SERVER_ERROR, "invalid compression level %d",
 	    con->compress);
 	con->compress = 0;
 	con->destroy = 1;
