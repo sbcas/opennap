@@ -50,7 +50,8 @@ HANDLER (list_users)
 #define ON_MODERATOR 4
 #define ON_LEECH 8
 
-struct guldata {
+struct guldata
+{
     int flags;
     char *server;
     CONNECTION *con;
@@ -61,17 +62,18 @@ global_user_list_cb (USER * user, struct guldata *data)
 {
     ASSERT (validate_user (user));
     ASSERT (data != 0);
-    if(data->flags)
+    if (data->flags)
     {
 	/* selectively display users based on user level */
 	if (!(((data->flags & ON_ADMIN) && user->level == LEVEL_ADMIN) ||
-	    ((data->flags & ON_ELITE) && user->level == LEVEL_ELITE) ||
-	    ((data->flags & ON_MODERATOR) && user->level == LEVEL_MODERATOR) ||
-	    ((data->flags & ON_LEECH) && user->level == LEVEL_LEECH)))
+	      ((data->flags & ON_ELITE) && user->level == LEVEL_ELITE) ||
+	      ((data->flags & ON_MODERATOR) && user->level == LEVEL_MODERATOR)
+	      || ((data->flags & ON_LEECH) && user->level == LEVEL_LEECH)))
 	    return;
     }
-    if(data->server && strcasecmp(data->server,user->server)!=0)
-	return;	/* no match */
+    if (data->server && *data->server != '*' &&
+	strcasecmp (data->server, user->server) != 0)
+	return;			/* no match */
     send_cmd (data->con, MSG_SERVER_GLOBAL_USER_LIST, "%s %s", user->nick,
 	      my_ntoa (user->host));
 }
@@ -90,26 +92,26 @@ HANDLER (global_user_list)
 	return;
     }
     data.con = con;
-    data.server = next_arg(&pkt);
-    data.flags=0;
-    if(pkt)
+    data.server = next_arg (&pkt);
+    data.flags = 0;
+    if (pkt)
     {
-	while(*pkt)
+	while (*pkt)
 	{
-	    switch(*pkt)
+	    switch (*pkt)
 	    {
-		case 'e':
-		    data.flags|=ON_ELITE;
-		    break;
-		case 'a':
-		    data.flags|=ON_ADMIN;
-		    break;
-		case 'm':
-		    data.flags|=ON_MODERATOR;
-		    break;
-		case 'l':
-		    data.flags|=ON_LEECH;
-		    break;
+	    case 'e':
+		data.flags |= ON_ELITE;
+		break;
+	    case 'a':
+		data.flags |= ON_ADMIN;
+		break;
+	    case 'm':
+		data.flags |= ON_MODERATOR;
+		break;
+	    case 'l':
+		data.flags |= ON_LEECH;
+		break;
 	    }
 	    pkt++;
 	}
