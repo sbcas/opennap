@@ -22,6 +22,9 @@
 #endif /* !WIN32 */
 #include "opennap.h"
 #include "debug.h"
+#if TRESOLV
+#include "tresolv.h"
+#endif
 
 /*
 ** Global Variables
@@ -185,7 +188,11 @@ accept_connection (int s)
 	else
 	{
 	    cli->ip = sin.sin_addr.s_addr;
+#if TRESOLV
+	    query_ip(cli->ip, &cli->host);
+#else
 	    cli->host = STRDUP (inet_ntoa (sin.sin_addr));
+#endif
 	    if (!cli->host)
 	    {
 		OUTOFMEMORY ("accept_connection");
@@ -494,9 +501,20 @@ main (int argc, char **argv)
 
 	/* process incoming requests */
 	for (i = 0; !SigCaught && i < Max_Clients; i++)
-	    if (Clients[i] && !Clients[i]->destroy &&
-		FD_ISSET (Clients[i]->fd, &set))
-		handle_connection (Clients[i]);
+	{
+	    if(Clients[i])
+	    {
+#if TRESOLV
+		/* check for dns lookup */
+		if (Clients[i]->host == QUERY_PENDING)
+		    continue;
+#endif /* TRESOLV */
+
+		if (!Clients[i]->destroy &&
+			FD_ISSET (Clients[i]->fd, &set))
+		    handle_connection (Clients[i]);
+	    }
+	}
 
 	if (SigCaught)
 	    break;

@@ -142,7 +142,6 @@ HANDLER (unban)
 	ac = split_line (av, FIELDS (av), pkt);
     if (ac < 1)
     {
-	log ("unban(): too few parameters");
 	unparsable (con);
 	return;
     }

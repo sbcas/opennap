@@ -47,4 +47,9 @@ email addresses],
 AC_DEFINE(EMAIL)
 fi])
 
+AC_ARG_ENABLE(tresolv,
+	[  --enable-tresolv	Turn on support for threaded resolver],
+	[AC_DEFINE(TRESOLV)
+	LIBS="$LIBS -lpthread"])
+
 AC_OUTPUT(Makefile)
