@@ -2,6 +2,9 @@
    This is free software distributed under the terms of the GNU Public
    License.  See the file COPYING for details. */
 
+#define PACKAGE "spynap"
+#define VERSION "0.08"
+
 #include <stdio.h>
 #include <readline/readline.h>
 #include <string.h>
@@ -17,6 +20,25 @@
 int Fd;
 char Buf[512];
 int Quit = 0;
+
+struct search {
+    char *user;
+    char *file;
+};
+
+struct search *Search = 0;
+int Search_Size = 0;
+
+void
+clear_search ()
+{
+    int i;
+    for(i=0;i<Search_Size;i++)
+    {
+	free (Search[i].user);
+	free (Search[i].file);
+    }
+}
 
 void user_input (char *s)
 {
@@ -42,6 +64,7 @@ void user_input (char *s)
 	    type=200;
 	    snprintf (Buf, sizeof (Buf), "FILENAME CONTAINS \"%s\" MAX_RESULTS 100", s);
 	    s = Buf;
+	    clear_search();
 	}
 	else if (!strncmp ("part", s, 4))
 	{
@@ -50,8 +73,16 @@ void user_input (char *s)
 	}
 	else if (!strncmp("get", s, 3))
 	{
+	    int i;
 	    s += 3;
 	    type = 203;
+	    i=atoi(s);
+	    if (i>=0 && i<Search_Size)
+	    {
+		snprintf (Buf, sizeof (Buf), "%s \"%s\"", Search[i].user,
+			Search[i].file);
+		s=Buf;
+	    }
 	}
 	else if (!strncmp("msg", s, 3))
 	{
@@ -62,6 +93,7 @@ void user_input (char *s)
 	{
 	    s+=6;
 	    type=211;
+	    clear_search();
 	}
 	else if (!strncmp("whois", s, 5))
 	{
@@ -110,12 +142,14 @@ void user_input (char *s)
     write (Fd, &type, 2);
     if (len)
 	write (Fd, p, len);
+    printf ("\rsent: len=%d, msg=%d, data=%s[K\n", len, type, len ? p : "(empty)");
 }
 
 int
 server_output (void)
 {
     short len, msg, bytes = 0, l;
+    char *p;
 
     l = read (Fd, &len, 2);
     if (l != 2)
@@ -157,6 +191,44 @@ server_output (void)
 	write (Fd, &msg, 2);
 	write (Fd, Buf, len);
     }
+    else if (msg == 212)
+    {
+	Search = realloc (Search, sizeof (struct search) * (Search_Size + 1));
+	p = strchr (Buf, ' ');
+	*p++ = 0;
+	Search[Search_Size].user = strdup (Buf);
+	Search[Search_Size].file = p;
+	p = strchr (Buf, ' ');
+	*p = 0;
+	Search[Search_Size].user = strdup (Search[Search_Size].file);
+	Search_Size++;
+    }
+    else if (msg == 201)
+    {
+	Search = realloc (Search, sizeof (struct search) * (Search_Size + 1));
+	p = strchr (Buf, ' ');
+	*p++ = 0;
+	Search[Search_Size].file = strdup (Buf);
+	p = strchr (p, ' ');
+	*p++ = 0;
+	p = strchr (p, ' ');
+	*p++ = 0;
+	p = strchr (p, ' ');
+	*p++ = 0;
+	p = strchr (p, ' ');
+	*p++ = 0;
+	p = strchr (p, ' ');
+	*p++ = 0;
+	Search[Search_Size].user = p;
+	p = strchr (p, ' ');
+	*p = 0;
+	Search[Search_Size].user = strdup (Search[Search_Size].file);
+	Search_Size++;
+    }
+    else if (msg == 204)
+    {
+	/* download ack */
+    }
 
     return 0;
 }
@@ -164,7 +236,8 @@ server_output (void)
 static void
 usage (void)
 {
-    printf ("usage: %s [ -rhv ] [ -s SERVER ] [ -p PORT ] [ -u USER ]\n", PACKAGE);
+    printf ("usage: %s [ -rhv ] [ -s SERVER ] [ -p PORT ] [ -u USER ] [ -d DATAPORT ]\n", PACKAGE);
+puts   ("  -d DATAPORT  specify the local data port to listen on");
 puts   ("  -h		display this help message");
 puts   ("  -r		auto reconnect to server");
 puts   ("  -s SERVER	connect to SERVER");
@@ -193,8 +266,9 @@ main (int argc, char **argv)
     struct hostent *he;
     int reconnect = 0;
     char *metaserver = "server.napster.com";
+    int dataport = 6699;
 
-    while ((i = getopt (argc, argv, "m:hrs:p:u:v")) != -1)
+    while ((i = getopt (argc, argv, "m:hrs:p:u:vd:")) != -1)
     {
 	switch (i)
 	{
@@ -212,6 +286,9 @@ main (int argc, char **argv)
 		break;
 	    case 'u':
 		user = optarg;
+		break;
+	    case 'd':
+		dataport = atoi(optarg);
 		break;
 	    case 'v':
 		version ();
