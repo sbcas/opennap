@@ -202,19 +202,21 @@ check_ban (CONNECTION *con, const char *target, ban_t type)
 	if (ban->type == type &&
 		((type == BAN_IP && ip_glob_match (ban->target, target)) ||
 		 (type == BAN_USER && !strcasecmp (ban->target, target))))
+	{
 	    log ("check_ban(): %s is banned: %s", ban->target, NONULL(ban->reason));
-	send_cmd (con,
+	    send_cmd (con,
 		(type == BAN_IP) ? MSG_SERVER_ERROR : MSG_SERVER_NOSUCH,
 		"You are banned from this server: %s",
 		NONULL (ban->reason));
-	if (type == BAN_IP)
-	    notify_mods ("Connection attempt from banned hosts %s (%s): %s",
+	    if (type == BAN_IP)
+		notify_mods ("Connection attempt from banned hosts %s (%s): %s",
 		    target, ban->target, NONULL (ban->reason));
-	else
-	    notify_mods("Connection from banned user %s (%s): %s",
+	    else
+		notify_mods("Connection from banned user %s (%s): %s",
 		    target, my_ntoa (con->ip), NONULL (ban->reason));
-	con->destroy = 1;
-	return 1;
+	    con->destroy = 1;
+	    return 1;
+	}
     }
     return 0;
 }

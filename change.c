@@ -69,7 +69,7 @@ HANDLER (change_pass)
     if (pop_user (con, &pkt, &user) != 0)
 	return;
     pass_message_args (con, tag, "%s", pkt);
-    db = userdb_fetch (user->nick);
+    db = hash_lookup (User_Db, user->nick);
     if (!db)
     {
 	log ("change_pass(): could not find user %s in the database",
@@ -78,9 +78,6 @@ HANDLER (change_pass)
     }
     FREE (db->password);
     db->password = STRDUP (pkt);
-    if (userdb_store (db))
-	log ("change_pass(): userdb_store failed");
-    userdb_free (db);
 }
 
 /* 702 [ :<user> ] <email>
@@ -95,7 +92,7 @@ HANDLER (change_email)
     if (pop_user (con, &pkt, &user) != 0)
 	return;
     pass_message_args (con, tag, "%s", pkt);
-    db = userdb_fetch (user->nick);
+    db = hash_lookup (User_Db, user->nick);
     if (!db)
     {
 	log ("change_email(): could not find user %s in the database",
@@ -104,9 +101,6 @@ HANDLER (change_email)
     }
     FREE (db->email);
     db->email = STRDUP (pkt);
-    if (userdb_store (db))
-	log ("change_email(): userdb_store failed");
-    userdb_free (db);
 }
 
 /* 613 [ :<sender> ] <user> <port> [ <reason> ]
@@ -157,6 +151,14 @@ HANDLER (alter_port)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "%d is an invalid port", p);
 	return;
     }
+    if (user->port == p)
+    {
+	log ("alter_port(): user %s's data port is already %d", p);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "User %s's data port is already set to %d",
+		user->port);
+	return;
+    }
     user->port = p;
 
     /* if local user, send them the message */
@@ -205,7 +207,7 @@ HANDLER (alter_pass)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "Wrong number of arguments.");
 	return;
     }
-    db = userdb_fetch (av[0]);
+    db = hash_lookup (User_Db, av[0]);
     if (!db)
     {
 	log ("alter_pass(): %s is not registered", av[0]);
@@ -219,19 +221,12 @@ HANDLER (alter_pass)
     if (!db->password)
     {
 	OUTOFMEMORY ("alter_pass");
-	userdb_free (db);
 	return;
     }
     pass_message_args (con, tag, ":%s %s %s \"%s\"", sender->nick, db->nick,
 		       db->password, av[2]);
     notify_mods ("%s changed %s's password: %s", sender->nick, db->nick,
 		 av[2]);
-    if (userdb_store (db))
-    {
-	log ("alter_pass(): userdb_store failed");
-	send_user (sender, MSG_SERVER_NOSUCH, "[%s] db failure", Server_Name);
-    }
-    userdb_free (db);
 }
 
 /* 625 [ :<sender> ] <nick> <speed>

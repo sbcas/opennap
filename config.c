@@ -59,6 +59,7 @@ static CONFIG Vars[] = {
     { "max_nick_length", VAR_TYPE_INT, UL &Max_Nick_Length, 32 },
     { "user_db_path", VAR_TYPE_STR, UL &User_Db_Path, UL SHAREDIR "/users" },
     { "server_db_path", VAR_TYPE_STR, UL &Server_Db_Path, UL SHAREDIR "/servers" },
+    { "user_db_interval", VAR_TYPE_INT, UL &User_Db_Interval, 1800 },
 };
 
 static int Vars_Size = sizeof (Vars) / sizeof (CONFIG);

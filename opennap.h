@@ -302,6 +302,7 @@ extern time_t Server_Start;
 extern int Collect_Interval;
 extern unsigned int Bytes_In;
 extern unsigned int Bytes_Out;
+extern int User_Db_Interval;
 
 #ifndef WIN32
 extern int Uid;
@@ -337,6 +338,7 @@ extern HASH *Channels;
 extern HASH *Hotlist;
 extern HASH *File_Table;
 extern HASH *MD5;
+extern HASH *User_Db;
 
 extern char *Levels[LEVEL_ELITE + 1];
 extern char *Content_Types[CT_UNKNOWN];
@@ -573,10 +575,8 @@ int split_line (char **template, int templatecount, char *pkt);
 char *strlower (char *);
 void synch_server (CONNECTION *);
 LIST *tokenize (char *);
-void userdb_close (void);
-int userdb_init (const char *);
-USERDB *userdb_fetch (const char *);
-int userdb_store (USERDB *);
+int userdb_dump (void);
+int userdb_init (void);
 void userdb_free (USERDB *);
 int validate_user (USER *);
 int validate_channel (CHANNEL *);

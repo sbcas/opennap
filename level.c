@@ -120,15 +120,11 @@ HANDLER (level)
 
     /* if this is a registered nick, update our db so this change is
        persistent */
-    db = userdb_fetch (user->nick);
+    db = hash_lookup (User_Db, user->nick);
     if (db)
     {
+	log ("level(): updated level in user database");
 	db->level = level;
-	if (userdb_store (db))
-	    log ("level(): userdb_store failed (ignored)");
-	else
-	    log ("level(): updated level in user database");
-	userdb_free (db);
     }
     else if (user->level > LEVEL_USER)
     {
@@ -142,23 +138,21 @@ HANDLER (level)
 	    OUTOFMEMORY ("level");
 	    return;
 	}
-	db->nick = user->nick;
-	db->password = user->pass;
+	db->nick = STRDUP (user->nick);
+	db->password = STRDUP (user->pass);
 	db->level = user->level;
 	if (user->email)
-	    db->email = user->email;
+	    db->email = STRDUP (user->email);
 	else
 	{
 	    snprintf (email, sizeof (email), "anon@%s", Server_Name);
-	    db->email = email;
+	    db->email = STRDUP (email);
 	}
 	/* we use the current time.  this should be ok since if we ever try
 	   to propogate this entry the server(s) with older entries will
 	   override this one and update our entry */
 	db->created = Current_Time;
 	db->lastSeen = Current_Time;
-	if (userdb_store (db))
-	    log ("level(): userdb_store failed");
-	FREE (db);
+	hash_add (User_Db, db->nick, db);
     }
 }

@@ -8,11 +8,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <limits.h>
 #include "opennap.h"
 #include "debug.h"
-#include "textdb.h"
 
-static TEXTDB *User_Db = 0;
+HASH *User_Db = 0;
 
 int
 get_level (const char *s)
@@ -30,15 +31,6 @@ get_level (const char *s)
     return -1;
 }
 
-int
-userdb_init (const char *path)
-{
-    ASSERT (User_Db == 0);
-    ASSERT (path != 0);
-    User_Db = textdb_init (path);
-    return ((User_Db == 0));
-}
-
 void
 userdb_free (USERDB * p)
 {
@@ -54,109 +46,103 @@ userdb_free (USERDB * p)
     }
 }
 
-USERDB *
-userdb_fetch (const char *nick)
+int
+userdb_init (void)
 {
-    TEXTDB_RES *result;
-    LIST *list;
-    USERDB *user;
+    FILE *fp;
+    int ac;
+    char *av[6];
+    USERDB *u;
 
-    ASSERT (nick != 0);
-    ASSERT (User_Db != 0);
-    result = textdb_fetch (User_Db, nick);
-    if (!result)
-	return 0;
-    if (list_count (result->columns) < 6)
+    fp = fopen (User_Db_Path, "r");
+    if (!fp)
     {
-	log ("userdb_fetch(): too few columns in entry for user %s",
-	     (char *) result->columns->data);
-	textdb_free_result (result);
-	return 0;
+	logerr ("userdb_init", User_Db_Path);
+	return -1;
     }
-    user = CALLOC (1, sizeof (USERDB));
-    if (!user)
+    User_Db = hash_init (257, (hash_destroy) userdb_free);
+    log("userdb_init(): reading %s", User_Db_Path);
+    while (fgets (Buf, sizeof (Buf), fp))
     {
-	OUTOFMEMORY ("userdb_fetch");
-	textdb_free_result (result);
-	return 0;
+	ac = split_line (av, FIELDS (av), Buf);
+	if (ac == 6)
+	{
+	    u = CALLOC (1, sizeof (USERDB));
+	    if (u)
+	    {
+		u->nick = STRDUP (av[0]);
+		u->password = STRDUP (av[1]);
+		u->email = STRDUP (av[2]);
+	    }
+	    if (!u || !u->nick || !u->password || !u->email)
+	    {
+		OUTOFMEMORY ("userdb_init");
+		if(u)
+		    userdb_free(u);
+		fclose(fp);
+		return -1;
+	    }
+	    u->level = get_level (av[3]);
+	    u->created = atol (av[4]);
+	    u->lastSeen = atol (av[5]);
+	    hash_add (User_Db, u->nick, u);
+	}
+	else
+	{
+	    log ("userdb_init(): bad user db entry");
+	    print_args (ac, av);
+	}
     }
-    list = result->columns;
-    user->nick = STRDUP (list->data);
-    list = list->next;
-    user->password = STRDUP (list->data);
-    list = list->next;
-    user->email = STRDUP (list->data);
-    list = list->next;
-    user->level = get_level (list->data);
-    if (user->level == -1)
-	user->level = LEVEL_USER;
-    list = list->next;
-    user->created = atol (list->data);
-    list = list->next;
-    user->lastSeen = atol (list->data);
-    if (!user->nick || !user->password || !user->email)
-    {
-	OUTOFMEMORY ("userdb_fetch");
-	userdb_free (user);
-	user = 0;
-    }
-    textdb_free_result (result);
-    return user;
+    fclose (fp);
+    log("userdb_init(): %d registered users", User_Db->dbsize);
+    return 0;
+}
+
+static void
+dump_userdb (USERDB *db, FILE *fp)
+{
+    fputs(db->nick,fp);
+    fputc(' ',fp);
+    fputs(db->password,fp);
+    fputc(' ',fp);
+    fputs(db->email,fp);
+    fputc(' ',fp);
+    fputs(Levels[db->level],fp);
+    fputc(' ',fp);
+    fprintf(fp,"%d %d\r\n",(int)db->created,(int)db->lastSeen);
 }
 
 int
-userdb_store (USERDB * db)
+userdb_dump (void)
 {
-    LIST *list, *tmp;
-    char create[16], last[16];
-    int err = 0;
-    TEXTDB_RES *result;
+    FILE *fp;
+    char path[_POSIX_PATH_MAX];
 
-    tmp=CALLOC(1,sizeof(LIST));
-    tmp->data = db->nick;
-    list = list_append (0, tmp);
-
-    tmp=CALLOC(1,sizeof(LIST));
-    tmp->data = db->password;
-    list = list_append (list, tmp);
-
-    tmp=CALLOC(1,sizeof(LIST));
-    tmp->data = db->email;
-    list = list_append (list, tmp);
-
-    tmp=CALLOC(1,sizeof(LIST));
-    tmp->data = Levels[db->level];
-    list = list_append (list, tmp);
-
-    snprintf (create, sizeof (create), "%d", (int) db->created);
-    tmp=CALLOC(1,sizeof(LIST));
-    tmp->data = create;
-    list = list_append (list, tmp);
-
-    snprintf (last, sizeof (last), "%d", (int) db->lastSeen);
-    tmp=CALLOC(1,sizeof(LIST));
-    tmp->data = last;
-    list = list_append (list, tmp);
-
-    if ((result = textdb_new_result (User_Db, list)) == 0)
+    log("userdb_dump(): dumping user database");
+    snprintf(path,sizeof(path),"%s.tmp",User_Db_Path);
+    fp=fopen(path,"w");
+    if(!fp)
     {
-	list_free (list, 0);
-	log ("userdb_store(): textdb_new_result failed");
+	logerr("userdb_dump",path);
 	return -1;
     }
-    if (textdb_store (result))
+    hash_foreach(User_Db,(hash_callback_t)dump_userdb,fp);
+    if(fflush(fp))
     {
-	log ("userdb_store(): textdb_store failed");
-	err = -1;
+	logerr("userdb_dump","fflush");
+	fclose(fp);
+	return -1;
     }
-    result->columns = 0;
-    textdb_free_result (result);
-    list_free (list, 0);
-    return err;
-}
-
-void
-userdb_close (void)
-{
-    textdb_close (User_Db);
+    if(fclose(fp))
+    {
+	logerr("userdb_dump","fclose");
+	return -1;
+    }
+    if(rename(path,User_Db_Path))
+    {
+	logerr("userdb_dump","rename");
+	return -1;
+    }
+    log("userdb_dump(): wrote %d entries", User_Db->dbsize);
+    return 0;
 }

@@ -50,6 +50,7 @@ time_t Server_Start;		/* time at which the server was started */
 int Collect_Interval;
 unsigned int Bytes_In = 0;
 unsigned int Bytes_Out = 0;
+int User_Db_Interval;		/* how often to save the user database */
 
 #ifndef WIN32
 int Uid;
@@ -383,6 +384,7 @@ main (int argc, char **argv)
 	       File_Table);
     add_timer (Collect_Interval, -1, (timer_cb_t) fdb_garbage_collect, MD5);
     add_timer (Stat_Click, -1, (timer_cb_t) update_stats, 0);
+    add_timer (User_Db_Interval, -1, (timer_cb_t) userdb_dump, 0);
 
     /* initialize so we get the correct delta for the first call to
        update_stats() */
@@ -481,12 +483,13 @@ main (int argc, char **argv)
     /* disallow incoming connections */
     CLOSE (s);
 
+    /* write out the user database */
+    userdb_dump ();
+
     /* close all client connections */
     for (i = 0; i < Max_Clients; i++)
 	if (Clients[i])
 	    remove_connection (Clients[i]);
-
-    userdb_close ();
 
     /* only clean up memory if we are in debug mode, its kind of pointless
        otherwise */
@@ -503,6 +506,7 @@ main (int argc, char **argv)
     free_hash (Users);
     free_hash (Channels);
     free_hash (Hotlist);
+    free_hash (User_Db);
     free_timers ();
 
     list_free (Bans, (list_destroy_t) free_ban);

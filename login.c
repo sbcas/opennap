@@ -88,7 +88,7 @@ HANDLER (login)
     speed = atoi (av[4]);
     if (speed < 0 || speed > 10)
     {
-	log ("login(): invalid speed %d from %s (%s)", speed, av[0], av[4]);
+	log ("login(): invalid speed %d from %s (%s)", speed, av[0], av[3]);
 	if (con->class == CLASS_UNKNOWN)
 	{
 	    send_cmd (con, MSG_SERVER_ERROR, "%d is an invalid speed", speed);
@@ -122,8 +122,7 @@ HANDLER (login)
     }
 
     /* check to make sure that this user isn't ready logged in */
-    user = hash_lookup (Users, av[0]);
-    if (user)
+    if ((user = hash_lookup (Users, av[0])))
     {
 	/* user already exists */
 	ASSERT (validate_user (user));
@@ -186,7 +185,7 @@ HANDLER (login)
     user->con = con;
 
     /* see if this is a registered nick */
-    if ((db = userdb_fetch (av[0])))
+    if ((db = hash_lookup (User_Db, av[0])))
     {
 	/* yes, it is registered */
 	if (tag == MSG_CLIENT_LOGIN_REGISTER)
@@ -219,9 +218,7 @@ HANDLER (login)
 	{
 	    log ("login(): bad password for user %s", av[0]);
 	    if (con->class == CLASS_UNKNOWN)
-	    {
 		send_cmd (con, MSG_SERVER_ERROR, "Invalid Password");
-	    }
 	    else
 	    {
 		ASSERT (con->class == CLASS_SERVER);
@@ -243,8 +240,6 @@ HANDLER (login)
 
 	/* update the last seen time */
 	db->lastSeen = Current_Time;
-	if (userdb_store (db))
-	    log ("login(): userdb_store failed (ignored)");
 
 	/* set the default userlevel */
 	user->level = db->level;
@@ -273,14 +268,13 @@ HANDLER (login)
 	if (!db->nick || !db->password || !db->email)
 	{
 	    OUTOFMEMORY ("login");
+	    userdb_free (db);
 	    goto failed;
 	}
 	db->level = LEVEL_USER;
 	db->created = Current_Time;
 	db->lastSeen = Current_Time;
-
-	if (userdb_store (db))
-	    log ("login(): userdb_store failed (ignored)");
+	hash_add (User_Db, db->nick, db);
     }
 
     if (hash_add (Users, user->nick, user))
@@ -321,13 +315,11 @@ HANDLER (login)
 	if (user->level != LEVEL_USER)
 	{
 	    /* notify users of their change in level */
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s set your user level to %s (%d).",
-		      Server_Name, Levels[user->level], user->level);
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		"%s set your user level to %s (%d).",
+		Server_Name, Levels[user->level], user->level);
 	}
     }
-
-    if (db)
-	userdb_free (db);
 
     /* pass this information to our peer servers */
     if (Servers)
@@ -366,8 +358,6 @@ HANDLER (login)
     /* clean up anything we allocated here */
     if (con->class == CLASS_UNKNOWN)
 	con->destroy = 1;
-    if (db)
-	userdb_free (db);
     if (user)
     {
 	if (user->nick)
@@ -443,9 +433,8 @@ HANDLER (register_nick)
 	return;
     }
     log ("register_nick(): attempting to register %s", pkt);
-    if ((db = userdb_fetch (pkt)))
+    if ((db = hash_lookup (User_Db, pkt)))
     {
-	userdb_free (db);
 	log ("register_nick(): %s is already registered", pkt);
 	send_cmd (con, MSG_SERVER_REGISTER_FAIL, "");
     }
@@ -483,7 +472,7 @@ HANDLER (reginfo)
 	return;
     }
     /* look up any entry we have for this user */
-    db = userdb_fetch (pkt);
+    db = hash_lookup (User_Db, pkt);
     if (db)
     {
 	/* check the timestamp to see if this is more recent than what
@@ -511,6 +500,7 @@ HANDLER (reginfo)
 		FREE (db);
 	    return;
 	}
+	hash_add (User_Db, db->nick, db);
     }
 
     pass_message_args (con, tag, ":%s %s %s %s %s %s %s",
@@ -522,17 +512,11 @@ HANDLER (reginfo)
     if (!db->password || !db->email)
     {
 	OUTOFMEMORY ("reginfo");
-	userdb_free (db);
 	return;
     }
     db->level = get_level (fields[3]);
     db->created = atol (fields[4]);
     db->lastSeen = atol (fields[5]);
-    if (userdb_store (db))
-	log ("reginfo(): userdb_store failed (ignored)");
-    else
-	log ("reginfo(): updated accounts table for %s", fields[0]);
-    userdb_free (db);
 }
 
 /* 10200 [ :<sender> ] <user> <pass> <email> [ <level> ]
@@ -582,7 +566,7 @@ HANDLER (register_user)
 	level = LEVEL_USER;	/* default */
 
     /* first check to make sure this user is not already registered */
-    if (userdb_fetch (av[0]))
+    if (hash_lookup (User_Db, av[0]))
     {
 	log ("register_user(): %s is already registered", av[0]);
 	send_user (sender, MSG_SERVER_NOSUCH, "[%s] %s is already registered",
@@ -599,17 +583,17 @@ HANDLER (register_user)
 	OUTOFMEMORY ("register_user");
 	return;
     }
-    db->nick = av[0];
-    db->password = av[1];
-    db->email = av[2];
+    db->nick = STRDUP (av[0]);
+    db->password = STRDUP (av[1]);
+    db->email = STRDUP (av[2]);
+    if(!db->nick||!db->password||!db->email)
+    {
+	OUTOFMEMORY("register_user");
+	FREE (db);
+	return;
+    }
     db->level = level;
     db->created = Current_Time;
     db->lastSeen = Current_Time;
-    if (userdb_store (db))
-    {
-	log ("register_user(): userdb_store failed");
-	send_user (sender, MSG_SERVER_NOSUCH,
-		   "[%s] unable to register nick (db failure)", Server_Name);
-    }
-    FREE (db);
+    hash_add (User_Db, db->nick, db);
 }

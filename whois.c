@@ -32,13 +32,10 @@ HANDLER (whois)
     if (!user)
     {
 	/* check to see if this is a registered nick */
-	db = userdb_fetch (pkt);
+	db = hash_lookup (User_Db, pkt);
 	if (db)
-	{
 	    send_cmd (con, MSG_SERVER_WHOWAS, "%s %s %d", db->nick,
 		      Levels[db->level], db->lastSeen);
-	    userdb_free (db);
-	}
 	else
 	    nosuchuser (con, pkt);
 	return;

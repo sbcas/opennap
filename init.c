@@ -78,7 +78,7 @@ init_server (const char *cf)
     config (cf ? cf : SHAREDIR "/config");
 
     /* open files before dropping dropping cap */
-    if (userdb_init (User_Db_Path))
+    if (userdb_init ())
     {
 	log ("init(): userdb_init failed");
 	return -1;
