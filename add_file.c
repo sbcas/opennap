@@ -224,13 +224,13 @@ insert_datum (DATUM * info, char *av)
 	}
     }
 
-    /* add this entry to the hash table for this user's files */
-    hash_add (info->user->files, info->filename, info);
-    info->refcount++;
-
     /* split the filename into words */
     tokens = tokenize (av);
     ASSERT (tokens != 0);
+
+    /* add this entry to the hash table for this user's files */
+    hash_add (info->user->files, info->filename, info);
+    info->refcount++;
 
     /* add this entry to the global file list */
     for (ptr = tokens; ptr; ptr = ptr->next)
