@@ -38,17 +38,17 @@ hash_init (int buckets, hash_destroy f)
 static unsigned int
 hash_string (HASH * table, const char *key)
 {
-    unsigned int sum = 0;
+    unsigned long   h = 0, g;
 
     ASSERT (key != 0);
-    for (; *key; key++)
+    for (;*key;key++)
     {
-	/* shifting by 1 bit prevents abc from having the same hash as acb */
-	sum<<=1;
-	sum += tolower (*key);
+	h = (h << 4) + tolower(*key);
+	if ((g = h & 0xF0000000))
+	    h ^= g >> 24;
+	h &= ~g;
     }
-    sum = sum % table->numbuckets;
-    return sum;
+    return h % table->numbuckets;
 }
 
 int
