@@ -653,8 +653,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	<nick>
 
-	client request to disconnect a user.  client must be "Admin" level to
-	execute this command
+	client request to disconnect a user.
 
 611	nuke a user [CLIENT]
 
@@ -663,6 +662,11 @@ appropriate, examples of the <data> section for each message are given.
 	client request to delete account for <nick>
 
 612	ban user [CLIENT]
+
+	<nick | ip>
+
+	client request to place a ban on either a specific nickname or
+	an ip address
 
 613	set data port for user [CLIENT, SERVER]
 
