@@ -393,7 +393,9 @@ send_queued_data (CONNECTION *con)
 	return;
     }
 
+#if 0
     log ("send_queued_data: wrote %d bytes", n);
+#endif
 
     if (n > 0)
 	con->sendbuf = buffer_consume (con->sendbuf, n);

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -56,6 +57,123 @@ get_attr (ATTRTYPE t, ATTRIBUTE * list, size_t listsize)
 }
 #endif
 
+static void
+compute_soundex (char *d, int dsize, const char *s)
+{
+    int n = 0;
+
+    /* if it's not big enough to hold one soundex word, quit without
+       doing anything */
+    if (dsize < 4)
+    {
+	ASSERT (0); /* this is a programming error */
+	if (dsize > 0)
+	    *d = 0;
+	return;
+    }
+    dsize--; /* save room for the terminatin nul (\0) */
+
+    *d++ = toupper (*s);
+    dsize--;
+    s++;
+
+    while (*s && dsize > 0)
+    {
+	switch (tolower (*s))
+	{
+	    case 'b':
+	    case 'p':
+	    case 'f':
+	    case 'v':
+		*d++ = '1';
+		dsize--;
+		n++;
+		break;
+	    case 'c':
+	    case 's':
+	    case 'k':
+	    case 'g':
+	    case 'j':
+	    case 'q':
+	    case 'x':
+	    case 'z':
+		*d++ = '2';
+		dsize--;
+		n++;
+		break;
+	    case 'd':
+	    case 't':
+		*d++ = '3';
+		dsize--;
+		n++;
+		break;
+	    case 'l':
+		*d++ = '4';
+		dsize--;
+		n++;
+		break;
+	    case 'm':
+	    case 'n':
+		*d++ = '5';
+		dsize--;
+		n++;
+		break;
+	    case 'r':
+		*d++ = '6';
+		dsize--;
+		n++;
+		break;
+	    default:
+		if (!isalpha (*s))
+		{
+		    /* pad short words with 0's */
+		    while (n < 3 && dsize > 0)
+		    {
+			*d++ = '0';
+			dsize--;
+			n++;
+		    }
+		    n = 0; /* reset */
+		    /* skip forward until we find the next word */
+		    s++;
+		    while (*s && !isalpha (*s))
+			s++;
+		    if (!*s)
+		    {
+			*d = 0;
+			return;
+		    }
+		    if (dsize > 0)
+		    {
+			*d++ = ',';
+			dsize--;
+			if (dsize > 0)
+			{
+			    *d++ = toupper (*s);
+			    dsize--;
+			}
+		    }
+		}
+		/* else it's a vowel and we ignore it */
+		break;
+	}
+	/* skip over duplicate letters */
+	while (*(s+1) == *s)
+	    s++;
+
+	/* next letter */
+	s++;
+    }
+    /* pad short words with 0's */
+    while (n < 3 && dsize > 0)
+    {
+	*d++ = '0';
+	dsize--;
+	n++;
+    }
+    *d = 0;
+}
+
 /* adds a file to the database */
 
 /* client request is of the form
@@ -64,8 +182,8 @@ get_attr (ATTRTYPE t, ATTRIBUTE * list, size_t listsize)
 HANDLER (add_file)
 {
     char *field[6];
+    char path[256], soundex[256], *p;
     USER *user;
-    char path[256];
     int fsize;
 
     (void) tag;
@@ -95,11 +213,19 @@ HANDLER (add_file)
        char, so we have to escape them here */
     fudge_path (field[0], path, sizeof (path));
 
+    /* skip over the leading path name to get just the filename.  we compute
+       the soundex hash of the filename to support soundex searching in
+       the clients */
+    p = strrchr (field[0], '\\');
+    if (!p)
+	p = field[0];
+    compute_soundex (soundex, sizeof (soundex), p);
+
     /* form the SQL request */
     snprintf (Buf, sizeof (Buf),
-	      "INSERT INTO library VALUES('%s','%s',%s,'%s',%s,%s,%s,%d)",
+	      "INSERT INTO library VALUES('%s','%s',%s,'%s',%s,%s,%s,%d,'%s')",
 	      user->nick, path, field[2], field[1],
-	      field[3], field[4], field[5], user->speed);
+	      field[3], field[4], field[5], user->speed, soundex);
 
     if (mysql_query (Db, Buf) != 0)
     {

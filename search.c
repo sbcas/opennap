@@ -68,7 +68,7 @@ HANDLER (search)
 
     CHECK_USER_CLASS ("search");
 
-    log ("search(): %s", pkt);
+    log ("search: %s", pkt);
 
     numwords = split_line (fields, sizeof (fields) / sizeof (char *), pkt);
 
@@ -79,14 +79,16 @@ HANDLER (search)
     i = 0;
     while (i < numwords)
     {
-	if (strcasecmp ("filename", fields[i]) == 0)
+	if (!strcasecmp ("filename", fields[i]) ||
+		!strcasecmp ("soundex", fields[i]))
 	{
 	    i++;
 	    /* next word should be "contains" */
 	    if (strcasecmp ("contains", fields[i]) != 0)
 	    {
 		log
-		    ("search(): error in search string, expected FILENAME CONTAINS");
+		    ("search(): error in search string, expected '%s CONTAINS'",
+		     fields[i-1]);
 		return;
 	    }
 	    i++;
@@ -108,8 +110,8 @@ HANDLER (search)
 	    format_request (fields[i], quoted, sizeof (quoted));
 
 	    l = strlen (Buf);
-	    snprintf (Buf + l, sizeof (Buf) - l, " %sfilename LIKE '%%%s%%'",
-		    compound ? " && " : "", quoted);
+	    snprintf (Buf + l, sizeof (Buf) - l, " %s%s LIKE '%%%s%%'",
+		    compound ? " && " : "", fields[i-2], quoted);
 	    i++;
 	    compound = 1;
 	}
@@ -167,7 +169,7 @@ HANDLER (search)
     snprintf (Buf + strlen (Buf), sizeof (Buf) - strlen (Buf), " LIMIT %d",
 	      max_results);
 
-    log ("search(): %s", Buf);
+    log ("search: %s", Buf);
 
     if (mysql_query (Db, Buf) != 0)
     {
@@ -189,7 +191,7 @@ HANDLER (search)
 	user = hash_lookup (Users, row[0]);
 	if (!user)
 	{
-	    log ("search(): user %s is no longer active!", row[0]);
+	    log ("search: user %s is no longer active!", row[0]);
 	    continue;
 	}
 

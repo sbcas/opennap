@@ -9,6 +9,11 @@ session.
 
 servers now negotiate the compression level upon connection
 
+added support for searching the database using soundex hashes.  client
+syntax in the 200 message is
+	SOUNDEX CONTAINS "..."
+each soundex word should be separated by a space inside the quotes.
+
 Changes from 0.09
 =================
 

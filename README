@@ -84,8 +84,8 @@ Last updated January 26, 2000
 			filename VARCHAR(240) NOT NULL,
 			size INT UNSIGNED, md5 CHAR(48), bitrate INT UNSIGNED,
 			freq INT UNSIGNED, duration INT UNSIGNED,
-			linespeed INT UNSIGNED, PRIMARY KEY (owner,
-			filename));
+			linespeed INT UNSIGNED, soundex VARCHAR(255),
+			PRIMARY KEY (owner, filename));
 
 		'owner' is the nick contributing the file
 		'filename' is the name of the contributed file
