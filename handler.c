@@ -146,6 +146,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_SERVER_RECONFIG, server_reconfig},	/* 800 */
     {MSG_CLIENT_SERVER_VERSION, server_version},/* 801 */
     {MSG_CLIENT_SERVER_CONFIG, server_config},	/* 810 */
+    {MSG_CLIENT_CLEAR_CHANNEL, clear_channel},	/* 820 */
     {MSG_CLIENT_EMOTE, emote},			/* 824 */
     {MSG_CLIENT_CHANNEL_LIMIT, channel_limit},	/* 826 */
     {MSG_CLIENT_FULL_CHANNEL_LIST, full_channel_list},	/* 827 */

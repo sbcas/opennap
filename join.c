@@ -59,7 +59,8 @@ HANDLER (join)
 	return;
     }
     /* enforce a maximum channels per user */
-    if (list_count (user->channels) > Max_User_Channels)
+    if (user->level < LEVEL_MODERATOR &&
+	    list_count (user->channels) > Max_User_Channels)
     {
 	log ("join(): %s reached max channel count (%d)", user->nick,
 	     Max_User_Channels);

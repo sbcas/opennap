@@ -19,12 +19,12 @@ HANDLER (kick)
     (void) len;
     if (pop_user (con, &pkt, &sender))
 	return;
-    ac=split_line(av,FIELDS(av),pkt);
-    if(ac<2)
+    ac = split_line (av, FIELDS (av), pkt);
+    if (ac < 2)
     {
-	log("kick(): too few parameters");
-	if(ISUSER(con))
-	    unparsable(con);
+	log ("kick(): too few parameters");
+	if (ISUSER (con))
+	    unparsable (con);
 	return;
     }
     chan = hash_lookup (Channels, av[0]);
@@ -32,7 +32,7 @@ HANDLER (kick)
     {
 	log ("kick(): no such channel %s", av[0]);
 	if (ISUSER (con))
-	    nosuchchannel(con);
+	    nosuchchannel (con);
 	return;
     }
     if (list_find (sender->channels, chan) == 0)
@@ -67,7 +67,7 @@ HANDLER (kick)
 	return;
     }
 
-    if(ac==3)
+    if (ac == 3)
 	pass_message_args (con, tag, ":%s %s %s \"%s\"", sender->nick,
 			   chan->name, user->nick, av[2]);
     else
@@ -79,7 +79,7 @@ HANDLER (kick)
 	send_cmd (user->con, MSG_CLIENT_PART, chan->name);
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
 		  "You were kicked from channel %s by %s: %s",
-		  chan->name, sender->nick, ac==3?av[2]:"");
+		  chan->name, sender->nick, ac == 3 ? av[2] : "");
     }
 
     user->channels = list_delete (user->channels, chan);
@@ -87,5 +87,61 @@ HANDLER (kick)
     part_channel (chan, user);
 
     notify_mods ("%s kicked %s out of channel %s: %s", sender->nick,
-		 user->nick, chan->name, ac==3?av[2]:"");
+		 user->nick, chan->name, ac == 3 ? av[2] : "");
+}
+
+/* 820 [ :<sender> ] <channel> [ "<reason>" ] */
+HANDLER (clear_channel)
+{
+    CHANNEL *chan;
+    USER *sender, *user;
+    LIST *list;
+    int ac;
+    char *av[2];
+
+    ASSERT (validate_connection (con));
+    if (pop_user (con, &pkt, &sender))
+	return;
+    ac = split_line (av, FIELDS (av), pkt);
+    if (ac < 1)
+    {
+	log ("clear_channel(): missing channel name");
+	unparsable (con);
+	return;
+    }
+    chan = hash_lookup (Channels, av[0]);
+    if (!chan)
+    {
+	nosuchchannel (con);
+	return;
+    }
+    if (sender->level < chan->level)
+    {
+	permission_denied (con);
+	return;
+    }
+    if (ac == 1)
+	pass_message_args (con, tag, ":%s %s", sender->nick, chan->name);
+    else
+	pass_message_args (con, tag, ":%s %s \"%s\"", sender->nick,
+			   chan->name, av[1]);
+    for (list = chan->users; list; list = list->next)
+    {
+	user = list->data;
+	if (user != sender &&
+	    (sender->level == LEVEL_ELITE || user->level < sender->level))
+	{
+	    user->channels = list_delete (user->channels, chan);
+	    if (user->local)
+	    {
+		send_cmd (user->con, MSG_CLIENT_PART, "%s", chan->name);
+		send_cmd (user->con, MSG_SERVER_NOSUCH,
+			  "%s cleared channel %s: %s", sender->nick,
+			  chan->name, ac > 1 ? av[1] : "");
+	    }
+	    part_channel (chan, user);
+	}
+    }
+    notify_mods ("%s cleared channel %s: %s", sender->nick, chan->name,
+		 ac > 1 ? av[1] : "");
 }

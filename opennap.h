@@ -459,6 +459,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_SERVER_RECONFIG	800
 #define MSG_CLIENT_SERVER_VERSION	801
 #define MSG_CLIENT_SERVER_CONFIG	810
+#define MSG_CLIENT_CLEAR_CHANNEL	820
 #define MSG_CLIENT_EMOTE		824
 #define MSG_SERVER_NAMES_LIST		825
 #define MSG_CLIENT_CHANNEL_LIMIT	826
@@ -623,6 +624,7 @@ HANDLER (channel_level);
 HANDLER (channel_limit);
 HANDLER (check_password);
 HANDLER (check_port);
+HANDLER (clear_channel);
 HANDLER (client_quit);
 HANDLER (data_port_error);
 HANDLER (download);
