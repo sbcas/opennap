@@ -52,9 +52,9 @@ get_server_pass (const char *host, char **localPass /* optional */ )
 		    OUTOFMEMORY ("get_server_pass");
 		    break;
 		}
-		if (localPass && ac > 2)
+		if (localPass)
 		{
-		    *localPass = STRDUP (av[2]);
+		    *localPass = STRDUP ((ac > 2) ? av[2] : Server_Pass);
 		    if (!*localPass)
 		    {
 			OUTOFMEMORY ("get_server_pass");
