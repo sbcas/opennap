@@ -82,6 +82,18 @@ HANDLER (whois)
 		chanlist, user->shared, user->downloads, user->uploads,
 		user->speed, user->clientinfo);
     }
+    else if (con->user->level > LEVEL_MODERATOR)
+    {
+	/* we show admins the server which a user is connected to */
+	send_cmd (con, MSG_SERVER_WHOIS_RESPONSE,
+		"%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %s %d %d %s %s",
+		user->nick, Levels[user->level], online, chanlist, user->shared,
+		user->downloads, user->uploads, user->speed, user->clientinfo,
+		user->totalup, user->totaldown, my_ntoa (user->host),
+		user->conport, user->port,
+		user->email ? user->email : "unknown",
+		user->serv ? user->serv->host : Server_Name);
+    }
     else
     {
 	send_cmd (con, MSG_SERVER_WHOIS_RESPONSE,

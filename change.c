@@ -180,6 +180,6 @@ HANDLER (alter_port)
 	pass_message_args (con, MSG_CLIENT_ALTER_PORT, ":%s %s %d",
 		sender->nick, user->nick, p);
 
-    notify_mods ("%s changed %d's data port to %d: %s", sender->nick,
+    notify_mods ("%s changed %s's data port to %d: %s", sender->nick,
 	    user->nick, p, pkt ? pkt : "");
 }
