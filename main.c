@@ -146,6 +146,8 @@ ip_glob_match (const char *pattern, const char *ip)
 {
     int l;
 
+    ASSERT (pattern != 0);
+    ASSERT (ip != 0);
     /* if `pattern' ends with a `.', we ban an entire subclass */
     l = strlen (pattern);
     ASSERT (l > 0);
@@ -203,11 +205,10 @@ accept_connection (int s)
     sinsize = sizeof (sin);
     if ((f = accept (s, (struct sockaddr *) &sin, &sinsize)) < 0)
     {
-	perror ("accept_connection(): accept");
+	logerr ("accept_connection", "accept");
 	return;
     }
-    cli = new_connection ();
-    if (!cli)
+    if ((cli = new_connection ()) == 0)
     {
 	CLOSE (f);
 	return;
@@ -220,11 +221,21 @@ accept_connection (int s)
 	log ("accept_connection(): connected via loopback, using external ip");
 	cli->ip = Server_Ip;
 	cli->host = STRDUP (Server_Name);
+	if (!cli->host)
+	{
+	    OUTOFMEMORY ("accept_connection");
+	    goto error;
+	}
     }
     else
     {
 	cli->ip = sin.sin_addr.s_addr;
 	cli->host = STRDUP (inet_ntoa (sin.sin_addr));
+	if (!cli->host)
+	{
+	    OUTOFMEMORY ("accept_connection");
+	    goto error;
+	}
     }
     cli->port = ntohs (sin.sin_port);
     cli->class = CLASS_UNKNOWN;
@@ -234,6 +245,12 @@ accept_connection (int s)
     set_keepalive (f, 1);	/* enable tcp keepalive messages */
     if (!check_accept (cli))
 	cli->destroy = 1;
+    return;
+error:
+    close (f);
+    if (cli->host)
+	FREE (cli->host);
+    FREE (cli);
 }
 
 static void
