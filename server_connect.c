@@ -32,6 +32,7 @@ try_connect (char *host, int port)
     cli->class = CLASS_UNKNOWN;	/* not authenticated yet */
     cli->fd = f;
     cli->host = STRDUP (host);
+    cli->resolved = 1;	/* we already know where we want to connect */
     if (!cli->host)
     {
 	OUTOFMEMORY ("try_connect");
