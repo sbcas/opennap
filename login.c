@@ -21,7 +21,7 @@ HANDLER (login)
     USER *user;
     HOTLIST *hotlist;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     if (split_line (field, sizeof (field) / sizeof (char *), pkt) < 5)
     {
@@ -34,7 +34,7 @@ HANDLER (login)
     if (user)
     {
 	/* user already exists */
-	ASSERT (VALID (user));
+	ASSERT (validate_user (user));
 
 	if (con->class == CLASS_UNKNOWN)
 	{
@@ -74,6 +74,7 @@ HANDLER (login)
     user->clientinfo = STRDUP (field[3]);
     user->speed = atoi (field[4]);
     user->connected = time (0);
+    user->level = LEVEL_USER;
 
     hash_add (Users, user->nick, user);
 
@@ -105,7 +106,7 @@ HANDLER (login)
 
 	/* query our local accounts database for mod/admin privileges */
 	snprintf (Buf, sizeof (Buf),
-		  "SELECT * FROM accounts WHERE nick = '%s'", user->nick);
+		  "SELECT * FROM accounts WHERE nick LIKE '%s'", user->nick);
 	if (mysql_query (Db, Buf) != 0)
 	{
 	    sql_error ("login", Buf);
@@ -131,25 +132,28 @@ HANDLER (login)
 			}
 			else
 			{
-			    if (strcasecmp ("admin", row[2]) == 0)
-				user->flags |= FLAG_ADMIN;
+			    if (!strcasecmp ("elite", row[2]))
+				user->level = LEVEL_ELITE;
+			    else if (!strcasecmp ("admin", row[2]))
+				user->level = LEVEL_ADMIN;
 			    else if (strcasecmp ("moderator", row[2]) == 0)
-				user->flags |= FLAG_MODERATOR;
-			    log ("login(): setting %s to level %s", user->nick,
-				    (user->flags & FLAG_ADMIN) ? "admin" :
-				    "moderator");
-
+				user->level = LEVEL_MODERATOR;
+			    else
+			    {
+				log ("login(): unknown level %s for %s in accounts table",
+				    row[2], row[0]);
+			    }
 			    /* broadcast the updated userlevel to our peer
 			       servers */
-			    if ((user->flags & (FLAG_ADMIN | FLAG_MODERATOR)) != 0
-				    && Num_Servers)
+			    if (user->level > LEVEL_USER && Num_Servers)
 			    {
 				pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
 					":%s %s %s", Server_Name,
-					user->nick,
-					(user->flags & FLAG_ADMIN) ?
-					"admin" : "moderator");
+					user->nick, row[2]);
 			    }
+
+			    log ("login(): set %s to level %s", user->nick,
+				Levels[user->level]);
 			}
 		    }
 		    break;

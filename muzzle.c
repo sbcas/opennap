@@ -10,21 +10,15 @@
 /* [ :<nick> ] <user-to-muzzle> <time> */
 HANDLER (muzzle)
 {
-    USER *user;
+    USER *sender, *user;
     char *fields[2];
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
-    if (pop_user (con, &pkt, &user) != 0)
+    if (pop_user (con, &pkt, &sender) != 0)
 	return;
 
-    ASSERT (VALID (user));
-
-    if (! HAS_PRIVILEGE (user))
-    {
-	log ("muzzle(): %s has no privilege");
-	return;
-    }
+    ASSERT (validate_user (sender));
 
     if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 2)
     {
@@ -42,7 +36,15 @@ HANDLER (muzzle)
 	    log ("muzzle(): can't locate user %s", fields[0]);
 	return;
     }
-    ASSERT (VALID (user));
+    ASSERT (validate_user (user));
+
+    /* ensure that this user has privilege to execute the command */
+    if (user->level >= sender->level)
+    {
+	if (con->class == CLASS_USER)
+	    permission_denied (con);
+	return;
+    }
 
     /* set the time until which the user is muzzled */
     user->muzzled = time (0) + atoi (fields[1]);
@@ -53,4 +55,12 @@ HANDLER (muzzle)
 	pass_message_args (con, MSG_CLIENT_MUZZLE, ":%s %s %s", con->user->nick,
 		user->nick, fields[1]);
     }
+
+    /* notify the user they have been muzzled */
+    if (user->con)
+	send_cmd (user->con, MSG_SERVER_NOSUCH, "You have been muzzled.");
+
+    /* notify mods+ of this action */
+    if (con->class == CLASS_USER)
+	notify_mods ("%s has muzzled %s.", sender->nick, user->nick);
 }

@@ -16,7 +16,7 @@ HANDLER (topic)
     int i, l;
     char *fields[2];
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     if (con->class == CLASS_SERVER)
     {
@@ -32,10 +32,10 @@ HANDLER (topic)
     {
 	ASSERT (con->class == CLASS_USER);
 
-	ASSERT (VALID (con->user));
+	ASSERT (validate_user (con->user));
 
 	/* check to make sure this user has privilege to change topic */
-	if ((con->user->flags & (FLAG_ADMIN | FLAG_MODERATOR)) == 0)
+	if (con->user->level < LEVEL_MODERATOR)
 	{
 	    log ("topic(): %s has no privilege", con->user->nick);
 	    return;
@@ -77,7 +77,7 @@ HANDLER (topic)
 	chan = hash_lookup (Channels, fields[0]);
     }
 
-    ASSERT (VALID (chan));
+    ASSERT (validate_channel (chan));
     if (chan->topic)
 	FREE (chan->topic);
     chan->topic = STRDUP (fields[1]);

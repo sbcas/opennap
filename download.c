@@ -4,6 +4,8 @@
 
 #include <unistd.h>
 #include <stdio.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -123,24 +125,41 @@ HANDLER(user_speed)
 	    user->nick,user->speed);
 }
 
-/* 626 <user> */
+static char *
+my_ntoa (unsigned long ip)
+{
+    struct in_addr a;
+    memset(&a,0,sizeof(a));
+    a.s_addr = ip;
+    return (inet_ntoa (a));
+}
+
+/* 626 [ :<nick> ] <user> */
 /* client is notifying other party of a failure to connect to their data
    port */
 HANDLER (data_port_error)
 {
-    USER *user;
+    USER *sender, *user;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
+    if (pop_user (con, &pkt, &sender) != 0)
+	return;
+    ASSERT (validate_user (sender));
     user = hash_lookup (Users, pkt);
     if (!user)
     {
 	log ("data_port_error(): no such user %s", pkt);
 	return;
     }
-    /* TODO: should this report /who/ notified the error, or who the
-       error is directed to? */
+    ASSERT (validate_user (user));
     if (user->con)
 	send_cmd (user->con, MSG_SERVER_DATA_PORT_ERROR, "%s", user->nick);
     else if (con->class == CLASS_USER)
 	send_cmd (user->serv, MSG_SERVER_DATA_PORT_ERROR, "%s", user->nick);
+
+    if (con->class == CLASS_USER)
+    {
+	notify_mods ("Notification from %s: %s (%s) - configured data port %d is unreachable.",
+	    sender->nick, user->nick, my_ntoa (user->host), user->port);
+    }
 }

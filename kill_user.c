@@ -3,27 +3,43 @@
    GNU Public License.  See the file COPYING for details. */
 
 #include <string.h>
+#include <stdarg.h>
 #include "opennap.h"
 #include "debug.h"
 
+static void
+notify_one_mod (USER *user, char *text)
+{
+    if (user->con && user->level >= LEVEL_MODERATOR)
+	send_cmd (user->con, MSG_SERVER_NOSUCH, text);
+}
+
+void
+notify_mods (const char *fmt, ...)
+{
+    char buf[128];/* send_cmd() uses Buf so we can't use it here */
+    va_list ap;
+    va_start (ap, fmt);
+    vsnprintf (buf, sizeof (buf), fmt, ap);
+    va_end (ap);
+    hash_foreach (Users, (hash_callback_t) notify_one_mod, buf);
+}
+
 /* request to kill (disconnect) a user */
-/* [ :<nick> ] <user> */
+/* [ :<nick> ] <user> [ <reason> ] */
 HANDLER (kill_user)
 {
-    USER *user;
+    USER *killer = 0, *user;
+    char *killernick, *reason;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     if (con->class == CLASS_USER)
     {
 	/* check to make sure this user has privilege */
-	ASSERT (VALID (con->user));
-	if ((con->user->flags & FLAG_ADMIN) == 0)
-	{
-	    log ("kill_user(): %s tried to kill %s", con->user->nick, pkt);
-	    permission_denied (con);
-	    return;
-	}
+	ASSERT (validate_user (con->user));
+	killer = con->user;
+	killernick = killer->nick;
     }
     else
     {
@@ -35,14 +51,20 @@ HANDLER (kill_user)
 	    log ("kill_user(): malformed server message");
 	    return;
 	}
+	killernick = pkt;
 	pkt = strchr (pkt, ' ');
 	if (!pkt)
 	{
 	    log ("kill_user(): too few arguments in server message");
 	    return;
 	}
-	pkt++;
+	*pkt++ = 0;
     }
+
+    /* extract the reason */
+    reason = strchr (pkt, ' ');
+    if (reason)
+	*reason++ = 0;
 
     /* find the user to kill*/
     user = hash_lookup (Users, pkt);
@@ -54,13 +76,32 @@ HANDLER (kill_user)
 	    log ("kill_user(): could not locate user %s", pkt);
 	return;
     }
-    ASSERT (VALID (user));
+    ASSERT (validate_user (user));
+
+    /* check for permission */
+    if (killer && (user->level >= killer->level))
+    {
+	permission_denied (con);
+	return;
+    }
 
     /* local user issued the kill, notify peers */
-    if (con->class == CLASS_USER && Num_Servers)
+    if (con->class == CLASS_USER)
     {
-	pass_message_args (con, MSG_CLIENT_KILL, ":%s %s", con->user->nick,
-	    user->nick);
+	if (Num_Servers)
+	    pass_message_args (con, MSG_CLIENT_KILL, ":%s %s %s",
+		con->user->nick, user->nick, reason ? reason : "");
+	/* notify mods+ that this user was killed */
+	notify_mods ("%s killed user %s: %s", killernick, user->nick,
+	    reason ? reason : "");
+    }
+
+    /* notify user they were killed */
+    if (user->con)
+    {
+	send_cmd (user->con, MSG_SERVER_NOSUCH, "you have been killed by %s",
+	    killernick);
+	send_queued_data (user->con); /* flush now so message is not lost */
     }
 
     /* forcefully close the client connection if local, otherwise remove
@@ -69,4 +110,5 @@ HANDLER (kill_user)
 	remove_connection (user->con);
     else
 	hash_remove (Users, user->nick);
+
 }

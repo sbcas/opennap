@@ -9,16 +9,6 @@
 #include "opennap.h"
 #include "debug.h"
 
-static const char *
-level_name (int flag)
-{
-    if (flag & FLAG_ADMIN)
-	return "Admin";
-    if (flag & FLAG_MODERATOR)
-	return "Moderator";
-    return "User";
-}
-
 #define WHOIS_FMT "%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\""
 
 /* packet contains: <user> */
@@ -51,7 +41,7 @@ HANDLER (whois)
     }
 
     send_cmd (con, MSG_SERVER_WHOIS_RESPONSE,
-	      WHOIS_FMT, user->nick, level_name (user->flags),
+	      WHOIS_FMT, user->nick, Levels[user->level],
 	      (int) (time (0) - user->connected),
 	      chanlist, user->shared, user->downloads, user->uploads,
 	      user->speed, user->clientinfo);

@@ -18,13 +18,13 @@ Last updated January 20, 2000
 
   	mysqladmin -u mp3 -p password 'newpass'
 
-  5.  create at least one administrator nick to use on the server
+  5.  create at least one elite (server operator) nick to use on the server
 
 	# mysql -u mp3 -p
         Enter password:
 
 	mysql> use mp3;
-	mysql> insert into accounts ('nick','pass','admin');
+	mysql> insert into accounts ('nick','pass','elite');
 	mysql> quit;
 
       where 'nick' is the nick you want to use, 'pass' is the password for

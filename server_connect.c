@@ -90,9 +90,9 @@ HANDLER (server_connect)
 
     CHECK_USER_CLASS ("server_connect");
 
-    ASSERT (VALID (con->user));
+    ASSERT (validate_user (con->user));
 
-    if ((con->user->flags & FLAG_ADMIN) != 0)
+    if (con->user->level < LEVEL_ADMIN)
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "permission denied");
 	log ("server_connect(): user %s tried to connect to %s", pkt);

@@ -13,7 +13,7 @@ HANDLER (level)
     char *fields[2];
     USER *user;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     /* NOTE: we implicity trust that messages we receive from other servers
        are authentic, so we don't check the user privileges here.  we have
@@ -33,8 +33,8 @@ HANDLER (level)
     }
     else
     {
-	ASSERT (VALID (con->user));
-	if ((con->user->flags & FLAG_ADMIN) == 0)
+	ASSERT (validate_user (con->user));
+	if (con->user->level >= LEVEL_ADMIN)
 	{
 	    log ("level(): user %s is not admin", con->user->nick);
 	    return;
@@ -57,16 +57,24 @@ HANDLER (level)
 	return;
     }
 
-    ASSERT (VALID (user));
+    ASSERT (validate_user (user));
 
-    /* clear existing flags */
-    user->flags &= ~(FLAG_ADMIN | FLAG_MODERATOR);
+    if (strcasecmp ("elite", fields[1]) == 0)
+	user->level = LEVEL_ELITE;
     if (strcasecmp ("admin", fields[1]) == 0)
-	user->flags |= FLAG_ADMIN;
+	user->level = LEVEL_ADMIN;
     else if (strcasecmp ("moderator", fields[1]) == 0)
-	user->flags |= FLAG_MODERATOR;
-    else if (strcasecmp ("user", fields[1]) != 0)
-	return; /* invalid video */
+	user->level = LEVEL_MODERATOR;
+    else if (!strcasecmp ("leech", fields[1]))
+	user->level = LEVEL_LEECH;
+    else if (!strcasecmp ("user", fields[1]))
+	user->level = LEVEL_USER;
+    else
+    {
+	log ("level(): tried to set %s to unknown level %s",
+	    user->nick, fields[1]);
+	return;
+    }
 
     /* pass the message to our peer servers if this came from a local user */
     if (con->class == CLASS_USER && Num_Servers)

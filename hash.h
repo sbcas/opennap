@@ -26,11 +26,13 @@ typedef struct _hash
 }
 HASH;
 
+typedef void (*hash_callback_t) (void *, void *);
+
 HASH *hash_init (int, hash_destroy);
 void hash_add (HASH *, const char *, void *);
 void *hash_lookup (HASH *, const char *);
 void hash_remove (HASH *, const char *);
 void free_hash (HASH *);
-void hash_foreach (HASH *h, void (*func) (void *, void *), void *funcdata);
+void hash_foreach (HASH *h, hash_callback_t, void *funcdata);
 
 #endif /* hash_h */

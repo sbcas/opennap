@@ -10,13 +10,17 @@ HANDLER (unmuzzle)
 {
     USER *user;
 
-    ASSERT (VALID (con));
+    ASSERT (validate_connection (con));
 
     if (pop_user (con, &pkt, &user) != 0)
 	return;
 
-    if (!HAS_PRIVILEGE (user))
+    if (user->level < LEVEL_MODERATOR)
+    {
+	if (con->class == CLASS_USER)
+	    permission_denied (con);
 	return;
+    }
 
     /* find the target of the unmuzzle */
     user = hash_lookup (Users, pkt);
@@ -26,7 +30,7 @@ HANDLER (unmuzzle)
 	    nosuchuser (con, pkt);
 	return;
     }
-    ASSERT (VALID (user));
+    ASSERT (validate_user (user));
 
     user->muzzled = 0;
 

@@ -36,12 +36,14 @@ struct _channel
     time_t created;
 };
 
-/* user flags */
-#define FLAG_LEECH	0
-#define	FLAG_USER	1
-#define FLAG_MODERATOR	(1<<1)
-#define FLAG_ADMIN	(1<<2)
-#define FLAG_ELITE	(1<<3)
+/* user level */
+typedef enum {
+    LEVEL_LEECH,
+    LEVEL_USER,
+    LEVEL_MODERATOR,
+    LEVEL_ADMIN,
+    LEVEL_ELITE
+} LEVEL;
 
 struct _user
 {
@@ -57,7 +59,7 @@ struct _user
     unsigned long libsize;	/* approximate size of shared files in kB */
     unsigned long host;		/* ip of user in network byte order */
     int port;			/* data port client is listening on */
-    int flags;
+    LEVEL level;		/* user level */
     time_t connected;		/* time at which the user connected */
     time_t muzzled;		/* time at which the user is allowed to post public msgs */
 
@@ -66,8 +68,6 @@ struct _user
     CONNECTION *con;		/* if locally connected */
     CONNECTION *serv;		/* the server behind which this user lies */
 };
-
-#define HAS_PRIVILEGE(x) (((x)->flags&(FLAG_ADMIN|FLAG_MODERATOR))!=0)
 
 typedef enum
 {
@@ -188,6 +188,7 @@ struct _hotlist
 #define MSG_CLIENT_UPLOAD_OK		608
 #define MSG_CLIENT_KILL			610
 #define MSG_CLIENT_NUKE			611	/* not implemented */
+#define MSG_SERVER_IP_BANLIST		616
 #define MSG_CLIENT_LIST_CHANNELS	617
 #define MSG_SERVER_CHANNEL_LIST_END	617
 #define MSG_SERVER_CHANNEL_LIST		618
@@ -197,7 +198,10 @@ struct _hotlist
 #define MSG_CLIENT_DATA_PORT_ERROR	626
 #define MSG_SERVER_DATA_PORT_ERROR	626 /* same as client message */
 #define MSG_CLIENT_WALLOP		627
+#define MSG_SERVER_WALLOP		627 /* same as client message */
 #define MSG_CLIENT_ANNOUNCE		628
+#define MSG_SERVER_ANNOUNCE		628 /* same as client message */
+#define MSG_SERVER_NICK_BANLIST		629
 #define MSG_CLIENT_CHANGE_SPEED		700
 #define MSG_CLIENT_CHANGE_DATA_PORT	703
 #define MSG_CLIENT_PING			751
@@ -209,7 +213,6 @@ struct _hotlist
 #define MSG_CLIENT_NAMES_LIST		830
 
 /* non-standard message unique to this server */
-#define MSG_SERVER_ANNOUNCE		629	/* i assume its this? */
 #define MSG_CLIENT_QUIT			10000	/* user has quit */
 #define MSG_SERVER_LOGIN		10010	/* server login request */
 #define MSG_SERVER_LOGIN_ACK		10011	/* server login response */
@@ -253,6 +256,8 @@ extern HASH *Channels;
 
 extern HASH *Hotlist;
 
+extern char *Levels[LEVEL_ELITE + 1];
+
 #define set_tag(b,n) set_val(b+2,n)
 #define set_len set_val
 void set_val (char *d, unsigned short val);
@@ -277,6 +282,7 @@ CHANNEL *new_channel (void);
 HOTLIST *new_hotlist (void);
 CONNECTION *new_connection (void);
 void nosuchuser (CONNECTION *, char *);
+void notify_mods (const char *, ...);
 void part_channel (CHANNEL *, USER *);
 void pass_message (CONNECTION *, char *, size_t);
 void pass_message_args (CONNECTION * con, unsigned long msgtype,
@@ -340,6 +346,7 @@ HANDLER (upload_end);
 HANDLER (topic);
 HANDLER (user_ip);
 HANDLER (user_speed);
+HANDLER (wallop);
 HANDLER (whois);
 
 #define CHECK_USER_CLASS(f) if (con->class != CLASS_USER) { log ("%s: not USER class", f); return; }

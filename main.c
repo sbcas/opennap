@@ -136,7 +136,6 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_PUBLIC, public },
     { MSG_SERVER_PUBLIC, public },
     { MSG_CLIENT_USERSPEED, user_speed }, /* 600 */
-    { MSG_CLIENT_ANNOUNCE, announce },
     { MSG_CLIENT_KILL, kill_user },
     { MSG_CLIENT_DOWNLOAD, download },
     { MSG_CLIENT_UPLOAD_OK, upload_ok },
@@ -145,6 +144,8 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_UNMUZZLE, unmuzzle },
     { MSG_CLIENT_LIST_CHANNELS, list_channels }, /* 618 */
     { MSG_CLIENT_DATA_PORT_ERROR, data_port_error }, /* 626 */
+    { MSG_CLIENT_WALLOP, wallop }, /* 627 */
+    { MSG_CLIENT_ANNOUNCE, announce }, /* 628 */
     { MSG_CLIENT_SETUSERLEVEL, level },
     { MSG_CLIENT_PING, ping }, /* 751 */
     { MSG_CLIENT_PONG, pong }, /* 752 */

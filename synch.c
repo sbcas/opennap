@@ -9,6 +9,14 @@
 
 extern MYSQL *Db;
 
+char *Levels[LEVEL_ELITE+1] = {
+    "Leech",
+    "User",
+    "Moderator",
+    "Admin",
+    "Elite"
+};
+
 static void
 synch_user (void *data, void *funcdata)
 {
@@ -25,11 +33,10 @@ synch_user (void *data, void *funcdata)
 	    user->nick, user->port, user->clientinfo, user->speed);
 
     /* update the user's level */
-    if (user->flags & (FLAG_ADMIN | FLAG_MODERATOR))
+    if (user->level > LEVEL_USER)
     {
 	send_cmd (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s",
-	    Server_Name, user->nick,
-	    (user->flags & FLAG_ADMIN) ? "admin" : "moderator");
+	    Server_Name, user->nick, Levels[user->level]);
     }
 
     /* send the channels this user is listening on */
