@@ -13,6 +13,9 @@ login() should ensure that the given speed is in the 0-10 range
 
 search() was sending the host using %d instead of %lu
 
+server_connect() should check the return from split_line() to get the number
+of arguments
+
 Changes from 0.08
 =================
 

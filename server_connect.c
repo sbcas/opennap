@@ -89,6 +89,7 @@ HANDLER (server_connect)
 {
     USER *user;
     char *fields[2];
+    int argc;
 
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
@@ -103,13 +104,14 @@ HANDLER (server_connect)
 	return; /* no privilege */
     }
 
-    if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) < 2)
+    argc = split_line (fields, sizeof (fields) / sizeof (char *), pkt);
+    if (argc < 2)
     {
 	log ("server_connect(): too few fields");
 	return;
     }
 
-    if (!fields[2] || (!strcasecmp (fields[2], Server_Name)))
+    if (argc == 2 || (argc == 3 && !strcasecmp (fields[2], Server_Name)))
     {
 	try_connect (fields[0], atoi (fields[1]));
     }
