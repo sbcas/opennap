@@ -24,6 +24,8 @@ to send
 added check for /dev/random and substitute simple random number generation
 on systems without it
 
+added support for the server version (801) client request
+
 Changes from 0.08
 =================
 

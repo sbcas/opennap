@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License. */
+   GNU Public License.
+
+   $Id$ */
 
 #include <errno.h>
 #include <stdlib.h>
@@ -243,5 +245,36 @@ HANDLER (remove_server)
     {
 	notify_mods ("%s removed server %s from database: %s",
 	    con->user->nick, pkt, reason ? reason : "");
+    }
+}
+
+/* 801 [ :<user> ] [ <server> ] */
+HANDLER (server_version)
+{
+    USER *user;
+
+    ASSERT (validate_connection (con));
+    if (pop_user (con, &pkt, &user) != 0)
+	return;
+    ASSERT (validate_user (user));
+    if (user->level < LEVEL_MODERATOR)
+    {
+	if (con->class == CLASS_USER)
+	    permission_denied (con);
+	return;
+    }
+    if (!*pkt || !strcmp (Server_Name, pkt))
+    {
+	if (user->con)
+	{
+	    send_cmd (user->con, MSG_SERVER_NOSUCH, "--");
+	    send_cmd (user->con, MSG_SERVER_NOSUCH, "%s %s", PACKAGE, VERSION);
+	    send_cmd (user->con, MSG_SERVER_NOSUCH, "--");
+	}
+	else
+	{
+	    ASSERT (0);
+	    log ("server_version(): haven't implemented sending error messages to remote users");
+	}
     }
 }

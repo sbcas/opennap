@@ -232,6 +232,7 @@ typedef struct _ban {
 #define MSG_SERVER_PING			751
 #define MSG_CLIENT_PONG			752
 #define MSG_SERVER_PONG			752
+#define MSG_CLIENT_SERVER_VERSION	801
 #define MSG_CLIENT_SERVER_CONFIG	810
 #define MSG_SERVER_NAMES_LIST		825
 #define MSG_SERVER_NAMES_LIST_END	830
@@ -384,6 +385,7 @@ HANDLER (server_disconnect);
 HANDLER (server_login);
 HANDLER (server_login_ack);
 HANDLER (server_stats);
+HANDLER (server_version);
 HANDLER (unmuzzle);
 HANDLER (upload_ok);
 HANDLER (upload_start);
