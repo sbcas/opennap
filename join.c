@@ -145,8 +145,9 @@ HANDLER (join)
     {
 	chanUser = list->data;
 	ASSERT (chanUser != 0);
-	send_cmd (chanUser->con, MSG_SERVER_JOIN, "%s %s %d %d",
-		chan->name, user->nick, user->shared, user->speed);
+	if (ISUSER (chanUser->con))
+	    send_cmd (chanUser->con, MSG_SERVER_JOIN, "%s %s %d %d",
+		    chan->name, user->nick, user->shared, user->speed);
     }
 
     if (ISUSER (con))
