@@ -53,6 +53,5 @@ HANDLER (upload_ok)
     else
 	send_user (recip, MSG_SERVER_FILE_READY, "%s %u %d \"%s\" %s %d",
 		con->user->nick, con->user->host, con->user->port, av[1],
-		info->hash,
-		con->user->speed);
+		info->hash, con->user->speed);
 }

@@ -65,10 +65,9 @@ HANDLER (announce)
 	pass_message (con, Buf, l);
 
     /* broadcast the message to our local users */
-    for (i = 0; i < Num_Clients; i++)
+    for (i = 0; i < Max_Clients; i++)
     {
-	ASSERT(Clients[i]!=0);
-	if (ISUSER (Clients[i]))
+	if (Clients[i] && ISUSER (Clients[i]))
 	    queue_data (Clients[i], Buf, l);
     }
 }
@@ -107,9 +106,9 @@ HANDLER (wallop)
 	pass_message_args (con, MSG_SERVER_ANNOUNCE, "%s %s", ptr, pkt);
 
     /* deliver message to local users */
-    for (i = 0; i < Num_Clients; i++)
+    for (i = 0; i < Max_Clients; i++)
     {
-	if (Clients[i] && Clients[i]->class == CLASS_USER &&
+	if (Clients[i] && ISUSER (Clients[i]) &&
 	    Clients[i]->user->level >= LEVEL_MODERATOR)
 	    send_cmd (Clients[i], MSG_SERVER_ANNOUNCE, "%s %s", ptr, pkt);
     }

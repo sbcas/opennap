@@ -44,10 +44,7 @@ HANDLER (server_links)
 			Servers[i]->recvbuf->consumed);
 	    else
 		send_user (user, MSG_SERVER_LINKS, "%s %d 0 0 0",
-			Servers[i]->host, Servers[i]->port,
-			Servers[i]->recvbuf->datamax,
-			Servers[i]->recvbuf->datasize,
-			Servers[i]->recvbuf->consumed);
+			Servers[i]->host, Servers[i]->port);
 	    send_user (user, MSG_SERVER_LINKS, "");
 	}
     }

@@ -119,12 +119,8 @@ remove_connection (CONNECTION *con)
 	FREE (con->host);
     buffer_free (con->sendbuf);
     buffer_free (con->recvbuf);
-    /* just create a hole where this client was for now.  the main() event
-       loop will fill in the holes when appropriate.  we don't do this
-       here because there are many places, such as kill_user() where a
-       connection could be removed, and it would reak havoc on the main
-       event loop which expects for the Clients[] array not to change */
     Clients[con->id] = 0;
+    Num_Clients--;
 
     FREE (con);
 }

@@ -51,8 +51,9 @@ int Nick_Expire;
 int Check_Expire;
 int Max_Browse_Result;
 unsigned int Interface = INADDR_ANY;
-time_t Server_Start;	/* time at which the server was started */
+time_t Server_Start;		/* time at which the server was started */
 int Collect_Interval;
+
 #ifndef WIN32
 int Uid;
 int Gid;
@@ -72,6 +73,7 @@ int Ban_Size = 0;
 /* local clients (can be users or servers) */
 CONNECTION **Clients = NULL;
 int Num_Clients = 0;
+int Max_Clients = 0;
 
 /* global users list */
 HASH *Users;
@@ -121,9 +123,9 @@ update_stats (void)
     set_len (Buf, l);
     l += 4;
 
-    for (i = 0; i < Num_Clients; i++)
+    for (i = 0; i < Max_Clients; i++)
     {
-	if (Clients[i] && Clients[i]->class == CLASS_USER)
+	if (Clients[i] && ISUSER (Clients[i]))
 	    queue_data (Clients[i], Buf, l);
     }
 }
@@ -196,17 +198,18 @@ accept_connection (int s)
     cli = new_connection ();
     if (!cli)
     {
-	close (f);
+	CLOSE (f);
 	return;
     }
     cli->fd = f;
     log ("accept_connection(): connection from %s, port %d",
-	    inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
+	 inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
     /* if we have a local connection, use the external
        interface so others can download from them */
     if (sin.sin_addr.s_addr == inet_addr ("127.0.0.1"))
     {
-	log ("accept_connection(): connected via loopback, using external ip");
+	log
+	    ("accept_connection(): connected via loopback, using external ip");
 	cli->ip = Server_Ip;
 	cli->host = STRDUP (Server_Name);
     }
@@ -217,7 +220,8 @@ accept_connection (int s)
     }
     cli->port = ntohs (sin.sin_port);
     cli->class = CLASS_UNKNOWN;
-    add_client (cli);
+    if (add_client (cli))
+	return;
     set_nonblocking (f);
     set_keepalive (f, 1);	/* enable tcp keepalive messages */
     if (!check_accept (cli))
@@ -235,14 +239,16 @@ report_stats (int fd)
     n = accept (fd, (struct sockaddr *) &sin, &sinsize);
     if (n == -1)
     {
-	log ("report_stats(): accept: %s (errno %d)", strerror (errno), errno);
+	log ("report_stats(): accept: %s (errno %d)", strerror (errno),
+	     errno);
 	return;
     }
     log ("report_stats(): connection from %s:%d", inet_ntoa (sin.sin_addr),
-	    htons (sin.sin_port));
+	 htons (sin.sin_port));
 #ifdef linux
     {
 	FILE *f = fopen ("/proc/loadavg", "r");
+
 	if (f)
 	{
 	    fscanf (f, "%f", &loadavg);
@@ -251,12 +257,12 @@ report_stats (int fd)
 	else
 	{
 	    log ("report_stats(): /proc/loadavg: %s (errno %d)",
-		    strerror (errno), errno);
+		 strerror (errno), errno);
 	}
     }
 #endif /* linux */
-    snprintf (Buf, sizeof (Buf), "%d %d %.2f %lu 0\n", Users->dbsize, Num_Files,
-	    loadavg, (unsigned long) (Num_Gigs) * 1024);
+    snprintf (Buf, sizeof (Buf), "%d %d %.2f %lu 0\n", Users->dbsize,
+	      Num_Files, loadavg, (unsigned long) (Num_Gigs) * 1024);
     WRITE (n, Buf, strlen (Buf));
     CLOSE (n);
 }
@@ -265,11 +271,14 @@ static void
 usage (void)
 {
     fprintf (stderr,
-	     "usage: %s [ -hsv ] [ -c FILE ] [ -p PORT ] [ -l IP ]\n", PACKAGE);
+	     "usage: %s [ -hsv ] [ -c FILE ] [ -p PORT ] [ -l IP ]\n",
+	     PACKAGE);
     fprintf (stderr, "  -c FILE	read config from FILE (default: %s/config\n",
 	     SHAREDIR);
     fputs ("  -h		print this help message\n", stderr);
-    fputs ("  -l IP		listen only on IP instead of all interfaces\n", stderr);
+    fputs
+	("  -l IP		listen only on IP instead of all interfaces\n",
+	 stderr);
     fputs ("  -p PORT	listen on PORT for connections (default: 8888)\n",
 	   stderr);
     fputs
@@ -289,10 +298,10 @@ version (void)
 
 /* wrappers to make the code in main() much cleaner */
 #if HAVE_POLL
-#define READABLE(i) (ufd[i].revents & POLLIN)
-#define WRITABLE(i) (ufd[i].revents & POLLOUT)
-#define CHECKREAD(i) ufd[i].events |= POLLIN
-#define CHECKWRITE(i) ufd[i].events |= POLLOUT
+#define READABLE(i) (ufd[i+2].revents & (POLLIN | POLLERR))
+#define WRITABLE(i) (ufd[i+2].revents & POLLOUT)
+#define CHECKREAD(i) ufd[i+2].events |= POLLIN
+#define CHECKWRITE(i) ufd[i+2].events |= POLLOUT
 #else
 #define READABLE(i) FD_ISSET(Clients[i]->fd, &set)
 #define WRITABLE(i) FD_ISSET(Clients[i]->fd, &wset)
@@ -304,13 +313,13 @@ int
 main (int argc, char **argv)
 {
     int s;			/* server socket */
+    int sp;			/* stats port */
     int i;			/* generic counter */
     int n;			/* number of ready sockets */
-    int sp;			/* stats port */
-    int f, pending = 0, port = 0, iface = INADDR_ANY, nolisten = 0, numClients;
+    int f, pending = 0, port = 0, iface = INADDR_ANY, nolisten = 0;
 #if HAVE_POLL
     struct pollfd *ufd = 0;
-    int ufdsize = 0;		/* real number of pollfd structs allocated */
+    int	ufdsize;		/* number of entries in ufd */
 #else
     fd_set set, wset;
     struct timeval t;
@@ -330,26 +339,26 @@ main (int argc, char **argv)
     {
 	switch (n)
 	{
-	    case 'D':
-		nolisten++;
-		break;
-	    case 'c':
-		config_file = optarg;
-		break;
-	    case 'l':
-		iface = inet_addr (optarg);
-		break;
-	    case 'p':
-		port = atoi (optarg);
-		break;
-	    case 's':
-		Server_Flags |= OPTION_STRICT_CHANNELS;
-		break;
-	    case 'v':
-		version ();
-		break;
-	    default:
-		usage ();
+	case 'D':
+	    nolisten++;
+	    break;
+	case 'c':
+	    config_file = optarg;
+	    break;
+	case 'l':
+	    iface = inet_addr (optarg);
+	    break;
+	case 'p':
+	    port = atoi (optarg);
+	    break;
+	case 's':
+	    Server_Flags |= OPTION_STRICT_CHANNELS;
+	    break;
+	case 'v':
+	    version ();
+	    break;
+	default:
+	    usage ();
 	}
     }
 
@@ -385,7 +394,8 @@ main (int argc, char **argv)
 	exit (1);
 
     n = 1;
-    if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST &n, sizeof (n)) != 0)
+    if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST & n, sizeof (n))
+	!= 0)
     {
 	perror ("setsockopt");
 	exit (1);
@@ -421,9 +431,22 @@ main (int argc, char **argv)
 #endif /* !HAVE_DEV_RANDOM */
 
     /* schedule periodic events */
-    add_timer (Collect_Interval, -1, (timer_cb_t) fdb_garbage_collect, File_Table);
+    add_timer (Collect_Interval, -1, (timer_cb_t) fdb_garbage_collect,
+	       File_Table);
     add_timer (Collect_Interval, -1, (timer_cb_t) fdb_garbage_collect, MD5);
     add_timer (Stat_Click, -1, (timer_cb_t) update_stats, 0);
+
+#if HAVE_POLL
+    ufdsize = 2;
+    ufd = CALLOC (ufdsize, sizeof (struct pollfd));
+    ufd[0].fd = s;
+    ufd[0].events = POLLIN;
+    if (!nolisten)
+    {
+	ufd[1].fd = sp;
+	ufd[1].events = POLLIN;
+    }
+#endif /* HAVE_POLL */
 
     /* main event loop */
     while (!SigCaught)
@@ -433,15 +456,22 @@ main (int argc, char **argv)
 #if HAVE_POLL
 	/* ensure that we have enough pollfd structs.  add two extra for
 	   the incoming connections port and the stats port */
-	if (Num_Clients + 2 > ufdsize)
+	if (ufdsize < Max_Clients + 2)
 	{
-	    ufd = REALLOC (ufd, sizeof (struct pollfd) * (Num_Clients + 2));
-	    if (!ufd)
+	    /* increment in steps of 10 to avoid calling this too often */
+	    if (safe_realloc ((void **) &ufd, sizeof (struct pollfd) * (Max_Clients + 12)))
 	    {
 		OUTOFMEMORY ("main");
-		break; /* nothing to do here but shut down */
+		break;
 	    }
-	    ufdsize = Num_Clients + 2;
+	    /* mark the new entries as invalid */
+	    while (ufdsize < Max_Clients + 12)
+	    {
+		ufd[ufdsize].fd = -1;
+		ufd[ufdsize].events = 0;
+		ufd[ufdsize].revents = 0;
+		ufdsize++;
+	    }
 	}
 #else
 	FD_ZERO (&set);
@@ -453,36 +483,23 @@ main (int argc, char **argv)
 	    maxfd = sp;
 #endif /* HAVE_POLL */
 
-	for (n = 0, i = 0; i < Num_Clients; i++)
+	for (i = 0; i < Max_Clients; i++)
 	{
-	    /* at the bottom of the loop for active connections, we remove
-	       dead connections by setting the pointer in the Clients[] array
-	       to NULL.  we shift down the live connections to fill the
-	       gaps left by that process */
 	    if (Clients[i])
 	    {
-		/* if there are holes, we shift down the upper structs
-		   to fill them */
-		if (i != n)
-		{
-		    Clients[n] = Clients[i];
-		    Clients[n]->id = n;
-		}
 #if HAVE_POLL
-		ufd[n].fd = Clients[n]->fd;
-		ufd[n].events = 0;
+		ufd[i+2].fd = Clients[i]->fd;
+		ufd[i+2].events = 0;
 #endif /* HAVE_POLL */
-
-		n++;
 
 		/* check sockets for writing */
 		if ((Clients[i]->connecting) ||
 		    (Clients[i]->sendbuf ||
 		     (ISSERVER (Clients[i]) && Clients[i]->sopt->outbuf)))
-		    CHECKWRITE(i);
+		    CHECKWRITE (i);
 
 		/* always check for incoming data */
-		CHECKREAD(i);
+		CHECKREAD (i);
 
 #ifndef HAVE_POLL
 		if (Clients[i]->fd > maxfd)
@@ -494,28 +511,22 @@ main (int argc, char **argv)
 		   flag is checked here to avoid busy waiting when we really
 		   do need more data from the client connection */
 		if ((!Clients[i]->incomplete && Clients[i]->recvbuf) ||
-		    (ISSERVER(Clients[i]) && Clients[i]->sopt->inbuf))
+		    (ISSERVER (Clients[i]) && Clients[i]->sopt->inbuf))
 		    pending++;
 	    }
+#if HAVE_POLL
+	    else
+	    {
+		ufd[i+2].fd = -1;	/* unused */
+		ufd[i+2].events = 0;
+	    }
+#endif
 	}
 
-	Num_Clients = n;	/* actual number of clients */
-
-	numClients = Num_Clients;	/* since Num_Clients can change in
-					   the loop below, we use a static
-					   value here so we don't try to
-					   check values that weren't
-					   set by select() or poll() */
 	/* if there is pending data in client queues, don't block on the
 	   select call */
 #if HAVE_POLL
-	/* add entries for the incoming connections socket and stats socket */
-	ufd[numClients].fd = s;
-	ufd[numClients].events = POLLIN;
-	ufd[numClients+1].fd = sp;
-	ufd[numClients+1].events = POLLIN;
-
-	if ((n = poll (ufd, numClients + 2, pending ? 0 : next_timer() * 1000)) < 0)
+	if ((n = poll(ufd, ufdsize, pending ? 0 : next_timer() * 1000)) < 0)
 	{
 	    perror ("poll");
 	    continue;
@@ -532,73 +543,44 @@ main (int argc, char **argv)
 
 	pending = 0;		/* reset */
 
-#if HAVE_POLL
-	if (ufd[numClients+1].revents & POLLIN)
-#else
-	if (FD_ISSET (sp, &set))
-#endif
-	{
-	    report_stats (sp);
-	    n--;
-	}
-
-	/* check for new incoming connections */
-#if HAVE_POLL
-	if (ufd[numClients].revents & POLLIN)
-#else
-	if (FD_ISSET (s, &set))
-#endif
-	{
-	    accept_connection (s);
-	    n--;
-	}
-
 	/* read incoming data into buffers, but don't process it */
-	for (i = 0; !SigCaught && n > 0 && i < numClients; i++)
+	for (i = 0; !SigCaught && n > 0 && i < Max_Clients; i++)
 	{
-	    if (WRITABLE(i) && Clients[i]->connecting)
+	    if (Clients[i])
 	    {
-		complete_connect (Clients[i]);
-		n--;	/* keep track of how many we've handled */
-	    }
-	    else if (READABLE (i))
-	    {
-		n--;	/* keep track of how many we've handled */
-		f = buffer_read (Clients[i]->fd,
-			(ISSERVER(Clients[i]) ? &Clients[i]->sopt->inbuf : &Clients[i]->recvbuf));
-		if (f <= 0)
+		if (WRITABLE (i) && Clients[i]->connecting)
 		{
-		    if (f == 0)
-			log ("main(): EOF from %s", Clients[i]->host);
-		    Clients[i]->destroy = 1;
+		    complete_connect (Clients[i]);
+		    n--;		/* keep track of how many we've handled */
+		}
+		else if (READABLE (i))
+		{
+		    n--;		/* keep track of how many we've handled */
+		    f = buffer_read (Clients[i]->fd,
+			    (ISSERVER (Clients[i]) ? &Clients[i]->
+			     sopt->inbuf : &Clients[i]->recvbuf));
+		    if (f <= 0)
+		    {
+			if (f == 0)
+			    log ("main(): EOF from %s", Clients[i]->host);
+			Clients[i]->destroy = 1;
+		    }
 		}
 	    }
-#if HAVE_POLL
-	    /* when does this occur?  i would have thought POLLHUP
-	       would be when the connection hangs up, but it still
-	       sets POLLIN and read() returns 0 */
-	    else if ((ufd[i].revents & (POLLHUP | POLLERR)) != 0)
-	    {
-		ASSERT ((ufd[i].revents & POLLHUP) == 0);
-		ASSERT ((ufd[i].revents & POLLERR) == 0);
-		Clients[i]->destroy = 1;
-		n--;
-	    }
-#endif /* HAVE_POLL */
 	}
 
 	if (SigCaught)
 	    break;
 
 	/* handle client requests */
-	for (i = 0; !SigCaught && i < numClients; i++)
+	for (i = 0; !SigCaught && i < Max_Clients; i++)
 	{
 	    /* if the connection is going to be shut down, don't process it */
-	    if (!Clients[i]->destroy)
+	    if (Clients[i] && !Clients[i]->destroy)
 	    {
 		/* if there is input pending, handle it now */
 		if (Clients[i]->recvbuf ||
-		    (ISSERVER(Clients[i]) && Clients[i]->sopt->inbuf))
+		    (ISSERVER (Clients[i]) && Clients[i]->sopt->inbuf))
 		    handle_connection (Clients[i]);
 	    }
 	}
@@ -607,39 +589,66 @@ main (int argc, char **argv)
 	    break;
 
 	/* write out data and reap dead client connections */
-	for (i = 0; !SigCaught && i < numClients; i++)
+	for (i = 0; !SigCaught && i < Max_Clients; i++)
 	{
-	    if (ISSERVER (Clients[i]))
+	    if (Clients[i])
 	    {
-		/* server - strategy is call send_queued_data() if there
-		   there is data to be compressed, or if the socket is
-		   writable and there is some compressed output */
-		if (Clients[i]->sendbuf
-		    || (Clients[i]->sopt->outbuf && WRITABLE (i)))
+		if (ISSERVER (Clients[i]))
+		{
+		    /* server - strategy is call send_queued_data() if there
+		       there is data to be compressed, or if the socket is
+		       writable and there is some compressed output */
+		    if (Clients[i]->sendbuf
+			    || (Clients[i]->sopt->outbuf && WRITABLE (i)))
+		    {
+			if (send_queued_data (Clients[i]) == -1)
+			    Clients[i]->destroy = 1;
+		    }
+		}
+		/* client.  if there is output to send and either the socket is
+		   writable or we're about to close the connection, send any
+		   queued data */
+		else if (Clients[i]->sendbuf &&
+			(WRITABLE (i) || Clients[i]->destroy))
 		{
 		    if (send_queued_data (Clients[i]) == -1)
 			Clients[i]->destroy = 1;
 		}
-	    }
-	    /* client.  if there is output to send and either the socket is
-	       writable or we're about to close the connection, send any
-	       queued data */
-	    else if (Clients[i]->sendbuf &&
-		(WRITABLE (i) || Clients[i]->destroy))
-	    {
-		if (send_queued_data (Clients[i]) == -1)
-		    Clients[i]->destroy = 1;
-	    }
 
-	    /* check to see if this connection should be shut down */
-	    if (Clients[i]->destroy)
-	    {
-		/* should have flushed everything */
-		ASSERT (Clients[i]->sendbuf == 0);
-		log ("main(): closing connection for %s", Clients[i]->host);
-		remove_connection (Clients[i]);
+		/* check to see if this connection should be shut down */
+		if (Clients[i]->destroy)
+		{
+		    /* should have flushed everything */
+		    ASSERT (Clients[i]->sendbuf == 0);
+		    log ("main(): closing connection for %s", Clients[i]->host);
+		    remove_connection (Clients[i]);
+		}
 	    }
 	}
+
+#if HAVE_POLL
+	if (ufd[1].revents & POLLIN)
+#else
+	if (FD_ISSET (sp, &set))
+#endif
+	{
+	    report_stats (sp);
+	    n--;
+	}
+
+	/* check for new incoming connections. handle this last so that
+	   we don't screw up the loops above.  this is crucial when using
+	   poll() because Max_Clients could increase to something greater
+	   than ufdsize-2 causing us to read off the end of the array */
+#if HAVE_POLL
+	if (ufd[0].revents & POLLIN)
+#else
+	    if (FD_ISSET (s, &set))
+#endif
+	    {
+		accept_connection (s);
+		n--;
+	    }
 
 	/* execute any pending events now */
 	exec_timers (Current_Time);
@@ -654,13 +663,13 @@ main (int argc, char **argv)
     CLOSE (s);
 
     /* close all client connections */
-    for (i = 0; i < Num_Clients; i++)
+    for (i = 0; i < Max_Clients; i++)
     {
 	if (Clients[i])
 	    remove_connection (Clients[i]);
     }
 
-    userdb_close();
+    userdb_close ();
 
     /* only clean up memory if we are in debug mode, its kind of pointless
        otherwise */

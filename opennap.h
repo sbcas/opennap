@@ -19,7 +19,7 @@
 #include "list.h"
 
 #define OUTOFMEMORY(f) log("%s(): OUT OF MEMORY at %s:%d", f, __FILE__, __LINE__)
-#define logerr(f,s) log("%s(): %s: %s (errno %d)", f, strerror (errno), errno)
+#define logerr(f,s) log("%s(): %s: %s (errno %d)", f, s, strerror (errno), errno)
 
 #define MAGIC_USER 0xeaee402a
 #define MAGIC_CHANNEL 0xa66544cb
@@ -293,6 +293,7 @@ extern char Buf[2048];
 
 extern CONNECTION **Clients;	/* locally connected clients */
 extern int Num_Clients;
+extern int Max_Clients;
 
 extern int Num_Files;		/* total number of available files */
 extern int Num_Gigs;		/* total size of files available (in kB) */
@@ -453,7 +454,7 @@ void set_val (char *d, unsigned short val);
 #define IDX_TYPE	9
 
 /* utility routines */
-void add_client (CONNECTION *);
+int add_client (CONNECTION *);
 void add_random_bytes (char *, int);
 void add_server (CONNECTION *);
 void add_timer (int, int, timer_cb_t, void *);

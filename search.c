@@ -121,7 +121,7 @@ tokenize (char *s)
 	while (*s && !WORD_CHAR (*s))
 	    s++;
 	ptr = s;
-	while (*ptr && WORD_CHAR (*s))
+	while (*ptr && WORD_CHAR (*ptr))
 	    ptr++;
 	if (*ptr)
 	    *ptr++ = 0;
@@ -132,7 +132,9 @@ tokenize (char *s)
 	   searches down any even after the selection of the bin to search */
 	if (!strcmp ("a", s) ||
 	    !strcmp ("i", s) ||
-	    !strcmp ("the", s) || !strcmp ("and", s) || !strcmp ("in", s) ||
+	    !strcmp ("the", s) ||
+	    !strcmp ("and", s) ||
+	    !strcmp ("in", s) ||
 	    /* the following are common path names and don't really
 	       provide useful information */
 	    !strcmp ("mp3", s) ||
@@ -148,7 +150,8 @@ tokenize (char *s)
 	    !strcmp ("desktop", s) ||
 	    !strcmp ("my", s) ||
 	    !strcmp ("documents", s) ||
-	    !strcmp ("winamp", s) || !strcmp ("mp3s", s))
+	    !strcmp ("winamp", s) ||
+	    !strcmp ("mp3s", s))
 	{
 	    s = ptr;
 	    continue;

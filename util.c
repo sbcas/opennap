@@ -69,15 +69,6 @@ add_server (CONNECTION *c)
     Num_Servers++;
 }
 
-void
-add_client (CONNECTION *con)
-{
-    Clients = REALLOC (Clients, sizeof (CONNECTION *) * (Num_Clients + 1));
-    Clients[Num_Clients] = con;
-    con->id = Num_Clients;
-    Num_Clients++;
-}
-
 /* send a message to all peer servers.  `con' is the connection the message
    was received from and is used to avoid sending the message back from where
    it originated. */
@@ -555,4 +546,40 @@ send_user (USER *user, int tag, char *fmt, ...)
 	set_len(Buf,len);
     }
     queue_data(user->con,Buf,len+4);
+}
+
+int
+add_client (CONNECTION *cli)
+{
+    int i;
+
+    if(Max_Clients == Num_Clients)
+    {
+	/* no space left, allocate more */
+	if(safe_realloc((void**)&Clients,sizeof(CONNECTION*)*(Num_Clients+10)))
+	{
+	    OUTOFMEMORY("add_client");
+	    CLOSE(cli->fd);
+	    FREE(cli->host);
+	    FREE(cli);
+	    return -1;
+	}
+	Clients[Max_Clients++] = cli;
+	while (Max_Clients < Num_Clients + 10)
+	    Clients[Max_Clients++] = 0;
+    }
+    else
+    {
+	/* insert this connection into a hole */
+	for(i=0;i<Max_Clients;i++)
+	    if(!Clients[i])
+	    {
+		Clients[i]=cli;
+		cli->id=i;
+		break;
+	    }
+	ASSERT(i!=Max_Clients);
+    }
+    Num_Clients++;
+    return 0;
 }

@@ -23,9 +23,9 @@ notify_mods (const char *fmt, ...)
     set_tag (Buf, MSG_SERVER_NOSUCH);
     len = strlen (Buf + 4);
     set_len (Buf, len);
-    for (i = 0; i < Num_Clients; i++)
+    for (i = 0; i < Max_Clients; i++)
     {
-	if (Clients[i] && Clients[i]->class == CLASS_USER &&
+	if (Clients[i] && ISUSER (Clients[i]) &&
 		Clients[i]->user->level >= LEVEL_MODERATOR)
 	    queue_data (Clients[i], Buf, len + 4);
     }
