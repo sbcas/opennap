@@ -7,8 +7,9 @@ opennap_SOURCES=opennap.h main.c add_file.c db.c search.c \
 	upload_complete.c topic.c muzzle.c unmuzzle.c \
 	level.c client_quit.c server_login.c server_connect.c synch.c util.c \
 	md5c.c md5.h global.h hotlist.c remove_file.c list_channels.c \
-	list_users.c ping.c resume.c change.c ban.c compress.c
-opennap_LDADD=-L@MYSQLLIBDIR@ -lmysqlclient
+	list_users.c ping.c resume.c change.c ban.c
+EXTRA_opennap_SOURCES=compress.c	
+opennap_LDADD=@COMPRESSDOTO@ -L@MYSQLLIBDIR@ -lmysqlclient
 metaserver_SOURCES=metaserver.c
 EXTRA_DIST=sample.conf sample.motd napster.txt .indent.pro create_db.sql \
 	FAQ patchnap.c spyserv.c spynap.c

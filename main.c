@@ -160,7 +160,9 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_DISCONNECT, server_disconnect }, /* 10101 */
     { MSG_CLIENT_KILL_SERVER, kill_server }, /* 10110 */
     { MSG_CLIENT_REMOVE_SERVER, remove_server }, /* 10111 */
+#if HAVE_LIBZ
     { MSG_SERVER_COMPRESSED_DATA, compressed_data }, /* 10200 */
+#endif /* HAVE_LIBZ */
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
 

@@ -1253,10 +1253,12 @@ if eval "test \"`echo '$ac_cv_file_'$ac_safe`\" = yes"; then
 #define HAVE_DEV_RANDOM 1
 EOF
 
+	COMPRESSDOTO='compress.o'
 else
   echo "$ac_t""no" 1>&6
-
+COMPRESSDOTO=''
 fi
+
 
 
 ac_cv_warnings=yes
@@ -1438,6 +1440,7 @@ s%@SET_MAKE@%$SET_MAKE%g
 s%@CC@%$CC%g
 s%@MYSQLINCDIR@%$MYSQLINCDIR%g
 s%@MYSQLLIBDIR@%$MYSQLLIBDIR%g
+s%@COMPRESSDOTO@%$COMPRESSDOTO%g
 
 CEOF
 EOF
