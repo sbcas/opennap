@@ -367,6 +367,14 @@ handle_connection (CONNECTION * con)
 	len = BSWAP16 (len);
 	if (len > 0)
 	{
+	    if (len > Max_Command_Length)
+	    {
+		log ("handle_connection(): %hu byte message from %s",
+		     len, con->host);
+		con->destroy = 1;
+		return;
+	    }
+
 	    /* if there isn't enough space to read the entire body, resize the
 	       input buffer */
 	    if (con->recvbuf->datamax < 4 + len)

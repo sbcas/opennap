@@ -62,6 +62,7 @@ static CONFIG Vars[] = {
     { "user_db_interval", VAR_TYPE_INT, UL &User_Db_Interval, 1800 },
     { "channel_limit", VAR_TYPE_INT, UL &Channel_Limit, 200 },
     { "login_timeout",	VAR_TYPE_INT, UL &Login_Timeout, 60 },
+    { "max_command_length", VAR_TYPE_INT, UL &Max_Command_Length, 2048 }
 };
 
 static int Vars_Size = sizeof (Vars) / sizeof (CONFIG);

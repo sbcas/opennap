@@ -239,6 +239,8 @@ next_arg (char **s)
 
     if (!r)
 	return 0;
+    while (ISSPACE (*r))
+	r++;
     *s = strpbrk (r, " \t\r\n");
     if (*s)
     {

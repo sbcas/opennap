@@ -323,6 +323,7 @@ extern int Channel_Limit;
 extern int Login_Timeout;
 extern int Local_Files;
 extern int Max_Nick_Length;
+extern int Max_Command_Length;
 
 #ifndef WIN32
 extern int Uid;

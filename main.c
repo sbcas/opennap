@@ -53,6 +53,7 @@ unsigned int Bytes_Out = 0;
 int User_Db_Interval;		/* how often to save the user database */
 int Channel_Limit;
 int Login_Timeout;
+int Max_Command_Length;
 
 #ifndef WIN32
 int Uid;
