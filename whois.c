@@ -22,6 +22,7 @@ HANDLER (whois)
     time_t online;
     LIST *chan;
     USERDB *db;
+    char cmd[256];
 
     (void) tag;
     (void) len;
@@ -62,43 +63,35 @@ HANDLER (whois)
     chanlist = STRDUP (Buf);
 
     online = (int) (Current_Time - user->connected);
-    if (sender->level < LEVEL_MODERATOR)
-    {
-	send_user (sender, MSG_SERVER_WHOIS_RESPONSE,
-		   WHOIS_FMT, user->nick, Levels[user->level],
-		   online, chanlist, user->shared, user->downloads,
-		   user->uploads, user->speed, user->clientinfo);
-    }
-    else
+
+    snprintf (cmd, sizeof (cmd),
+	      "%s \"%s\" %d \"%s\" \"%s\" %d %d %d %d \"%s\"",
+	      user->nick, Levels[user->level],
+	      (int) online, chanlist,
+	      user->muzzled ? "Muzzled" : "Active",
+	      user->shared, user->downloads,
+	      user->uploads, user->speed, user->clientinfo);
+    /* moderators and above see some additional information */
+    if (sender->level > LEVEL_USER)
     {
 	db = hash_lookup (User_Db, user->nick);
-
-	/* we show admins the server which a user is connected to */
-	send_user (sender, MSG_SERVER_WHOIS_RESPONSE,
-		   "%s \"%s\" %d \"%s\" \"%s\" %d %d %d %d \"%s\" %d %d %s %d %d %s%s%s",
-		   user->nick,
-		   Levels[user->level],
-		   online,
-		   chanlist,
-		   user->muzzled ? "Muzzled" : "Active",
-		   user->shared,
-		   user->downloads,
-		   user->uploads,
-		   user->speed,
-		   user->clientinfo,
-		   user->totaldown,
-		   user->totalup,
-		   my_ntoa (user->host),
-		   user->conport,
-		   user->port,
-		   db ? db->email : "unknown",
-		   sender->level > LEVEL_MODERATOR ? " " : "",
-		   sender->level > LEVEL_MODERATOR ? (user->server ? user->server : Server_Name) : "");
+	snprintf (cmd + strlen (cmd), sizeof (cmd) - strlen (cmd),
+		  " %d %d %s %d %d %s", user->totaldown, user->totalup,
+		  my_ntoa (user->host), user->conport, user->port,
+		  db ? db->email : "unknown");
     }
+    /* admins and above see the server the user is connected to.  this is
+       only admin+ since the windows client would likely barf if present.
+       i assume that admin+ will use another client such as BWap which
+       understands the extra field */
+    if (sender->level > LEVEL_MODERATOR)
+	snprintf (cmd + strlen (cmd), sizeof (cmd) - strlen (cmd), " %s",
+		  user->server ? user->server : Server_Name);
+    send_user (sender, MSG_SERVER_WHOIS_RESPONSE, "%s", cmd);
     FREE (chanlist);
 
     /* notify privileged users when someone requests their info */
-    if (user->level >= LEVEL_MODERATOR)
+    if (user->level >= LEVEL_MODERATOR && sender != user)
     {
 	ASSERT (validate_connection (user->con));
 
