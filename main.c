@@ -35,6 +35,10 @@ char *Db_Name = 0;
 char *Server_Name = 0;
 char *Server_Pass = 0;
 
+/* bans on ip addresses / users */
+BAN **Ban = 0;
+int Ban_Size = 0;
+
 /* local clients (can be users or servers) */
 CONNECTION **Clients = NULL;
 int Num_Clients = 0;
@@ -142,6 +146,9 @@ static HANDLER Protocol[] = {
     { MSG_SERVER_TOPIC, topic },
     { MSG_CLIENT_MUZZLE, muzzle },
     { MSG_CLIENT_UNMUZZLE, unmuzzle },
+    { MSG_CLIENT_BAN, ban }, /* 612 */
+    { MSG_CLIENT_UNBAN, unban }, /* 614 */
+    { MSG_CLIENT_BANLIST, banlist }, /* 615 */
     { MSG_CLIENT_LIST_CHANNELS, list_channels }, /* 618 */
     { MSG_CLIENT_DATA_PORT_ERROR, data_port_error }, /* 626 */
     { MSG_CLIENT_WALLOP, wallop }, /* 627 */
@@ -349,6 +356,21 @@ update_stats (void)
     }
 }
 
+
+static int
+ip_glob_match (const char *pattern, const char *ip)
+{
+    int l;
+
+    /* if `pattern' ends with a `.', we ban an entire subclass */
+    l = strlen (pattern);
+    ASSERT (l > 0);
+    if (pattern[l - 1] == '.')
+	return ((strncmp (pattern, ip, l) == 0));
+    else
+	return ((strcmp (pattern, ip) == 0));
+}
+
 int
 main (int argc, char **argv)
 {
@@ -513,17 +535,36 @@ main (int argc, char **argv)
 	    {
 		CONNECTION *cli;
 
+
 		cli = new_connection ();
 		cli->fd = f;
 		cli->ip = sin.sin_addr.s_addr;
 		cli->host = STRDUP (inet_ntoa (sin.sin_addr));
 		cli->class = CLASS_UNKNOWN;
 		log ("main(): connection from %s, port %d", cli->host,
-		     sin.sin_port);
+			sin.sin_port);
 		add_client (cli);
 
 		if (fcntl (f, F_SETFL, O_NONBLOCK) != 0)
 		    log ("main(): fcntl error (%s)", strerror (errno));
+
+		/* make sure this ip is not banned */
+		for (i = 0; i < Ban_Size; i++)
+		{
+		    if (Ban[i]->type == BAN_IP &&
+			    ip_glob_match (Ban[i]->target, inet_ntoa (sin.sin_addr)))
+		    {
+			/* TODO: this does not reach all mods, only the one on
+			   this server */
+			notify_mods ("Connection attempt from banned ip %s",
+				inet_ntoa (sin.sin_addr));
+			send_cmd (cli, MSG_SERVER_ERROR, "You are banned from this server (%s)",
+				Ban[i]->reason ? Ban[i]->reason : "banned");
+			send_queued_data (cli);
+			remove_connection (cli);
+			break;
+		    }
+		}
 	    }
 	    n--;
 	}
@@ -587,6 +628,11 @@ main (int argc, char **argv)
     free_hash (Users);
     free_hash (Channels);
     free_hash (Hotlist);
+
+    for(i=0;i<Ban_Size;i++)
+	free_ban (Ban[i]);
+    if (Ban)
+	FREE (Ban);
 
     FREE (Db_Host);
     FREE (Db_User);

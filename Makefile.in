@@ -65,7 +65,7 @@ PACKAGE = @PACKAGE@
 VERSION = @VERSION@
 
 bin_PROGRAMS = opennap metaserver
-opennap_SOURCES = opennap.h main.c add_file.c db.c search.c 	motd.c hash.h hash.c privmsg.c browse.c 	debug.c debug.h login.c whois.c free_user.c 	join.c part.c public.c part_channel.c 	announce.c kill_user.c remove_connection.c config.c download.c 	upload_complete.c topic.c muzzle.c unmuzzle.c 	level.c client_quit.c server_login.c server_connect.c synch.c util.c 	md5c.c md5.h global.h hotlist.c remove_file.c list_channels.c 	list_users.c ping.c resume.c change.c
+opennap_SOURCES = opennap.h main.c add_file.c db.c search.c 	motd.c hash.h hash.c privmsg.c browse.c 	debug.c debug.h login.c whois.c free_user.c 	join.c part.c public.c part_channel.c 	announce.c kill_user.c remove_connection.c config.c download.c 	upload_complete.c topic.c muzzle.c unmuzzle.c 	level.c client_quit.c server_login.c server_connect.c synch.c util.c 	md5c.c md5.h global.h hotlist.c remove_file.c list_channels.c 	list_users.c ping.c resume.c change.c ban.c
 
 opennap_LDADD = -L@MYSQLLIBDIR@ -lmysqlclient
 metaserver_SOURCES = metaserver.c
@@ -88,7 +88,7 @@ public.o part_channel.o announce.o kill_user.o remove_connection.o \
 config.o download.o upload_complete.o topic.o muzzle.o unmuzzle.o \
 level.o client_quit.o server_login.o server_connect.o synch.o util.o \
 md5c.o hotlist.o remove_file.o list_channels.o list_users.o ping.o \
-resume.o change.o
+resume.o change.o ban.o
 opennap_DEPENDENCIES = 
 opennap_LDFLAGS = 
 metaserver_OBJECTS =  metaserver.o
@@ -108,17 +108,17 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = gtar
 GZIP_ENV = --best
-DEP_FILES =  .deps/add_file.P .deps/announce.P .deps/browse.P \
-.deps/change.P .deps/client_quit.P .deps/config.P .deps/db.P \
-.deps/debug.P .deps/download.P .deps/free_user.P .deps/hash.P \
-.deps/hotlist.P .deps/join.P .deps/kill_user.P .deps/level.P \
-.deps/list_channels.P .deps/list_users.P .deps/login.P .deps/main.P \
-.deps/md5c.P .deps/metaserver.P .deps/motd.P .deps/muzzle.P \
-.deps/part.P .deps/part_channel.P .deps/ping.P .deps/privmsg.P \
-.deps/public.P .deps/remove_connection.P .deps/remove_file.P \
-.deps/resume.P .deps/search.P .deps/server_connect.P \
-.deps/server_login.P .deps/synch.P .deps/topic.P .deps/unmuzzle.P \
-.deps/upload_complete.P .deps/util.P .deps/whois.P
+DEP_FILES =  .deps/add_file.P .deps/announce.P .deps/ban.P \
+.deps/browse.P .deps/change.P .deps/client_quit.P .deps/config.P \
+.deps/db.P .deps/debug.P .deps/download.P .deps/free_user.P \
+.deps/hash.P .deps/hotlist.P .deps/join.P .deps/kill_user.P \
+.deps/level.P .deps/list_channels.P .deps/list_users.P .deps/login.P \
+.deps/main.P .deps/md5c.P .deps/metaserver.P .deps/motd.P \
+.deps/muzzle.P .deps/part.P .deps/part_channel.P .deps/ping.P \
+.deps/privmsg.P .deps/public.P .deps/remove_connection.P \
+.deps/remove_file.P .deps/resume.P .deps/search.P \
+.deps/server_connect.P .deps/server_login.P .deps/synch.P .deps/topic.P \
+.deps/unmuzzle.P .deps/upload_complete.P .deps/util.P .deps/whois.P
 SOURCES = $(opennap_SOURCES) $(metaserver_SOURCES)
 OBJECTS = $(opennap_OBJECTS) $(metaserver_OBJECTS)
 

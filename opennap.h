@@ -129,6 +129,19 @@ struct _hotlist
     int numusers;	/* number of local clients requesting notification */
 };
 
+typedef enum {
+    BAN_IP,
+    BAN_USER
+} ban_t;
+
+typedef struct _ban {
+    ban_t type;
+    char *target;
+    char *setby;
+    char *reason;
+    time_t when;
+} BAN;
+
 /* message types */
 /* MSG_CLIENT_* are messages sent by the client to the server
    MSG_SERVER_* are messages sent by the server to the client
@@ -192,6 +205,9 @@ struct _hotlist
 #define MSG_CLIENT_UPLOAD_OK		608
 #define MSG_CLIENT_KILL			610
 #define MSG_CLIENT_NUKE			611	/* not implemented */
+#define MSG_CLIENT_BAN			612
+#define MSG_CLIENT_UNBAN		614
+#define MSG_CLIENT_BANLIST		615
 #define MSG_SERVER_IP_BANLIST		616
 #define MSG_CLIENT_LIST_CHANNELS	617
 #define MSG_SERVER_CHANNEL_LIST_END	617
@@ -245,8 +261,6 @@ extern int Server_Port;
 
 extern char Buf[1024];
 
-extern HASH *Users;
-
 extern CONNECTION **Clients;	/* locally connected clients */
 extern int Num_Clients;
 
@@ -256,8 +270,11 @@ extern int Num_Gigs;		/* total size of files available (in kB) */
 extern CONNECTION **Servers;	/* peer servers */
 extern int Num_Servers;
 
-extern HASH *Channels;
+extern BAN **Ban;
+extern int Ban_Size;
 
+extern HASH *Users;
+extern HASH *Channels;
 extern HASH *Hotlist;
 
 extern char *Levels[LEVEL_ELITE + 1];
@@ -274,6 +291,7 @@ int array_remove (void *, int *, void *);
 void close_db (void);
 void config (const char *);
 void expand_hex (char *, int);
+void free_ban (BAN *);
 void free_channel (CHANNEL *);
 void free_hotlist (HOTLIST *);
 void free_user (USER *);
@@ -314,6 +332,8 @@ int validate_hotlist (HOTLIST *);
 HANDLER (add_file);
 HANDLER (add_hotlist);
 HANDLER (announce);
+HANDLER (ban);
+HANDLER (banlist);
 HANDLER (browse);
 HANDLER (change_data_port);
 HANDLER (change_speed);
@@ -348,6 +368,7 @@ HANDLER (upload_ok);
 HANDLER (upload_start);
 HANDLER (upload_end);
 HANDLER (topic);
+HANDLER (unban);
 HANDLER (user_ip);
 HANDLER (user_speed);
 HANDLER (wallop);

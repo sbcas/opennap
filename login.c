@@ -20,6 +20,7 @@ HANDLER (login)
     char *field[6];
     USER *user;
     HOTLIST *hotlist;
+    int i;
 
     ASSERT (validate_connection (con));
 
@@ -69,6 +70,22 @@ HANDLER (login)
 	}
 	return;
     }
+
+    /* check for a user ban */
+    for (i = 0; i < Ban_Size; i++)
+	if (Ban[i]->type == BAN_USER && !strcasecmp (field[0], Ban[i]->target))
+	{
+	    log ("login(): banned user %s tried to log in", field[0]);
+	    if (con->class == CLASS_USER)
+	    {
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			"You are banned from this server (%s)",
+			Ban[i]->reason ? Ban[i]->reason : "banned");
+		remove_connection (con);
+	    }
+	    notify_mods ("Banned user %s attempted to log in", field[0]);
+	    return;
+	}
 
     user = new_user ();
     user->nick = STRDUP (field[0]);
