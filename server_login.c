@@ -12,39 +12,61 @@
 #include "opennap.h"
 #include "debug.h"
 #include "md5.h"
-#include "textdb.h"
+
+#define get_server_pass(c) _get_server_pass(c,1)
+#define get_local_pass(c) _get_server_pass(c,0)
 
 /* this happens infrequent enough that we just open it each time we need to
    instead of leaving it open */
 static char *
-get_server_pass (const char *host)
+_get_server_pass (const char *host, int remote)
 {
-    TEXTDB *db;
-    TEXTDB_RES *result;
-    char *pass = 0, path[_POSIX_PATH_MAX];
+    char path[_POSIX_PATH_MAX], *av[3], *pass = 0;
+    int ac;
+    FILE *fp;
 
-    snprintf(path,sizeof(path),"%s/servers",Config_Dir);
-    db = textdb_init (path);
-    if (db)
+    snprintf (path, sizeof (path), "%s/servers", Config_Dir);
+    fp = fopen (path, "r");
+    if (!fp)
     {
-	result = textdb_fetch (db, host);
-	if (result)
+	logerr ("get_server_pass", path);
+	return 0;
+    }
+    Buf[sizeof (Buf) - 1] = 0;
+    while (fgets (Buf, sizeof (Buf) - 1, fp))
+    {
+	/* skip comments and blanck lines */
+	if (Buf[0] == '#' || Buf[0] == '\n'
+	    || (Buf[0] == '\r' || Buf[1] == '\n'))
+	    continue;
+	ac = split_line (av, FIELDS (av), Buf);
+	if (ac > 1)
 	{
-	    if (list_count (result->columns) < 2)
+	    if (!strcasecmp (host, av[0]))
 	    {
-		log ("get_server_pass(): bogus entry for server %s",
-		     (char *) result->columns->data);
+		if (remote)
+		{
+		    /* return the remote server's expected password */
+		    pass = STRDUP (av[1]);
+		}
+		else
+		{
+		    /* return the password specifically for this server,
+		       or the default password if none is specified */
+		    pass = STRDUP ((ac > 2) ? av[2] : Server_Pass);
+		}
+		if (!pass)
+		    OUTOFMEMORY ("_get_server_pass");
+		break;
 	    }
-	    else
-		pass = STRDUP (result->columns->next->data);
-	    textdb_free_result (result);
 	}
-	textdb_close (db);
+	else
+	{
+	    log ("_get_server_pass(): too few parameters for server %s",
+		 (ac > 0) ? av[0] : "<unknown>");
+	}
     }
-    else
-    {
-	log ("get_server_pass(): textdb_init failed");
-    }
+    fclose (fp);
     return pass;
 }
 
@@ -103,7 +125,8 @@ HANDLER (server_login)
     con->host = STRDUP (fields[0]);
 
     /* notify local admins of the connection request */
-    notify_mods (SERVERLOG_MODE, "Received server login request from %s", con->host);
+    notify_mods (SERVERLOG_MODE, "Received server login request from %s",
+		 con->host);
 
     /* see if there is any entry for this server */
     if ((pass = get_server_pass (con->host)) == 0)
@@ -168,7 +191,17 @@ HANDLER (server_login)
 		       strlen (con->opt.auth->sendernonce), &md);
     md5_process_bytes (con->opt.auth->nonce, strlen (con->opt.auth->nonce),
 		       &md);
-    md5_process_bytes (Server_Pass, strlen (Server_Pass), &md);
+    /* look up the pass to use with this server, or use the default if none
+       is specified */
+    pass = get_local_pass (fields[0]);
+    if(!pass)
+    {
+	/* should only happen upon memory failure */
+	log("server_login(): could not find local password for link (fatal)");
+	con->destroy = 1;
+	return;
+    }
+    md5_process_bytes (pass, strlen (pass), &md);
     md5_finish_ctx (&md, hash);
     expand_hex (hash, 16);
     hash[32] = 0;
@@ -275,7 +308,8 @@ HANDLER (server_login_ack)
 
     /* notify peer servers this server has joined the cluster */
     pass_message_args (con, MSG_SERVER_LINK_INFO, "%s %hu %s %hu 1",
-	Server_Name, get_local_port (con->fd), con->host, con->port);
+		       Server_Name, get_local_port (con->fd), con->host,
+		       con->port);
 
     /* synchronize our state with this server */
     synch_server (con);
@@ -297,7 +331,8 @@ HANDLER (link_info)
     {
 	log ("link_info(): wrong number of parameters");
 	print_args (ac, av);
-	send_cmd (con, MSG_SERVER_NOSUCH, "Wrong number of parameters for command %d", tag);
+	send_cmd (con, MSG_SERVER_NOSUCH,
+		  "Wrong number of parameters for command %d", tag);
 	return;
     }
     slink = CALLOC (1, sizeof (LINK));
@@ -331,11 +366,13 @@ HANDLER (link_info)
     if (slink->hops < 0)
     {
 	log ("link_info(): invalid hop count %d", slink->hops);
-	send_cmd (con, MSG_SERVER_NOSUCH, "Invalid hop count %d", slink->hops);
+	send_cmd (con, MSG_SERVER_NOSUCH, "Invalid hop count %d",
+		  slink->hops);
 	slink->hops = 1;	/* at least */
     }
     log ("link_info(): %s:%d -> %s:%d (%d hops away)",
-	slink->peer, slink->peerport, slink->server, slink->port, slink->hops);
+	 slink->peer, slink->peerport, slink->server, slink->port,
+	 slink->hops);
     list = CALLOC (1, sizeof (LIST));
     if (!list)
     {
@@ -345,10 +382,10 @@ HANDLER (link_info)
     list->data = slink;
     Server_Links = list_append (Server_Links, list);
     pass_message_args (con, tag, "%s %d %s %d %d", slink->server, slink->port,
-	slink->peer, slink->peerport, slink->hops + 1);
+		       slink->peer, slink->peerport, slink->hops + 1);
     notify_mods (SERVERLOG_MODE, "Server %s has joined", slink->peer);
     return;
-error:
+  error:
     if (slink)
     {
 	if (slink->server)
@@ -388,15 +425,15 @@ HANDLER (server_quit)
     log ("server_quit(): %s reported that %s has quit", av[0], av[1]);
     /* remove all link info for any servers behind the one that just
        disconnected */
-    for(list=Server_Links;list;list=list->next)
+    for (list = Server_Links; list; list = list->next)
     {
-	link=list->data;
-	if(!strcasecmp(link->server,av[0]) &&
-		!strcasecmp(link->peer,av[1]))
+	link = list->data;
+	if (!strcasecmp (link->server, av[0]) &&
+	    !strcasecmp (link->peer, av[1]))
 	{
-	    link->port=-1;
-	    link->peerport=-1;
-	    remove_links(link->peer);
+	    link->port = -1;
+	    link->peerport = -1;
+	    remove_links (link->peer);
 	    break;
 	}
     }
@@ -419,13 +456,13 @@ mark_links (const char *host)
     {
 	link = list->data;
 	ASSERT (link != 0);
-	if (link->port != (unsigned short)-1 &&
-		link->peerport != (unsigned short)-1 &&
-		!strcasecmp (host, link->server))
+	if (link->port != (unsigned short) -1 &&
+	    link->peerport != (unsigned short) -1 &&
+	    !strcasecmp (host, link->server))
 	{
 	    link->port = -1;
 	    link->peerport = -1;
-	    mark_links (link->peer); /* mark servers connected to this peer */
+	    mark_links (link->peer);	/* mark servers connected to this peer */
 	}
     }
 }
@@ -442,8 +479,8 @@ remove_links (const char *host)
     while (*list)
     {
 	link = (*list)->data;
-	if (link->port == (unsigned short)-1 &&
-	    link->peerport == (unsigned short)-1)
+	if (link->port == (unsigned short) -1 &&
+	    link->peerport == (unsigned short) -1)
 	{
 	    tmpList = *list;
 	    *list = (*list)->next;

@@ -1,7 +1,7 @@
 opennap v0.26 (ALPHA)
 the open source (TM) napster server
 =====================
-April 26, 2000
+May 8, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -87,10 +87,15 @@ development of the server.
 
 	edit /usr/local/share/opennap/servers (c:\opennap\servers on Win32)
 	add:
-		<server name> <password>
+		<server name> <password> [ <local_password> ]
 
 	where <server name> is the dns name of the server, and <password>
-	is the password for that server to gain access.
+	is the password for that server to gain access.  You may optionally
+	specify a <local_password> to use instead of the default
+	`server_password' for authenticating your own server so that you can
+	have different passwords for each server you link to (eg., if
+	<local_password> is missing, the value of the configuration
+	variable `server_password' will be used).
 
    2.  connect to your server and gain elite access, and execute the
        `server connect' command (currently only BWap has support for
