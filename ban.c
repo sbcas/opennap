@@ -80,8 +80,7 @@ HANDLER (ban)
     }
     if(!is_ip(av[0]) && invalid_nick(av[0]))
     {
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+	invalid_nick_msg(con);
 	return;
     }
     if (ac > 1)

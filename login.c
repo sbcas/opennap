@@ -636,7 +636,7 @@ HANDLER (register_user)
     }
     if(invalid_nick(av[0]))
     {
-	send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+	invalid_nick_msg(con);
 	return;
     }
     /* if the user level was specified do some security checks */

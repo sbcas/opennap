@@ -275,7 +275,7 @@ HANDLER (ignore)
     CHECK_USER_CLASS ("ignore_add");
     if(invalid_nick(pkt))
     {
-	send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+	invalid_nick_msg(con);
 	return;
     }
     /*ensure that this user is not already on the ignore list */
@@ -287,7 +287,8 @@ HANDLER (ignore)
 	}
     if(Max_Ignore > 0 && list_count(con->uopt->ignore) > Max_Ignore)
     {
-	send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+	send_cmd(con,MSG_SERVER_NOSUCH,"ignore list is limited to %d users",
+		Max_Ignore);
 	return;
     }
     list = MALLOC (sizeof (LIST));
@@ -308,7 +309,7 @@ HANDLER (unignore)
     CHECK_USER_CLASS ("ignore_add");
     if(invalid_nick(pkt))
     {
-	send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+	invalid_nick_msg(con);
 	return;
     }
     for (list = &con->uopt->ignore; *list; list = &(*list)->next)

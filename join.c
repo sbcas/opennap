@@ -366,9 +366,7 @@ HANDLER (channel_level)
     chan = hash_lookup (Channels, av[0]);
     if (!chan)
     {
-	log ("channel_level(): unable to find channel %s", av[0]);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "No such channel %s", av[0]);
+	nosuchchannel(con);
 	return;
     }
     ASSERT (validate_channel);

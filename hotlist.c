@@ -35,7 +35,7 @@ HANDLER (add_hotlist)
     {
 	if(invalid_nick(pkt))
 	{
-	    send_cmd(con,MSG_SERVER_NOSUCH,"invalid nick");
+	    invalid_nick_msg(con);
 	    return;
 	}
 	/* no hotlist, create one */

@@ -185,7 +185,7 @@ HANDLER (channel_ban)
     /* check for valid input */
     if (!is_ip (av[1]) && invalid_nick (av[1]))
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "invalid nickname");
+	invalid_nick_msg(con);
 	return;
     }
 
@@ -450,6 +450,11 @@ HANDLER (channel_op)
     while (pkt)
     {
 	suser = next_arg (&pkt);
+	if (invalid_nick(suser))
+	{
+	    invalid_nick_msg(con);
+	    continue;
+	}
 	for (list = &chan->ops; *list; list = &(*list)->next)
 	    if (!strcasecmp ((*list)->data, suser))
 	    {

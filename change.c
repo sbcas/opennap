@@ -215,7 +215,7 @@ HANDLER (alter_pass)
     }
     if (invalid_nick (av[0]))
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "invalid nickname");
+	invalid_nick_msg(con);
 	return;
     }
     truncate_reason(av[2]);
@@ -318,8 +318,7 @@ HANDLER (nuke)
     }
     if (invalid_nick (nick))
     {
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "invalid nickname");
+	invalid_nick_msg(con);
 	return;
     }
     if(pkt)

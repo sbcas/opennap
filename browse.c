@@ -56,7 +56,7 @@ HANDLER (browse)
     nick = next_arg (&pkt);
     if(invalid_nick(nick))
     {
-	send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+	invalid_nick_msg(con);
 	return;
     }
     user = hash_lookup (Users, nick);
