@@ -13,6 +13,12 @@ Removed the USER_IP server numeric.  This version of opennap will not
 interoperate with other opennap servers < 0.33, but will use less
 bandwidth for server->server links
 
+Added new config variable `search_timeout' which controls how long pending
+searches will be considered valid before timing out.
+
+Added new config variable `stats_port' to make the port 8889 stats
+configurable since napigator now supports alternate ports.
+
 [opennap 0.35]
 
 added `max_clones' configuration variable to control how many clients may

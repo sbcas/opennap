@@ -1,3 +1,119 @@
+2000-07-28  drscholl  <drscholl@users.sourceforge.net>
+
+	* browse.c: reverted previous changes
+
+	* add_file.c, download.c, init.c, main.c, opennap.h, remove_file.c, search.c, upload_complete.c, util.c:
+	reverted back to storing full pathnames in the DATUM struct.  it was causing
+	too much load having to regenerate the filename every time match() needed to
+	be called.
+
+	* config.c, join.c, main.c, opennap.h, search.c, server_usage.c:
+	added `search_timeout' variable to set the expiration time of remote
+	searches (default: 180 secs)
+
+	bytes in/out was not time averaged in server_usage()
+
+	* channel.c, free_user.c, login.c, main.c, opennap.h, remove_connection.c, synch.c:
+	cache the server names so that each USER struct can reference it a single
+	time instead of once for each user
+
+	* configure, configure.in:
+	fixed bug in configure which causes DEBUG to always be set
+
+	* download.c, upload_complete.c:
+	reorganized code in download() to lookup the user's file only once
+
+	* TODO, add_file.c, download.c, opennap.h, remove_file.c, search.c, upload_complete.c, util.c:
+	added more strict checking to make sure the directory name also matches when
+	looking up a file by its basename
+
+	* browse.c, download.c, opennap.h, remove_file.c, upload_complete.c, util.c, add_file.c:
+	modified hash table of user's files to index by only the pathname instead of
+	the full directory name since that is no longer available
+
+	* add_file.c, browse.c, download.c, resume.c:
+	fixed many other places where the full filename was not returned
+
+	* search.c:
+	search did not return the full pathname of the shared files
+
+	* add_file.c, browse.c, init.c, main.c, opennap.h, search.c, TODO:
+	created new hash table `Paths' for storing the directory components of
+	shared files a single time for all files in the same directory.
+
+2000-07-27  drscholl  <drscholl@users.sourceforge.net>
+
+	* channel.c, sample.channels:
+	altered channels file so that # is no longer considered a comment in
+	`version 1' files.
+
+	* NEWS, join.c, login.c:
+	channel names must now begin with # or &.  join will automatically prepend a
+	hash (#) if missing
+
+	* configure, configure.in:
+	debugging is no longer enabled by default.  use `configure --enable-debug'
+	to turn it on
+
+	* add_file.c, main.c, opennap.h:
+	change Num_Gigs to a double.  unsigned int was running out at 4096 GB.
+
+	* Makefile.am, Makefile.in, NEWS, README, ban.c, channel.c, configure, configure.in, download.c, glob.c, join.c, list_users.c, login.c, napster.txt, opennap.h, resume.c, search.c, synch.c, upload_complete.c, util.c, whois.c:
+	imported changes from adns branch, without adns support
+
+	* NEWS, join.c:
+	fixed bug in channel rollover code causing an infinite loop
+
+2000-07-26  drscholl  <drscholl@users.sourceforge.net>
+
+	* channel.c:
+	fixed bug which prevented registered channels from being dropped
+
+	* remove_connection.c:
+	check to make sure con->dns != 0 before calling adns_cancel()
+
+	* upload_complete.c:
+	fixed bug with downloads not working.  forgot to switch .host to .ip
+	in the download responses
+
+2000-07-25  drscholl  <drscholl@users.sourceforge.net>
+
+	* main.c:
+	added adns_if_noserverwarn to adns_init() to turn off warnings
+
+	* login.c, main.c:
+	login() did not convert the uint32 ip address to dot-quad before using it
+	as the host name
+
+	* server_connect.c:
+	.resolved should be set when making an outgoing server connection so the
+	connection doesnt time out waiting for a nonexistent dns lookup
+
+	* configure, configure.in:
+	configure should use `if test' rather than `if ['
+
+	* README, list_users.c, whois.c:
+	added the client ip address in dot-quad format to the end of the global user
+	list response, and the whois response
+
+	* configure, configure.in:
+	configure should look for -ladns in /usr/local/lib as well
+
+	* glob.c: New file.
+
+	* glob.c: forgot to add glob.c
+
+	* Makefile.am, Makefile.in, NEWS, ban.c, channel.c, configure, configure.in, download.c, join.c, list_users.c, login.c, main.c, napster.txt, opennap.h, remove_connection.c, resume.c, search.c, synch.c, whois.c:
+	added initial support for adns to add reverse dns lookups for client
+	connections.
+
+2000-07-23  drscholl  <drscholl@users.sourceforge.net>
+
+	* ChangeLog, Makefile.in, README, configure, setup.c:
+	fixed setup.c to compile under win32
+
+	updated ChangeLog with recent CVS log entries.
+
 2000-07-20  drscholl  <drscholl@users.sourceforge.net>
 
 	* login.c:

@@ -36,6 +36,7 @@ int Max_User_Channels;		/* default, can be changed in config */
 int Stat_Click;			/* interval (in seconds) to send server stats */
 LIST *Server_Ports = 0;		/* which port(s) to listen on for connections */
 int Server_Queue_Length;
+int Stats_Port;			/* port to listen on for stats info */
 int Client_Queue_Length;
 int Max_Search_Results;
 int Max_Shared;
@@ -59,6 +60,8 @@ int Max_Client_String;
 int Max_Reason;
 int Max_Clones;
 int Search_Timeout;
+unsigned int Total_Bytes_In = 0;		/* bytes received */
+unsigned int Total_Bytes_Out = 0;		/* bytes sent */
 
 #ifndef WIN32
 int Uid;
@@ -133,6 +136,10 @@ update_stats (void)
     log ("update_stats(): %d channels", Channels->dbsize);
     log ("update_stats(): %.2f kbytes/sec in, %.2f kbytes/sec out",
 	 (float) Bytes_In / 1024. / delta, (float) Bytes_Out / 1024. / delta);
+    Total_Bytes_In += Bytes_In;
+    Total_Bytes_Out += Bytes_Out;
+    log ("update_stats(): %u bytes sent, %u bytes received",
+	    Total_Bytes_Out, Total_Bytes_In);
 
     /* reset counters */
     Bytes_In = 0;
@@ -437,7 +444,7 @@ main (int argc, char **argv)
 	/* listen on port 8889 for stats reporting */
 	if ((sp = new_tcp_socket (ON_REUSEADDR)) == -1)
 	    exit (1);
-	if (bind_interface (sp, Interface, 8889))
+	if (bind_interface (sp, Interface, Stats_Port))
 	    exit (1);
 	if (listen (sp, BACKLOG))
 	{

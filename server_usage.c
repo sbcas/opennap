@@ -33,7 +33,7 @@ HANDLER (server_usage)
 
 	numServers = list_count (Servers);
 	send_user (user, MSG_SERVER_USAGE_STATS,
-		  "%d %d %d %d %.0f %d %d %d %d %d %.2f %.2f",
+		  "%d %d %d %d %.0f %d %d %d %d %d %.2f %.2f %.2f %u %u",
 		  Num_Clients - numServers,
 		  numServers,
 		  Users->dbsize,
@@ -45,7 +45,10 @@ HANDLER (server_usage)
 		  mem_used,
 		  User_Db->dbsize,
 		  (float) Bytes_In / 1024. / delta,
-		  (float) Bytes_Out / 1024. / delta);
+		  (float) Bytes_Out / 1024. / delta,
+		  (float) Search_Count / delta,
+		  Total_Bytes_In,
+		  Total_Bytes_Out);
     }
     else
 	pass_message_args (con, tag, ":%s %s", user->nick, pkt);

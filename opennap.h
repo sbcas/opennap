@@ -379,7 +379,10 @@ extern LIST *Server_Ports;
 extern int Server_Queue_Length;
 extern int SigCaught;		/* flag to control main loop */
 extern int Stat_Click;
+extern int Stats_Port;
 extern time_t Server_Start;
+extern unsigned int Total_Bytes_In;
+extern unsigned int Total_Bytes_Out;
 extern int User_Db_Interval;
 extern int Max_Channel_Length;
 extern int Max_Ignore;
