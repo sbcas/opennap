@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-March 24, 2000
+April 5, 2000
 
 0.  Forward
 
@@ -453,6 +453,52 @@ appropriate, examples of the <data> section for each message are given.
 	notifications about <user> when they sign on or off the server.  no
 	response is sent in return.
 
+310	??? [CLIENT, SERVER]
+
+	client: no data
+	server: 0
+
+	unknown command.  server returns 0 regardless of any parameters
+
+316	??? [CLIENT, SERVER]
+
+	client: no data
+	server: 0
+
+	unknown command.  server returns 0 regardless of any parameters
+
+320	??? [CLIENT, SERVER]
+
+	client: no data
+	server: 0
+
+	unknown command.  server returns 0 regardless of any parameters
+
+321-2	??? [CLIENT, SERVER]
+
+	<?>
+
+	server returns the single parameter that the client passes it
+
+323	??? [CLIENT]
+
+	<?>
+
+	server returns the same parameter in a 324 command
+
+324	??? [SERVER]
+
+	<?>
+
+	returns the value passed by the client in the 323 command
+
+326	??? [CLIENT, SERVER]
+
+	client: ?
+	server: <n>
+
+	<n> was 4 once, and 0 every other time.
+
 400	join channel [CLIENT]
 
 	<channel-name>
@@ -542,6 +588,14 @@ appropriate, examples of the <data> section for each message are given.
 	[why didn't they put a field to indicate WHO changed the topic?  as
 	it is now you can only tell that it was changed.  -ed]
 
+420	??? [CLIENT]
+
+	permission denied.
+
+422-3	??? [CLIENT]
+
+	permission denied
+
 500	alternate download request [CLIENT]
 
 	<nick> "<filename>"
@@ -569,6 +623,12 @@ appropriate, examples of the <data> section for each message are given.
 601	link speed response [SERVER]
 
 	<nick> <linespeed>
+
+602	??? [CLIENT]
+
+	<?>
+
+	server returns a 404 with "*gulp* Drink milk, it does a body good!"
 
 603	whois request [CLIENT]
 
@@ -648,6 +708,8 @@ appropriate, examples of the <data> section for each message are given.
 	Example:
 
 	lefty "generic band - generic song.mp3"
+
+609	missing.
 
 610	kill (disconnect) a user [CLIENT]
 
@@ -816,6 +878,14 @@ appropriate, examples of the <data> section for each message are given.
 	when displaying the ban list for the server, this message is used
 	to indicate banned nicknames.
 
+630-649	missing
+
+650-652	??? [CLIENT]
+
+	permission denied.
+
+653-699	missing.
+
 700	change link speed [CLIENT]
 
 	<speed>
@@ -842,6 +912,12 @@ appropriate, examples of the <data> section for each message are given.
 	client is changing the data port being listened on for file
 	transfers
 
+704-749	missing.
+
+750	??? [CLIENT, SERVER]
+
+	server returns an empty 750 command in response. server ping?
+
 751	ping user [CLIENT, SERVER]
 
 	<user>
@@ -860,6 +936,18 @@ appropriate, examples of the <data> section for each message are given.
 
 	allows an administrator to change the password for another user
 
+754-769	missing.
+
+770	??? [CLIENT]
+
+	permission denied.
+
+771	??? [CLIENT]
+
+	permission denied.
+
+772-799	missing.
+
 800	reload config [CLIENT]
 
 	<config variable>
@@ -872,11 +960,21 @@ appropriate, examples of the <data> section for each message are given.
 
 	client request's a server's version
 
+802-804	missing.
+
+805	???
+
+	[returns permission denied. -ed]
+
 810	set config [CLIENT]
 
 	<config string>
 
 	request a change in server configuration variables
+
+811	???
+
+	[returns permission denied. -ed]
 
 820	clear channel
 
@@ -884,9 +982,25 @@ appropriate, examples of the <data> section for each message are given.
 
 	[what does this do? -ed]
 
-821	???
-822	???
-823	???
+821	??? [CLIENT, SERVER]
+
+	client: <user> <?> <?>
+	server: <?> <?>
+	
+	[no idea what this is for.  it sends the two arguments after the
+	nick to <user>.  all additional parameters seem to be dropped.  -ed]
+
+822	??? [CLIENT, SERVER]
+
+	client: <user> <?>
+	server: <?>
+
+823	??? [CLIENT]
+
+	<channel> <?> ...?
+
+	unknown command.  takes at least one additional argument besides the
+	channel name.  no obvious effect
 
 824	emote [CLIENT, SERVER]
 
@@ -909,8 +1023,40 @@ appropriate, examples of the <data> section for each message are given.
 
 	[This appears to be exactly the same format as the 408 message.  -ed]
 
-826	???
-827	???
+826	channel limit [CLIENT]
+
+	<channel> <limit>
+
+	sets the maximum number of users that may enter a channel.  <limit>
+	is an integer value between 0 and 999999999.  setting it higher that
+	this results in the limit being set to -1.  by default, created
+	channels have a limit of 200.  there appears to be no restriction on
+	any channel member changing the limit, and no notification is given
+
+827	show all channels [CLIENT, SERVER]
+
+	no data.
+
+	client request to show all channels, including "hidden" channels.
+	the server also sends this message to terminate
+
+828	channel list [SERVER]
+
+	<channel> <users> <n1> <level> <limit> "<topic>"
+
+	the server sends a list of 828 commands, one for each channel,
+	including "hidden" channels that don't show up in the normal channel
+	list.
+
+	<level> is the mimimum user level required for entry into a channel
+	<limit> is the max number of users allowed in a channel
+
+	<n1> is either 0 or 1.  seems to be 1 if the channel was user
+	created, or 0 if a predefined channel???
+
+829	??? [CLIENT]
+
+	permission denied.
 
 830	list users in channel [CLIENT, SERVER]
 
@@ -919,6 +1065,20 @@ appropriate, examples of the <data> section for each message are given.
 	client requests a list of all users in <channel>.  server responds
 	with a 825 response for each user, followed by an 830 response with
 	no data [why didn't they just use the 409 message? -ed]
+
+831	???
+
+	[returns permission denied.  -ed]
+
+832-869	missing.
+
+870	??? [CLIENT]
+
+	<?> ...?
+
+	takes at least one argument.  no apparent effect.
+
+871-1030	missing.
 
 3.  MD5
 

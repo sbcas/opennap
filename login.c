@@ -247,7 +247,9 @@ HANDLER (login)
 	    return;
 	}
     }
-    db->lastSeen = Current_Time;
+
+    if (db)
+	db->lastSeen = Current_Time;
 
     user = new_user ();
     if (user)
