@@ -65,17 +65,18 @@ sync_user (USER *user, CONNECTION *con)
 	    Server_Name, user->nick, Levels[user->level]);
     }
 
+    /* do this before the joins so the user's already in the channel see
+       the real file count */
+    if (user->shared)
+	send_cmd(con,MSG_SERVER_USER_SHARING,"%s %d %d",user->nick,user->shared,
+		user->libsize);
+
     /* send the channels this user is listening on */
     for (list = user->channels; list; list = list->next)
     {
 	send_cmd (con, MSG_CLIENT_JOIN, ":%s %s",
 		user->nick, ((CHANNEL *) list->data)->name);
     }
-
-#if 0
-    /* sync the files for this user */
-    hash_foreach (user->files, (hash_callback_t) sync_file, con);
-#endif
 }
 
 void

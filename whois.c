@@ -13,10 +13,10 @@
 
 #define WHOIS_FMT "%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\""
 
-/* packet contains: <user> */
+/* 604 <user> */
 HANDLER (whois)
 {
-    USER *user;
+    USER *sender, *user;
     int l;
     char *chanlist;
     time_t online;
@@ -25,8 +25,8 @@ HANDLER (whois)
 
     (void) tag;
     (void) len;
+    sender=con->user;
     ASSERT (validate_connection (con));
-    CHECK_USER_CLASS ("whois");
     user = hash_lookup (Users, pkt);
     if (!user)
     {
@@ -56,17 +56,17 @@ HANDLER (whois)
     chanlist = STRDUP (Buf);
 
     online = (int) (Current_Time - user->connected);
-    if (con->user->level < LEVEL_MODERATOR)
+    if (sender->level < LEVEL_MODERATOR)
     {
-	send_cmd (con, MSG_SERVER_WHOIS_RESPONSE,
+	send_user (sender, MSG_SERVER_WHOIS_RESPONSE,
 		WHOIS_FMT, user->nick, Levels[user->level],
 		online, chanlist, user->shared, user->downloads, user->uploads,
 		user->speed, user->clientinfo);
     }
-    else if (con->user->level > LEVEL_MODERATOR)
+    else if (sender->level > LEVEL_MODERATOR)
     {
 	/* we show admins the server which a user is connected to */
-	send_cmd (con, MSG_SERVER_WHOIS_RESPONSE,
+	send_user (sender, MSG_SERVER_WHOIS_RESPONSE,
 		"%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %s %d %d %s %s",
 		user->nick, Levels[user->level], online, chanlist, user->shared,
 		user->downloads, user->uploads, user->speed, user->clientinfo,
@@ -77,7 +77,7 @@ HANDLER (whois)
     }
     else
     {
-	send_cmd (con, MSG_SERVER_WHOIS_RESPONSE,
+	send_user (sender, MSG_SERVER_WHOIS_RESPONSE,
 		"%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %s %d %d %s",
 		user->nick, Levels[user->level], online, chanlist, user->shared,
 		user->downloads, user->uploads, user->speed, user->clientinfo,

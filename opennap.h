@@ -421,6 +421,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_QUIT			10000	/* user has quit */
 #define MSG_SERVER_LOGIN		10010	/* server login request */
 #define MSG_SERVER_LOGIN_ACK		10011	/* server login response */
+#define MSG_SERVER_USER_SHARING		10012
 #define MSG_SERVER_USER_IP		10013	/* ip for user */
 #define MSG_SERVER_REGINFO		10014	/* registration info */
 #define MSG_SERVER_REMOTE_SEARCH	10015
@@ -610,6 +611,7 @@ HANDLER (topic);
 HANDLER (unban);
 HANDLER (upload_request);
 HANDLER (user_ip);
+HANDLER (user_sharing);
 HANDLER (user_speed);
 HANDLER (wallop);
 HANDLER (whois);

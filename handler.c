@@ -123,6 +123,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_QUIT, client_quit},
     {MSG_SERVER_LOGIN, server_login},		/* 10010 */
     {MSG_SERVER_LOGIN_ACK, server_login_ack},	/* 10011 */
+    {MSG_SERVER_USER_SHARING, user_sharing},	/* 10012 */
     {MSG_SERVER_USER_IP, user_ip},		/* 10013 */
     {MSG_SERVER_REGINFO, reginfo },		/* 10014 */
     {MSG_SERVER_REMOTE_SEARCH, remote_search},	/* 10015 */

@@ -27,8 +27,8 @@ HANDLER (client_quit)
     if (user->local == 0)
     {
 	log ("client_quit(): received remote QUIT for user %s", user->nick);
-	hash_remove (Users, user->nick);
 	pass_message_args(con,tag,"%s",user->nick);
+	hash_remove (Users, user->nick);
     }
     else
 	log ("client_quit(): recieved QUIT for local user %s!", user->nick);

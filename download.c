@@ -115,11 +115,6 @@ transfer_count_wrapper (CONNECTION *con, char *pkt, int numeric)
     ASSERT (validate_connection (con));
     if(pop_user(con,&pkt,&user))
 	return 0;
-    if ((user = hash_lookup (Users, pkt)) == 0)
-    {
-	log ("transfer_count_wrapper(): could not find %s", pkt);
-	return 0;
-    }
     if (Num_Servers)
 	pass_message_args (con, numeric, ":%s", user->nick);
     return user;

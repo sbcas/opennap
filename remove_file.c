@@ -45,4 +45,8 @@ HANDLER (remove_file)
 
     /* this invokes free_datum() indirectly */
     hash_remove (user->files, info->filename);
+
+    if(Num_Servers)
+	pass_message_args(con,MSG_SERVER_USER_SHARING,"%s %d %d",
+		user->nick,user->shared,user->libsize);
 }

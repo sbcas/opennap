@@ -116,6 +116,7 @@ HANDLER (server_login)
 	con->destroy = 1;
 	return;
     }
+    con->compress =  (compress < Compression_Level) ? compress : Compression_Level;
 
     /* if this is a new request, set up the authentication info now */
     if (!con->server_login)
@@ -148,12 +149,6 @@ HANDLER (server_login)
 	con->destroy=1;
 	return;
     }
-
-    con->compress = compress;
-
-    /* take the minimum of the two values */
-    if (con->compress > Compression_Level)
-	con->compress = Compression_Level;
 
     /* send our challenge response */
     /* hash the peers nonce, our nonce and then our password */

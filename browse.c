@@ -4,12 +4,14 @@
 
    $Id$ */
 
+#include <stdlib.h>
 #include "opennap.h"
 #include "debug.h"
 
 typedef struct {
-    int count;
-    CONNECTION *con;
+    short count;
+    short max; 
+    USER *sender;
     USER *user;
 } BROWSE;
 
@@ -17,9 +19,9 @@ static void
 browse_callback (DATUM *info, BROWSE *ctx)
 {
     /* avoid flooding the client */
-    if (Max_Browse_Result == 0 || ctx->count < Max_Browse_Result)
+    if (ctx->max == 0 || ctx->count < ctx->max)
     {
-	send_cmd (ctx->con, MSG_SERVER_BROWSE_RESPONSE,
+	send_user (ctx->sender, MSG_SERVER_BROWSE_RESPONSE,
 	    "%s \"%s\" %s %d %hu %hu %hu",
 	    info->user->nick,
 	    info->filename,
@@ -33,31 +35,50 @@ browse_callback (DATUM *info, BROWSE *ctx)
     }
 }
 
+/* 211 [ :<sender> ] <nick> [ <max> ]
+   browse a user's files */
 HANDLER (browse)
 {
-    USER *user;
+    USER *sender, *user;
     BROWSE data;
+    char *nick;
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-    CHECK_USER_CLASS("browse");
-    user = hash_lookup (Users, pkt);
+    if(pop_user(con,&pkt,&sender))
+	return;
+    nick=next_arg(&pkt);
+    user = hash_lookup (Users, nick);
     if (!user)
     {
-	nosuchuser (con, pkt);
+	if(ISUSER(con))
+	    nosuchuser (con, nick);
 	return;
     }
     ASSERT (validate_user (user));
 
-    if(user->files)
+    if (user->local)
     {
-	data.count = 0;
-	data.con = con;
-	data.user = user;
-	hash_foreach (user->files, (hash_callback_t) browse_callback, &data);
-    }
+	if(user->files)
+	{
+	    data.count = 0;
+	    data.user = user;
+	    data.sender = sender;
+	    if(pkt)
+		data.max = atoi (pkt);
+	    if(Max_Browse_Result > 0 && data.max > Max_Browse_Result)
+		data.max = Max_Browse_Result;
+	    hash_foreach (user->files, (hash_callback_t) browse_callback, &data);
+	}
 
-    /* send end of browse list message */
-    send_cmd (con, MSG_SERVER_BROWSE_END, "%s", user->nick);
+	/* send end of browse list message */
+	send_user (sender, MSG_SERVER_BROWSE_END, "%s", user->nick);
+    }
+    else
+    {
+	/* relay to the server that this user is connected to */
+	log("browse(): %s is remote, relaying to %s", user->nick, user->con->host);
+	send_cmd(user->con,tag,":%s %s %d", sender->nick, user->nick, pkt?atoi(pkt):Max_Browse_Result);
+    }
 }

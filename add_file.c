@@ -186,24 +186,12 @@ fdb_add (HASH * table, char *key, DATUM * d)
     d->refcount++;
 }
 
-static void
-share_common (USER * user, int fsize /* file size in kbytes */ )
-{
-    user->shared++;
-
-    /* to avoid rounding errors in the total approximate size, we first
-       subtract what we know this client has contributed, then recalculate
-       the size in gigabytes */
-    user->libsize += fsize;
-    Num_Gigs += fsize;		/* this is actually kB, not gB */
-    Num_Files++;
-}
-
 /* common code for inserting a file into the various hash tables */
 static void
 insert_datum (DATUM * info, char *av)
 {
     LIST *tokens, *ptr;
+    int fsize;
 
     ASSERT (info != 0);
     ASSERT (av != 0);
@@ -229,6 +217,18 @@ insert_datum (DATUM * info, char *av)
 
     /* index by md5 hash */
     fdb_add (MD5, info->hash, info);
+
+    fsize=info->size/1024;
+    info->user->shared++;
+    info->user->libsize += fsize;
+    Num_Gigs += fsize;		/* this is actually kB, not gB */
+    Num_Files++;
+
+    /* notify peer servers that this user's file count has increased */
+    if(Num_Servers)
+	pass_message_args(info->user->con,MSG_SERVER_USER_SHARING,"%s %d %d",
+		info->user->nick, info->user->shared, info->user->libsize);
+
 }
 
 static DATUM *
@@ -316,24 +316,6 @@ HANDLER (add_file)
     info->valid = 1;
 
     insert_datum (info, av[0]);
-
-    /* searching is now distributed, so only the local server has
-       knowledge of this user's files */
-#if 0
-    /* if this is a local connection, pass this information to our peer
-       servers.  note that we prepend `:<nick>' so that the peer servers
-       know who is adding the file. */
-    if (con->class == CLASS_USER && Num_Servers)
-    {
-	pass_message_args (con, MSG_CLIENT_ADD_FILE,
-			   ":%s \"%s\" %s %d %d %d %d", user->nick,
-			   info->filename, info->hash,
-			   info->size, info->bitrate, info->frequency,
-			   info->duration);
-    }
-#endif
-
-    share_common (user, info->size / 1024);
 }
 
 char *Content_Types[] = {
@@ -405,5 +387,35 @@ HANDLER (share_file)
     info->valid = 1;
 
     insert_datum (info, av[0]);
-    share_common (user, info->size / 1024);
+}
+
+/* 10012 <nick> <shared> <size>
+   remote server is notifying us that one of its users is sharing files */
+HANDLER(user_sharing)
+{
+    char *av[3];
+    USER *user;
+    int deltanum, deltasize;
+
+    (void)len;
+    ASSERT(validate_connection(con));
+    if(split_line(av,sizeof(av)/sizeof(char*),pkt)!=3)
+    {
+	log("user_sharing(): wrong number of arguments");
+	return;
+    }
+    user=hash_lookup(Users,av[0]);
+    if(!user)
+    {
+	log("user_sharing(): no such user %s", av[0]);
+	return;
+    }
+    deltanum = atoi (av[1]) - user->shared;
+    Num_Files += deltanum;
+    user->shared += deltanum;
+    deltasize = atoi (av[2]) - user->libsize;
+    Num_Gigs += deltasize;
+    user->libsize += deltasize;
+    if(Num_Servers>1)
+	pass_message_args(con,tag,"%s %d %d",user->nick,user->shared,user->libsize);
 }

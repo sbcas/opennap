@@ -175,14 +175,8 @@ pop_user (CONNECTION *con, char **pkt, USER **user)
 	    log ("pop_user(): server message did not contain nick: %s", *pkt);
 	    return -1;
 	}
-	ptr = *pkt + 1;
-	*pkt = strchr (ptr, ' ');
-	if (!*pkt)
-	{
-	    log ("pop_user(): too few fields in server message: %s", *pkt);
-	    return -1;
-	}
-	*(*pkt)++ = 0;
+	++*pkt;
+	ptr = next_arg(pkt);
 	*user = hash_lookup (Users, ptr);
 	if (!*user)
 	{
@@ -487,6 +481,8 @@ next_arg (char **s)
 {
     char *r = *s;
 
+    if (!r)
+	return 0;
     *s = strpbrk (r, " \t\r\n");
     if (*s)
     {
@@ -542,8 +538,10 @@ send_user (USER *user, int tag, char *fmt, ...)
     else
     {
 	/* encapsulate and send to remote server */
+#if 0
 	log("send_user(): %s is remote, relaying to %s", user->nick,
 		user->con->host);
+#endif
 	snprintf(Buf+4,sizeof(Buf)-4,":%s %s ", Server_Name, user->nick);
 	offset=strlen(Buf+4);
 	set_tag(Buf,MSG_SERVER_ENCAPSULATED);
