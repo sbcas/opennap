@@ -88,7 +88,7 @@ HANDLER (whois)
 		"%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %s %d %d %s %s",
 		user->nick, Levels[user->level], online, chanlist, user->shared,
 		user->downloads, user->uploads, user->speed, user->clientinfo,
-		user->totalup, user->totaldown, my_ntoa (user->host),
+		user->totaldown, user->totalup, my_ntoa (user->host),
 		user->conport, user->port,
 		user->email ? user->email : "unknown",
 		user->server ? user->server : Server_Name);
@@ -99,7 +99,7 @@ HANDLER (whois)
 		"%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %s %d %d %s",
 		user->nick, Levels[user->level], online, chanlist, user->shared,
 		user->downloads, user->uploads, user->speed, user->clientinfo,
-		user->totalup, user->totaldown, my_ntoa (user->host),
+		user->totaldown, user->totalup, my_ntoa (user->host),
 		user->conport, user->port,
 		user->email ? user->email : "unknown");
     }

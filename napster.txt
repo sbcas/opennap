@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-February 17, 2000
+March 2, 2000
 
 0.  Forward
 
@@ -298,13 +298,19 @@ appropriate, examples of the <data> section for each message are given.
 
 	<user>
 
-	client is requesting notification when <user> logs in or out.
+	This message is used to add additional entries to the client's
+	hotlist.  The server will send 209 and 210 messages when a user
+	on the hotlist has logged in or out, respectively.
 
 208	hotlist [CLIENT]
 
 	<user>
 
-	???
+	This message is used to send the initial list of hotlist entries
+	during the initial login process.  It is normally send prior to
+	to the add file (100) commands.  To add more entries to the hotlist
+	after the initial list is sent, clients should use the 207 message
+	instead.
 
 209	user signon [SERVER]
 
@@ -569,8 +575,8 @@ appropriate, examples of the <data> section for each message are given.
 604	whois response [SERVER]
 
 	<nick> "<user-level>" <time> "<channels>" <status> <shared>
-	<downloads> <uploads> <link-type> "<client-info>" [ <total uploads>
-	<total_downloads> <ip> <connecting port> <data port> <email> ]
+	<downloads> <uploads> <link-type> "<client-info>" [ <total downloads>
+	<total_uploads> <ip> <connecting port> <data port> <email> ]
 
 	<user-level> is one of "User" or "Admin"
 	<time> is seconds this user has been connected
@@ -656,7 +662,16 @@ appropriate, examples of the <data> section for each message are given.
 
 612	ban user [CLIENT]
 
-613	set data port for user [CLIENT]
+613	set data port for user [CLIENT, SERVER]
+
+	client: <user> <port>
+	server: <port>
+
+	This command is used by administrators to request that another
+	client set the port used for data transfers to <port>.  The server
+	sends a message with the requested port number to the target
+	client.  NOTE: the target client can change its port number to
+	whatever it wishes using the 703 command.
 
 614	unban user [CLIENT]
 
@@ -758,14 +773,21 @@ appropriate, examples of the <data> section for each message are given.
 
 624	un-nuke a user [CLIENT]
 
+	<user>
+
 625	change a user's linespeed [CLIENT]
 
-626	data port error [CLIENT]
+	<user> <speed>
+
+626	data port error [CLIENT, SERVER]
 
 	<user>
 
-	client is informing server that it was unable to connect to the data
-	port for <user>
+	When a downloading client detects that the uploader's data port
+	is unreachable, it should send a 626 message to the server with
+	the nick of the user for which the connection failed.  The server
+	then relays the message to the uploader, substituing the
+	downloader's nickname in the message.
 
 627	operator message [CLIENT, SERVER]
 
