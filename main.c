@@ -474,7 +474,7 @@ main (int argc, char **argv)
     Last_Click = Current_Time;
 
 #if HAVE_LIBADNS
-    adns_init(&d_state, adns_if_noautosys, 0);
+    adns_init(&d_state, adns_if_noautosys|adns_if_noserverwarn, 0);
 #endif
 
     /* main event loop */
