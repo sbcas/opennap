@@ -286,7 +286,7 @@ main (int argc, char **argv)
 {
     int s;			/* server socket */
     int sp = -1;		/* stats port */
-    int i;			/* generic counter */
+    int i, j;			/* generic counter */
     int n;			/* number of ready sockets */
     int port = 0, iface = INADDR_ANY, nolisten = 0;
 
@@ -432,38 +432,6 @@ main (int argc, char **argv)
 	Current_Time = time (0);
 
 #if HAVE_POLL
-	/* under linux the poll() syscall does a sanity check to make sure
-	   the nfds argument passed in is less than the max number of fds
-	   allocated for the process.  in order to avoid the gap becoming
-	   too large we shift down to fill the holes when clients drop off
-	   to avoid hitting this error */
-	if (Num_Clients + 10 < Max_Clients)
-	{
-	    int j;
-
-	    log ("main(): shrinking connection arrays");
-	    for (i = 0, j = 0; i < Max_Clients; i++)
-	    {
-		if (Clients[i])
-		{
-		    if (i != j)
-		    {
-			Clients[j] = Clients[i];
-			Clients[j]->id = j;
-			Clients[i] = 0;
-		    }
-		    j++;
-		}
-	    }
-	    ASSERT (j == Num_Clients);
-	    if (safe_realloc ((void **) &Clients, (j + 10) * sizeof (CONNECTION *)))
-	    {
-		log ("main(): safe_realloc failed");
-		break;
-	    }
-	    Max_Clients = j + 10;
-	}
-
 	/* ensure that we have enough pollfd structs.  add two extra for
 	   the incoming connections port and the stats port */
 	if (ufdsize < Max_Clients + 2)
@@ -494,38 +462,46 @@ main (int argc, char **argv)
 	}
 #endif /* HAVE_POLL */
 
-	for (i = 0; i < Max_Clients; i++)
+	for (i = 0, j = 0; i < Max_Clients; i++)
 	{
 	    if (Clients[i])
 	    {
-#if HAVE_POLL
-		ufd[i + 2].fd = Clients[i]->fd;
-		ufd[i + 2].events = 0;
+		/* under linux the poll() syscall does a sanity check to make
+		   sure the nfds argument passed in is less than the max number
+		   of fds allocated for the process.  in order to avoid the
+		   gap becoming too large we shift down to fill the holes
+		   when clients drop off to avoid hitting this error */
+		if (i != j)
+		{
+		    Clients[j] = Clients[i];
+		    Clients[j]->id = j;
+		}
+#ifdef HAVE_POLL
+		ufd[j + 2].fd = Clients[j]->fd;
+		ufd[j + 2].events = POLLIN;
+#else
+		FD_SET (Clients[i]->fd, &set);
+		if (Clients[i]->fd > maxfd)
+		    maxfd = Clients[i]->fd;
 #endif /* HAVE_POLL */
-
 		/* check sockets for writing */
 		if ((Clients[i]->connecting) ||
 		    (Clients[i]->sendbuf ||
 		     (ISSERVER (Clients[i]) && Clients[i]->sopt->outbuf)))
-		    CHECKWRITE (i);
-
-		/* always check for incoming data */
-		CHECKREAD (i);
-
-#ifndef HAVE_POLL
-		if (Clients[i]->fd > maxfd)
-		    maxfd = Clients[i]->fd;
-#endif /* !HAVE_POLL */
-	    }
-#if HAVE_POLL
-	    else
-		ufd[i + 2].fd = -1;	/* unused */
+		{
+#ifdef HAVE_POLL
+		    ufd[j+2].events |= POLLOUT;
+#else
+		    FD_SET (Clients[i]->fd, &wset);
 #endif
+		}
+		j++;
+	    }
 	}
 
 #if HAVE_POLL
 	i = next_timer () * 1000;
-	if ((n = poll (ufd, Max_Clients + 2, i)) < 0)
+	if ((n = poll (ufd, Num_Clients + 2, i)) < 0)
 	{
 	    int saveerrno = errno;
 
@@ -544,7 +520,7 @@ main (int argc, char **argv)
 		ASSERT (VALID_LEN (ufd, sizeof (struct pollfd) * ufdsize));
 		log("checking individual fd's");
 		for(i=0;i<ufdsize;i++) {
-		    if(i>1 && i <Max_Clients+2 && Clients[i-2]){
+		    if(i>1 && i <Num_Clients+2 && Clients[i-2]){
 			ASSERT(ufd[i].fd == Clients[i-2]->fd);
 			ASSERT(ufd[i].events & POLLIN);
 			sinsize=sizeof(sin);
@@ -564,7 +540,6 @@ main (int argc, char **argv)
 			ASSERT(ufd[1].events & POLLIN);
 		    } else {
 			ASSERT(ufd[i].fd==-1);
-			ASSERT(ufd[i].events==0);
 		    }
 		}
 #if 1
@@ -593,66 +568,58 @@ main (int argc, char **argv)
 #endif /* HAVE_POLL */
 
 	/* process incoming requests */
-	for (i = 0; !SigCaught && n > 0 && i < Max_Clients; i++)
+	for (i = 0; !SigCaught && n > 0 && i < Num_Clients; i++)
 	{
-	    if (Clients[i])
+	    if (WRITABLE (i) && Clients[i]->connecting)
 	    {
-		if (WRITABLE (i) && Clients[i]->connecting)
-		{
-		    complete_connect (Clients[i]);
-		    n--;	/* track of how many handled */
-		}
-		else if (READABLE (i))
-		{
-		    handle_connection (Clients[i]);
-		    n--;	/* track of how many handled */
-		}
+		complete_connect (Clients[i]);
+		n--;	/* track of how many handled */
+	    }
+	    else if (READABLE (i))
+	    {
+		handle_connection (Clients[i]);
+		n--;	/* track of how many handled */
 	    }
 	}
 
 	if (SigCaught)
 	    break;
 
-	/* write out data and reap dead client connections */
-	for (i = 0; !SigCaught && i < Max_Clients; i++)
+	/* write out data and reap dead client connections
+	   Num_Clients is altered by remove_connection() so we set its
+	   current value to the temp variable j to loop over */
+	for (i = 0, j = Num_Clients; !SigCaught && i < j; i++)
 	{
-	    if (Clients[i])
+	    if (ISSERVER (Clients[i]))
 	    {
-		if (ISSERVER (Clients[i]))
-		{
-		    /* server - strategy is call send_queued_data() if there
-		       there is data to be compressed, or if the socket is
-		       writable and there is some compressed output */
-		    if (Clients[i]->sendbuf
+		/* server - strategy is call send_queued_data() if there
+		   there is data to be compressed, or if the socket is
+		   writable and there is some compressed output */
+		if (Clients[i]->sendbuf
 			|| (Clients[i]->sopt->outbuf && WRITABLE (i)))
-		    {
-			if (send_queued_data (Clients[i]) == -1)
-			    Clients[i]->destroy = 1;
-		    }
-		}
-		/* client.  if there is output to send and either the socket is
-		   writable or we're about to close the connection, send any
-		   queued data */
-		else if (Clients[i]->sendbuf &&
-			 (WRITABLE (i) || Clients[i]->destroy))
 		{
 		    if (send_queued_data (Clients[i]) == -1)
 			Clients[i]->destroy = 1;
 		}
+	    }
+	    /* client.  if there is output to send and either the socket is
+	       writable or we're about to close the connection, send any
+	       queued data */
+	    else if (Clients[i]->sendbuf &&
+		    (WRITABLE (i) || Clients[i]->destroy))
+	    {
+		if (send_queued_data (Clients[i]) == -1)
+		    Clients[i]->destroy = 1;
+	    }
 
-		/* check to see if this connection should be shut down */
-		if (Clients[i]->destroy)
-		{
-		    /* should have flushed everything */
-		    ASSERT (Clients[i]->sendbuf == 0);
-#if 0
-		    log ("main(): closing connection for %s", Clients[i]->host);
-#endif
-		    remove_connection (Clients[i]);
-		}
+	    /* check to see if this connection should be shut down */
+	    if (Clients[i]->destroy)
+	    {
+		/* should have flushed everything */
+		ASSERT (Clients[i]->sendbuf == 0);
+		remove_connection (Clients[i]);
 	    }
 	}
-
 #if HAVE_POLL
 	if (ufd[1].revents & POLLIN)
 #else
@@ -690,8 +657,9 @@ main (int argc, char **argv)
     CLOSE (s);
 
     /* close all client connections */
-    for (i = 0; i < Max_Clients; i++)
+    for (i = 0; i < Num_Clients; i++)
     {
+	/* might be holes, so check for existence */
 	if (Clients[i])
 	    remove_connection (Clients[i]);
     }

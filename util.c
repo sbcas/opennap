@@ -535,8 +535,6 @@ send_user (USER * user, int tag, char *fmt, ...)
 int
 add_client (CONNECTION * cli)
 {
-    int i;
-
     if (Max_Clients == Num_Clients)
     {
 	/* no space left, allocate more */
@@ -549,24 +547,11 @@ add_client (CONNECTION * cli)
 	    FREE (cli);
 	    return -1;
 	}
-	cli->id = Max_Clients;
-	Clients[Max_Clients++] = cli;
 	while (Max_Clients < Num_Clients + 10)
 	    Clients[Max_Clients++] = 0;
     }
-    else
-    {
-	/* insert this connection into a hole */
-	for (i = 0; i < Max_Clients; i++)
-	    if (!Clients[i])
-	    {
-		Clients[i] = cli;
-		cli->id = i;
-		break;
-	    }
-	ASSERT (i != Max_Clients);
-    }
-    Num_Clients++;
+    cli->id = Num_Clients;
+    Clients[Num_Clients++] = cli;
     return 0;
 }
 
