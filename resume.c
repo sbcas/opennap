@@ -35,7 +35,6 @@ HANDLER (resume)
     flist = hash_lookup (MD5, av[0]);
     if (flist)
     {
-	log("resume(): %d entries matching %s", flist->count, flist->key);
 	for (ptr = flist->list; ptr; ptr = ptr->next)
 	{
 	    d = (DATUM *) ptr->data;

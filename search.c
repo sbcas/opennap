@@ -144,7 +144,7 @@ tokenize (char *s)
 	   searches down any even after the selection of the bin to search */
 	if (!strcmp ("a", s) || !strcmp ("i", s) ||
 	    !strcmp ("the", s) || !strcmp ("and", s) || !strcmp ("in", s) ||
-	    !strcmp ("of", s) || !strcmp ("you", s) ||
+	    !strcmp ("of", s) || !strcmp ("you", s) || !strcmp ("it", s) ||
 	    !strcmp ("me", s) || !strcmp ("to", s) || !strcmp("on", s) ||
 	    /* the following are common path names and don't really
 	       provide useful information */

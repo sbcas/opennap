@@ -460,8 +460,6 @@ handle_connection (CONNECTION * con)
 	    {
 		if (tag != MSG_CLIENT_ADD_FILE && tag != MSG_CLIENT_SHARE_FILE)
 		{
-		    log("handle_connection(): end of share sequence for %s",
-			con->user->nick);
 		    pass_message_args(con,MSG_SERVER_USER_SHARING,"%s %d %d",
 				      con->user->nick,
 				      con->user->shared,
@@ -473,8 +471,6 @@ handle_connection (CONNECTION * con)
 	    {
 		if (tag != MSG_CLIENT_REMOVE_FILE)
 		{
-		    log("handle_connection(): end of unshare sequence for %s",
-			con->user->nick);
 		    pass_message_args(con,MSG_SERVER_USER_SHARING,"%s %d %d",
 				      con->user->nick,
 				      con->user->shared,
