@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <netdb.h>
+#include <sys/mman.h>
 #endif /* !WIN32 */
 #include <signal.h>
 #include <time.h>
@@ -98,6 +99,11 @@ init_server (const char *cf)
 	return -1;
     if (Max_Rss_Size != -1 && set_rss_size (Max_Rss_Size))
 	return -1;
+    if (Server_Flags & ON_LOCK_MEMORY)
+    {
+	if(mlockall(MCL_CURRENT|MCL_FUTURE))
+	    perror("mlockall");
+    }
 
     if (getuid () == 0)
     {
@@ -158,7 +164,9 @@ init_server (const char *cf)
     Channels = hash_init (257, (hash_destroy) free_channel);
     Hotlist = hash_init (521, (hash_destroy) free_hotlist);
     File_Table = hash_init (2053, (hash_destroy) free_flist);
+#if RESUME
     MD5 = hash_init (2053, (hash_destroy) free_flist);
+#endif
 
     load_channels ();
 

@@ -38,7 +38,7 @@ static struct config Vars[] = {
     { "server_port", VAR_TYPE_INT, UL &Server_Port, 8888 },
     { "server_queue_length", VAR_TYPE_INT, UL &Server_Queue_Length, 1048576 },
     { "stat_click", VAR_TYPE_INT, UL &Stat_Click, 60 },
-    { "strict_channels", VAR_TYPE_BOOL, OPTION_STRICT_CHANNELS, 0 },
+    { "strict_channels", VAR_TYPE_BOOL, ON_STRICT_CHANNELS, 0 },
     { "compression_level", VAR_TYPE_INT, UL &Compression_Level, 1 },
     { "max_shared", VAR_TYPE_INT, UL &Max_Shared, 5000 },
     { "max_connections", VAR_TYPE_INT, UL &Max_Connections, FD_SETSIZE },
@@ -52,6 +52,7 @@ static struct config Vars[] = {
     { "connection_hard_limit", VAR_TYPE_INT, UL &Connection_Hard_Limit, FD_SETSIZE },
     { "max_data_size", VAR_TYPE_INT, UL &Max_Data_Size, -1 },
     { "max_rss_size", VAR_TYPE_INT, UL &Max_Rss_Size, -1 },
+    { "lock_memory", VAR_TYPE_BOOL, ON_LOCK_MEMORY, 0 },
 #endif
     { "max_nick_length", VAR_TYPE_INT, UL &Max_Nick_Length, 32 },
     { "user_db_interval", VAR_TYPE_INT, UL &User_Db_Interval, 1800 },
@@ -59,6 +60,8 @@ static struct config Vars[] = {
     { "login_timeout",	VAR_TYPE_INT, UL &Login_Timeout, 60 },
     { "max_command_length", VAR_TYPE_INT, UL &Max_Command_Length, 2048 },
     { "config_dir", VAR_TYPE_STR, UL &Config_Dir, UL SHAREDIR },
+    { "registered_only", VAR_TYPE_BOOL, ON_REGISTERED_ONLY, 0 },
+    { "auto_register", VAR_TYPE_BOOL, ON_AUTO_REGISTER, 0 },
 };
 
 static int Vars_Size = sizeof (Vars) / sizeof (struct config);

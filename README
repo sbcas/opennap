@@ -51,6 +51,24 @@ development of the server.
 * INSTALLATION
 
   1.  build and optionally install opennap
+
+  	useful configure options (Unix platforms):
+
+	--disable-debug		turn off debug support in opennap.
+				debugging uses a lot of extra memory and
+				cpu, so production servers should use this
+				option
+
+	--disable-resume	turn off support for resuming file transfer.
+				many clients don't implement this correctly
+				so using this option will save some memory
+				by not storing the hash table used for this
+				function
+
+	--with-fd-setsize=N	on systems where FD_SETSIZE can be
+				redefined, change the maximum number of file
+				descriptors (connections) to N.
+
   2.  create at least one elite (server operator) nick to use on the server
 
 	edit /usr/local/share/opennap/users (c:\opennap\users on Win32)

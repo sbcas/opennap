@@ -240,8 +240,10 @@ insert_datum (DATUM * info, char *av)
 
     list_free (tokens, 0);
 
+#if RESUME
     /* index by md5 hash */
     fdb_add (MD5, info->hash, info);
+#endif
 
     fsize = info->size / 1024;
     info->user->shared++;
@@ -346,11 +348,10 @@ char *Content_Types[] = {
     "text"
 };
 
-/* 10300 [ :<user> ] "<filename>" <size> <hash> <content-type> */
+/* 10300 "<filename>" <size> <hash> <content-type> */
 HANDLER (share_file)
 {
     char *av[4];
-    USER *user;
     DATUM *info;
     int i, type;
 
@@ -358,15 +359,13 @@ HANDLER (share_file)
     (void) tag;
 
     ASSERT (validate_connection (con));
+    CHECK_USER_CLASS ("share_file");
 
-    if (pop_user (con, &pkt, &user) != 0)
-	return;
-
-    if (Max_Shared && user->shared > Max_Shared)
+    if (Max_Shared && con->user->shared > Max_Shared)
     {
-	log ("add_file(): %s is already sharing %d files", user->nick,
-	     user->shared);
-	if (con->class == CLASS_USER)
+	log ("add_file(): %s is already sharing %d files", con->user->nick,
+	     con->user->shared);
+	if (ISUSER(con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
 		      "You may only share %d files", Max_Shared);
 	return;
@@ -374,9 +373,7 @@ HANDLER (share_file)
 
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 4)
     {
-	log ("share_file(): wrong number of fields");
-	if (ISUSER (con))
-	    unparsable (con);
+	unparsable (con);
 	return;
     }
 
@@ -393,15 +390,14 @@ HANDLER (share_file)
     if (type == -1)
     {
 	log ("share_file(): not a valid type: %s", av[3]);
-	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not a valid type",
-		      av[3]);
+	if (ISUSER(con) == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not a valid type", av[3]);
 	return;
     }
 
     if (!(info = new_datum (av[0], av[2])))
 	return;
-    info->user = user;
+    info->user = con->user;
     info->size = atoi (av[1]);
     info->type = type;
     info->valid = 1;
@@ -446,7 +442,7 @@ HANDLER (user_sharing)
 HANDLER (add_directory)
 {
     char *dir, *basename, *md5, *size, *bitrate, *freq, *duration;
-    char path[_POSIX_PATH_MAX];
+    char path[_POSIX_PATH_MAX], dirbuf[_POSIX_PATH_MAX];
     int pathlen;
     DATUM *info;
 
@@ -455,17 +451,14 @@ HANDLER (add_directory)
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("add_directory");
     dir = next_arg (&pkt);	/* directory */
-
-    strncpy (path, dir, sizeof (path) - 1);
-    pathlen = strlen (path);
-    /* ensure filename ends with a trailing slash */
-    if (pathlen > 0 && path[pathlen - 1] != '\\' &&
-	    (unsigned)pathlen < sizeof (path))
+    dirbuf[sizeof (dirbuf) - 1] = 0;
+    strncpy (dirbuf, dir, sizeof (dirbuf) - 1);
+    pathlen = strlen (dirbuf);
+    if (pathlen > 0 && dirbuf[pathlen - 1] != '\\')
     {
-	strcat (path, "\\");
+	strncpy (dirbuf + pathlen, "\\", sizeof (dirbuf) - pathlen - 1);
 	pathlen++;
     }
-
     while (pkt)
     {
 	if (Max_Shared && con->user->shared > Max_Shared)
@@ -488,8 +481,11 @@ HANDLER (add_directory)
 	    unparsable (con);
 	    return;
 	}
-	/* make sure this isn't a duplicate */
-	strncpy (path + pathlen, basename, sizeof (path) - pathlen - 1);
+	/* make sure this isn't a duplicate - have to redo the entire path
+	   including the directory since it gets munged by the insertion into
+	   the hash table */
+	strncpy (path, dirbuf, sizeof (path) - 1);
+	strncpy (path + pathlen, basename, sizeof (path) - 1 - pathlen);
 	if (con->uopt->files && hash_lookup (con->uopt->files, path))
 	{
 	    log ("add_directory(): duplicate for %s: %s", con->user->nick,

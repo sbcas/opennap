@@ -341,7 +341,10 @@ extern int Max_Data_Size;
 extern int Max_Rss_Size;
 #endif
 
-#define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
+#define ON_STRICT_CHANNELS	1	/* only mods+ can create channels */
+#define ON_REGISTERED_ONLY	2	/* only registered users are allowed */
+#define ON_AUTO_REGISTER	4	/* automatically register users */
+#define ON_LOCK_MEMORY		8	/* prevent process from being swapped */
 
 extern char Buf[2048];
 

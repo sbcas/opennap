@@ -66,12 +66,11 @@ HANDLER (login)
     /* check for the correct number of fields for this message type.  some
        clients send extra fields, so we just check to make sure we have
        enough for what is required in this implementation. */
-    if ((tag == MSG_CLIENT_LOGIN && ac < 5) ||
-	(tag == MSG_CLIENT_LOGIN_REGISTER && ac < 6))
+    if (ac < 5)
     {
 	log ("login(): too few parameters (tag=%d)", tag);
 	print_args (ac, av);
-	if (con->class == CLASS_UNKNOWN)
+	if (ISUNKNOWN(con))
 	{
 	    unparsable(con);
 	    con->destroy = 1;
@@ -102,8 +101,7 @@ HANDLER (login)
 
     /* enforce maximum local users.  if the user is privileged, bypass
      * this restriction */
-    if (con->class == CLASS_UNKNOWN &&
-	Num_Clients >= Max_Connections &&
+    if (ISUNKNOWN(con) && Num_Clients >= Max_Connections &&
 	(!db || db->level < LEVEL_MODERATOR))
     {
 	log ("login(): max_connections (%d) reached", Max_Connections);
@@ -132,6 +130,18 @@ HANDLER (login)
 	return;
     }
 
+    if (!db && tag != MSG_CLIENT_REGISTER)
+    {
+	if(Server_Flags&ON_REGISTERED_ONLY)
+	{
+	    send_cmd(con,MSG_SERVER_ERROR,"only registered accounts are allowed on this server");
+	    con->destroy=1;
+	    return;
+	}
+	if(Server_Flags&ON_AUTO_REGISTER)
+	    tag=MSG_CLIENT_REGISTER;
+    }
+
     /* check for attempt to register a nick that is already taken */
     if (db && tag == MSG_CLIENT_REGISTER)
     {
@@ -156,7 +166,6 @@ HANDLER (login)
 	con->destroy = 1;
 	return;
     }
-
     /* check to make sure that this user isn't ready logged in.  do
        this to prevent a user from trying to check for a password of someone
        that is already logged in */
@@ -257,7 +266,13 @@ HANDLER (login)
 	{
 	    db->nick = STRDUP (av[0]);
 	    db->password = generate_pass (av[1]);
-	    db->email = STRDUP (av[5]);
+	    if(ac>5)
+		db->email = STRDUP (av[5]);
+	    else
+	    {
+		snprintf(Buf,sizeof(Buf),"anon@%s",Server_Name);
+		db->email=STRDUP(Buf);
+	    }
 	}
 	if (!db || !db->nick || !db->password || !db->email)
 	{

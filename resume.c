@@ -11,18 +11,19 @@
 /* packet contains: <checksum> <filesize> */
 HANDLER (resume)
 {
+#if RESUME
     char *av[2];
     FLIST *flist;
     LIST *ptr;
     DATUM *d;
     int fsize;
+#endif /* RESUME */
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-
     CHECK_USER_CLASS ("resume");
-
+#if RESUME
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
     {
 	unparsable(con);
@@ -48,6 +49,7 @@ HANDLER (resume)
 	    }
 	}
     }
+#endif /* RESUME */
 
     send_cmd (con, MSG_SERVER_RESUME_MATCH_END, "");
 }

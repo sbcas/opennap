@@ -100,7 +100,7 @@ HANDLER (join)
 	if (!chan)
 	{
 	    /* check if this server allows normals to create channels */
-	    if (Server_Flags & OPTION_STRICT_CHANNELS)
+	    if (Server_Flags & ON_STRICT_CHANNELS)
 	    {
 		permission_denied (con);
 		return;

@@ -313,7 +313,7 @@ main (int argc, char **argv)
 	    port = atoi (optarg);
 	    break;
 	case 's':
-	    Server_Flags |= OPTION_STRICT_CHANNELS;
+	    Server_Flags |= ON_STRICT_CHANNELS;
 	    break;
 	case 'v':
 	    version ();
@@ -528,7 +528,9 @@ main (int argc, char **argv)
 	FREE (Servers);
 
     free_hash (File_Table);
+#if RESUME
     free_hash (MD5);
+#endif /* RESUME */
     free_hash (Users);
     free_hash (Channels);
     free_hash (Hotlist);
