@@ -167,7 +167,9 @@ HANDLER (login)
     for (i = 0; i < Ban_Size; i++)
 	if (Ban[i]->type == BAN_USER && !strcasecmp (av[0], Ban[i]->target))
 	{
-	    log ("login(): banned user %s tried to log in", av[0]);
+	    log ("login(): banned user %s (%s) tried to log in", av[0],
+		ISUSER (con) ? my_ntoa (con->ip) : "unknown");
+
 	    if (con->class == CLASS_UNKNOWN)
 	    {
 		send_cmd (con, MSG_SERVER_NOSUCH,
@@ -175,7 +177,8 @@ HANDLER (login)
 			  NONULL (Ban[i]->reason));
 		con->destroy = 1;
 	    }
-	    notify_mods ("Banned user %s attempted to log in", av[0]);
+	    notify_mods ("Banned user %s (%s) attempted to log in", av[0],
+		ISUSER (con) ? my_ntoa (con->ip) : "unknown");
 	    return;
 	}
 
