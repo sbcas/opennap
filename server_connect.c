@@ -75,7 +75,8 @@ try_connect (char *host, int port)
 void
 complete_connect (CONNECTION * con)
 {
-    if (check_connect_status (con->fd) != 0)
+    /* a previous call to read() may have reset the error code */
+    if (con->destroy || check_connect_status (con->fd) != 0)
     {
 	con->destroy = 1;
 	return;
