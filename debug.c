@@ -18,7 +18,7 @@
 typedef struct _block
 {
     void *val;
-    size_t len;
+    int len;
     char *file;
     int line;
     struct _block *next;
@@ -27,7 +27,7 @@ typedef struct _block
 BLOCK;
 
 static BLOCK *Allocation = 0;
-static size_t Memory_Usage = 0;
+static int Memory_Usage = 0;
 
 static int
 debug_overflow (BLOCK *block, const char *func)
@@ -43,7 +43,7 @@ debug_overflow (BLOCK *block, const char *func)
 }
 
 void *
-debug_malloc (size_t bytes, const char *file, int line)
+debug_malloc (int bytes, const char *file, int line)
 {
     BLOCK *block;
 
@@ -124,7 +124,7 @@ debug_malloc (size_t bytes, const char *file, int line)
 }
 
 void *
-debug_calloc (size_t count, size_t bytes, const char *file, int line)
+debug_calloc (int count, int bytes, const char *file, int line)
 {
     void *ptr = debug_malloc (count * bytes, file, line);
     memset (ptr, 0, count * bytes);
@@ -148,7 +148,7 @@ find_block (void *ptr)
 }
 
 void *
-debug_realloc (void *ptr, size_t bytes, const char *file, int line)
+debug_realloc (void *ptr, int bytes, const char *file, int line)
 {
     void *newptr;
     BLOCK *block = 0;
@@ -257,7 +257,7 @@ debug_strdup (const char *s, const char *file, int line)
 
 /* check to see if a pointer is valid */
 int
-debug_valid (void *ptr, size_t len)
+debug_valid (void *ptr, int len)
 {
     BLOCK * block = find_block (ptr);
 

@@ -15,11 +15,11 @@
 #include "opennap.h"
 #include "debug.h"
 
-unsigned long
+unsigned int
 lookup_ip (const char *host)
 {
     struct hostent *he;
-    unsigned long ip;
+    unsigned int ip;
 
     log ("lookup_ip: resolving %s", host);
     he = gethostbyname(host);
@@ -74,7 +74,7 @@ set_keepalive (int f, int on)
 }
 
 int
-make_tcp_connection (const char *host, int port, unsigned long *ip)
+make_tcp_connection (const char *host, int port, unsigned int *ip)
 {
     struct sockaddr_in sin;
     int f;
@@ -133,7 +133,7 @@ check_connect_status (int f)
 }
 
 char *
-my_ntoa (unsigned long ip)
+my_ntoa (unsigned int ip)
 {
     struct in_addr a;
 

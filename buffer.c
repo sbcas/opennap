@@ -52,7 +52,7 @@ static void
 check_stream (BUFFER *b)
 {
     ushort len, tag;
-    long offset = b->consumed;
+    int offset = b->consumed;
     BUFFER *c = b;
 
     while (offset + 4 <= c->datasize)
@@ -259,7 +259,7 @@ buffer_compress (z_streamp zip, BUFFER **b)
 
     ASSERT (zip->avail_in == 0);	/* should have compressed all data */
 
-    if (flush == Z_SYNC_FLUSH && (unsigned long)bytes == zip->avail_in)
+    if (flush == Z_SYNC_FLUSH && (unsigned int)bytes == zip->avail_in)
 	log ("buffer_compress: huh? flush was set but didn't output anything");
 
     bytes -= zip->avail_in; /* sanity check, shouldn't be necessary unless

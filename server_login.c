@@ -22,7 +22,7 @@ extern MYSQL *Db;
 HANDLER (server_login)
 {
     char *fields[3];
-    unsigned long ip;
+    unsigned int ip;
     MD5_CTX md5;
     char hash[33];
 

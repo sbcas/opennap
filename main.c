@@ -32,8 +32,8 @@ char *Db_Host = 0;
 char *Db_Name = 0;
 char *Server_Name = 0;
 char *Server_Pass = 0;
-unsigned long Server_Ip = 0;
-unsigned long Server_Flags = 0;
+unsigned int Server_Ip = 0;
+unsigned int Server_Flags = 0;
 int Max_User_Channels;		/* default, can be changed in config */
 int Stat_Click;			/* interval (in seconds) to send server stats */
 int Server_Port;		/* which port to listen on for connections */
@@ -92,8 +92,8 @@ HANDLER (server_stats)
 
 typedef struct
 {
-    unsigned long message;
-      HANDLER ((*handler));
+	unsigned int message;
+	HANDLER ((*handler));
 }
 HANDLER;
 
@@ -311,7 +311,7 @@ lookup_hostname (void)
     if (he)
     {
 	Server_Name = STRDUP (he->h_name);
-	Server_Ip = *(unsigned long *)he->h_addr_list[0];
+	Server_Ip = *(unsigned int *)he->h_addr_list[0];
     }
     else
     {
@@ -404,10 +404,11 @@ static void
 usage (void)
 {
     fprintf (stderr,
-	     "usage: %s [ -hsv ] [ -c FILE ] [ -p PORT ] \n", PACKAGE);
+	     "usage: %s [ -hsv ] [ -c FILE ] [ -p PORT ] [ -l IP ]\n", PACKAGE);
     fprintf (stderr, "  -c FILE	read config from FILE (default: %s/config\n",
 	     SHAREDIR);
     fputs ("  -h		print this help message\n", stderr);
+    fputs ("  -l IP	listen only on IP instead of all interfaces", stderr);
     fputs ("  -p PORT	listen on PORT for connections (default: 8888)\n",
 	   stderr);
     fputs
@@ -441,14 +442,18 @@ main (int argc, char **argv)
     socklen_t sinsize;
     time_t next_update = 0;
     struct timeval t;
+    unsigned int iface = INADDR_ANY;
 
-    while ((n = getopt (argc, argv, "c:hp:v")) != EOF)
+    while ((n = getopt (argc, argv, "c:hl:p:v")) != EOF)
     {
 	switch (n)
 	{
 	case 'c':
 	    config_file = optarg;
 	    break;
+	case 'l':
+		iface = inet_addr (optarg);
+		break;
 	case 'p':
 	    port = atoi (optarg);
 	    break;
@@ -513,7 +518,7 @@ main (int argc, char **argv)
 
     memset (&sin, 0, sizeof (sin));
     sin.sin_port = htons (Server_Port);
-    sin.sin_addr.s_addr = INADDR_ANY;
+    sin.sin_addr.s_addr = iface;
     sin.sin_family = AF_INET;
     if (bind (s, (struct sockaddr *) &sin, sizeof (sin)) < 0)
     {

@@ -31,12 +31,12 @@
 
 /* internal functions, DO NOT CALL DIRECTLY -- use the above macros */
 void debug_free (void *, const char *, int);
-void *debug_malloc (size_t, const char *, int);
-void *debug_calloc (size_t, size_t, const char *, int);
-void *debug_realloc (void *, size_t, const char *, int);
+void *debug_malloc (int, const char *, int);
+void *debug_calloc (int, int, const char *, int);
+void *debug_realloc (void *, int, const char *, int);
 char *debug_strdup (const char *, const char *, int);
 void debug_cleanup (void);
-int debug_valid (void *, size_t);
+int debug_valid (void *, int);
 
 #else
 

@@ -17,7 +17,7 @@
 HANDLER (compressed_data)
 {
     unsigned short len, tag;
-    unsigned long offset = 0, datasize;
+    unsigned int offset = 0, datasize;
     unsigned char *data;
     unsigned int usize; /* uncompressed size */
 

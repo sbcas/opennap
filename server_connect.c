@@ -17,7 +17,7 @@ try_connect (char *host, int port)
 {
     int f;
     CONNECTION *cli;
-    unsigned long ip;
+    unsigned int ip;
 
     /* attempt a connection.  we do this nonblocking so that the server
        doesn't halt if it takes a long time to connect */

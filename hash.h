@@ -1,6 +1,8 @@
 /* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
-   GNU Public License.  See the file COPYING for details. */
+   GNU Public License.  See the file COPYING for details.
+
+   $Id$ */
 
 #ifndef hash_h
 #define hash_h
@@ -20,8 +22,8 @@ HASHENT;
 typedef struct _hash
 {
   HASHENT **bucket;
-  size_t numbuckets;
-  size_t dbsize; /* # of elements in the table */
+  int numbuckets;
+  int dbsize; /* # of elements in the table */
   hash_destroy destroy;
 }
 HASH;

@@ -38,7 +38,7 @@ typedef struct _buffer BUFFER;
 struct _buffer
 {
 #if DEBUG
-    unsigned long magic;
+    unsigned int magic;
 #endif
     char *data;		/* allocated data */
     int datasize;	/* total bytes allocated in data */
@@ -65,7 +65,7 @@ typedef struct _hotlist HOTLIST;
 struct _channel
 {
 #ifdef DEBUG
-    unsigned long magic;
+    unsigned int magic;
 #endif
     char *name;
     char *topic;
@@ -86,7 +86,7 @@ typedef enum {
 struct _user
 {
 #ifdef DEBUG
-    unsigned long magic;
+    unsigned int magic;
 #endif
     char *nick;
     char *clientinfo;
@@ -98,8 +98,8 @@ struct _user
     unsigned short shared;	/* # of shared files */
     unsigned short totalup;	/* total number of uploads */
     unsigned short totaldown;	/* total number of downloads */
-    unsigned long libsize;	/* approximate size of shared files in kB */
-    unsigned long host;		/* ip of user in network byte order */
+    unsigned int libsize;	/* approximate size of shared files in kB */
+    unsigned int host;		/* ip of user in network byte order */
     unsigned short port;	/* data port client is listening on */
     unsigned short conport;	/* remote port for connection to server */
     LEVEL level;		/* user level */
@@ -128,13 +128,13 @@ CLASS;
 struct _connection
 {
 #ifdef DEBUG
-    unsigned long magic;
+    unsigned int magic;
 #endif
     short id;			/* offset into the Client[] arrary for this
 				   instance */
     unsigned short flags;	/* flags for the connection */
     int fd;			/* socket for this connection */
-    unsigned long ip;
+    unsigned int ip;
     unsigned int port;		/* remote port */
     char *host;			/* host from which this connection originates */
     CLASS class;		/* type of connection, server or client */
@@ -177,7 +177,7 @@ struct _connection
 struct _hotlist
 {
 #ifdef DEBUG
-    unsigned long magic;
+    unsigned int magic;
 #endif
     char *nick;		/* user being monitored */
     CONNECTION **users;	/* list of local clients requesting notification */
@@ -216,7 +216,7 @@ extern int Compression_Threshold;
 extern int Max_Shared;
 extern int Max_Connections;
 
-extern unsigned long Server_Flags;
+extern unsigned int Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
 
 extern char Buf[1024];
@@ -395,9 +395,9 @@ void init_compress (CONNECTION *, int);
 int init_db (void);
 void init_random (void);
 void log (const char *fmt, ...);
-unsigned long lookup_ip (const char *host);
-int make_tcp_connection (const char *host, int port, unsigned long *ip);
-char *my_ntoa (unsigned long);
+unsigned int lookup_ip (const char *host);
+int make_tcp_connection (const char *host, int port, unsigned int *ip);
+char *my_ntoa (unsigned int);
 USER *new_user (void);
 CHANNEL *new_channel (void);
 CONNECTION *new_connection (void);
@@ -407,7 +407,7 @@ void nosuchuser (CONNECTION *, char *);
 void notify_mods (const char *, ...);
 void part_channel (CHANNEL *, USER *);
 void pass_message (CONNECTION *, char *, size_t);
-void pass_message_args (CONNECTION * con, unsigned long msgtype,
+void pass_message_args (CONNECTION * con, unsigned int msgtype,
 			const char *fmt, ...);
 void permission_denied (CONNECTION *con);
 int pop_user (CONNECTION * con, char **pkt, USER ** user);
@@ -415,7 +415,7 @@ void queue_data (CONNECTION *, char *, int);
 size_t read_bytes (int, char *, size_t);
 void remove_connection (CONNECTION *);
 void remove_user (CONNECTION *);
-void send_cmd (CONNECTION *, unsigned long msgtype, const char *fmt, ...);
+void send_cmd (CONNECTION *, unsigned int msgtype, const char *fmt, ...);
 int set_keepalive (int, int);
 int set_nonblocking (int);
 int split_line (char **template, int templatecount, char *pkt);

@@ -42,7 +42,7 @@ set_val (char *d, unsigned short val)
 }
 
 void
-send_cmd (CONNECTION *con, unsigned long msgtype, const char *fmt, ...)
+send_cmd (CONNECTION *con, unsigned int msgtype, const char *fmt, ...)
 {
     va_list ap;
     size_t l;
@@ -91,7 +91,7 @@ pass_message (CONNECTION *con, char *pkt, size_t pktlen)
 
 /* wrapper for pass_message() */
 void
-pass_message_args (CONNECTION *con, unsigned long msgtype, const char *fmt, ...)
+pass_message_args (CONNECTION *con, unsigned int msgtype, const char *fmt, ...)
 {
     va_list ap;
     size_t l;

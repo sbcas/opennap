@@ -92,7 +92,7 @@ void
 free_hash (HASH * h)
 {
     HASHENT *he, *ptr;
-    size_t i;
+    int i;
 
     /* destroy remaining entries */
     for (i = 0; i < h->numbuckets; i++)
@@ -115,7 +115,7 @@ void
 hash_foreach (HASH *h, void (*func) (void *, void *), void *funcdata)
 {
     HASHENT *he, *ptr;
-    size_t i;
+    int i;
 
     for (i = 0; i < h->numbuckets; i++)
     {

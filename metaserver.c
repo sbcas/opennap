@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 static void
 handler (int sig)
@@ -24,8 +25,9 @@ handler (int sig)
 static void
 usage (void)
 {
-    puts ("usage: metaserver [ -v ] [ -p <port> ] [ host:port ... ]");
+    puts ("usage: metaserver [ -v ] [ -l IP ] [ -p <port> ] [ host:port ... ]");
     puts ("  -v		display version number and exit");
+    puts ("  -l IP	listen only on interface for IP");
     puts ("  -p <port>	listen for connection on <port> (default is 8875)\n");
     puts ("  if no arguments are given, defaults to 127.0.0.1:8888");
     exit (1);
@@ -43,11 +45,15 @@ main (int argc, char **argv)
     struct sigaction sa;
     int i;
     int port = 8875;
+    unsigned int iface = INADDR_ANY;
 
-    while ((i = getopt (argc, argv, "hvp:"))!=EOF)
+    while ((i = getopt (argc, argv, "hl:vp:"))!=EOF)
     {
 	switch (i)
 	{
+		case 'l':
+			iface = inet_addr (optarg);
+			break;
 	    case 'p':
 		port = atoi (optarg);
 		break;
@@ -81,7 +87,7 @@ main (int argc, char **argv)
     memset (&sin, 0, sizeof (sin));
     sin.sin_port = htons (port);
     sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = INADDR_ANY;
+    sin.sin_addr.s_addr = iface;
 
     s = socket (PF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (s < 0)

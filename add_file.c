@@ -191,7 +191,7 @@ HANDLER (add_file)
 {
     char *field[6], path[256], soundex[256], *p;
     USER *user;
-    unsigned long fsize;
+    unsigned int fsize;
 
     (void) tag;
     (void) len;
