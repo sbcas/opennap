@@ -328,12 +328,9 @@ extern int Max_Clients;
 extern int Num_Files;		/* total number of available files */
 extern int Num_Gigs;		/* total size of files available (in kB) */
 
+extern LIST *Bans;
 extern LIST *Servers;		/* peer servers */
 extern LIST *Server_Links;
-
-
-extern BAN **Ban;
-extern int Ban_Size;
 
 extern HASH *Users;
 extern HASH *Channels;
@@ -507,6 +504,8 @@ int buffer_decompress (BUFFER *, z_streamp, char *, int);
 #endif
 int buffer_validate (BUFFER *);
 void cancel_search (CONNECTION * con);
+int check_accept (CONNECTION *);
+int check_ban (CONNECTION *, const char *, ban_t);
 int check_connect_status (int);
 void close_db (void);
 void complete_connect (CONNECTION * con);

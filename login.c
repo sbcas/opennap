@@ -57,7 +57,7 @@ HANDLER (login)
     char *av[7];
     USER *user;
     HOTLIST *hotlist;
-    int i, ac, speed;
+    int ac, speed;
     USERDB *db = 0;
 
     (void) len;
@@ -164,23 +164,8 @@ HANDLER (login)
     }
 
     /* check for a user ban */
-    for (i = 0; i < Ban_Size; i++)
-	if (Ban[i]->type == BAN_USER && !strcasecmp (av[0], Ban[i]->target))
-	{
-	    log ("login(): banned user %s (%s) tried to log in", av[0],
-		ISUSER (con) ? my_ntoa (con->ip) : "unknown");
-
-	    if (con->class == CLASS_UNKNOWN)
-	    {
-		send_cmd (con, MSG_SERVER_NOSUCH,
-			  "You are banned from this server: %s",
-			  NONULL (Ban[i]->reason));
-		con->destroy = 1;
-	    }
-	    notify_mods ("Banned user %s (%s) attempted to log in", av[0],
-		ISUSER (con) ? my_ntoa (con->ip) : "unknown");
-	    return;
-	}
+    if (check_ban (con, av[0], BAN_USER))
+	return;
 
     user = new_user ();
     if (user)
@@ -267,8 +252,8 @@ HANDLER (login)
 	{
 	    log ("login(): set %s to level %s", user->nick,
 		 Levels[user->level]);
-	    notify_mods ("%s set %s's user level to %s (%d)", Server_Name,
-		user->nick, Levels[user->level], level);
+	    notify_mods ("%s set %s's user level to %s (%d)",
+		    Server_Name, user->nick, Levels[user->level], user->level);
 	}
     }
     else if (tag == MSG_CLIENT_LOGIN_REGISTER)

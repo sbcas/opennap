@@ -69,8 +69,7 @@ char *User_Db_Path;
 char *Server_Db_Path;
 
 /* bans on ip addresses / users */
-BAN **Ban = 0;
-int Ban_Size = 0;
+LIST *Bans = 0;
 
 /* local clients (can be users or servers) */
 CONNECTION **Clients = NULL;
@@ -144,59 +143,6 @@ update_stats (void)
     }
 }
 
-static int
-ip_glob_match (const char *pattern, const char *ip)
-{
-    int l;
-
-    ASSERT (pattern != 0);
-    ASSERT (ip != 0);
-    /* if `pattern' ends with a `.', we ban an entire subclass */
-    l = strlen (pattern);
-    ASSERT (l > 0);
-    if (pattern[l - 1] == '.')
-	return ((strncmp (pattern, ip, l) == 0));
-    else
-	return ((strcmp (pattern, ip) == 0));
-}
-
-static int
-check_accept (CONNECTION * cli)
-{
-    int i;
-
-    /* check for max connections */
-    if (Num_Clients >= Max_Connections)
-    {
-	log
-	    ("check_accept: maximum number of connections (%d) has been reached",
-	     Max_Connections);
-	send_cmd (cli, MSG_SERVER_ERROR,
-		  "This server is full (%d local connections)", Num_Clients);
-	return 0;
-    }
-
-    /* make sure this ip is not banned */
-    for (i = 0; i < Ban_Size; i++)
-    {
-	if (Ban[i]->type == BAN_IP &&
-	    ip_glob_match (Ban[i]->target, cli->host))
-	{
-	    /* TODO: this does not reach all mods, only the one on
-	       this server */
-	    log ("check_accept: connection attempt from banned ip %s (%s)",
-		 cli->host, NONULL (Ban[i]->reason));
-	    notify_mods ("Connection attempt from banned ip %s", cli->host);
-	    send_cmd (cli, MSG_SERVER_ERROR,
-		      "You are banned from this server (%s)",
-		      NONULL (Ban[i]->reason));
-	    return 0;
-	}
-    }
-
-    return 1;
-}
-
 static void
 accept_connection (int s)
 {
@@ -246,8 +192,7 @@ accept_connection (int s)
 	return;
     set_nonblocking (f);
     set_keepalive (f, 1);	/* enable tcp keepalive messages */
-    if (!check_accept (cli))
-	cli->destroy = 1;
+    check_accept (cli);
     return;
 error:
     CLOSE (f);
@@ -775,10 +720,7 @@ main (int argc, char **argv)
     free_hash (Hotlist);
     free_timers ();
 
-    for (i = 0; i < Ban_Size; i++)
-	free_ban (Ban[i]);
-    if (Ban)
-	FREE (Ban);
+    list_free (Bans, (list_destroy_t) free_ban);
 
     /* free up memory associated with global configuration variables */
     free_config ();

@@ -24,11 +24,16 @@ is_ip (const char *s)
 void
 free_ban (BAN * b)
 {
-    FREE (b->target);
-    FREE (b->setby);
-    if (b->reason)
-	FREE (b->reason);
-    FREE (b);
+    if (b)
+    {
+	if(b->target)
+	    FREE (b->target);
+	if(b->setby)
+	    FREE (b->setby);
+	if (b->reason)
+	    FREE (b->reason);
+	FREE (b);
+    }
 }
 
 /* 612 [ :<sender> ] <user|ip> [ <reason> ] */
@@ -37,6 +42,7 @@ HANDLER (ban)
     USER *sender;
     char *ban;
     BAN *b;
+    LIST *list;
 
     (void) tag;
     (void) len;
@@ -49,15 +55,25 @@ HANDLER (ban)
     ASSERT (validate_user (sender));
     if (sender->level < LEVEL_MODERATOR)
     {
-	if (con->class == CLASS_USER)
+	if (ISUSER (con))
 	    permission_denied (con);
 	return;
     }
-
     ban = next_arg (&pkt);
+    /* check to see if this user is already banned */
+    for (list = Bans; list; list = list->next)
+    {
+	b = list->data;
+	if (!strcasecmp (ban, b->target))
+	{
+	    log ("ban(): %s is already banned", ban);
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already banned", ban);
+	    return;
+	}
+    }
 
-    pass_message_args (con, MSG_CLIENT_BAN, ":%s %s %s", sender->nick, ban,
-		       NONULL (pkt));
+    pass_message_args (con, tag, ":%s %s %s", sender->nick, ban, NONULL (pkt));
 
     do
     {
@@ -73,7 +89,10 @@ HANDLER (ban)
 	b->when = Current_Time;
 	/* determine if this ban is on an ip or a user */
 	b->type = (is_ip (ban)) ? BAN_IP : BAN_USER;
-	Ban = array_add (Ban, &Ban_Size, b);
+	list = CALLOC (1, sizeof (LIST));
+	if (!list)
+	    break;
+	Bans = list_append (Bans, list);
 	notify_mods ("%s banned %s: %s", sender->nick, ban, NONULL (pkt));
 	return;
     }
@@ -81,21 +100,17 @@ HANDLER (ban)
 
     /* we only get here on error */
     OUTOFMEMORY ("ban");
-    if (b->target)
-	FREE (b->target);
-    if (b->setby)
-	FREE (b->setby);
-    if (b->reason)
-	FREE (b->reason);
-    if (b)
-	FREE (b);
+    free_ban (b);
+    if (list)
+	FREE (list);
 }
 
 /* 614 [ :<sender> ] <nick|ip> */
 HANDLER (unban)
 {
     USER *user;
-    int i;
+    LIST **list, *tmpList;
+    BAN *b;
 
     (void) tag;
     (void) len;
@@ -109,16 +124,20 @@ HANDLER (unban)
 	    permission_denied (con);
 	return;
     }
-    for (i = 0; i < Ban_Size; i++)
-	if (!strcasecmp (pkt, Ban[i]->target))
+    for (list = &Bans; *list; list = &(*list)->next)
+    {
+	b = (*list)->data;
+	if (!strcasecmp (pkt, b->target))
 	{
-	    free_ban (Ban[i]);
-	    pass_message_args (con, MSG_CLIENT_UNBAN, ":%s %s", user->nick,
-			       pkt);
-	    Ban_Size--;
-	    notify_mods ("%s removed the ban on %s", user->nick, pkt);
-	    return;
+	    tmpList = *list;
+	    *list = (*list)->next;
+	    FREE (tmpList);
+	    notify_mods ("%s removed ban on %s", user->nick, b->target);
+	    pass_message_args (con, tag, ":%s %s", user->nick, b->target);
+	    free_ban (b);
+	    break;
 	}
+    }
     if (ISUSER (con))
 	send_cmd (con, MSG_SERVER_NOSUCH, "There is no ban on %s", pkt);
 }
@@ -127,25 +146,90 @@ HANDLER (unban)
 /* show the list of current bans on the server */
 HANDLER (banlist)
 {
-    int i;
+    LIST *list;
+    BAN *ban;
 
     (void) tag;
     (void) len;
     (void) pkt;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("banlist");
-    for (i = 0; i < Ban_Size; i++)
+    for (list = Bans; list; list = list->next)
     {
-	if (Ban[i]->type == BAN_IP)
+	ban = list->data;
+	if (ban->type == BAN_IP)
 	    send_cmd (con, MSG_SERVER_IP_BANLIST /* 616 */ ,
-		      "%s %s \"%s\" %ld", Ban[i]->target, Ban[i]->setby,
-		      NONULL (Ban[i]->reason), Ban[i]->when);
+		      "%s %s \"%s\" %ld", ban->target, ban->setby,
+		      NONULL (ban->reason), ban->when);
     }
-    for (i = 0; i < Ban_Size; i++)
+    for (list = Bans; list; list = list->next)
     {
-	if (Ban[i]->type == BAN_USER)
+	ban = list->data;
+	if (ban->type == BAN_USER)
 	    send_cmd (con, MSG_SERVER_NICK_BANLIST /* 626 */ , "%s",
-		      Ban[i]->target);
+		      ban->target);
     }
     send_cmd (con, MSG_CLIENT_BANLIST /* 615 */ , "");
+}
+
+static int
+ip_glob_match (const char *pattern, const char *ip)
+{
+    int l;
+
+    ASSERT (pattern != 0);
+    ASSERT (ip != 0);
+    /* if `pattern' ends with a `.', we ban an entire subclass */
+    l = strlen (pattern);
+    ASSERT (l > 0);
+    if (pattern[l - 1] == '.')
+	return ((strncmp (pattern, ip, l) == 0));
+    else
+	return ((strcmp (pattern, ip) == 0));
+}
+
+int
+check_ban (CONNECTION *con, const char *target, ban_t type)
+{
+    LIST *list;
+    BAN *ban;
+
+    /* make sure this target is not banned */
+    for (list = Bans; list; list = list->next)
+    {
+	ban = list->data;
+	if (ban->type == type &&
+		((type == BAN_IP && ip_glob_match (ban->target, target)) ||
+		 (type == BAN_USER && !strcasecmp (ban->target, target))))
+	    log ("check_ban(): %s is banned: %s", ban->target, NONULL(ban->reason));
+	send_cmd (con,
+		(type == BAN_IP) ? MSG_SERVER_ERROR : MSG_SERVER_NOSUCH,
+		"You are banned from this server: %s",
+		NONULL (ban->reason));
+	if (type == BAN_IP)
+	    notify_mods ("Connection attempt from banned hosts %s (%s): %s",
+		    target, ban->target, NONULL (ban->reason));
+	else
+	    notify_mods("Connection from banned user %s (%s): %s",
+		    target, my_ntoa (con->ip), NONULL (ban->reason));
+	con->destroy = 1;
+	return 1;
+    }
+    return 0;
+}
+
+int
+check_accept (CONNECTION * cli)
+{
+
+    ASSERT (validate_connection (cli));
+    /* check for max connections */
+    if (Num_Clients >= Max_Connections)
+    {
+	log ("check_accept: max connections reached (%d)", Max_Connections);
+	send_cmd (cli, MSG_SERVER_ERROR,
+		  "Server is full: %d local connections", Num_Clients);
+	return 0;
+    }
+    return((check_ban(cli, cli->host, BAN_IP)==0));
 }
