@@ -62,6 +62,7 @@ int Uid;
 int Gid;
 int Connection_Hard_Limit;
 time_t Current_Time;
+int Max_Nick_Length;
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;

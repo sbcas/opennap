@@ -10,7 +10,6 @@
 #include "opennap.h"
 #include "debug.h"
 
-
 /* parameters for searching */
 typedef struct {
     CONNECTION *con;
@@ -27,7 +26,7 @@ typedef struct {
 static int
 search_callback (DATUM *match, SEARCH *parms)
 {
-#if 1
+#if 0
     /* don't return matches for a user's own files */
     if (match->user == parms->con->user)
         return 0;
@@ -77,7 +76,7 @@ LIST *
 tokenize (char *s)
 {
     LIST *r = 0, *cur = 0;
-    char *ptr, *t;
+    char *ptr;
 
     while (*s)
     {
@@ -88,49 +87,24 @@ tokenize (char *s)
             ptr++;
         if (*ptr)
             *ptr++ = 0;
-#ifdef LESSMEMORY
-	t = s; /* don't copy, just reference the string */
-#else
-	t = STRDUP (s);
-#endif
-	if (!t)
-	{
-	    log ("tokenize(): OUT OF MEMORY");
-	    break;
-	}
         if (cur)
         {
-            cur->next = list_new (0);
+            cur->next = list_new (s);
 	    if (!cur->next)
-	    {
-		FREE (t);
 		return r;
-	    }
             cur = cur->next;
         }
         else
 	{
-            cur = r = list_new (0);
+            cur = r = list_new (s);
 	    if (!cur)
-	    {
-		FREE (t);
 		return 0;
-	    }
 	}
-	cur->data = t;
 	strlower (cur->data); /* convert to lower case to save time */
         s = ptr;
     }
     return r;
 }
-
-#ifndef LESSMEMORY
-static void
-free_token (char *ptr)
-{
-    FREE (ptr);
-}
-#endif
 
 void
 free_datum (DATUM *d)
@@ -144,9 +118,6 @@ free_datum (DATUM *d)
 	/* no more references, we can free this memory */
 	FREE (d->filename);
 	FREE (d->hash);
-#ifndef LESSMEMORY
-	list_free (d->tokens, (list_destroy_t) free_token);
-#endif
 	FREE (d);
     }
 }
@@ -211,26 +182,39 @@ fdb_garbage_collect (HASH *table)
     log ("fdb_garbage_collect(): reaped %d dead entries", data.reaped);
 }
 
-/* return nonzero if `tokens' contains all elements of `pattern' */
+/* check to see if all the strings in list of tokens are present in the
+   filename.  returns 1 if all tokens were found, 0 otherwise */
 static int
-token_compare (LIST * pattern, LIST * tokens)
+match (LIST * tokens, const char *file)
 {
-    int found;
-    LIST *tmp;
+    const char *b;
+    char c[3], *a;
+    int l;
 
-    for (; pattern; pattern = pattern->next)
+    c[2] = 0;
+    for (; tokens; tokens = tokens->next)
     {
-        found = 0;
-        for (tmp = tokens; tmp; tmp = tmp->next)
+        a = tokens->data;
+        /* there doesn't appear to be a case-insensitive strchr() function
+           so we fake it by using strpbrk() with a buffer that contains the
+           upper and lower case versions of the char */
+        c[0] = tolower (*a);
+        c[1] = toupper (*a);
+        l = strlen (a);
+        b = file;
+        while (*b)
         {
-            if (!strcmp (tmp->data, pattern->data))
-            {
-                found = 1;
-                break;
-            }
+            b = strpbrk (b, c);
+            if (!b)
+                return 0;
+            /* already compared the first char, see the if the rest of the
+               string matches */
+            if (!strncasecmp (b + 1, a + 1, l - 1))
+                break;          /* matched, we are done with this token */
+            b++; /* skip the matched char to find the next occurance */
         }
-        if (!found)
-            return 0;
+        if (!*b)
+            return 0;   /* hit the end of the string before matching */
     }
     return 1;
 }
@@ -267,39 +251,13 @@ fdb_search (HASH *table,
     for (ptok = flist->list;ptok;ptok=ptok->next)
     {
 	d = (DATUM *) ptok->data;
-#ifdef LESSMEMORY
-	if (d->valid)
-	{
-	    /* make a copy since tokenize() destroys the string */
-	    char *filename = STRDUP (d->filename);
-	    LIST *ftok;
-	    int n;
-
-	    /* regenerate the token list for this file */
-	    ftok = tokenize (filename);
-	    n = token_compare (tokens, ftok);
-	    /* cleanup */
-	    list_free (ftok, 0);
-	    FREE (filename);
-	    if (n && cb (d, cbdata))
-	    {
-                /* callback accepted match */
-		hits++;
-		if (hits == maxhits)
-                    break;              /* finished */
-	    }
-	}
-#else
-	if (d->valid && token_compare (tokens, d->tokens) &&
-		/* found match, invoke callback */
-		cb (d, cbdata))
+	if (d->valid && match (tokens, d->filename) && cb (d, cbdata))
 	{
 	    /* callback accepted match */
 	    hits++;
 	    if (hits == maxhits)
 		break;              /* finished */
 	}
-#endif
     }
     return hits;
 }
@@ -446,11 +404,7 @@ HANDLER (search)
 
 done:
 
-#ifdef LESSMEMORY
     list_free (tokens, 0);
-#else
-    list_free (tokens, (list_destroy_t) free_token);
-#endif
 
     /* send end of search result message */
     send_cmd (con, MSG_SERVER_SEARCH_END, "");

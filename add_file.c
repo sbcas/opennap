@@ -219,13 +219,7 @@ insert_datum (DATUM * info, char *av)
     for (ptr = tokens; ptr; ptr = ptr->next)
 	fdb_add (File_Table, ptr->data, info);
 
-#ifdef LESSMEMORY
-    /* we will regenerate this list when we need to compare files in order
-       to reduce memory usage */
     list_free (tokens, 0);
-#else
-    info->tokens = tokens;
-#endif /* LESSMEMORY */
 
     /* index by md5 hash */
     fdb_add (MD5, info->hash, info);

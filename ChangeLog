@@ -62,6 +62,14 @@ added global variable Current_Time which is set once per iteration of the
 main loop.  functions which need the current time should use this variable
 rather than calling time()
 
+modified USER and CONNECTION structs to require less memory
+
+use LIST structs instead of arrays in places where direct access to each
+memory is not necessary
+
+added max_nick_length configuration variable to control the maximum length
+of a nickname
+
 Changes from 0.11
 =================
 

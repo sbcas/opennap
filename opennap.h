@@ -219,12 +219,9 @@ typedef struct
     char *filename;	/* the filename */
     char *hash;		/* the md5 hash of the file */
     int size;		/* size of file in bytes */
-#ifndef LESSMEMORY
-    LIST *tokens;	/* list of words in the filename */
-#endif /* LESSMEMORY */
-
     short bitrate;
     unsigned short duration;
+    /* next 4 fields make up 32 bits */
     unsigned short frequency;
     unsigned int type : 3;	/* content type */
     unsigned int valid : 1;	/* is this a valid file? */
@@ -275,6 +272,7 @@ extern int Uid;
 extern int Gid;
 extern int Connection_Hard_Limit;
 extern time_t Current_Time;
+extern int Max_Nick_Length;
 
 extern unsigned int Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */

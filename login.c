@@ -23,25 +23,27 @@ extern MYSQL *Db;
 static int
 invalid_nick (const char *s)
 {
-    if (!*s)
-	return 1;	/* don't allow \0 as the nickname */
+    int count = 0;
+
     while (*s)
     {
 	if (*s & 0x80 || ISSPACE (*s) || iscntrl (*s) || !isprint((uchar)*s) ||
 		*s == ':')
 	    return 1;
+	count++;
 	s++;
     }
-    return 0;
+    /* enforce min/max nick length */
+    return (count == 0 || (Max_Nick_Length > 0 && count > Max_Nick_Length));
 }
 
 /* <nick> <pass> <port> <client-info> <speed> [ <email> ] */
 HANDLER (login)
 {
-    char *field[7];
+    char *av[7];
     USER *user;
     HOTLIST *hotlist;
-    int i, n, numfields, speed;
+    int i, n, ac, speed;
     MYSQL_RES *result;
     MYSQL_ROW row = 0;
     int level = LEVEL_USER;
@@ -57,22 +59,23 @@ HANDLER (login)
 	return;
     }
 
-    numfields = split_line (field, sizeof (field) / sizeof (char *), pkt);
-    if (numfields < 5)
+    ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
+    if ((tag == MSG_CLIENT_LOGIN && ac < 5) ||
+	    (tag == MSG_CLIENT_LOGIN_REGISTER && ac < 6))
     {
-	log ("login(): too few fields in message");
+	log ("login(): too few avs in message (tag=%d)", tag);
 	if (con->class ==  CLASS_UNKNOWN)
 	{
-	    send_cmd (con, MSG_SERVER_ERROR, "too few fields for login command");
+	    send_cmd (con, MSG_SERVER_ERROR, "Too few parameters for command");
 	    con->destroy = 1;
 	}
 	return;
     }
-    speed = atoi (field[4]);
+    speed = atoi (av[4]);
     if (speed < 0 || speed > 10)
     {
 	log ("login(): invalid speed %d from %s (%s)",
-		speed, field[0], field[4]);
+		speed, av[0], av[4]);
 	if (con->class == CLASS_UNKNOWN)
 	{
 	    send_cmd (con, MSG_SERVER_ERROR, "%d is an invalid speed", speed);
@@ -81,9 +84,9 @@ HANDLER (login)
 	return;
     }
 
-    if (invalid_nick (field[0]))
+    if (invalid_nick (av[0]))
     {
-	log ("login(): invalid nick: %s", field[0]);
+	log ("login(): invalid nick: %s", av[0]);
 	if (con->class == CLASS_UNKNOWN)
 	{
 	    send_cmd (con, MSG_SERVER_BAD_NICK, "");
@@ -93,7 +96,7 @@ HANDLER (login)
     }
 
     /* check to make sure that this user isn't ready logged in */
-    user = hash_lookup (Users, field[0]);
+    user = hash_lookup (Users, av[0]);
     if (user)
     {
 	/* user already exists */
@@ -135,9 +138,9 @@ HANDLER (login)
 
     /* check for a user ban */
     for (i = 0; i < Ban_Size; i++)
-	if (Ban[i]->type == BAN_USER && !strcasecmp (field[0], Ban[i]->target))
+	if (Ban[i]->type == BAN_USER && !strcasecmp (av[0], Ban[i]->target))
 	{
-	    log ("login(): banned user %s tried to log in", field[0]);
+	    log ("login(): banned user %s tried to log in", av[0]);
 	    if (con->class == CLASS_UNKNOWN)
 	    {
 		send_cmd (con, MSG_SERVER_NOSUCH,
@@ -145,13 +148,13 @@ HANDLER (login)
 			NONULL (Ban[i]->reason));
 		con->destroy = 1;
 	    }
-	    notify_mods ("Banned user %s attempted to log in", field[0]);
+	    notify_mods ("Banned user %s attempted to log in", av[0]);
 	    return;
 	}
 
     /* see if this is a registered nick */
     snprintf (Buf, sizeof (Buf), "SELECT * FROM accounts WHERE nick='%s'",
-	    field[0]);
+	    av[0]);
     if (mysql_query (Db, Buf) != 0)
     {
 	if (con->class == CLASS_UNKNOWN)
@@ -176,7 +179,7 @@ HANDLER (login)
 	    {
 		/* this could happen if two clients simultaneously connect
 		   and register */
-		log ("login(): %s is already registered", field[0]);
+		log ("login(): %s is already registered", av[0]);
 
 		send_cmd (con, MSG_SERVER_ERROR,
 			"that name is already registered");
@@ -201,7 +204,7 @@ HANDLER (login)
 	}
 
 	/* verify the password */
-	if (strcmp (field[1], row[1]) != 0)
+	if (strcmp (av[1], row[1]) != 0)
 	{
 	    log ("login(): bad password for user %s", row[0]);
 	    if (con->class == CLASS_UNKNOWN)
@@ -234,7 +237,7 @@ HANDLER (login)
 	/* update the last seen time */
 	snprintf (Buf, sizeof (Buf),
 		"UPDATE accounts SET lastseen=%d WHERE nick='%s'",
-		(int)time (0), field[0]);
+		(int)time (0), av[0]);
 	if (mysql_query (Db, Buf) != 0)
 	    sql_error ("login", Buf);
 
@@ -254,22 +257,11 @@ HANDLER (login)
     else if (tag == MSG_CLIENT_LOGIN_REGISTER)
     {
 	/* create the db entry now */
-	log ("login(): registering user %s", field[0]);
+	log ("login(): registering user %s", av[0]);
 
-	if (numfields < 5)
-	{
-	    log ("login(): too few fields to register nick");
-	    if (con->class == CLASS_UNKNOWN)
-	    {
-		con->destroy = 1;
-		send_cmd (con, MSG_SERVER_ERROR,
-			"too few fields in registration message");
-		return;
-	    }
-	}
 	snprintf (Buf, sizeof (Buf),
 		"INSERT INTO accounts VALUES ('%s','%s','user','%s',%d,%d)",
-		field[0], field[1], field[5], (int)time (0), (int)time (0));
+		av[0], av[1], av[5], (int)time (0), (int)time (0));
 	if (mysql_query (Db, Buf) != 0)
 	{
 	    sql_error ("login", Buf);
@@ -284,10 +276,10 @@ HANDLER (login)
     }
 
     user = new_user ();
-    user->nick = STRDUP (field[0]);
-    user->port = atoi (field[2]);
-    user->clientinfo = STRDUP (field[3]);
-    user->pass = STRDUP (field[1]);
+    user->nick = STRDUP (av[0]);
+    user->port = atoi (av[2]);
+    user->clientinfo = STRDUP (av[3]);
+    user->pass = STRDUP (av[1]);
     user->speed = speed;
     user->connected = time (0);
     user->level = LEVEL_USER;	/* default */
@@ -297,7 +289,7 @@ HANDLER (login)
     user->files = hash_init (257, (hash_destroy) free_datum);
 
     if (tag == MSG_CLIENT_LOGIN_REGISTER)
-	user->email = STRDUP (field[5]);
+	user->email = STRDUP (av[5]);
     else if (row)
 	user->email = STRDUP (row[3]);
     else
@@ -323,9 +315,9 @@ HANDLER (login)
 	if (Num_Servers)
 	{
 	    pass_message_args (con, MSG_CLIENT_LOGIN, "%s %s %s \"%s\" %s",
-		    field[0], field[1], field[2], field[3], field[4]);
+		    av[0], av[1], av[2], av[3], av[4]);
 	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %lu %hu %s",
-		    field[0], user->host, user->conport, Server_Name);
+		    av[0], user->host, user->conport, Server_Name);
 	}
 
 	con->class = CLASS_USER;

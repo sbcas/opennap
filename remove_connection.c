@@ -43,7 +43,7 @@ remove_connection (CONNECTION *con)
     {
 	LIST *u, **h;
 
-	/* remove user from global list */
+	/* remove user from global list, calls free_user() indirectly */
 	ASSERT (validate_user (con->user));
 	hash_remove (Users, con->user->nick);
 
