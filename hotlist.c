@@ -28,7 +28,7 @@ HANDLER (add_hotlist)
     /* make sure this user isn't already listed */
     for (i = 0; i < hotlist->numusers; i++)
     {
-	if (hotlist->users[i] == con->user)
+	if (hotlist->users[i] == con)
 	    return; /* already present */
     }
 
