@@ -27,13 +27,19 @@ lookup_ip (const char *host)
     unsigned int ip;
 
     log ("lookup_ip(): resolving %s", host);
-    he = gethostbyname (host);
-    if (!he)
+    /* check for dot-quad notation.  Win95's gethostbyname() doesn't seem
+       to return the ip address properly for this case like every other OS */
+    ip=inet_addr(host);
+    if(ip==INADDR_NONE)
     {
-	log ("lookup_ip(): can't find ip for host %s", host);
-	return 0;
+	he = gethostbyname (host);
+	if (!he)
+	{
+	    log ("lookup_ip(): can't find ip for host %s", host);
+	    return 0;
+	}
+	memcpy (&ip, &he->h_addr[0], he->h_length);
     }
-    memcpy (&ip, &he->h_addr[0], he->h_length);
     log ("lookup_ip(): %s is %s", host, my_ntoa (ip));
     return ip;
 }
