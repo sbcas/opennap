@@ -44,9 +44,6 @@ HANDLER (upload_ok)
 		av[1]);
 	return;
     }
-    log ("upload_ok(): ACK \"%s\" %s => %s", av[1], con->user->nick,
-	    recip->nick);
-
     if (con->user->port == 0)
     {
 	/* firewalled user, give the info back to the uploader */

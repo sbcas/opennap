@@ -166,64 +166,84 @@ buffer_validate (BUFFER * b)
 #endif /* DEBUG */
 
 #if HAVE_LIBZ
+#define BUFFER_SIZE 16384
+
 static BUFFER *
 buffer_compress (z_streamp zip, BUFFER ** b)
 {
-    BUFFER *r;
+    BUFFER *r = 0, *cur = 0;
     int n, bytes, flush;
 
     ASSERT (buffer_validate (*b));
 
-    r = buffer_new ();
-    if (!r)
-	return 0;		/* out of memory */
-    r->data = MALLOC (16384);
-    if (!r->data)
-    {
-	OUTOFMEMORY ("buffer_compress");
-	FREE (r);
-	return 0;
-    }
-    r->datamax = 16384;
-    /* we subtract the unused portion of the buffer after the loop */
-    r->datasize = 16384;
+    /* set up the input */
+    bytes = (*b)->datasize - (*b)->consumed;
+    zip->next_in = (uchar *) (*b)->data + (*b)->consumed;
+    zip->avail_in = bytes;
+    /* force a flush if this is the last input to compress */
+    flush = ((*b)->next == 0) ? Z_SYNC_FLUSH : Z_NO_FLUSH;
+    /* set to 0 so we allocate in the loop */
+    zip->avail_out = 0;
 
-    /* set up the output */
-    zip->next_out = (uchar *) r->data;
-    zip->avail_out = r->datamax;
-
-    do
-    {
-	bytes = (*b)->datasize - (*b)->consumed;
-
-	/* set up the input */
-	zip->next_in = (uchar *) (*b)->data + (*b)->consumed;
-	zip->avail_in = bytes;
-
-	/* force a flush if this is the last input to compress */
-	flush = (bytes == buffer_size (*b)) ? Z_SYNC_FLUSH : Z_NO_FLUSH;
+    do {
+	if (zip->avail_out == 0)
+	{
+	    /* allocate a new buffer to hold the rest of the compressed data */
+	    if (cur)
+	    {
+		/* we should only get here if there was not enough room to
+		   store the compressed output in the first buffer created */
+		ASSERT (flush == Z_SYNC_FLUSH);
+		log ("buffer_compress(): allocating additional buffer");
+		cur->next = buffer_new ();
+		if (!cur->next)
+		    break;
+		cur = cur->next;
+	    }
+	    else
+	    {
+		r = cur = buffer_new ();
+		if (!r)
+		    return 0;
+	    }
+	    cur->data = MALLOC (BUFFER_SIZE);
+	    if (!cur->data)
+	    {
+		OUTOFMEMORY ("buffer_compress");
+		break;
+	    }
+	    cur->datamax = BUFFER_SIZE;
+	    cur->datasize = BUFFER_SIZE;
+	    zip->next_out = (unsigned char *) cur->data;
+	    zip->avail_out = BUFFER_SIZE;
+	}
 
 	n = deflate (zip, flush);
 	if (n != Z_OK)
 	{
 	    log ("buffer_compress(): deflate: %s (error %d)",
-		 NONULL (zip->msg), n);
+		NONULL (zip->msg), n);
 	    break;
 	}
-
-	bytes -= zip->avail_in;
-	*b = buffer_consume (*b, bytes);
     }
-    while (*b != 0 && zip->avail_out > 0);
+    while (zip->avail_out == 0 && flush == Z_SYNC_FLUSH);
 
-    r->datasize -= zip->avail_out;
+    /* subtract any uncompressed bytes */
+    bytes -= zip->avail_in;
+    *b = buffer_consume (*b, bytes);
 
-    /* if we produced no output, return NULL instead of an empty buffer */
-    if (r->datasize == 0)
+    if (cur)
     {
-	FREE (r->data);
-	FREE (r);
-	r = 0;
+	cur->datasize -= zip->avail_out;
+	if (cur->datasize == 0)
+	{
+	    /* this should only happen for the first created buffer if the
+	       input was small and there was a second buffer in the list */
+	    ASSERT (cur == r);
+	    FREE (r->data);
+	    FREE (r);
+	    r = 0 ;
+	}
     }
 
     return r;
@@ -243,7 +263,7 @@ buffer_decompress (BUFFER * b, z_streamp zip, char *in, int insize)
     zip->next_out = (unsigned char *) b->data + b->datasize;
     zip->avail_out = b->datamax - b->datasize;
     /* set this to the max size and subtract what is left after the inflate */
-    b->datasize += zip->avail_out;
+    b->datasize = b->datamax;
     while (zip->avail_in > 0 || zip->avail_out == 0)
     {
 	/* if there is no more output space left, create some more */

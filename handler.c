@@ -186,12 +186,17 @@ HANDLER (dispatch_command)
     {
 #if DEBUG
 	unsigned char ch;
+	int bytes;
 
 	/* dump some bytes from the input buffer to see if it helps aid
 	   debugging */
+	bytes = con->recvbuf->datasize - con->recvbuf->consumed;
+	/* print at most 128 bytes */
+	if (bytes > 128)
+	    bytes = 128;
 	fprintf(stdout, "Dump(%d): ",
 	    con->recvbuf->datasize - con->recvbuf->consumed);
-	for (l = con->recvbuf->consumed; l < con->recvbuf->datasize; l++)
+	for (l = con->recvbuf->consumed; bytes > 0; bytes--, l++)
 	{
 	    ch=*(con->recvbuf->data + l);
 	    fputc(isprint(ch)?ch:'.',stdout);
