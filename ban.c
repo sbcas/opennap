@@ -297,7 +297,8 @@ load_bans (void)
     snprintf (path, sizeof (path), "%s/bans", Config_Dir);
     if (!(fp = fopen (path, "r")))
     {
-	log ("load_bans(): %s: %s (errno %d)", path, strerror (errno), errno);
+	if(errno!=ENOENT)
+	    logerr("load_bans",path);
 	return -1;
     }
     while (fgets (Buf, sizeof (Buf) - 1, fp))

@@ -133,7 +133,7 @@ bind_interface (int fd, unsigned int ip, int port)
     sin.sin_port = htons (port);
     if (bind (fd, (struct sockaddr *) &sin, sizeof (sin)) < 0)
     {
-	log ("bind_interface(): bind: %s (errno %d)", strerror (errno), errno);
+	nlogerr ("bind_interface", "bind");
 	return -1;
     }
     return 0;
