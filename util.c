@@ -458,3 +458,17 @@ log (const char *fmt, ...)
     va_end (ap);
     fputc ('\n', stdout);
 }
+
+char *
+next_arg (char **s)
+{
+    char *r = *s;
+    *s = strchr (r, ' ');
+    if (*s)
+    {
+	*(*s)++ = 0;
+	while (**s == ' ')
+	    ++*s;
+    }
+    return r;
+}

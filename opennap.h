@@ -414,6 +414,7 @@ CHANNEL *new_channel (void);
 CONNECTION *new_connection (void);
 HOTLIST *new_hotlist (void);
 int new_tcp_socket (void);
+char *next_arg (char **);
 void nosuchuser (CONNECTION *, char *);
 void notify_mods (const char *, ...);
 void part_channel (CHANNEL *, USER *);

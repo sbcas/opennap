@@ -126,25 +126,29 @@ HANDLER (emote)
 {
     USER *user;
     CHANNEL *chan;
-    int i, argc;
-    char *argv[2];
+    int i, buflen;
+    char *cname;
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
 	return;
-    argc = split_line (argv, sizeof (argv), pkt);
-    if (argc != 2)
+
+    cname = next_arg (&pkt);
+    if (!cname || !pkt)
     {
-	log ("emote(): expected 2 args, got %d", argc);
+	log ("emote(): expected 2 args");
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "too few arguments");
 	return;
     }
+
     /* make sure this user is on the channel they are sending to */
     chan = 0;
     for (i = 0; i < user->numchannels; i++)
     {
-	if (!strcasecmp (argv[0], user->channels[i]->name))
+	if (!strcasecmp (cname, user->channels[i]->name))
 	{
 	    chan = user->channels[i];
 	    break;
@@ -152,20 +156,28 @@ HANDLER (emote)
     }
     if (!chan)
     {
-	if (con->class==CLASS_USER)
+	if (con->class == CLASS_USER)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "you are not on channel %s",
-		    argv[0]);
+		    cname);
 	return;
     }
+
+    /* since we send the same data to multiple clients, format the data once
+       and queue it up directly */
+    set_tag (Buf, MSG_CLIENT_EMOTE);
+    snprintf (Buf + 4, sizeof (Buf) - 4, "%s %s %s",
+	    chan->name, user->nick, pkt);
+    buflen = strlen (Buf + 4);
+    set_len (Buf, buflen);
+    buflen += 4;
 
     /* send this message to all channel members */
     for (i = 0; i < chan->numusers; i++)
 	if (chan->users[i]->con)
-	    send_cmd (chan->users[i]->con, MSG_CLIENT_EMOTE, "%s %s %s",
-		    chan->name, user->nick, argv[1]);
+	    queue_data (chan->users[i]->con, Buf, buflen);
 
     /* pass message to peer servers */
     if (con->class == CLASS_USER && Num_Servers)
-	pass_message_args (con, MSG_CLIENT_EMOTE, "%s %s %s",
-		chan->name, user->nick, argv[1]);
+	pass_message_args (con, MSG_CLIENT_EMOTE, ":%s %s %s",
+		user->nick, chan->name, pkt);
 }
