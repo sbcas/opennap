@@ -40,7 +40,7 @@ operserv (CONNECTION * con, char *pkt)
     else if (!strcasecmp ("kick", cmd))
 	tag = MSG_CLIENT_KICK_USER;
     else if (!strcasecmp ("usermode", cmd))
-    	tag = MSG_CLIENT_USER_MODE;
+	tag = MSG_CLIENT_USER_MODE;
     else if (!strcasecmp ("config", cmd))
 	tag = MSG_CLIENT_SERVER_CONFIG;
     else if (!strcasecmp ("reconfig", cmd))
@@ -57,7 +57,8 @@ operserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_CLOAK;
     else
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "Unknown OperServ command: %s", cmd);
+	send_cmd (con, MSG_SERVER_NOSUCH, "Unknown OperServ command: %s",
+		  cmd);
 	return;
     }
     if (pkt)
@@ -66,8 +67,8 @@ operserv (CONNECTION * con, char *pkt)
     {
 	/* most of the handler routines expect `pkt' to be non-NULL so pass
 	   a dummy value here */
-	pkt=&ch;
-	len=0;
+	pkt = &ch;
+	len = 0;
     }
     dispatch_command (con, tag, len, pkt);
 }
@@ -77,13 +78,13 @@ operserv (CONNECTION * con, char *pkt)
 HANDLER (privmsg)
 {
     char *ptr;
-    USER *sender, *user /* recip */;
+    USER *sender, *user /* recip */ ;
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
 
-    ptr = pkt; /* save the start offset of pkt for length check */
+    ptr = pkt;			/* save the start offset of pkt for length check */
     if (pop_user (con, &pkt, &sender) != 0)
 	return;
     ASSERT (validate_user (sender));
@@ -91,7 +92,8 @@ HANDLER (privmsg)
     /* prevent DoS attack againt windows napster client */
     if (len - (pkt - ptr) > 180)
     {
-	log ("privmsg(): truncated %d byte message from %s", len, sender->nick);
+	log ("privmsg(): truncated %d byte message from %s", len,
+	     sender->nick);
 	pkt[180] = 0;
     }
 
@@ -99,14 +101,14 @@ HANDLER (privmsg)
     ptr = next_arg_noskip (&pkt);
     if (!pkt)
     {
-	log ("privmsg(): malformed message from %s", sender->nick);
+	unparsable(con);
 	return;
     }
 
     if (ISUSER (con) && sender->level > LEVEL_USER &&
-	    !strcasecmp(ptr,"operserv"))
+	!strcasecmp (ptr, "operserv"))
     {
-	operserv(con,pkt);
+	operserv (con, pkt);
 	return;
     }
 
@@ -118,15 +120,22 @@ HANDLER (privmsg)
 	    nosuchuser (con, ptr);
 	return;
     }
-    ASSERT (validate_user (user));
 
     /*  locally connected user */
-    if (user->local)
+    if (ISUSER (user->con))
     {
-	ASSERT (validate_connection (user->con));
-
-	/*reconsitute the msg */
-	send_cmd (user->con, MSG_CLIENT_PRIVMSG, "%s %s", sender->nick, pkt);
+	/* check to make sure this user is not ignored */
+	if (!is_ignoring (user->con->uopt->ignore, sender->nick))
+	{
+	    /* reconstitute the message */
+	    send_cmd (user->con, MSG_CLIENT_PRIVMSG, "%s %s", sender->nick, pkt);
+	}
+	else
+	{
+	    /* notify the sender they are being ignored */
+	    send_user (sender, MSG_SERVER_NOSUCH, "%s is ignoring you",
+		    user->nick);
+	}
     }
     else
     {
@@ -136,5 +145,44 @@ HANDLER (privmsg)
 	ASSERT (user->con->class == CLASS_SERVER);
 	send_cmd (user->con, MSG_CLIENT_PRIVMSG, ":%s %s %s",
 		sender->nick, user->nick, pkt);
+    }
+}
+
+/*  ??? <user>
+    add user to ignore list */
+HANDLER (ignore)
+{
+    LIST *list;
+
+    ASSERT (validate_connection (con));
+    CHECK_USER_CLASS ("ignore_add");
+    /*ensure that this user is not already on the ignore list */
+    for (list = con->uopt->ignore; list; list = list->next)
+	if (!strcasecmp (pkt, list->data))
+	    return;		/*already added */
+    list = MALLOC (sizeof (LIST));
+    list->data = STRDUP (pkt);
+    list->next = con->uopt->ignore;
+    con->uopt->ignore = list;
+}
+
+/* ??? <user>
+   unignore user */
+HANDLER (unignore)
+{
+    LIST **list, *tmpList;
+
+    ASSERT (validate_connection (con));
+    CHECK_USER_CLASS ("ignore_add");
+    for (list = &con->uopt->ignore; *list; list = &(*list)->next)
+    {
+	if (!strcasecmp (pkt, (*list)->data))
+	{
+	    tmpList = *list;
+	    *list = (*list)->next;
+	    FREE (tmpList->data);
+	    FREE (tmpList);
+	    return;
+	}
     }
 }

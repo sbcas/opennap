@@ -165,6 +165,7 @@ typedef struct
        when hotlist->numusers is zero.  */
     LIST *hotlist;
     HASH *files;		/* db entries for this user's shared files */
+    LIST *ignore;		/* server side ignore list */
 }
 USEROPT;
 
@@ -563,6 +564,7 @@ void free_config (void);
 void free_datum (DATUM *);
 void free_flist (FLIST *);
 void free_hotlist (HOTLIST *);
+void free_pointer (void *);
 void free_timers (void);
 void free_user (USER *);
 char *generate_nonce (void);
@@ -577,6 +579,7 @@ void init_random (void);
 int init_server (const char *);
 int invalid_channel (const char *);
 int ip_glob_match (const char *pattern, const char *ip);
+int is_ignoring (LIST *, const char *);
 int is_ip (const char *);
 int is_linked (CONNECTION *, const char *);
 int is_server (const char *);
@@ -668,6 +671,7 @@ HANDLER (emote);
 HANDLER (encapsulated);
 HANDLER (full_channel_list);
 HANDLER (global_user_list);
+HANDLER (ignore);
 HANDLER (join);
 HANDLER (kick);
 HANDLER (kill_user);
@@ -716,6 +720,7 @@ HANDLER (upload_start);
 HANDLER (upload_end);
 HANDLER (topic);
 HANDLER (unban);
+HANDLER (unignore);
 HANDLER (unnuke);
 HANDLER (upload_request);
 HANDLER (user_ip);
@@ -807,9 +812,10 @@ extern int optind;
 #define PORTLOG_MODE	0x0100
 #define TOPICLOG_MODE	0x0200
 #define WALLOPLOG_MODE	0x0400
+#define CLOAKLOG_MODE	0x0800
 
 #define LOGALL_MODE (ERROR_MODE|BANLOG_MODE|CHANGELOG_MODE|CHANNELLOG_MODE|\
 	KILLLOG_MODE|LEVELLOG_MODE|SERVERLOG_MODE|MUZZLELOG_MODE|PORTLOG_MODE|\
-	TOPICLOG_MODE|WALLOPLOG_MODE)
+	TOPICLOG_MODE|WALLOPLOG_MODE|CLOAKLOG_MODE)
 
 #endif /* opennap_h */

@@ -52,24 +52,26 @@ HANDLER (add_hotlist)
 	return;
 
     /* add this user to the list of users waiting for notification */
-    list = CALLOC (1, sizeof (LIST));
+    list = MALLOC (sizeof (LIST));
     if (!list)
     {
 	OUTOFMEMORY ("add_hotlist");
 	return;
     }
     list->data = con;
-    hotlist->users = list_append (hotlist->users, list);
+    list->next = hotlist->users;
+    hotlist->users = list;
 
     /* add the hotlist entry to this particular users list */
-    list = CALLOC (1, sizeof (LIST));
+    list = MALLOC (sizeof (LIST));
     if (!list)
     {
 	OUTOFMEMORY ("add_hotlist");
 	return;
     }
     list->data = hotlist;
-    con->uopt->hotlist = list_append (con->uopt->hotlist, list);
+    list->next = con->uopt->hotlist;
+    con->uopt->hotlist = list;
 
     /* ack the user who requested this */
     /* this seems unnecessary, but its what the official server does... */

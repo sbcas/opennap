@@ -410,7 +410,7 @@ HANDLER (cloak)
     else
 	db->flags &= ~ON_CLOAKED;
     pass_message_args (con, tag, ":%s", sender->nick);
-    notify_mods (CHANGELOG_MODE, "%s has %scloaked", sender->nick,
+    notify_mods (CLOAKLOG_MODE, "%s has %scloaked", sender->nick,
 		 sender->cloaked ? "" : "de");
     if (ISUSER (con))
 	send_cmd (con, MSG_SERVER_NOSUCH, "You are %s cloaked.",

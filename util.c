@@ -143,6 +143,7 @@ get_random_bytes (char *d, int dsize)
 {
 #if 0
     char buf[16];
+
     ASSERT (Stale_Random == 0);
     ASSERT (dsize <= 16);
     md5_finish_ctx (&Random_Context, buf);
@@ -155,12 +156,12 @@ get_random_bytes (char *d, int dsize)
     {
 	v = rand ();
 	d[i++] = v & 0xff;
-	if(i<dsize)
-	    d[i++]=(v>>8)&0xff;
-	if(i<dsize)
-	    d[i++]=(v>>16)&0xff;
-	if(i<dsize)
-	    d[i++]=(v>>24)&0xff;
+	if (i < dsize)
+	    d[i++] = (v >> 8) & 0xff;
+	if (i < dsize)
+	    d[i++] = (v >> 16) & 0xff;
+	if (i < dsize)
+	    d[i++] = (v >> 24) & 0xff;
     }
 #endif
 }
@@ -447,7 +448,7 @@ generate_pass (const char *pass)
 {
     struct md5_ctx md;
     char hash[16];
-    char output[36]; /* 1,xxxxxxxx,xxxxxxxxxxxxxxxxxxxxxxx== */
+    char output[36];		/* 1,xxxxxxxx,xxxxxxxxxxxxxxxxxxxxxxx== */
     int outsize;
     int i;
 
@@ -464,7 +465,7 @@ generate_pass (const char *pass)
     md5_finish_ctx (&md, hash);
     outsize = sizeof (output) - 11;
     b64_encode (output + 11, &outsize, hash, 16);
-    output[sizeof (output) - 3] = 0; /* strip the trailing == */
+    output[sizeof (output) - 3] = 0;	/* strip the trailing == */
     return (STRDUP (output));
 }
 
@@ -510,10 +511,16 @@ ip_glob_match (const char *pattern, const char *ip)
 }
 
 CHANNEL *
-find_channel (LIST *channels, const char *s)
+find_channel (LIST * channels, const char *s)
 {
-    for(;channels;channels=channels->next)
-	if(!strcasecmp(((CHANNEL*)channels->data)->name,s))
+    for (; channels; channels = channels->next)
+	if (!strcasecmp (((CHANNEL *) channels->data)->name, s))
 	    return channels->data;
     return 0;
+}
+
+void
+free_pointer (void *p)
+{
+    FREE (p);
 }

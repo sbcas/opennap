@@ -27,18 +27,23 @@ HANDLER (ping)
     user = hash_lookup (Users, nick);
     if (!user)
     {
-	if (con->class == CLASS_USER)
+	if (ISUSER (con))
 	{
 	    send_cmd (con, MSG_SERVER_NOSUCH, "ping failed, %s is not online",
 		nick);
 	}
 	return;
     }
-    ASSERT (validate_user (user));
 
-    if (user->local)
-	send_cmd (user->con, tag, "%s%s%s", orig->nick, pkt ? " " : "",
-		NONULL (pkt));
+    if (ISUSER (user->con))
+    {
+	if (!is_ignoring(user->con->uopt->ignore,orig->nick))
+	    send_cmd (user->con, tag, "%s%s%s", orig->nick, pkt ? " " : "",
+		    NONULL (pkt));
+	else
+	    send_user(orig,MSG_SERVER_NOSUCH,"%s is ignoring you",
+		    user->nick);
+    }
     else
     {
 	/* send the message to the server which this user appears to be

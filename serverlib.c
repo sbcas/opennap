@@ -309,3 +309,13 @@ is_server (const char *s)
     }
     return 0;
 }
+
+/* returns nonzero if `nick' is in list `ignore' */
+int
+is_ignoring (LIST *ignore, const char *nick)
+{
+    for(;ignore;ignore=ignore->next)
+	if(!strcasecmp(nick,ignore->data))
+	    return 1;
+    return 0;
+}

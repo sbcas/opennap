@@ -111,7 +111,7 @@ HANDLER (emote)
 	log ("emote(): cropped %d byte message from user %s", len, user->nick);
     }
 
-    if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
+    if (split_line (av, sizeof (av) / sizeof (char *), pkt) < 2)
     {
 	unparsable(con);
 	return;

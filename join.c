@@ -76,12 +76,6 @@ HANDLER (join)
 	unparsable(con);
 	return;
     }
-    if (invalid_channel (pkt))
-    {
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid channel name.");
-	return;
-    }
     /* enforce a maximum channels per user */
     /* TODO: if linked servers have different settings, the channel membership
        could become desynched */
@@ -90,14 +84,14 @@ HANDLER (join)
     {
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		    "You may only join %d channels.", Max_User_Channels);
+		    "You may only join %d channels", Max_User_Channels);
 	return;
     }
     if (user->muzzled)
     {
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "Can't join channels while muzzled.");
+		      "Can't join channels while muzzled");
 	return;
     }
     do
@@ -109,6 +103,12 @@ HANDLER (join)
 	    if (Server_Flags & OPTION_STRICT_CHANNELS)
 	    {
 		permission_denied (con);
+		return;
+	    }
+	    if (invalid_channel (pkt))
+	    {
+		if (ISUSER (con))
+		    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid channel name");
 		return;
 	    }
 	    chan = new_channel ();
@@ -123,7 +123,7 @@ HANDLER (join)
 	    }
 	    /* set the default topic */
 	    snprintf (Buf, sizeof (Buf), "Welcome to the %s channel.",
-		      chan->name);
+		    chan->name);
 	    chan->topic = STRDUP (Buf);
 	    if (!chan->topic)
 	    {
@@ -144,7 +144,7 @@ HANDLER (join)
 	{
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH,
-			  "You have already joined that channel.");
+			"You have already joined that channel");
 	    return;
 	}
 	/* check to make sure the user has privilege to join */
@@ -208,8 +208,8 @@ HANDLER (join)
 	goto error;
     }
     list->data = chan;
-    list->next = 0;
-    user->channels = list_append (user->channels, list);
+    list->next = user->channels;
+    user->channels = list;
 
     /* add this user to the channel members list */
     list = MALLOC (sizeof (LIST));
@@ -219,8 +219,8 @@ HANDLER (join)
 	goto error;
     }
     list->data = user;
-    list->next = 0;
-    chan->users = list_append (chan->users, list);
+    list->next = chan->users;
+    chan->users = list;
 
     /* if there are linked servers, send this message along */
     pass_message_args (con, tag, ":%s %s", user->nick, chan->name);
@@ -236,23 +236,22 @@ HANDLER (join)
 	{
 	    chanUser = list->data;
 	    ASSERT (chanUser != 0);
-	    send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST /* 408 */ ,
-		      "%s %s %d %d", chan->name, chanUser->nick,
-		      chanUser->shared, chanUser->speed);
+	    if(!chanUser->cloaked || user->level >= LEVEL_MODERATOR)
+		send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST /* 408 */ ,
+			"%s %s %d %d", chan->name, chanUser->nick,
+			chanUser->shared, chanUser->speed);
 	}
     }
 
     /* notify members of the channel that this user has joined */
-    if (!user->cloaked)
+    for (list = chan->users; list; list = list->next)
     {
-	for (list = chan->users; list; list = list->next)
-	{
-	    chanUser = list->data;
-	    ASSERT (chanUser != 0);
-	    if (ISUSER (chanUser->con) && chanUser != user)
-		send_cmd (chanUser->con, MSG_SERVER_JOIN, "%s %s %d %d",
-			chan->name, user->nick, user->shared, user->speed);
-	}
+	chanUser = list->data;
+	ASSERT (chanUser != 0);
+	if (ISUSER (chanUser->con) && chanUser != user &&
+		(!user->cloaked || chanUser->level >= LEVEL_MODERATOR))
+	    send_cmd (chanUser->con, MSG_SERVER_JOIN, "%s %s %d %d",
+		    chan->name, user->nick, user->shared, user->speed);
     }
 
     if (ISUSER (con))

@@ -31,13 +31,6 @@ HANDLER (part)
 	return;
     }
 
-    if (invalid_channel (pkt))
-    {
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid channel name");
-	return;
-    }
-
     /* find the requested channel in the user's  list */
     if(!(chan=find_channel(user->channels,pkt)))
     {
@@ -48,7 +41,7 @@ HANDLER (part)
 
     /* ack the user */
     if (ISUSER (con))
-	send_cmd(con,tag,chan->name);
+	send_cmd(con,tag,"%s", chan->name);
 
     /* NOTE: we use the MSG_CLIENT_PART(401) message instead of
        passing MSG_SERVER_PART(407) to pass between servers because we

@@ -31,22 +31,18 @@ part_channel (CHANNEL * chan, USER * user)
     chan->users = list_delete (chan->users, user);
     if (chan->users)
     {
-	if(!user->cloaked)
+	/* notify other members of this channel that this user has parted */
+	len = form_message (Buf, sizeof (Buf), MSG_SERVER_PART,
+		"%s %s %d %d", chan->name, user->nick, user->shared,
+		user->speed);
+	for (list = chan->users; list; list = list->next)
 	{
-	    /* notify other members of this channel that this user has parted */
-	    len = form_message (Buf, sizeof (Buf), MSG_SERVER_PART,
-		    "%s %s %d %d", chan->name, user->nick, user->shared,
-		    user->speed);
-	    for (list = chan->users; list; list = list->next)
+	    /* we only notify local clients */
+	    chanUser = list->data;
+	    if (ISUSER (chanUser->con))
 	    {
-		/* we only notify local clients */
-		chanUser = list->data;
-		ASSERT (validate_user (chanUser));
-		if (chanUser->local)
-		{
-		    ASSERT (validate_connection (chanUser->con));
+		if (!user->cloaked || chanUser->level >= LEVEL_MODERATOR)
 		    queue_data (chanUser->con, Buf, len);
-		}
 	    }
 	}
     }

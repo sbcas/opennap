@@ -19,9 +19,9 @@ HANDLER (download)
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender))
 	return;
-    if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
+    if (split_line (av, sizeof (av) / sizeof (char *), pkt) < 2)
     {
-	log ("download(): malformed user request");
+	unparsable(con);
 	return;
     }
     /* find the user to download from */
@@ -32,8 +32,11 @@ HANDLER (download)
 	send_user (sender, MSG_SERVER_SEND_ERROR, "%s \"%s\"", av[0], av[1]);
 	return;
     }
-    ASSERT (validate_user (user));
-
+    if (ISUSER (user->con) && is_ignoring(user->con->uopt->ignore,sender->nick))
+    {
+	send_user(sender,MSG_SERVER_NOSUCH,"%s is ignoring you",user->nick);
+	return;
+    }
     if (tag == MSG_CLIENT_DOWNLOAD)
     {
 	if (user->port == 0)
