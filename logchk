@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# Simple BASH script to rotate the opennap logfile.
+#
+# Add this to your crontab to run the logchk script every 12 hours.
+#
+#    0 0,12 * * *   /home/mydir/logchk >/dev/null 2>&1
+#
+# 24 Hour format.
+#
+#    0 0 * * * /home/mydir/logchk >/dev/null 2>&1
+#
+#                            -- WoLf (itzwolf@usa.net)
+
+# Set this to the opennap shared folder path (logfile location)
+LOGPATH=/home/wolf/opennap/share/opennap
+
+# No need to change anything below here.
+
+cd $LOGPATH
+
+if test -r log ;then
+   if test -r log.yesterday ;then
+      rm -rf log.yesterday
+   fi
+   cp log log.yesterday
+   echo "" > log
+   exit 0
+fi
+exit 0
