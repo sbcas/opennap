@@ -57,6 +57,7 @@ int Max_Hotlist;
 int Max_Topic;
 int Max_Client_String;
 int Max_Reason;
+int Max_Clones;
 
 #ifndef WIN32
 int Uid;

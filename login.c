@@ -84,6 +84,24 @@ zap_local_user (CONNECTION * con, const char *reason)
     con->destroy = 1;
 }
 
+static int
+count_clones (unsigned int ip)
+{
+    int clones = 0;
+    int j = 0;
+    for(j=0;j<Max_Clients;j++)
+    {
+	if(Clients[j] && (ISUSER(Clients[j]) || ISUNKNOWN(Clients[j])) &&
+		Clients[j]->ip == ip)
+	{
+	    clones++;
+	    if(clones>=Max_Clones)
+		break;	/* no need to count any more */
+	}
+    }
+    return clones;
+}
+
 /* 2 <nick> <pass> <port> <client-info> <speed> [email] [build]
 
    servers append some additional information that they need to share in
@@ -147,23 +165,32 @@ HANDLER (login)
     /* retrieve registration info (could be NULL) */
     db = hash_lookup (User_Db, av[0]);
 
-    /* enforce maximum local users.  if the user is privileged, bypass
-     * this restriction */
-    if (ISUNKNOWN (con) && Num_Clients >= Max_Connections &&
-	(!db || db->level < LEVEL_MODERATOR))
-    {
-	log ("login(): max_connections (%d) reached", Max_Connections);
-	send_cmd (con, MSG_SERVER_ERROR,
-		  "This server is full (%d connections)", Max_Connections);
-	con->destroy = 1;
-	return;
-    }
-
-    /* check for user|ip ban.  mods+ are exempt */
+    /* bypass restrictions for privileged users */
     if (!db || db->level < LEVEL_MODERATOR)
     {
+	/* enforce maximum local users */
+	if(Num_Clients >= Max_Connections)
+	{
+	    log ("login(): max_connections (%d) reached", Max_Connections);
+	    send_cmd (con, MSG_SERVER_ERROR,
+		    "This server is full (%d connections)", Max_Connections);
+	    con->destroy = 1;
+	    return;
+	}
+
+	/* check for user|ip ban.  */
 	if (check_ban (con, av[0]))
 	    return;
+
+	/* check for max clones on one server */
+	if (Max_Clones > 0 && count_clones (con->ip) >= Max_Clones)
+	{
+	    log ("login(): clones detected from %s", my_ntoa (con->ip));
+	    send_cmd(con,MSG_SERVER_ERROR,
+		    "Exceeded max connections to this server");
+	    con->destroy = 1;
+	    return;
+	}
     }
 
     speed = atoi (av[4]);

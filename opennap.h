@@ -387,6 +387,7 @@ extern int Max_Hotlist;
 extern int Max_Topic;
 extern int Max_Client_String;
 extern int Max_Reason;
+extern int Max_Clones;
 
 extern const int BitRate[];
 extern const int SampleRate[];
