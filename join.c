@@ -238,10 +238,11 @@ HANDLER (channel_level)
     ac = split_line (av, sizeof (av) / sizeof (char), pkt);
     if (ac == 0)
     {
-	log ("channel_level(): wrong number of paramenters");
+	log ("channel_level(): wrong number of parameters");
 	print_args (ac, av);
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid number of parameters");
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		"too few parameters for command %d", tag);
 	return;
     }
     chan = hash_lookup (Channels, av[0]);
@@ -282,7 +283,7 @@ HANDLER (channel_level)
 	pass_message_args (con, tag, ":%s %s %s", sender, chan->name,
 		Levels[level]);
 	chan->level = level;
-	notify_mods ("%s set channel %s to level %s.", sender, chan->name,
+	notify_mods ("%s set channel %s to level %s", sender, chan->name,
 		Levels[level]);
     }
     else
@@ -290,7 +291,7 @@ HANDLER (channel_level)
 	/* report the current level */
 	ASSERT (ac == 1);
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Channel %s is set to level %s.",
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Channel %s is set to level %s",
 		    chan->name, Levels[chan->level]);
 	else
 	    log ("channel_level(): query from server (should not happen)");
