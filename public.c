@@ -117,6 +117,6 @@ HANDLER (public)
     /* this is an optimization for the case where all the users on a given
        channel are local.  we don't send the message to our peer servers if
        we detect this case */
-    if (remote)
+    if (con->class == CLASS_USER && remote)
 	pass_message (con, Buf, 4 + l);
 }
