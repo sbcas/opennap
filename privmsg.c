@@ -53,6 +53,8 @@ operserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_CHANNEL_BAN_LIST;
     else if (!strcasecmp ("cbanclear", cmd))
 	tag = MSG_CLIENT_CHANNEL_CLEAR_BANS;
+    else if (!strcasecmp ("cloak", cmd))
+	tag = MSG_CLIENT_CLOAK;
     else
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "Unknown OperServ command: %s", cmd);

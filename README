@@ -114,6 +114,7 @@ commands:
 	cbanclear
 	cbanlist
 	chanlevel
+	cloak
 	cunban
 	config
 	connect
