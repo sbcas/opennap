@@ -1,5 +1,34 @@
 [opennap 0.24]
 
+md5 passwords are now used to store user passwords on disk.  A new utility
+called 'mkpass' is now used to generate a md5 password from plaintext
+password when first setting up the server.  See the README file for details.
+
+Added support for the clear channel (820) user command which will remove all
+users of a lesser user level than the usr who issued the command.
+
+When compiled with debugging support, sending SIGUSR1 to the opennap process
+will cause it to dump the table of allocated memory.
+
+Added virtual user "OperServ" which accepts commands via /msg.  This is
+intended to provide support for clients which have no built in support for
+the opennap extensions.  See the README file for a complete list of accepted
+commands.
+
+Added channel limit command (826) to specify the maximum number of users
+allowed in a channel.
+
+Added new channel list command (827/828) which shows additional information
+about the channels such as the mimium level required for entry, and the
+channel limit.
+
+Added the nuke command to remove a registered user from the database.
+
+The stats and links commands are now accessible to unprivileged users.
+
+Bans are now saved and reloaded (default: /usr/local/share/opennap/bans)
+on startup.
+
 [opennap 0.23]
 
 Server was fixed to compile without zlib for use as a standalone server.
