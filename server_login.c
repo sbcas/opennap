@@ -419,7 +419,9 @@ mark_links (const char *host)
     {
 	link = list->data;
 	ASSERT (link != 0);
-	if (!strcasecmp (host, link->server))
+	if (link->port != (unsigned short)-1 &&
+		link->peerport != (unsigned short)-1 &&
+		!strcasecmp (host, link->server))
 	{
 	    link->port = -1;
 	    link->peerport = -1;

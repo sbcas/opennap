@@ -52,6 +52,14 @@ HANDLER (muzzle)
 	return;
     }
 
+    if (user->muzzled)
+    {
+	log("muzzle(): %s is already muzzled",user->nick);
+	if (ISUSER (con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"%s is already muzzled",user->nick);
+	return;
+    }
+
     /* relay to peer servers */
     if (ac > 1)
 	pass_message_args (con, MSG_CLIENT_MUZZLE, ":%s %s \"%s\"",

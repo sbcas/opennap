@@ -46,6 +46,14 @@ HANDLER (unmuzzle)
 	return;
     }
 
+    if (!user->muzzled)
+    {
+	log("unmuzzle(): %s is not muzzled", user->nick);
+	if(ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"%s is not muzzled",user->nick);
+	return;
+    }
+
     user->muzzled = 0;
 
     /* relay to peer servers */

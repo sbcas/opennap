@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-April 12, 2000
+April 16, 2000
 
 0.  Forward
 
@@ -69,7 +69,7 @@ appropriate, examples of the <data> section for each message are given.
 
 2	client login message [CLIENT]
 
-	<username> <password> <port> "<client-info>" <link-type>
+	<username> <password> <port> "<client-info>" <link-type> [ <num> ]
 
 	<port> is the port the client is listening on for data transfer.  if
 		this value is 0, it means that the client is behind a firewall
@@ -88,6 +88,9 @@ appropriate, examples of the <data> section for each message are given.
 		8  DSL
 		9  T1
 		10 T3 or greater
+	<num> it is unknown what this field is used for, and appears to be
+		optional when logging into the servers.  <num> appears to
+		always be 4398556 for Napster 2.0 Beta 5a.
 		
 	Example:
 
@@ -511,11 +514,14 @@ appropriate, examples of the <data> section for each message are given.
 
 	the client sends this command to join a channel
 
-401	part channel [CLIENT]
+401	part channel [CLIENT, SERVER]
 
 	<channel-name>
 
-	the client sends this command to part a channel
+	The client sends this command to part a channel.  Server sends this
+	message to indicate that the client has parted the channel.  Note
+	that this is sometimes sent even when the client has not requested,
+	so a client _must_ be prepared to accept it at any time.
 
 402	send public message [CLIENT]
 

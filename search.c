@@ -150,7 +150,7 @@ tokenize (char *s)
 	    /* the following are common path names and don't really
 	       provide useful information */
 	    !strcmp ("mp3", s) || !strcmp ("c", s) || !strcmp ("d", s) ||
-	    !strcmp ("e", s) || !strcmp ("napster", s) ||
+	    !strcmp ("f", s) || !strcmp ("e", s) || !strcmp ("napster", s) ||
 	    !strcmp ("music", s) || !strcmp ("program", s) ||
 	    !strcmp ("files", s) || !strcmp ("windows", s) ||
 	    !strcmp ("songs", s) || !strcmp ("desktop", s) ||
