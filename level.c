@@ -75,7 +75,8 @@ HANDLER (level)
     {
 	/* user is logged in */
 	ASSERT (validate_user (user));
-	if (ISUSER (con) && user->level >= con->user->level)
+	if (ISUSER (con) && con->user->level < LEVEL_ELITE &&
+		user->level >= con->user->level)
 	{
 	    permission_denied (con);
 	    return;
@@ -98,7 +99,8 @@ HANDLER (level)
     if ((db = hash_lookup (User_Db, fields[0])))
     {
 	/* registered nick */
-	if (ISUSER (con) && con->user->level <= db->level)
+	if (ISUSER (con) && con->user->level < LEVEL_ELITE &&
+		con->user->level <= db->level)
 	{
 	    ASSERT (user == 0);
 	    permission_denied (con);
