@@ -473,7 +473,6 @@ void free_datum (DATUM *);
 void free_flist (FLIST *);
 void free_hotlist (HOTLIST *);
 void free_user (USER *);
-void fudge_path (const char *, char *, int);
 char *generate_nonce (void);
 void init_compress (CONNECTION *, int);
 int init_db (void);
@@ -536,7 +535,6 @@ HANDLER (change_email);
 HANDLER (change_speed);
 HANDLER (change_pass);
 HANDLER (client_quit);
-HANDLER (compressed_data);
 HANDLER (data_port_error);
 HANDLER (download);
 HANDLER (download_end);
@@ -624,7 +622,7 @@ typedef unsigned int socklen_t;
 
 #define SHAREDIR "/opennap"
 #define PACKAGE "opennap"
-#define VERSION "0.12"
+#define VERSION "0.20"
 
 #define strcasecmp stricmp
 #define strncasecmp strnicmp

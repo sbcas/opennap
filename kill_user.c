@@ -14,18 +14,20 @@
 void
 notify_mods (const char *fmt, ...)
 {
-    char buf[128];/* send_cmd() uses Buf so we can't use it here */
-    int i;
+    int i, len;
     va_list ap;
 
     va_start (ap, fmt);
-    vsnprintf (buf, sizeof (buf), fmt, ap);
+    vsnprintf (Buf + 4, sizeof (Buf) - 4, fmt, ap);
     va_end (ap);
+    set_tag (Buf, MSG_SERVER_NOSUCH);
+    len = strlen (Buf + 4);
+    set_len (Buf, len);
     for (i = 0; i < Num_Clients; i++)
     {
-	if (Clients[i] && Clients[i]->class == CLASS_USER &&
+	if (Clients[i]->class == CLASS_USER &&
 		Clients[i]->user->level >= LEVEL_MODERATOR)
-	    send_cmd (Clients[i], MSG_SERVER_NOSUCH, buf);
+	    queue_data (Clients[i], Buf, len + 4);
     }
 }
 

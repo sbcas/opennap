@@ -87,7 +87,11 @@ HANDLER (topic)
     ASSERT (validate_channel (chan));
     if (chan->topic)
 	FREE (chan->topic);
-    chan->topic = STRDUP (topic);
+    if (!(chan->topic = STRDUP (topic)))
+    {
+	log ("topic(): ERROR: OUT OF MEMORY");
+	return;
+    }
 
     /* if local user, notify our peers of this change */
     if (Num_Servers && con->class == CLASS_USER)

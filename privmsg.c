@@ -28,20 +28,19 @@ HANDLER (privmsg)
     ASSERT (validate_user (sender));
 
     /* check to see if the recipient of the message is local */
-    ptr = strchr (pkt, ' ');
-    if (ptr == 0)
+    ptr = next_arg (&pkt);
+    if (!pkt)
     {
 	log ("privmsg(): malformed message from %s: %s", sender->nick, pkt);
 	return;
     }
-    *ptr++ = 0;			/* kill the rest of the line */
 
     /* find the recipient */
-    user = hash_lookup (Users, pkt);
+    user = hash_lookup (Users, ptr);
     if (!user)
     {
 	if (con->class == CLASS_USER)
-	    nosuchuser (con, pkt);
+	    nosuchuser (con, ptr);
 	return;
     }
     ASSERT (validate_user (user));
@@ -52,7 +51,7 @@ HANDLER (privmsg)
 	ASSERT (validate_connection (user->con));
 
 	/*reconsitute the msg */
-	send_cmd (user->con, MSG_CLIENT_PRIVMSG, "%s %s", sender->nick, ptr);
+	send_cmd (user->con, MSG_CLIENT_PRIVMSG, "%s %s", sender->nick, pkt);
     }
     else if (con->class == CLASS_USER)
     {
@@ -61,7 +60,7 @@ HANDLER (privmsg)
 	   need to send one copy */
 	ASSERT (user->serv != 0);
 	send_cmd (user->serv, MSG_CLIENT_PRIVMSG, ":%s %s %s",
-		sender->nick, user->nick, ptr);
+		sender->nick, user->nick, pkt);
     }
 }
 

@@ -343,22 +343,6 @@ array_remove (void *list, int *listsize, void *ptr)
     return list;
 }
 
-void
-fudge_path (const char *in, char *out, int outsize)
-{
-    while (*in && outsize > 1)
-    {
-	if (*in == '\\' || *in=='\'')
-	{
-	    *out++ = '\\';
-	    outsize--;
-	}
-	*out++ = *in++;
-	outsize--;
-    }
-    *out = 0;
-}
-
 #ifdef DEBUG
 int
 validate_connection (CONNECTION *con)

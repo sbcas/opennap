@@ -166,7 +166,18 @@ fdb_add (HASH * table, char *key, DATUM * d)
     if (!files)
     {
 	files = CALLOC (1, sizeof (FLIST));
+	if (!files)
+	{
+	    log ("fdb_add(): OUT OF MEMORY");
+	    return;
+	}
 	files->key = STRDUP (key);
+	if (!files->key)
+	{
+	    log ("fdb_add(): OUT OF MEMORY");
+	    FREE (files);
+	    return;
+	}
 	hash_add (table, files->key, files);
     }
     files->list = list_append (files->list, d);
@@ -206,6 +217,34 @@ insert_datum (DATUM * info, char *av)
 
     /* index by md5 hash */
     fdb_add (MD5, info->hash, info);
+}
+
+static DATUM *
+new_datum (char *filename, char *hash)
+{
+    DATUM *info = CALLOC (1, sizeof (DATUM));
+
+    if (!info)
+    {
+	log ("new_datum(): OUT OF MEMORY");
+	return 0;
+    }
+    info->filename = STRDUP (filename);
+    if (!info->filename)
+    {
+	log ("new_datum(): OUT OF MEMORY");
+	FREE (info);
+	return 0;
+    }
+    info->hash = STRDUP (hash);
+    if (!info->hash)
+    {
+	log ("new_datum(): OUT OF MEMORY");
+	FREE (info->filename);
+	FREE (info);
+	return 0;
+    }
+    return info;
 }
 
 /* 100 [ :<nick> ] <filename> <md5sum> <size> <bitrate> <frequency> <time>
@@ -254,16 +293,15 @@ HANDLER (add_file)
     }
 
     /* create the db record for this file */
-    info = CALLOC (1, sizeof (DATUM));
+    if (!(info = new_datum (av[0], av[1])))
+	return;
     info->user = user;
-    info->filename = STRDUP (av[0]);
-    info->hash = STRDUP (av[1]);
     info->size = atoi (av[2]);
     info->bitrate = atoi (av[3]);
     info->frequency = atoi (av[4]);
     info->duration = atoi (av[5]);
-    info->valid = 1;
     info->type = CT_MP3;
+    info->valid = 1;
 
     insert_datum (info, av[0]);
 
@@ -344,11 +382,10 @@ HANDLER (share_file)
 	return;
     }
 
-    info = CALLOC (1, sizeof (DATUM));
+    if (!(info = new_datum (av[0], av[2])))
+	return;
     info->user = user;
-    info->filename = STRDUP (av[0]);
     info->size = atoi (av[1]);
-    info->hash = STRDUP (av[2]);
     info->type = type;
     info->valid = 1;
 

@@ -66,17 +66,37 @@ HANDLER (ban)
 		sender->nick, ban, pkt ? pkt : "");
     }
 
-    /* create structure and add to global ban list */
-    b = CALLOC (1, sizeof (BAN));
-    b->target = STRDUP (ban);
-    b->setby = STRDUP (sender->nick);
-    b->when = time (0);
-    /* determine if this ban is on an ip or a user */
-    b->type = (is_ip (ban)) ? BAN_IP : BAN_USER;
-    b->reason = STRDUP (NONULL (pkt));
-    Ban = array_add (Ban, &Ban_Size, b);
+    do
+    {
+	/* create structure and add to global ban list */
+	if (!(b = CALLOC (1, sizeof (BAN))))
+	    break;
+	if (!(b->target = STRDUP (ban)))
+	    break;
+	if (!(b->setby = STRDUP (sender->nick)))
+	    break;
+	if (!(b->reason = STRDUP (NONULL (pkt))))
+	    break;
+	b->when = time (0);
+	/* determine if this ban is on an ip or a user */
+	b->type = (is_ip (ban)) ? BAN_IP : BAN_USER;
+	Ban = array_add (Ban, &Ban_Size, b);
 
-    notify_mods ("%s banned %s: %s", sender->nick, ban, NONULL (pkt));
+	notify_mods ("%s banned %s: %s", sender->nick, ban, NONULL (pkt));
+	return;
+    }
+    while (1);
+
+    /* we only get here on error */
+    log ("ban(): OUT OF MEMORY");
+    if (b->target)
+	FREE (b->target);
+    if (b->setby)
+	FREE (b->setby);
+    if (b->reason)
+	FREE (b->reason);
+    if (b)
+	FREE (b);
 }
 
 /* 614 [ :<sender> ] <nick|ip> */

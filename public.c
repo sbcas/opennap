@@ -58,14 +58,12 @@ HANDLER (public)
     if (con->class == CLASS_SERVER)
     {
 	/* find the USER struct for the sender */
-	ptr = pkt;
-	pkt = strchr (ptr, ' ');
+	ptr = next_arg (&pkt);
 	if (!pkt)
 	{
 	    log ("public(): server message has too few fields");
 	    return;
 	}
-	*pkt++ = 0;
 	user = hash_lookup (Users, ptr);
 	if (!user)
 	{
