@@ -88,6 +88,7 @@ HANDLER (muzzle)
 	{
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH, "user is not muzzled");
+	    return;
 	}
 	if (user)
 	    user->muzzled = 0;
