@@ -74,7 +74,7 @@ HANDLER (ban)
 	b->reason = STRDUP ("");
     Ban = array_add (Ban, &Ban_Size, b);
 
-    notify_mods ("%s banned %s: %s", sender->nick, ban, pkt);
+    notify_mods ("%s banned %s: %s", sender->nick, ban, pkt ? pkt : "");
 }
 
 /* 614 [ :<sender> ] <nick|ip> */
