@@ -18,6 +18,10 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <time.h>
+
+#include "global.h"
+#include "md5.h"
 
 /* very simple client to test server responses */
 
@@ -61,10 +65,30 @@ struct xmit {
     time_t start;
     char *filename;
     char *nick;
+    char *hash;
+    MD5_CTX md;
 };
 
 struct xmit **Transfer = 0;
 int Transfer_Size = 0;
+
+static int
+hc(char c)
+{
+    return (isalpha(c) ? toupper(c) - 'A' + 10 : c - '0');
+}
+
+static char *
+hex2bin (const char *s)
+{
+    char *h;
+    int i;
+
+    h=malloc(16);
+    for(i=0;i<16;i++)
+	h[i] = (hc(s[i*2]) << 4) | hc(s[i*2 + 1]);
+    return h;
+}
 
 static void
 do_output (const char *fmt, ...)
@@ -126,7 +150,7 @@ split_line (char **template, int templatecount, char *pkt)
     return i;
 }
 
-void
+static void
 sort_search ()
 {
     int i, j;
@@ -148,7 +172,7 @@ sort_search ()
     }
 }
 
-void
+static void
 clear_search ()
 {
     int i;
@@ -161,7 +185,7 @@ clear_search ()
     }
 }
 
-void
+static void
 help (void)
 {
     do_output ("%s %s commands:", PACKAGE, VERSION);
@@ -197,7 +221,7 @@ help (void)
     do_output ("/wallop <message>	send a message to all admins");
 }
 
-void
+static void
 user_input (char *s)
 {
     short len, type;
@@ -396,6 +420,7 @@ user_input (char *s)
     {
 	do_output ("syntax is: /<command>");
 	do_output ("       or: <message number> <data>");
+	return;
     }
     else
     {
@@ -413,7 +438,7 @@ user_input (char *s)
     do_output ("sent: len=%d, msg=%d, data=%s", len, type, len ? p : "(empty)");
 }
 
-struct xmit *
+static struct xmit *
 new_xmit (int fd)
 {
     Transfer=realloc(Transfer,sizeof(struct xmit *) * (Transfer_Size+1));
@@ -423,7 +448,7 @@ new_xmit (int fd)
     return Transfer[Transfer_Size-1];
 }
 
-char *
+static char *
 numeric (int n)
 {
     static char buf[8];
@@ -434,7 +459,7 @@ numeric (int n)
     return buf;
 }
 
-int
+static int
 server_output (void)
 {
     short len, msg, bytes = 0, l;
@@ -550,6 +575,8 @@ server_output (void)
 		xmit->filename = strdup(argv[3]);
 		xmit->nick=strdup(argv[0]);
 		xmit->download = 1;
+		xmit->hash = hex2bin(argv[4]);
+		MD5Init (&xmit->md);
 
 		/*notify the server we are downloading */
 		msg=218;
@@ -744,6 +771,22 @@ xmit_read (struct xmit *xmit)
 	}
 	else
 	{
+	    if (xmit->bytes < 301000)
+	    {
+		int i;
+		MD5_CTX md;
+		unsigned char hash[16];
+
+		for (i = 0; i < n; i++)
+		{
+		    MD5Update (&xmit->md, (unsigned char *)Buf + i, 1);
+		    md = xmit->md;
+		    MD5Final (hash, &md);
+		    if (memcpy (hash, xmit->hash, 16) == 0)
+			do_output ("Hash matched at %d bytes", xmit->bytes + i);
+		}
+	    }
+
 	    xmit->bytes += n;
 	    fwrite(Buf,1,n,xmit->fp);
 	    if(xmit->bytes >= xmit->filesize)
@@ -759,6 +802,7 @@ xmit_read (struct xmit *xmit)
 static void
 xmit_write(struct xmit *xmit)
 {
+    (void)xmit;
 }
 
 static void
