@@ -1,3 +1,10 @@
+Changes from 0.06
+=================
+
+removed spynap and spyserv from build list.
+
+included patchnap.c for patching the linux nap client
+
 Changes from 0.05
 =================
 
