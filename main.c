@@ -283,7 +283,7 @@ main (int argc, char **argv)
     int s;			/* server socket */
     int sp = -1;		/* stats port */
     int i, j;			/* generic counter */
-    int n;			/* number of ready sockets */
+    int numReady;		/* number of ready sockets */
     int port = 0, iface = INADDR_ANY, nolisten = 0;
 #if HAVE_POLL
     struct pollfd *ufd = 0;
@@ -303,9 +303,9 @@ main (int argc, char **argv)
 
     /* printf("%d\n", sizeof(DATUM)); */
 
-    while ((n = getopt (argc, argv, "c:hl:p:vD")) != EOF)
+    while ((i = getopt (argc, argv, "c:hl:p:vD")) != EOF)
     {
-	switch (n)
+	switch (i)
 	{
 	case 'D':
 	    nolisten++;
@@ -361,8 +361,8 @@ main (int argc, char **argv)
     if (s < 0)
 	exit (1);
 
-    n = 1;
-    if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST & n, sizeof (n))
+    i = 1;
+    if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST & i, sizeof (i))
 	!= 0)
     {
 	perror ("setsockopt");
@@ -478,7 +478,7 @@ main (int argc, char **argv)
 #else
 		FD_SET (Clients[j]->fd, &set);
 		if (Clients[j]->fd > maxfd)
-		    maxfd = Clients[i]->fd;
+		    maxfd = Clients[j]->fd;
 #endif /* HAVE_POLL */
 		/* check sockets for writing */
 		if (Clients[j]->connecting || Clients[j]->sendbuf ||
@@ -497,7 +497,7 @@ main (int argc, char **argv)
 
 #if HAVE_POLL
 	i = next_timer () * 1000;
-	if ((n = poll (ufd, Num_Clients + 2, i)) < 0)
+	if ((numReady = poll (ufd, Num_Clients + 2, i)) < 0)
 	{
 	    int saveerrno = errno;
 
@@ -545,7 +545,7 @@ main (int argc, char **argv)
 #else
 	t.tv_sec = next_timer ();
 	t.tv_usec = 0;
-	if ((n = select (maxfd + 1, &set, &wset, NULL, &t)) < 0)
+	if ((numReady = select (maxfd + 1, &set, &wset, NULL, &t)) < 0)
 	{
 	    logerr ("main", "select");
 	    continue;
@@ -592,7 +592,6 @@ main (int argc, char **argv)
 		if (send_queued_data (Clients[i]) == -1)
 		    Clients[i]->destroy = 1;
 	    }
-
 	    /* check to see if this connection should be shut down */
 	    if (Clients[i]->destroy)
 	    {

@@ -92,6 +92,7 @@ HANDLER (ban)
 	list = CALLOC (1, sizeof (LIST));
 	if (!list)
 	    break;
+	list->data = b;
 	Bans = list_append (Bans, list);
 	notify_mods ("%s banned %s: %s", sender->nick, ban, NONULL (pkt));
 	return;
