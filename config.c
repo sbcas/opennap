@@ -310,8 +310,10 @@ config_defaults (void)
 		set_list_var (&Vars[i], (char *) Vars[i].def);
 	    else if (Vars[i].type == VAR_TYPE_BOOL)
 		set_bool_var (&Vars[i], Vars[i].def);
+#if DEBUG
 	    else
 		ASSERT (0);
+#endif
 	}
     }
 }
