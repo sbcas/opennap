@@ -499,7 +499,18 @@ HANDLER (reginfo)
 	FREE (db->email);
     }
     else
+    {
 	db = CALLOC (1, sizeof (USERDB));
+	if (db)
+	    db->nick = STRDUP (fields[0]);
+	if (!db || !db->nick)
+	{
+	    OUTOFMEMORY ("reginfo");
+	    if (db)
+		FREE (db);
+	    return;
+	}
+    }
 
     if (Num_Servers > 1)
 	pass_message_args (con, tag, ":%s %s %s %s %s %s %s",
