@@ -61,6 +61,7 @@ int Check_Expire;
 int Max_Browse_Result;
 unsigned int Interface = INADDR_ANY;
 time_t Server_Start;	/* time at which the server was started */
+int Collect_Interval;
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;
@@ -562,7 +563,8 @@ main (int argc, char **argv)
 #endif /* HAVE_POLL */
     char *config_file = 0;
     time_t next_update = 0;
-    time_t next_collect = 0;	/* when to run garbage collection */
+    time_t next_collect = time (0) + Collect_Interval;	/* when to run garbage
+							   collection */
 #ifdef WIN32
     WSADATA wsa;
 #endif /* WIN32 */
@@ -867,7 +869,7 @@ main (int argc, char **argv)
 	{
 	    fdb_garbage_collect (File_Table);
 	    fdb_garbage_collect (MD5);
-	    next_collect = time(0) + 60;	/* run once a minute */
+	    next_collect = time(0) + Collect_Interval;
 	}
     }
 
