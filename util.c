@@ -141,7 +141,7 @@ split_line (char **template, int templatecount, char *pkt)
 	else
 	{
 	    template[i++] = pkt;
-	    pkt = strchr (pkt, ' ');
+	    pkt = strpbrk (pkt, " \t\r\n");
 	    if (!pkt)
 		break;
 	    *pkt++ = 0;

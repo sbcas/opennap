@@ -165,25 +165,20 @@ HANDLER (join)
 	{
 	    chanUser = list->data;
 	    ASSERT (chanUser != 0);
-	    /* don't send info for the user that joined the channel */
-	    if (chanUser != user)
-	    {
-		send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST, "%s %s %d %d",
-			  chan->name, chanUser->nick, chanUser->shared,
-			  chanUser->speed);
-	    }
+	    send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST /* 408 */,
+		"%s %s %d %d", chan->name, chanUser->nick,
+		chanUser->shared, chanUser->speed);
 	}
     }
 
-    /* notify members of the channel that this user has joined.  note that
-       we explicity send a 406 command to the user that just joined */
+    /* notify members of the channel that this user has joined */
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
 	ASSERT (chanUser != 0);
-	if (ISUSER (chanUser->con))
+	if (ISUSER (chanUser->con) && chanUser != user)
 	    send_cmd (chanUser->con, MSG_SERVER_JOIN, "%s %s %d %d",
-		      chan->name, user->nick, user->shared, user->speed);
+		chan->name, user->nick, user->shared, user->speed);
     }
 
     if (ISUSER (con))
@@ -192,11 +187,11 @@ HANDLER (join)
 	/* NOTE: for some reason this is the way the napster.com servers send
 	   the messages.  I'm not sure why they send the end of channel list
 	   AFTER the join message for yourself */
-	send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST_END, "%s", chan->name);
+	send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST_END /*409*/, "%s", chan->name);
 
 	/* send channel topic */
 	ASSERT (chan->topic != 0);
-	send_cmd (con, MSG_SERVER_TOPIC, "%s %s", chan->name, chan->topic);
+	send_cmd (con, MSG_SERVER_TOPIC/*410*/, "%s %s", chan->name, chan->topic);
     }
     return;
 

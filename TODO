@@ -18,3 +18,5 @@
 * channel kick and ban
 
 * show all linked servers
+
+* try to ensure that server loops don't happen

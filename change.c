@@ -151,15 +151,14 @@ HANDLER (alter_port)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "%d is an invalid port", p);
 	return;
     }
-    if (user->port == p)
+
+    if (user->port != p)
     {
-	log ("alter_port(): user %s's data port is already %d", p);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "User %s's data port is already set to %d",
-		user->port);
-	return;
+	/* only log when the port value is actually changed, not resets */
+	notify_mods ("%s changed %s's data port to %d: %s", sender->nick,
+	    user->nick, p, NONULL (pkt));
+	user->port = p;
     }
-    user->port = p;
 
     /* if local user, send them the message */
     if (user->local)
@@ -167,8 +166,7 @@ HANDLER (alter_port)
 
     pass_message_args (con, tag, ":%s %s %d", sender->nick, user->nick, p);
 
-    notify_mods ("%s changed %s's data port to %d: %s", sender->nick,
-		 user->nick, p, NONULL (pkt));
+    log("alter_port(): %s set %s's data port to %d", sender->nick,user->nick,p);
 }
 
 /* 753 [ :<sender> ] <nick> <pass> "<reason>"
