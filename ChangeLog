@@ -1,3 +1,61 @@
+2000-05-30  drscholl  <drscholl@users.sourceforge.net>
+
+	* opennap.dsp, opennap.h, opennap.opt, remove_connection.c, sample.channels, server_login.c, topic.c, Makefile.in, README, buffer.c, config.c, configure, configure.in, handler.c, main.c:
+	zlib is now a requirement to compile.  removed all HAVE_LIBZ conditional
+	code.
+
+	fixed bug in topic() which caused a buffer overrun in the new code to change
+	\r and \n to space
+
+	* topic.c:
+	convert \r and \n in channel topics to space chars to avoid problems when
+	writing out the channels file
+
+2000-05-28  drscholl  <drscholl@users.sourceforge.net>
+
+	* TODO, add_file.c, download.c, upload_complete.c:
+	if resume support is disabled, dont store the md5 hash value and just return
+	a bogus zero value wherever it is called for
+
+2000-05-27  drscholl  <drscholl@users.sourceforge.net>
+
+	* Makefile.in, channel.c, main.c, opennap.h, part_channel.c, privmsg.c, synch.c:
+	added missing headers for clean compile with debug turned off
+
+	channel ops can now be specified in the `channels' file.
+
+	the channels file is now written out when opennap exits
+
+	* ban.c, network.c:
+	use nlogerr() in bind_interface()
+
+	* server_connect.c:
+	complete_connect() should abort if con->destroy is already set because the
+	error will have been cleared and check_status() will report no error
+
+2000-05-26  drscholl  <drscholl@users.sourceforge.net>
+
+	* network.c:
+	use inet_addr() to detect dot-quad format hostnames since gethostbyname() is
+	unreliable under win95
+
+	* README, channel.c, configure, configure.in, handler.c, join.c, kick.c, list_users.c, login.c, main.c, napster.txt, opennap.h, part_channel.c, privmsg.c, public.c, serverlib.c, synch.c, topic.c:
+	added support for channel operators
+
+2000-05-25  drscholl  <drscholl@users.sourceforge.net>
+
+	* buffer.c:
+	fixed crash when opennap is compiled with zlib and linking to a server with
+	compression turned off
+
+	* ChangeLog, NEWS, ban.c:
+	fixed spelling error of Connection in ban.c
+
+	updated ChangeLog
+
+	* config.c, privmsg.c:
+	fixes to compile cleanly with debugging off
+
 2000-05-25  drscholl  <drscholl@users.sourceforge.net>
 
 	* config.c, privmsg.c:

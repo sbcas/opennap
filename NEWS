@@ -1,3 +1,26 @@
+[opennap 0.28]
+
+zlib is now required to compile opennap.  previous versions will not
+link with 0.28 at compression_level 0 because of this change.
+
+added channel operator support.  channel operators have the ability to issue
+admin commands relating to a specific channel (kick, ban, topic, etc).
+channel operators can be bootstrapped in the `channels' file--simply list
+the nicknames separated by a space after the topic.
+
+added `ChanServ' virtual user to allow channel operators to access admin
+commands if they are not implemented in the client they are using.
+(/msg chanserv help)
+
+added help to OperServ (/msg operserv help)
+
+the channels file is now rewritten in a similar fashion to the users file to
+store the current state of the settings (including channel ops)
+
+opennap will now always return the string 000000000000000000000000000000
+for the hash value when RESUME is disabled.  opennap conserves memory by not
+storing the real value in this case.
+
 [opennap 0.27]
 
 changed `server_port' variable to `server_ports'.  it can now take a space

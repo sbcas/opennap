@@ -428,6 +428,7 @@ main (int argc, char **argv)
 #endif /* RESUME */
     add_timer (Stat_Click, -1, (timer_cb_t) update_stats, 0);
     add_timer (User_Db_Interval, -1, (timer_cb_t) userdb_dump, 0);
+    add_timer (User_Db_Interval, -1, (timer_cb_t) dump_channels, 0);
 
     /* initialize so we get the correct delta for the first call to
        update_stats() */
