@@ -59,7 +59,6 @@ synch_user (USER *user, CONNECTION *con)
 	send_cmd (con, MSG_CLIENT_JOIN, ":%s %s",
 		user->nick, user->channels[i]->name);
     }
-
 }
 
 void

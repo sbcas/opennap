@@ -458,7 +458,6 @@ init_signals (void)
     sigaction (SIGHUP, &sa, NULL);
     sigaction (SIGTERM, &sa, NULL);
     sigaction (SIGINT, &sa, NULL);
-
 }
 
 static void
@@ -524,23 +523,23 @@ main (int argc, char **argv)
     {
 	switch (n)
 	{
-	case 'c':
-	    config_file = optarg;
-	    break;
-	case 'l':
+	    case 'c':
+		config_file = optarg;
+		break;
+	    case 'l':
 		iface = inet_addr (optarg);
 		break;
-	case 'p':
-	    port = atoi (optarg);
-	    break;
-	case 's':
-	    Server_Flags |= OPTION_STRICT_CHANNELS;
-	    break;
-	case 'v':
-	    version ();
-	    break;
-	default:
-	    usage ();
+	    case 'p':
+		port = atoi (optarg);
+		break;
+	    case 's':
+		Server_Flags |= OPTION_STRICT_CHANNELS;
+		break;
+	    case 'v':
+		version ();
+		break;
+	    default:
+		usage ();
 	}
     }
 
@@ -734,18 +733,20 @@ main (int argc, char **argv)
 		    if (f <= 0)
 		    {
 			if (f == 0)
-			    log ("main: EOF from %s", Clients[i]->host);
+			    log ("main(): EOF from %s", Clients[i]->host);
 			remove_connection (Clients[i]);
 		    }
 		}
 #if HAVE_POLL
-		else if (ufd[i].revents)
+		/* when does this occur?  i would have though POLLHUP
+		   would be when the connection hangs up, but it still
+		   sets POLLIN and read() returns 0 */
+		else if ((ufd[i].revents & (POLLHUP | POLLERR)) != 0)
 		{
-		    /* when does this occur?  i would have though POLLHUP
-		       would be when the connection hangs up, but it still
-		       sets POLLIN and read() returns 0 */
 		    ASSERT ((ufd[i].revents & POLLHUP) == 0);
 		    ASSERT ((ufd[i].revents & POLLERR) == 0);
+		    log ("main(): closing connection for %s", Clients[i]->host);
+		    remove_connection (Clients[i]);
 		}
 #endif /* HAVE_POLL */
 	    }
