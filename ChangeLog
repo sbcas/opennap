@@ -1,4 +1,83 @@
+2000-05-09  drscholl  <drscholl@users.sourceforge.net>
+
+	* server_login.c:
+	modified get_server_pass() to optionally return the local password to use
+	(if specified in the config file) to avoid parsing the file twice.
+
+	* Makefile.am, Makefile.in, README, server_login.c, textdb.c, textdb.h:
+	rewrote get_server_pass() to use its own simple parsing routine to fetch the
+	password instead of using the textdb_*() functions.
+
+	added support for using different server passwords with each linked server
+	rather than always using the value of `server_password'.  if a local
+	password is specified in the `servers' it will override the default
+	password.
+
+	* napster.txt, opennap.h, privmsg.c:
+	added missing 325 server response when the user to ignore is already ignored
+
+2000-05-08  drscholl  <drscholl@users.sourceforge.net>
+
+	* handler.c, kick.c, napster.txt, network.c, opennap.h, privmsg.c, server_links.c:
+	added entries for the server-side ignore list to the handler array.
+
+	update napster.txt with the numerics for server-side ignore
+
+	kick() should call notify_mods() prior to part_channel() in case the channel
+	is destroyed by kicking the last user out (Greg Prosser
+	<greg@snickers.org>).
+
+	set_limit() should just warn if FD_SETSIZE is smaller than the set hard
+	limit for max file descriptors.
+
+2000-05-03  drscholl  <drscholl@users.sourceforge.net>
+
+	* TODO, change.c, download.c, hotlist.c, join.c, opennap.h, part.c, part_channel.c, ping.c, privmsg.c, public.c, remove_connection.c, serverlib.c, usermode.c, util.c:
+	added server-side ignore/unignore functionality.  this is not able to be
+	called by the user yet since the numerics are unknown
+
+	changed join/part to show the joins/parts to privileged users regardless of
+	the cloak status
+
+	added CLOAK usermode to en/disable the server notifications
+
+	* handler.c, init.c, join.c, login.c, main.c, napster.txt, opennap.h, part.c, public.c, util.c:
+	increased hash table size to 521 for users and hotlist for better
+	performance with many users
+
+	public() and emote() now find the channel by looking through the users
+	joined channel list with find_channel() instead of calling hash_lookup()
+
+	removed many extraneous log() messages about command parsing errors
+
+	switched to using ISUSER(user->con) instead of testing user->local
+
+	* hash.c, sample.conf:
+	replace hash function with the `ElfHash' used in the ELF loader since it
+	produces MANY less collisions
+
+2000-04-30  drscholl  <drscholl@users.sourceforge.net>
+
+	* README, handler.c, opennap.h, server_links.c:
+	changed numeric for server ping to 750 to match the official servers
+
+	* change.c, level.c:
+	setlinespeed didn't actually change the user's speed in the USER struct
+
+	* login.c: exempt mods+ from server bans
+
+	* Makefile.am, Makefile.in, TODO, change.c, handler.c, muzzle.c, napster.txt, opennap.h, unmuzzle.c:
+	consolodated the muzzle/unmuzzle code into one function
+
+	extended muzzle/unmuzzle to allow change for a registered user that is not
+	currently logged in
+
 2000-04-28  drscholl  <drscholl@users.sourceforge.net>
+
+	* ChangeLog:
+	updated ChangeLog with recent activity
+
+	missing log entries from last commit:
 
 	* change.c, join.c, public.c, whois.c:
 	publics and emotes should not be cloaked when the channel level is mod+
