@@ -31,9 +31,9 @@ HASH;
 typedef void (*hash_callback_t) (void *, void *);
 
 HASH *hash_init (int, hash_destroy);
-void hash_add (HASH *, const char *, void *);
+int hash_add (HASH *, const char *, void *);
 void *hash_lookup (HASH *, const char *);
-void hash_remove (HASH *, const char *);
+int hash_remove (HASH *, const char *);
 void free_hash (HASH *);
 void hash_foreach (HASH *h, hash_callback_t, void *funcdata);
 

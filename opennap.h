@@ -630,6 +630,12 @@ typedef unsigned int socklen_t;
 // see snprintf.c
 extern int snprintf (char *str,size_t count,const char *fmt,...);
 extern int vsnprintf (char *str, size_t count, const char *fmt, va_list args);
+extern int _getopt (int, char **, char *);
+
+#define getopt _getopt
+
+extern char *optarg;
+extern int optind;
 
 #endif /* !WIN32 */
 

@@ -5,7 +5,6 @@
    $Id$ */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include "list.h"
 #include "debug.h"
 
@@ -13,10 +12,11 @@ LIST *
 list_new (void *data)
 {
     LIST *ptr = CALLOC (1, sizeof (LIST));
+
+    ASSERT (data != 0);
+    ASSERT (ptr != 0);
     if (ptr)
 	ptr->data = data;
-    else
-	fprintf (stderr, "list_new(): OUT OF MEMORY");
     return ptr;
 }
 
@@ -38,6 +38,8 @@ list_delete (LIST *list, void *data)
 {
     LIST **ptr;
 
+    ASSERT (list != 0);
+    ASSERT (data != 0);
     for (ptr = &list; *ptr; ptr = &(*ptr)->next)
     {
 	if ((*ptr)->data == data)
@@ -54,20 +56,18 @@ list_append (LIST * l, void *data)
 {
     LIST *r = l;
 
+    ASSERT (data != 0);
     if (!l)
     {
-        l = r = list_new (data);
-	if (!r)
-	    return 0;
+        r = list_new (data);
+	ASSERT (r != 0);
     }
     else
     {
         while (l->next)
             l = l->next;
         l->next = list_new (data);
-	if (!l->next)
-	    return r;
-        l = l->next;
+	ASSERT (l->next != 0);
     }
     return r;
 }

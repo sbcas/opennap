@@ -22,8 +22,15 @@ HASH *
 hash_init (int buckets, hash_destroy f)
 {
     HASH *h = CALLOC (1, sizeof (HASH));
+
+    if (!h)
+	return 0;
     h->numbuckets = buckets;
-    h->bucket = CALLOC (buckets, sizeof (HASHENT *));
+    if ((h->bucket = CALLOC (buckets, sizeof (HASHENT *))) == 0)
+    {
+	FREE (h);
+	return 0;
+    }
     h->destroy = f;
     return h;
 }
@@ -32,7 +39,9 @@ static unsigned int
 hash_string (HASH * table, const char *key)
 {
     unsigned int sum = 0;
-    for (;*key;key++)
+
+    ASSERT (key != 0);
+    for (; *key; key++)
     {
 	/* shifting by 1 bit prevents abc from having the same hash as acb */
 	sum<<=1;
@@ -42,18 +51,24 @@ hash_string (HASH * table, const char *key)
     return sum;
 }
 
-void
+int
 hash_add (HASH * table, const char *key, void *data)
 {
     HASHENT *he = CALLOC (1, sizeof (HASHENT));
     unsigned int sum;
 
+    if (!he)
+	return -1;
+    ASSERT (key != 0);
+    ASSERT (data  != 0);
+    ASSERT (table != 0);
     he->key = key;
     he->data = data;
     sum = hash_string (table, key);
     he->next = table->bucket[sum];
     table->bucket[sum] = he;
     table->dbsize++;
+    return 0;
 }
 
 void *
@@ -62,38 +77,38 @@ hash_lookup (HASH * table, const char *key)
     HASHENT *he;
     unsigned int sum = hash_string (table, key);
     he = table->bucket[sum];
-    while (he)
+
+    for (; he; he = he->next)
     {
 	if (strcasecmp (key, he->key) == 0)
 	    return he->data;
-	he = he->next;
     }
     return 0;
 }
 
-void
+int
 hash_remove (HASH * table, const char *key)
 {
-    HASHENT *he, *last = 0;
-    unsigned int sum = hash_string (table, key);
-    he = table->bucket[sum];
-    while (he)
+    HASHENT **he, *ptr;
+    unsigned int sum;
+    
+    ASSERT (table != 0);
+    ASSERT (key != 0);
+    sum = hash_string (table, key);
+    for (he = &table->bucket[sum]; *he; he = &(*he)->next)
     {
-	if (strcasecmp (key, he->key) == 0)
+	if (!strcasecmp (key, (*he)->key))
 	{
-	    if (last)
-		last->next = he->next;
-	    else
-		table->bucket[sum] = he->next;
+	    ptr = (*he)->next;
 	    if (table->destroy)
-		table->destroy (he->data);
-	    FREE (he);
+		table->destroy ((*he)->data);
+	    FREE (*he);
 	    table->dbsize--;
-	    break;
+	    *he = ptr;
+	    return 0;
 	}
-	last = he;
-	he = he->next;
     }
+    return -1;
 }
 
 void
@@ -102,6 +117,7 @@ free_hash (HASH * h)
     HASHENT *he, *ptr;
     int i;
 
+    ASSERT (h != 0);
     /* destroy remaining entries */
     for (i = 0; i < h->numbuckets; i++)
     {
