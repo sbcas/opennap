@@ -259,7 +259,7 @@ handle_connection (CONNECTION * con)
 		con->destroy = 1;
 		return;
 	    }
-	    con->recvbuf->datasize = n;
+	    con->recvbuf->datasize += n;
 	    if (con->recvbuf->datasize < 4)
 		return;
 	}
