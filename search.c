@@ -117,6 +117,111 @@ duplicate (LIST * list, const char *s)
     return 0;
 }
 
+LIST *
+soundex_tokens (char *s)
+{
+    LIST *r = 0, *cur = 0;
+    char soundex[5];
+    int count = 0;
+
+    soundex[4] = 0;
+
+    while (*s)
+    {
+	while (*s && !isalpha ((unsigned char) *s))
+	    s++;
+	if (!*s)
+	    break;
+	soundex[0] = toupper (*s++);
+	count = 0;
+	while (isalpha ((unsigned char) *s) || *s == '\'')
+	{
+	    if (count < 3)
+	    {
+		switch (tolower (*s))
+		{
+		    case 'b':
+		    case 'p':
+		    case 'f':
+		    case 'v':
+			soundex[count++] = '1';
+			break;
+		    case 'c':
+		    case 's':
+		    case 'k':
+		    case 'g':
+		    case 'j':
+		    case 'q':
+		    case 'x':
+		    case 'z':
+			soundex[count++] = '2';
+			break;  
+		    case 'd':
+		    case 't':
+			soundex[count++] = '3';
+			break;
+		    case 'l':
+			soundex[count++] = '4';
+			break;
+		    case 'm':
+		    case 'n':
+			soundex[count++] = '5';
+			break;
+		    case 'r':
+			soundex[count++] = '6';
+			break;
+		}
+	    }
+	    s++;
+	}
+	while (count < 3)
+	    soundex[count++] = '0';
+	if (!duplicate (r, soundex))
+	{
+	    if (cur)
+	    {
+		cur->next = CALLOC (1, sizeof (LIST));
+		cur = cur->next;
+	    }
+	    else
+		r = cur = CALLOC(1,sizeof(LIST));
+	    cur->data = STRDUP (soundex);
+	}
+    }
+    return r;
+}
+
+static void
+free_soundex (LIST *p)
+{
+    LIST *t;
+
+    while (p)
+    {
+	t = p;
+	p = p->next;
+	FREE (t->data);
+	FREE (t);
+    }
+}
+
+static LIST *
+soundex_from_list (LIST *list)
+{
+    LIST *r = 0, *t;
+    while (list)
+    {
+	t = soundex_tokens(list->data);
+	if (duplicate(r,t->data))
+	    free_soundex(t);
+	else
+	    r=list_append(r,t);
+	list=list->next;
+    }
+    return r;
+
+}
+
 /* consider the apostrophe to be part of the word since it doesn't make
    sense on its own */
 #define WORD_CHAR(c) (isalnum((unsigned char)c)||c=='\'')
@@ -317,26 +422,33 @@ fdb_search (HASH * table,
 	    LIST * tokens,
 	    int maxhits, int (*cb) (DATUM *, SEARCH *), SEARCH * cbdata)
 {
+    LIST *soundex;
     LIST *ptok;
     FLIST *flist = 0, *tmp;
     DATUM *d;
     int hits = 0;
 
+    soundex = soundex_from_list (tokens);
     /* find the file list with the fewest files in it */
-    for (ptok = tokens; ptok; ptok = ptok->next)
+    for (ptok = soundex; ptok; ptok = ptok->next)
     {
 	tmp = hash_lookup (table, ptok->data);
 	if (!tmp)
 	{
 	    /* if there is no entry for this word in the hash table, then
 	       we know there are no matches */
+	    free_soundex (soundex);
 	    return 0;
 	}
 	if (!flist || tmp->count < flist->count)
 	    flist = tmp;
     }
+    free_soundex (soundex);
     if (!flist)
 	return 0;		/* no matches */
+
+    log ("fdb_search(): %d entries in bucket %s", flist->count, flist->key);
+
     /* find the list of files which contain all search tokens */
     for (ptok = flist->list; ptok; ptok = ptok->next)
     {

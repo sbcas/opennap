@@ -228,9 +228,10 @@ insert_datum (DATUM * info, char *av)
     hash_add (info->user->files, info->filename, info);
     info->refcount++;
 
-    /* split the filename into words */
-    tokens = tokenize (av);
-    ASSERT (tokens != 0);
+    /* split the filename into soundex hashed words */
+    tokens = soundex_tokens (av);
+    if (!tokens)
+	log ("insert_datum(): no valid tokens in %s", info->filename);
 
     /* add this entry to the global file list */
     for (ptr = tokens; ptr; ptr = ptr->next)
