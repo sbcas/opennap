@@ -9,6 +9,7 @@
 #endif /* !WIN32 */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -105,7 +106,28 @@ HANDLER (wallop)
     for (i = 0; i < Max_Clients; i++)
     {
 	if (Clients[i] && ISUSER (Clients[i]) &&
-		Clients[i]->user->level >= LEVEL_MODERATOR)
+	    Clients[i]->user->level >= LEVEL_MODERATOR)
 	    queue_data (Clients[i], Buf, l);
     }
+}
+
+/* 10021 :<server> <loglevel> "<message>" */
+HANDLER (remote_notify_mods)
+{
+    int ac, level;
+    char *av[3];
+
+    (void) len;
+    ac = split_line (av, FIELDS (av), pkt);
+    if (ac < 3)
+    {
+	log ("remote_notify_mods(): too few parameters");
+	print_args (ac, av);
+	return;
+    }
+    level = atoi (av[1]);
+    notify_mods (level, "[%s] %s", av[0] + 1, av[2]);
+    pass_message_args (con, tag, ":%s %d \"%s\"", av[0] + 1, level, av[2]);
+    log ("remote_notify_mods(): broadcast from %s (level %d): %s",
+	 av[0] + 1, level, av[2]);
 }

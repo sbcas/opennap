@@ -1,7 +1,7 @@
 opennap v0.24 (ALPHA)
 the open source (TM) napster server
 =====================
-April 10, 2000
+April 13, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -215,6 +215,14 @@ are implemented as additional functionality in the opennap server.
 	user, it checks the <created> time to see which is the oldest
 	entry and updates accordingly.
 
+10018	encapsulated message [SERVER]
+
+	:<sender> <recip> <message>
+
+	This command allows a server to send a private message to a user on
+	a remote server.  <message> should be a well-formed Napster message,
+	complete with tag and length header.
+
 10019	server link info [SERVER]
 
 	<server> <port> <server> <port> <hops> <bufsize>
@@ -232,6 +240,14 @@ are implemented as additional functionality in the opennap server.
 	This message is used to notify other servers in the group that a
 	server has delinked.  The server with the peer connection to the
 	server that has quit should send this message.
+
+10021	notify mods [SERVER]
+
+	:<server> <loglevel> "<message>"
+
+	allows a server to send a message to all logged in moderators.
+	primarily used to propogate ban messages when not all servers
+	see the connection or login.
 
 10100	server connect [CLIENT]
 
@@ -288,14 +304,6 @@ are implemented as additional functionality in the opennap server.
 	<uptime>	number of seconds of uptime
 	<memory>	if debugging is enabled, this will show the memory
 			currently in use, otherwise it will be -1
-
-10118	encapsulated message [SERVER]
-
-	:<sender> <recip> <message>
-
-	This command allows a server to send a private message to a user on
-	a remote server.  <message> should be a well-formed Napster message,
-	complete with tag and length header.
 
 10201	set channel level [CLIENT]
 

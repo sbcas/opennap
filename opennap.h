@@ -490,6 +490,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_ENCAPSULATED		10018
 #define MSG_SERVER_LINK_INFO		10019
 #define MSG_SERVER_QUIT			10020
+#define MSG_SERVER_NOTIFY_MODS		10021
 #define MSG_CLIENT_CONNECT		10100
 #define MSG_CLIENT_DISCONNECT		10101
 #define MSG_CLIENT_KILL_SERVER		10110
@@ -663,6 +664,7 @@ HANDLER (queue_limit);
 HANDLER (reginfo);
 HANDLER (register_nick);
 HANDLER (register_user);
+HANDLER (remote_notify_mods);
 HANDLER (remote_search);
 HANDLER (remote_search_result);
 HANDLER (remote_search_end);

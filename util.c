@@ -281,7 +281,7 @@ print_args (int ac, char **av)
 {
     int i;
 
-    fprintf (stderr, "%s: print_args(): [%d]", PACKAGE, ac);
+    fprintf (stderr, "print_args(): [%d]", ac);
     for (i = 0; i < ac; i++)
 	fprintf (stderr, " \"%s\"", av[i]);
     fputc ('\n', stderr);

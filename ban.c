@@ -52,12 +52,12 @@ HANDLER (ban)
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender) != 0)
 	return;
-    if(pkt)
-	ac=split_line(av,FIELDS(av),pkt);
-    if(ac<1)
+    if (pkt)
+	ac = split_line (av, FIELDS (av), pkt);
+    if (ac < 1)
     {
-	log("ban(): too few parameters");
-	unparsable(con);
+	log ("ban(): too few parameters");
+	unparsable (con);
 	return;
     }
     /* make sure this user has privilege */
@@ -76,13 +76,15 @@ HANDLER (ban)
 	{
 	    log ("ban(): %s is already banned", av[0]);
 	    if (ISUSER (con))
-		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already banned", av[0]);
+		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already banned",
+			  av[0]);
 	    return;
 	}
     }
 
-    if(ac>1)
-	pass_message_args (con, tag, ":%s %s \"%s\"", sender->nick, av[0], av[1]);
+    if (ac > 1)
+	pass_message_args (con, tag, ":%s %s \"%s\"", sender->nick, av[0],
+			   av[1]);
     else
 	pass_message_args (con, tag, ":%s %s", sender->nick, av[0]);
 
@@ -105,7 +107,8 @@ HANDLER (ban)
 	    break;
 	list->data = b;
 	Bans = list_append (Bans, list);
-	notify_mods (BANLOG_MODE, "%s banned %s: %s", sender->nick, av[0], b->reason);
+	notify_mods (BANLOG_MODE, "%s banned %s: %s", sender->nick, av[0],
+		     b->reason);
 	return;
     }
     while (1);
@@ -132,12 +135,12 @@ HANDLER (unban)
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &user) != 0)
 	return;
-    if(pkt)
-	ac=split_line(av,FIELDS(av),pkt);
-    if(ac<1)
+    if (pkt)
+	ac = split_line (av, FIELDS (av), pkt);
+    if (ac < 1)
     {
-	log("unban(): too few parameters");
-	unparsable(con);
+	log ("unban(): too few parameters");
+	unparsable (con);
 	return;
     }
     if (user->level < LEVEL_MODERATOR)
@@ -233,23 +236,31 @@ check_ban (CONNECTION * con, const char *target, ban_t type)
 		 NONULL (ban->reason));
 	    if (ISUNKNOWN (con))
 		send_cmd (con,
-			  (type == BAN_IP) ? MSG_SERVER_ERROR : MSG_SERVER_NOSUCH,
+			  (type ==
+			   BAN_IP) ? MSG_SERVER_ERROR : MSG_SERVER_NOSUCH,
 			  "You are banned from this server: %s",
 			  NONULL (ban->reason));
-	    if (type == BAN_IP)
-		notify_mods
-		    (BANLOG_MODE, "Connection attempt from banned hosts %s (%s): %s",
-		     target, ban->target, NONULL (ban->reason));
-	    else
-		notify_mods (BANLOG_MODE, "Connection from banned user %s (%s): %s",
-			     target, my_ntoa (con->ip), NONULL (ban->reason));
+	    notify_mods (BANLOG_MODE,
+			 "Connnection from banned %s %s (%s): %s",
+			 (type == BAN_IP) ? "host" : "user", target,
+			 (type == BAN_IP) ? ban->target : my_ntoa (con->ip),
+			 NONULL (ban->reason));
+	    /* pass message along so all server mods+ see it */
+	    pass_message_args (NULL, MSG_SERVER_NOTIFY_MODS,
+			       ":%s %d \"Connection from banned %s %s (%s): %s\"",
+			       Server_Name, BANLOG_MODE,
+			       (type == BAN_IP) ? "host" : "user",
+			       target,
+			       (type ==
+				BAN_IP) ? ban->target : my_ntoa (con->ip),
+			       NONULL (ban->reason));
 	    if (con->class == CLASS_UNKNOWN)
 		con->destroy = 1;
 	    else if (ISSERVER (con) && type == BAN_USER)
 	    {
 		/* issue a kill to remove this banned user */
-		pass_message_args(con,MSG_CLIENT_BAN,":%s %s banned user",
-				  Server_Name, target);
+		pass_message_args (con, MSG_CLIENT_BAN, ":%s %s banned user",
+				   Server_Name, target);
 	    }
 	    return 1;
 	}

@@ -165,6 +165,7 @@ static HANDLER Protocol[] = {
     {MSG_SERVER_ENCAPSULATED, encapsulated},	/* 10018 */
     {MSG_SERVER_LINK_INFO, link_info},		/* 10019 */
     {MSG_SERVER_QUIT, server_quit},		/* 10020 */
+    {MSG_SERVER_NOTIFY_MODS, remote_notify_mods},/* 10021 */
     {MSG_CLIENT_CONNECT, server_connect},	/* 10100 */
     {MSG_CLIENT_DISCONNECT, server_disconnect},	/* 10101 */
     {MSG_CLIENT_KILL_SERVER, kill_server},	/* 10110 */
@@ -262,8 +263,10 @@ HANDLER (dispatch_command)
 	}
 	fputc('\n',stdout);
 #endif
+#if 0
 	log ("dispatch_command(): shutting down server link");
 	con->destroy = 1;
+#endif
     }
 done:
     /* restore the byte we overwrite at the beginning of this function */
