@@ -597,3 +597,40 @@ HANDLER (register_user)
     db->lastSeen = Current_Time;
     hash_add (User_Db, db->nick, db);
 }
+
+/* 11 <user> <password>
+   check password */
+HANDLER (check_password)
+{
+    char *nick;
+    USERDB *db;
+
+    (void) tag;
+    (void) len;
+    ASSERT (validate_connection (con));
+    ASSERT (con->class == CLASS_UNKNOWN);
+    nick=next_arg(&pkt);
+    if (!pkt)
+    {
+	log("check_password(): too few parameters");
+	send_cmd(con,MSG_SERVER_NOSUCH,"parameters are unparsable");
+	return;
+    }
+    db=hash_lookup(User_Db,nick);
+    if(db)
+    {
+	if(!check_pass(db->password,pkt))
+	    send_cmd(con,MSG_SERVER_PASS_OK,"");
+    }
+}
+
+/* 300 <port>
+   check client data port */
+HANDLER (check_port)
+{
+    ASSERT (validate_connection (con));
+    (void) tag;
+    (void) len;
+    (void) pkt;
+    /* just ignore this message for now */
+}

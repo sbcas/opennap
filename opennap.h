@@ -70,7 +70,9 @@ struct _channel
     char *name;
     char *topic;
     LIST *users;
-    int level;			/* minimum level required to enter channel */
+    short limit;			/* max number of users allowed */
+    unsigned char userCreated;		/* true if a user created channel */
+    unsigned char level;		/* minimum level to enter channel */
 };
 
 /* user level */
@@ -304,6 +306,7 @@ extern int Collect_Interval;
 extern unsigned int Bytes_In;
 extern unsigned int Bytes_Out;
 extern int User_Db_Interval;
+extern int Channel_Limit;
 
 #ifndef WIN32
 extern int Uid;
@@ -363,6 +366,8 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_REGISTER_OK		8
 #define MSG_SERVER_REGISTER_FAIL	9
 #define MSG_SERVER_BAD_NICK		10
+#define MSG_CLIENT_CHECK_PASS		11
+#define MSG_SERVER_PASS_OK		12
 #define MSG_CLIENT_ADD_FILE		100
 #define MSG_CLIENT_REMOVE_FILE		102
 #define MSG_CLIENT_SEARCH		200
@@ -387,6 +392,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_DOWNLOAD_END		219
 #define MSG_CLIENT_UPLOAD_START		220
 #define MSG_CLIENT_UPLOAD_END		221
+#define MSG_CLIENT_CHECK_PORT		300
 #define MSG_SERVER_HOTLIST_ACK		301
 #define MSG_CLIENT_REMOVE_HOTLIST	303
 #define MSG_CLIENT_JOIN			400
@@ -449,6 +455,9 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_SERVER_CONFIG	810
 #define MSG_CLIENT_EMOTE		824
 #define MSG_SERVER_NAMES_LIST		825
+#define MSG_CLIENT_CHANNEL_LIMIT	826
+#define MSG_CLIENT_FULL_CHANNEL_LIST	827
+#define MSG_SERVER_FULL_CHANNEL_INFO	828
 #define MSG_SERVER_NAMES_LIST_END	830
 #define MSG_CLIENT_NAMES_LIST		830
 
@@ -475,6 +484,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_USAGE_STATS		10115
 #define MSG_CLIENT_REGISTER_USER	10200
 #define MSG_CLIENT_CHANNEL_LEVEL	10201	/* set min channel user level */
+#define MSG_CLIENT_KICK_USER		10202
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
 
 /* offsets into the row returned for library searches */
@@ -608,6 +618,9 @@ HANDLER (change_email);
 HANDLER (change_speed);
 HANDLER (change_pass);
 HANDLER (channel_level);
+HANDLER (channel_limit);
+HANDLER (check_password);
+HANDLER (check_port);
 HANDLER (client_quit);
 HANDLER (data_port_error);
 HANDLER (download);
@@ -615,7 +628,9 @@ HANDLER (download_end);
 HANDLER (download_start);
 HANDLER (emote);
 HANDLER (encapsulated);
+HANDLER (full_channel_list);
 HANDLER (join);
+HANDLER (kick);
 HANDLER (kill_user);
 HANDLER (kill_server);
 HANDLER (level);

@@ -35,6 +35,10 @@ operserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_KILL_SERVER;
     else if (!strcasecmp ("register", cmd))
 	tag = MSG_CLIENT_REGISTER_USER;
+    else if (!strcasecmp ("chanlimit", cmd))
+	tag = MSG_CLIENT_CHANNEL_LIMIT;
+    else if (!strcasecmp ("kick", cmd))
+	tag = MSG_CLIENT_KICK_USER;
     else
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "Unknown OperServ command: %s", cmd);

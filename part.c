@@ -58,6 +58,10 @@ HANDLER (part)
 	return;
     }
 
+    /* ack the user */
+    if (ISUSER (con))
+	send_cmd(con,tag,chan->name);
+
     /* NOTE: we use the MSG_CLIENT_PART(401) message instead of
        passing MSG_SERVER_PART(407) to pass between servers because we
        can reuse this same function for both messages easier than

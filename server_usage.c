@@ -24,13 +24,6 @@ HANDLER (server_usage)
     if (pop_user (con, &pkt, &user) != 0)
 	return;
 
-    if (user->level < LEVEL_ADMIN)
-    {
-	if (con->class == CLASS_USER)
-	    permission_denied (con);
-	return;			/* no privilege */
-    }
-
     if (!*pkt || !strcasecmp (pkt, Server_Name))
     {
 	mem_used = MEMORY_USED;

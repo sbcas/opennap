@@ -147,9 +147,15 @@ appropriate, examples of the <data> section for each message are given.
 
 11	??? [CLIENT]
 
-	<nick> <num>
+	<nick> <pass>
 
 	[returns "parameters are unparsable" -ed]
+
+12	??? [SERVER]
+
+	no data.
+
+	this message is returned in response to message 11 from the client
 
 14	login options [CLIENT]
 

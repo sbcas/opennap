@@ -51,6 +51,7 @@ int Collect_Interval;
 unsigned int Bytes_In = 0;
 unsigned int Bytes_Out = 0;
 int User_Db_Interval;		/* how often to save the user database */
+int Channel_Limit;
 
 #ifndef WIN32
 int Uid;

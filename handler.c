@@ -89,6 +89,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_LOGIN, login},			/* 2 */
     {MSG_CLIENT_LOGIN_REGISTER, login},		/* 6 */
     {MSG_CLIENT_REGISTER, register_nick},	/* 7 */
+    {MSG_CLIENT_CHECK_PASS, check_password},	/* 11 */
     {MSG_CLIENT_ADD_FILE, add_file},		/* 100 */
     {MSG_CLIENT_REMOVE_FILE, remove_file},	/* 102 */
     {MSG_CLIENT_SEARCH, search},		/* 200 */
@@ -103,6 +104,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_DOWNLOAD_END, download_end},	/* 219 */
     {MSG_CLIENT_UPLOAD_START, upload_start},	/* 220 */
     {MSG_CLIENT_UPLOAD_END, upload_end},	/* 221 */
+    {MSG_CLIENT_CHECK_PORT, check_port},	/* 300 */
     {MSG_CLIENT_REMOVE_HOTLIST, remove_hotlist},	/* 303 */
     {MSG_CLIENT_JOIN, join},			/* 400 */
     {MSG_CLIENT_PART, part},			/* 401 */
@@ -145,6 +147,8 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_SERVER_VERSION, server_version},/* 801 */
     {MSG_CLIENT_SERVER_CONFIG, server_config},	/* 810 */
     {MSG_CLIENT_EMOTE, emote},			/* 824 */
+    {MSG_CLIENT_CHANNEL_LIMIT, channel_limit},	/* 826 */
+    {MSG_CLIENT_FULL_CHANNEL_LIST, full_channel_list},	/* 827 */
     {MSG_CLIENT_NAMES_LIST, list_users},	/* 830 */
 
     /* non-standard messages */
@@ -168,6 +172,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_USAGE_STATS, server_usage},	/* 10115 */
     {MSG_CLIENT_REGISTER_USER, register_user},	/* 10200 */
     {MSG_CLIENT_CHANNEL_LEVEL, channel_level},	/* 10201 */
+    {MSG_CLIENT_KICK_USER, kick},		/* 10202 */
     {MSG_CLIENT_SHARE_FILE, share_file},	/* 10300 */
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
@@ -186,9 +191,17 @@ find_handler (unsigned int tag)
 	else if (min == max)
 	    return -1;	/* not found */
 	else if (tag < Protocol[try].message)
+	{
+	    if (try == min)
+		return -1;
 	    max = try - 1;
+	}
 	else
+	{
+	    if (try == max)
+		return -1;
 	    min = try + 1;
+	}
 	ASSERT (min <= max);
     }
     return -1;
@@ -422,7 +435,8 @@ handle_connection (CONNECTION * con)
 	     tag != MSG_CLIENT_REGISTER && tag != MSG_SERVER_LOGIN &&
 	     tag != MSG_SERVER_LOGIN_ACK && tag != MSG_SERVER_ERROR &&
 	     tag != 4 &&	/* unknown: v2.0 beta 5a sends this? */
-	     tag != 300))
+	     tag != 300 &&
+	     tag != 11))
 	{
 	    log ("handle_connection(): %s is not registered", con->host);
 	    *(con->recvbuf->data + con->recvbuf->consumed + 4 + len) = 0;
