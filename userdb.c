@@ -123,7 +123,7 @@ userdb_init (void)
 	    u->timestamp = atol (av[4]);
 	    u->lastSeen = atol (av[5]);
 	    if (ac > 6)
-		u->flags = atoi (av[6]);
+		u->flags = atoi (av[6]);	/* u_short, atoi() is fine */
 	    hash_add (User_Db, u->nick, u);
 	}
 	else
@@ -170,7 +170,7 @@ dump_userdb (USERDB * db, FILE * fp)
     fputc (' ', fp);
     fputs (Levels[db->level], fp);
     fputc (' ', fp);
-    fprintf (fp, "%d %d %d", (int) db->timestamp, (int) db->lastSeen,
+    fprintf (fp, "%d %d %hu", (int) db->timestamp, (int) db->lastSeen,
 	     db->flags);
 #ifdef WIN32
     fputs ("\r\n", fp);

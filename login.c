@@ -478,7 +478,7 @@ HANDLER (login)
 	{
 	    /* data is present */
 	    user->connected = atoi (av[6]);
-	    user->host = atoi (av[7]);
+	    user->host = strtoul (av[7], 0, 10);
 	    user->server = STRDUP (av[8]);
 	    if (!user->server)
 	    {
