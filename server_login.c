@@ -93,8 +93,6 @@ HANDLER (server_login)
     ASSERT (validate_connection (con));
     if (con->class != CLASS_UNKNOWN)
     {
-	log ("server_login(): %s tried to login, but is already registered",
-	     con->host);
 	send_cmd (con, MSG_SERVER_ERROR, "reregistration is not supported");
 	con->destroy = 1;
 	return;
@@ -122,8 +120,8 @@ HANDLER (server_login)
     {
 	send_cmd (con, MSG_SERVER_ERROR,
 		  "Your IP address does not match that name");
-	log ("server_login(): %s does not resolve to %s", fields[0],
-	     my_ntoa (con->ip));
+	notify_mods(SERVERLOG_MODE,"Failed server connect from %s != %s",
+		con->host, fields[0]);
 	con->destroy = 1;
 	return;
     }
@@ -132,13 +130,14 @@ HANDLER (server_login)
     con->host = STRDUP (fields[0]);
 
     /* notify local admins of the connection request */
-    notify_mods (SERVERLOG_MODE, "Received server login request from %s",
-		 con->host);
+    notify_mods (SERVERLOG_MODE, "Server login request from %s", con->host);
 
     /* see if there is any entry for this server */
     if ((pass = get_server_pass (con->host, &localPass)) == 0)
     {
-	log ("server_login(): no entry for server %s", con->host);
+	notify_mods(SERVERLOG_MODE,
+		"Failed server login from %s (%s): no entry in servers file",
+		fields[0], con->host);
 	send_cmd (con, MSG_SERVER_ERROR, "Permission Denied");
 	con->destroy = 1;
 	if (localPass)
@@ -150,8 +149,9 @@ HANDLER (server_login)
     compress = atoi (fields[2]);
     if (compress < 0 || compress > 9)
     {
-	log ("server_login: invalid compression level (%d) from %s",
-	     compress, con->host);
+	notify_mods(SERVERLOG_MODE,
+		"Failed server login from %s: invalid compression level %s",
+		con->host, fields[2]);
 	send_cmd (con, MSG_SERVER_ERROR, "invalid compression level %d",
 		  compress);
 	con->destroy = 1;
@@ -171,8 +171,6 @@ HANDLER (server_login)
 	    return;
 	}
 
-	log
-	    ("server_login(): peer initiated connection, sending login request");
 	if ((con->opt.auth->nonce = generate_nonce ()) == NULL)
 	{
 	    send_cmd (con, MSG_SERVER_ERROR, "unable to generate nonce");
@@ -209,9 +207,6 @@ HANDLER (server_login)
     /* send the response */
     send_cmd (con, MSG_SERVER_LOGIN_ACK, hash);
 
-    /* now we wait for the peers ACK */
-    log ("server_login(): sent login ACK");
-
     FREE (localPass);
 }
 
@@ -229,13 +224,11 @@ HANDLER (server_login_ack)
     if (con->class != CLASS_UNKNOWN)
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "reregistration is not supported");
-	log ("server_login_ack(): already registered!");
 	return;
     }
     if (!con->server_login)
     {
 	send_cmd (con, MSG_SERVER_ERROR, "You must login first");
-	log ("server_login_ack(): received ACK with no LOGIN?");
 	con->destroy = 1;
 	return;
     }
@@ -244,7 +237,8 @@ HANDLER (server_login_ack)
     pass = get_server_pass (con->host, NULL);
     if (!pass)
     {
-	log ("server_login_ack(): unable to find server %s", con->host);
+	notify_mods(SERVERLOG_MODE,
+		"Failed server login from %s: no password found", con->host);
 	send_cmd (con, MSG_SERVER_ERROR, "Permission Denied");
 	con->destroy = 1;
 	return;
@@ -265,12 +259,8 @@ HANDLER (server_login_ack)
 
     if (strcmp (hash, pkt) != 0)
     {
-	log ("server_login_ack(): incorrect response for server %s",
-	     con->host);
-	log
-	    ("server_login_ack(): remote nonce=%s, my nonce=%s, their hash=%s, expected hash=%s",
-	     con->opt.auth->sendernonce, con->opt.auth->nonce, pkt, hash);
-
+	notify_mods(SERVERLOG_MODE,
+		"Failed server login from %s: invalid password", con->host);
 	send_cmd (con, MSG_SERVER_ERROR, "Permission Denied");
 	con->destroy = 1;
 	return;
@@ -301,8 +291,6 @@ HANDLER (server_login_ack)
     con->opt.server = CALLOC (1, sizeof (SERVER));
     /* set up the compression handlers for this connection */
     init_compress (con, con->compress);
-
-    log ("server_login(): server %s has joined", con->host);
 
     notify_mods (SERVERLOG_MODE, "Server %s has joined", con->host);
 
@@ -422,7 +410,6 @@ HANDLER (server_quit)
 		  "Invalid number of parameters for server quit");
 	return;
     }
-    log ("server_quit(): %s reported that %s has quit", av[0], av[1]);
     /* remove all link info for any servers behind the one that just
        disconnected */
     for (list = Server_Links; list; list = list->next)
