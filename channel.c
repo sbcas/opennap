@@ -564,6 +564,7 @@ HANDLER (channel_drop)
     int ac = -1;
     CHANNEL *chan;
 
+    (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender))
 	return;
@@ -616,6 +617,7 @@ HANDLER (channel_wallop)
     CHANNEL *chan;
     char *chanName;
 
+    (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender))
 	return;
@@ -808,6 +810,7 @@ HANDLER (channel_invite)
     LIST *list;
     CHANNEL *chan;
 
+    (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender))
 	return;

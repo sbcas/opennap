@@ -91,9 +91,12 @@ HANDLER (muzzle)
 	}
 	if (user)
 	    user->muzzled = 0;
-	/* if we set muzzled, it should have been registered */
+	/* if we set muzzled, it should have been registered. however, this
+	 * could fail if the server ran out of memory when trying to force
+	 * registration of the user, so best check it here to avoid a core */
 	ASSERT (db != 0);
-	db->flags &= ~ON_MUZZLED;
+	if(db)
+	    db->flags &= ~ON_MUZZLED;
     }
 
     /* relay to peer servers */

@@ -170,6 +170,7 @@ HANDLER (browse_new)
     char *nick;
     int results = Max_Browse_Result;
 
+    (void) len;
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender))
 	return;

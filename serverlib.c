@@ -172,11 +172,12 @@ free_channel (CHANNEL * chan)
     list_free (chan->bans, (list_destroy_t) free_ban);
     list_free (chan->ops, (list_destroy_t) free_pointer);
 
-    /* free invite list*/
-    for(list=chan->invited;list;list=list->next)
+    /* free invite list */
+    for (list = chan->invited; list; list = list->next)
     {
-	USER *user=list->data;
-	user->invited=list_delete(user->invited,chan);
+	USER *user = list->data;
+
+	user->invited = list_delete (user->invited, chan);
     }
 
     FREE (chan);
@@ -245,35 +246,38 @@ validate_hotlist (HOTLIST * h)
 
 /* like pop_user(), but allows `nick' to be another server */
 int
-pop_user_server (CONNECTION *con, int tag, char **pkt, char **nick, USER **user)
+pop_user_server (CONNECTION * con, int tag, char **pkt, char **nick,
+		 USER ** user)
 {
-    if(ISSERVER(con))
+    if (ISSERVER (con))
     {
-	if(**pkt!=':')
+	if (**pkt != ':')
 	{
-	    log("pop_user_server(): (tag %d) server message is missing sender",
-		tag);
+	    log
+		("pop_user_server(): (tag %d) server message is missing sender",
+		 tag);
 	    return -1;
 	}
 	(*pkt)++;
-	*nick = next_arg(pkt);
-	if(!is_server(*nick))
+	*nick = next_arg (pkt);
+	if (!is_server (*nick))
 	{
-	    *user=hash_lookup(Users,*nick);
-	    if(!*user)
+	    *user = hash_lookup (Users, *nick);
+	    if (!*user)
 	    {
-		log("pop_user_server(): (tag %d) could not find user %s", *user);
+		log ("pop_user_server(): (tag %d) could not find user %s",
+		     tag, *user);
 		return -1;
 	    }
 	}
 	else
-	    *user=0;
+	    *user = 0;
     }
     else
     {
-	ASSERT(ISUSER(con));
-	*user=con->user;
-	*nick=(*user)->nick;
+	ASSERT (ISUSER (con));
+	*user = con->user;
+	*nick = (*user)->nick;
     }
     return 0;
 }
@@ -380,23 +384,23 @@ invalid_channel_msg (CONNECTION * con)
 }
 
 void
-truncate_reason(char *s)
+truncate_reason (char *s)
 {
-    if(Max_Reason > 0 && strlen (s) > (unsigned) Max_Reason)
+    if (Max_Reason > 0 && strlen (s) > (unsigned) Max_Reason)
 	*(s + Max_Reason) = 0;
 }
 
 void
-invalid_nick_msg(CONNECTION *con)
+invalid_nick_msg (CONNECTION * con)
 {
-    if(ISUSER(con))
-	send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+    if (ISUSER (con))
+	send_cmd (con, MSG_SERVER_NOSUCH, "invalid nickname");
 }
 
 USER *
 new_user (void)
 {
-    USER *u = CALLOC (1,sizeof(USER));
+    USER *u = CALLOC (1, sizeof (USER));
 
     if (!u)
     {
@@ -412,7 +416,7 @@ new_user (void)
 CONNECTION *
 new_connection (void)
 {
-    CONNECTION *c = CALLOC (1, sizeof(CONNECTION));
+    CONNECTION *c = CALLOC (1, sizeof (CONNECTION));
 
     if (!c)
     {
@@ -426,11 +430,12 @@ new_connection (void)
 }
 
 static int
-vform_message(char *d, int dsize, int tag, const char *fmt, va_list ap)
+vform_message (char *d, int dsize, int tag, const char *fmt, va_list ap)
 {
     int len;
-    vsnprintf(d+4,dsize-4,fmt,ap);
-    len=strlen(d+4);
+
+    vsnprintf (d + 4, dsize - 4, fmt, ap);
+    len = strlen (d + 4);
     set_tag (d, tag);
     set_len (d, len);
     return (len + 4);
@@ -443,32 +448,33 @@ form_message (char *d, int dsize, int tag, const char *fmt, ...)
     int len;
 
     va_start (ap, fmt);
-    len=vform_message(d, dsize, tag, fmt, ap);
+    len = vform_message (d, dsize, tag, fmt, ap);
     va_end (ap);
     return len;
 }
 
 void
-send_cmd_pre(CONNECTION *con, unsigned int tag, const char *prefix, const char *fmt, ...)
+send_cmd_pre (CONNECTION * con, unsigned int tag, const char *prefix,
+	      const char *fmt, ...)
 {
     va_list ap;
     int len;
 
-    va_start(ap,fmt);
+    va_start (ap, fmt);
     /* if the user's client supports use of real numerics send the raw */
-    if(con->numerics)
-	len=vform_message(Buf,sizeof(Buf),tag,fmt,ap);
+    if (con->numerics)
+	len = vform_message (Buf, sizeof (Buf), tag, fmt, ap);
     else
     {
-	/*otherwise prefix it with a descriptive string and send it as a 404*/
-	strncpy(Buf+4,prefix,sizeof(Buf)-4);
-	len=strlen(Buf+4);
-	vsnprintf(Buf+4+len,sizeof(Buf)-4-len,fmt,ap);
-	len+=strlen(Buf+4+len);
-	set_tag(Buf,MSG_SERVER_NOSUCH);
-	set_len(Buf,len);
-	len+=4;
+	/*otherwise prefix it with a descriptive string and send it as a 404 */
+	strncpy (Buf + 4, prefix, sizeof (Buf) - 4);
+	len = strlen (Buf + 4);
+	vsnprintf (Buf + 4 + len, sizeof (Buf) - 4 - len, fmt, ap);
+	len += strlen (Buf + 4 + len);
+	set_tag (Buf, MSG_SERVER_NOSUCH);
+	set_len (Buf, len);
+	len += 4;
     }
-    queue_data(con,Buf,len);
-    va_end(ap);
+    queue_data (con, Buf, len);
+    va_end (ap);
 }
