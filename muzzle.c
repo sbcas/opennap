@@ -61,6 +61,5 @@ HANDLER (muzzle)
 	send_cmd (user->con, MSG_SERVER_NOSUCH, "You have been muzzled.");
 
     /* notify mods+ of this action */
-    if (con->class == CLASS_USER)
-	notify_mods ("%s has muzzled %s.", sender->nick, user->nick);
+    notify_mods ("%s has muzzled %s.", sender->nick, user->nick);
 }

@@ -7,22 +7,31 @@
 #include "debug.h"
 
 /* user request to change the data port they are listening on.
-   packet contains: <port> */
+   703 [ :<user> ] <port> */
 HANDLER (change_data_port)
 {
     int port;
+    USER *user;
 
-    ASSERT (VALID (con));
-    CHECK_USER_CLASS ("change_data_port");
-    ASSERT (VALID (con->user));
+    ASSERT (validate_connection (con));
+    if (pop_user (con, &pkt, &user) != 0)
+	return;
+    ASSERT (validate_user (user));
     port = atoi (pkt);
 
     /* the official server doesn't seem to check the value sent, so this
        error is unique to this implementation */
     if (port >= 0 && port <= 65535)
-	con->user->port = port;
-    else
-	send_cmd (con, MSG_SERVER_ERROR, "invalid data port");
+    {
+	user->port = port;
+	if (con->class == CLASS_USER && Num_Servers)
+	{
+	    pass_message_args (con, MSG_CLIENT_CHANGE_DATA_PORT, ":%s %d",
+		    user->nick, user->port);
+	}
+    }
+    else if (con->class == CLASS_USER)
+	send_cmd (con, MSG_SERVER_NOSUCH, "invalid data port");
 }
 
 /* 700 [ :<user> ] <speed> */
@@ -40,13 +49,12 @@ HANDLER (change_speed)
     {
 	user->speed = spd;
 	/* if a local user, pass this info to our peer servers */
-	if (con->class == CLASS_USER)
+	if (con->class == CLASS_USER && Num_Servers)
+	{
 	    pass_message_args (con, MSG_CLIENT_CHANGE_SPEED, ":%s %d",
 		    user->nick, spd);
+	}
     }
-    else
-    {
-	log ("change_speed(): %s tried to change speed to %d", user->nick,
-		spd);
-    }
+    else if (con->class == CLASS_USER)
+	send_cmd (con, MSG_SERVER_NOSUCH, "invalid speed");
 }

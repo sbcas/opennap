@@ -544,7 +544,9 @@ appropriate, examples of the <data> section for each message are given.
 
 604	whois response [SERVER]
 
-	<nick> "<user-level>" <time> "<channels>" <status> <shared> <downloads> <uploads> <link-type> "<client-info>"
+	<nick> "<user-level>" <time> "<channels>" <status> <shared>
+	<downloads> <uploads> <link-type> "<client-info>" [ <total uploads>
+	<total_downloads> <ip> <connecting port> <data port> <email> ]
 
 	<user-level> is one of "User" or "Admin"
 	<time> is seconds this user has been connected
@@ -556,6 +558,16 @@ appropriate, examples of the <data> section for each message are given.
 	<uploads> is the current number of uploads in progress
 	<link-type> see 0x02 (client login) above
 	<client-info> see 0x02 (client login) above
+
+	The following fields are displayed for user level moderator and
+	above:
+
+	<total uploads>
+	<total downloads>
+	<ip>			note: can be "unavailable"
+	<connecting port>
+	<data port>
+	<email>			note: can be unavailable
 
 	Example:
 

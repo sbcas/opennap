@@ -7,22 +7,23 @@
 #include "opennap.h"
 #include "debug.h"
 
-static void
-notify_one_mod (USER *user, char *text)
-{
-    if (user->con && user->level >= LEVEL_MODERATOR)
-	send_cmd (user->con, MSG_SERVER_NOSUCH, text);
-}
-
+/* send a message to all local mods */
 void
 notify_mods (const char *fmt, ...)
 {
     char buf[128];/* send_cmd() uses Buf so we can't use it here */
+    int i;
     va_list ap;
+
     va_start (ap, fmt);
     vsnprintf (buf, sizeof (buf), fmt, ap);
     va_end (ap);
-    hash_foreach (Users, (hash_callback_t) notify_one_mod, buf);
+    for (i = 0; i < Num_Clients; i++)
+    {
+	if (Clients[i] && Clients[i]->class == CLASS_USER &&
+		Clients[i]->user->level >= LEVEL_MODERATOR)
+	    send_cmd (Clients[i], MSG_SERVER_NOSUCH, buf);
+    }
 }
 
 /* request to kill (disconnect) a user */
@@ -91,10 +92,11 @@ HANDLER (kill_user)
 	if (Num_Servers)
 	    pass_message_args (con, MSG_CLIENT_KILL, ":%s %s %s",
 		con->user->nick, user->nick, reason ? reason : "");
-	/* notify mods+ that this user was killed */
-	notify_mods ("%s killed user %s: %s", killernick, user->nick,
-	    reason ? reason : "");
     }
+
+    /* notify mods+ that this user was killed */
+    notify_mods ("%s killed user %s: %s", killernick, user->nick,
+	    reason ? reason : "");
 
     /* notify user they were killed */
     if (user->con)

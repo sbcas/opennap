@@ -56,13 +56,17 @@ struct _user
 #endif
     char *nick;
     char *clientinfo;
+    char *email;		/* user's email address */
     unsigned short uploads;	/* no. of uploads in progress */
     unsigned short downloads;	/* no. of downloads in progress */
     unsigned short speed;	/* link speed */
     unsigned short shared;	/* # of shared files */
+    unsigned short totalup;	/* total number of uploads */
+    unsigned short totaldown;	/* total number of downloads */
     unsigned long libsize;	/* approximate size of shared files in kB */
     unsigned long host;		/* ip of user in network byte order */
-    int port;			/* data port client is listening on */
+    unsigned short port;	/* data port client is listening on */
+    unsigned short conport;	/* remote port for connection to server */
     LEVEL level;		/* user level */
     time_t connected;		/* time at which the user connected */
     time_t muzzled;		/* time at which the user is allowed to post public msgs */

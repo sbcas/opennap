@@ -10,8 +10,9 @@
 /* [ :<nick> ] <user> <level> */
 HANDLER (level)
 {
-    char *fields[2];
+    char *sender = 0, *fields[2];
     USER *user;
+    LEVEL level;
 
     ASSERT (validate_connection (con));
 
@@ -23,6 +24,7 @@ HANDLER (level)
     if (con->class == CLASS_SERVER)
     {
 	/* skip over who set the user level */
+	sender = pkt;
 	pkt = strchr (pkt, ' ');
 	if (!pkt)
 	{
@@ -30,15 +32,6 @@ HANDLER (level)
 	    return;
 	}
 	pkt++;
-    }
-    else
-    {
-	ASSERT (validate_user (con->user));
-	if (con->user->level >= LEVEL_ADMIN)
-	{
-	    log ("level(): user %s is not admin", con->user->nick);
-	    return;
-	}
     }
 
     if (split_line (fields, sizeof (fields) / sizeof (char *), pkt) != 2)
@@ -59,16 +52,16 @@ HANDLER (level)
 
     ASSERT (validate_user (user));
 
-    if (strcasecmp ("elite", fields[1]) == 0)
-	user->level = LEVEL_ELITE;
-    if (strcasecmp ("admin", fields[1]) == 0)
-	user->level = LEVEL_ADMIN;
-    else if (strcasecmp ("moderator", fields[1]) == 0)
-	user->level = LEVEL_MODERATOR;
-    else if (!strcasecmp ("leech", fields[1]))
-	user->level = LEVEL_LEECH;
-    else if (!strcasecmp ("user", fields[1]))
-	user->level = LEVEL_USER;
+    if (!strncasecmp ("elite", fields[1],2))
+	level = LEVEL_ELITE;
+    else if (!strncasecmp ("admin", fields[1],2))
+	level = LEVEL_ADMIN;
+    else if (!strncasecmp ("moderator", fields[1],2))
+	level = LEVEL_MODERATOR;
+    else if (!strncasecmp ("leech", fields[1],2))
+	level = LEVEL_LEECH;
+    else if (!strncasecmp ("user", fields[1],2))
+	level = LEVEL_USER;
     else
     {
 	log ("level(): tried to set %s to unknown level %s",
@@ -76,10 +69,38 @@ HANDLER (level)
 	return;
     }
 
+    /* check for privilege */
+    if (con->class == CLASS_USER)
+    {
+	ASSERT (validate_user (con->user));
+	if ((level >= con->user->level && con->user->level < LEVEL_ELITE) ||
+		(user->level >= con->user->level))
+	{
+	    log ("level(): %s tried to set %s to level %s", con->user->nick,
+		    user->nick, Levels[level]);
+	    permission_denied (con);
+	    return;
+	}
+	sender = con->user->nick;
+    }
+
+    user->level = level;
+
     /* pass the message to our peer servers if this came from a local user */
     if (con->class == CLASS_USER && Num_Servers)
     {
 	pass_message_args (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s",
 		con->user->nick, user->nick, fields[1]);
+    }
+
+    notify_mods ("%s set %s's user level to %s (%d).", sender, user->nick,
+	    Levels[user->level], user->level);
+
+    /* if local, notify the user of their change in status */
+    if (user->con)
+    {
+	send_cmd (user->con, MSG_SERVER_NOSUCH,
+		"%s changed your level to %s (%d).",
+		sender, Levels[user->level], user->level);
     }
 }

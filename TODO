@@ -14,3 +14,9 @@
   that anyone would want to run a for pay napster server, but to be
   politically correct opennap should at least have support for the open
   source alternative as well
+
+* server connection numerics
+
+* only local mods are notified when banned ip/users attempt to connect
+
+* whowas should have the extra info for mods like whois

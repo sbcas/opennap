@@ -25,6 +25,8 @@ added support for the wallop command (627)
 
 added support for ban, unban and banlist (612, 614, 615, 616, 629)
 
+mods see some additional information in whois
+
 Changes from 0.07
 =================
 

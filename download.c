@@ -72,40 +72,70 @@ HANDLER (download)
     }
 }
 
-/* 220 */
+static USER *
+transfer_count_wrapper (CONNECTION *con, char *pkt, int numeric)
+{
+    USER *user;
+
+    ASSERT (validate_connection (con));
+    if (con->class == CLASS_USER)
+    {
+	user = con->user;
+	if (Num_Servers)
+	    pass_message_args (con, numeric, ":%s", user->nick);
+    }
+    else if ((user = hash_lookup (Users, pkt + 1)) == 0)
+    {
+	log ("transfer_count_wrapper(): could not find %s", pkt + 1);
+	return 0;
+    }
+    return user;
+}
+
+/* 220 [ :<user> ] */
 HANDLER(upload_start)
 {
-    (void)pkt;
-    ASSERT(VALID(con));
-    CHECK_USER_CLASS("upload_start");
-    con->user->uploads++;
+    USER *user;
+
+    ASSERT (validate_connection (con));
+    user = transfer_count_wrapper (con, pkt, MSG_CLIENT_UPLOAD_START);
+    ASSERT (validate_user (user));
+    user->uploads++;
+    user->totalup++;
 }
 
-/* 221 */
+/* 221 [ :<user> ] */
 HANDLER(upload_end)
 {
-    (void)pkt;
-    ASSERT(VALID(con));
-    CHECK_USER_CLASS("upload_end");
-    con->user->uploads--;
+    USER *user;
+
+    ASSERT (validate_connection (con));
+    user = transfer_count_wrapper (con, pkt, MSG_CLIENT_UPLOAD_END);
+    ASSERT (validate_user (user));
+    user->uploads--;
 }
 
-/* 218 */
+/* 218 [ :<user> ] */
 HANDLER(download_start)
 {
-    (void)pkt;
-    ASSERT(VALID(con));
-    CHECK_USER_CLASS("download_start");
-    con->user->downloads++;
+    USER *user;
+
+    ASSERT (validate_connection (con));
+    user = transfer_count_wrapper (con, pkt, MSG_CLIENT_DOWNLOAD_START);
+    ASSERT (validate_user (user));
+    user->downloads++;
+    user->totaldown++;
 }
 
-/* 219 */
+/* 219 [ :<user> ] */
 HANDLER(download_end)
 {
-    (void)pkt;
-    ASSERT(VALID(con));
-    CHECK_USER_CLASS("download_end");
-    con->user->downloads--;
+    USER *user;
+
+    ASSERT (validate_connection (con));
+    user = transfer_count_wrapper (con, pkt, MSG_CLIENT_DOWNLOAD_END);
+    ASSERT (validate_user (user));
+    user->downloads--;
 }
 
 /* 600 <user> */
@@ -152,14 +182,18 @@ HANDLER (data_port_error)
 	return;
     }
     ASSERT (validate_user (user));
-    if (user->con)
-	send_cmd (user->con, MSG_SERVER_DATA_PORT_ERROR, "%s", user->nick);
-    else if (con->class == CLASS_USER)
-	send_cmd (user->serv, MSG_SERVER_DATA_PORT_ERROR, "%s", user->nick);
 
+    /* we pass this message to all servers so the mods can see it */
     if (con->class == CLASS_USER)
     {
-	notify_mods ("Notification from %s: %s (%s) - configured data port %d is unreachable.",
-	    sender->nick, user->nick, my_ntoa (user->host), user->port);
+	pass_message_args (con, MSG_SERVER_DATA_PORT_ERROR, ":%s %s",
+		sender->nick, user->nick);
     }
+
+    notify_mods ("Notification from %s: %s (%s) - configured data port %d is unreachable.",
+	    sender->nick, user->nick, my_ntoa (user->host), user->port);
+
+    /* if local, notify the target of the error */
+    if (user->con)
+	send_cmd (user->con, MSG_SERVER_DATA_PORT_ERROR, "%s", sender->nick);
 }

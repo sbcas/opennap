@@ -4,6 +4,7 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <time.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -63,6 +64,7 @@ HANDLER (ban)
     b = CALLOC (1, sizeof (BAN));
     b->target = STRDUP (ban);
     b->setby = STRDUP (sender->nick);
+    b->when = time (0);
     /* determine if this ban is on an ip or a user */
     b->type = (is_ip (ban)) ? BAN_IP : BAN_USER;
     if (pkt)

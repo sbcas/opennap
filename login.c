@@ -94,6 +94,8 @@ HANDLER (login)
     user->speed = atoi (field[4]);
     user->connected = time (0);
     user->level = LEVEL_USER;
+    if (field[5])
+	user->email = STRDUP (field[5]);
 
     hash_add (Users, user->nick, user);
 

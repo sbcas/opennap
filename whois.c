@@ -17,6 +17,7 @@ HANDLER (whois)
     USER *user;
     int i, l;
     char *chanlist;
+    time_t online;
 
     ASSERT (VALID (con));
     CHECK_USER_CLASS ("whois");
@@ -40,10 +41,23 @@ HANDLER (whois)
 	strcat (chanlist, " ");
     }
 
-    send_cmd (con, MSG_SERVER_WHOIS_RESPONSE,
-	      WHOIS_FMT, user->nick, Levels[user->level],
-	      (int) (time (0) - user->connected),
-	      chanlist, user->shared, user->downloads, user->uploads,
-	      user->speed, user->clientinfo);
+    online = (int) (time (0) - user->connected);
+    if (user->level < LEVEL_MODERATOR)
+    {
+	send_cmd (con, MSG_SERVER_WHOIS_RESPONSE,
+		WHOIS_FMT, user->nick, Levels[user->level],
+		online,
+		chanlist, user->shared, user->downloads, user->uploads,
+		user->speed, user->clientinfo);
+    }
+    else
+    {
+	send_cmd (con, MSG_SERVER_WHOIS_RESPONSE,
+		"%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %d %d %d %s",
+		user->nick, Levels[user->level], online, chanlist, user->shared,
+		user->downloads, user->uploads, user->speed, user->clientinfo,
+		user->totalup, user->totaldown, user->host, user->conport,
+		user->port, user->email ? user->email : "unknown");
+    }
     FREE (chanlist);
 }
