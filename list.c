@@ -8,6 +8,15 @@
 #include "list.h"
 #include "debug.h"
 
+LIST *
+list_new (void *p)
+{
+    LIST *list = CALLOC (1, sizeof (LIST));
+    if (list)
+	list->data = p;
+    return list;
+}
+
 /* remove the element matching `data' from the list */
 LIST *
 list_delete (LIST *list, void *data)
@@ -42,6 +51,16 @@ list_append (LIST * l, LIST *b)
     }
     *r = b;
     return l;
+}
+
+LIST *
+list_append_data (LIST *l, void *d)
+{
+    LIST *list;
+
+    ASSERT (d != 0);
+    LIST_NEW (list, d);
+    return (list_append (l, list));
 }
 
 void
