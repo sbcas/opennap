@@ -36,6 +36,9 @@ realloc() too often
 modified buffer_compress() to allocate memory in 2k chunks to avoid calling
 realloc() too often
 
+send_queued_data() should be called if there is uncompressed data waiting to
+be sent to the server
+
 Changes from 0.11
 =================
 

@@ -822,11 +822,10 @@ main (int argc, char **argv)
 		if (Clients[i]->zip)
 		{
 		    /* server - strategy is call send_queued_data() if there
-		       there is no compressed data and some queued data
-		       exists, or if the socket is writable and there is some
-		       compressed output */
-		    if ((Clients[i]->sendbuf && Clients[i]->zip->outbuf == 0)
-			    || (Clients[i]->zip->outbuf && WRITABLE (i)))
+		       there is data to be compressed, or if the socket is
+		       writable and there is some compressed output */
+		    if (Clients[i]->sendbuf
+			|| (Clients[i]->zip->outbuf && WRITABLE (i)))
 			send_queued_data (Clients[i]);
 		}
 		/* client */
