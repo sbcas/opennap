@@ -23,6 +23,8 @@ extern MYSQL *Db;
 static int
 invalid_nick (const char *s)
 {
+    if (!*s)
+	return 1;	/* don't allow \0 as the nickname */
     while (*s)
     {
 	if (*s & 0x80 || ISSPACE (*s) || iscntrl (*s) || !isprint((uchar)*s) ||
