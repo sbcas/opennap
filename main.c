@@ -193,7 +193,6 @@ accept_connection (int s)
 	perror ("accept_connection(): accept");
 	return;
     }
-
     cli = new_connection ();
     if (!cli)
     {
@@ -219,10 +218,8 @@ accept_connection (int s)
     cli->port = ntohs (sin.sin_port);
     cli->class = CLASS_UNKNOWN;
     add_client (cli);
-
     set_nonblocking (f);
     set_keepalive (f, 1);	/* enable tcp keepalive messages */
-
     if (!check_accept (cli))
 	cli->destroy = 1;
 }
@@ -310,7 +307,7 @@ main (int argc, char **argv)
     int i;			/* generic counter */
     int n;			/* number of ready sockets */
     int sp;			/* stats port */
-    int f, pending = 0, port = 0, iface = INADDR_ANY, nolisten = 0;
+    int f, pending = 0, port = 0, iface = INADDR_ANY, nolisten = 0, numClients;
 #if HAVE_POLL
     struct pollfd *ufd = 0;
     int ufdsize = 0;		/* real number of pollfd structs allocated */
@@ -458,10 +455,10 @@ main (int argc, char **argv)
 
 	for (n = 0, i = 0; i < Num_Clients; i++)
 	{
-	    /* several of the message handlers might cause connections to
-	       disappear during the course of this loop, so we must check to
-	       make sure this connection is still valid.  if its missing, we
-	       shift down the array to fill the holes */
+	    /* at the bottom of the loop for active connections, we remove
+	       dead connections by setting the pointer in the Clients[] array
+	       to NULL.  we shift down the live connections to fill the
+	       gaps left by that process */
 	    if (Clients[i])
 	    {
 		/* if there are holes, we shift down the upper structs
@@ -504,16 +501,21 @@ main (int argc, char **argv)
 
 	Num_Clients = n;	/* actual number of clients */
 
+	numClients = Num_Clients;	/* since Num_Clients can change in
+					   the loop below, we use a static
+					   value here so we don't try to
+					   check values that weren't
+					   set by select() or poll() */
 	/* if there is pending data in client queues, don't block on the
 	   select call */
 #if HAVE_POLL
 	/* add entries for the incoming connections socket and stats socket */
-	ufd[Num_Clients].fd = s;
-	ufd[Num_Clients].events = POLLIN;
-	ufd[Num_Clients+1].fd = sp;
-	ufd[Num_Clients+1].events = POLLIN;
+	ufd[numClients].fd = s;
+	ufd[numClients].events = POLLIN;
+	ufd[numClients+1].fd = sp;
+	ufd[numClients+1].events = POLLIN;
 
-	if ((n = poll (ufd, Num_Clients + 2, pending ? 0 : next_timer() * 1000)) < 0)
+	if ((n = poll (ufd, numClients + 2, pending ? 0 : next_timer() * 1000)) < 0)
 	{
 	    perror ("poll");
 	    continue;
@@ -530,11 +532,8 @@ main (int argc, char **argv)
 
 	pending = 0;		/* reset */
 
-	/* check for stats request.  NOTE: this _MUST_ come before the
-	   check for new connections since Num_Clients will increase and
-	   we will check the wrong pollfd struct */
 #if HAVE_POLL
-	if (ufd[Num_Clients+1].revents & POLLIN)
+	if (ufd[numClients+1].revents & POLLIN)
 #else
 	if (FD_ISSET (sp, &set))
 #endif
@@ -545,7 +544,7 @@ main (int argc, char **argv)
 
 	/* check for new incoming connections */
 #if HAVE_POLL
-	if (ufd[Num_Clients].revents & POLLIN)
+	if (ufd[numClients].revents & POLLIN)
 #else
 	if (FD_ISSET (s, &set))
 #endif
@@ -555,9 +554,9 @@ main (int argc, char **argv)
 	}
 
 	/* read incoming data into buffers, but don't process it */
-	for (i = 0; !SigCaught && n > 0 && i < Num_Clients; i++)
+	for (i = 0; !SigCaught && n > 0 && i < numClients; i++)
 	{
-	    if (Clients[i]->connecting && WRITABLE (i))
+	    if (WRITABLE(i) && Clients[i]->connecting)
 	    {
 		complete_connect (Clients[i]);
 		n--;	/* keep track of how many we've handled */
@@ -592,7 +591,7 @@ main (int argc, char **argv)
 	    break;
 
 	/* handle client requests */
-	for (i = 0; !SigCaught && i < Num_Clients; i++)
+	for (i = 0; !SigCaught && i < numClients; i++)
 	{
 	    /* if the connection is going to be shut down, don't process it */
 	    if (!Clients[i]->destroy)
@@ -608,7 +607,7 @@ main (int argc, char **argv)
 	    break;
 
 	/* write out data and reap dead client connections */
-	for (i = 0; !SigCaught && i < Num_Clients; i++)
+	for (i = 0; !SigCaught && i < numClients; i++)
 	{
 	    if (ISSERVER (Clients[i]))
 	    {

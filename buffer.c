@@ -131,7 +131,7 @@ buffer_read (int fd, BUFFER **b)
     n = READ (fd, Buf, sizeof (Buf));
     if (n == -1)
     {
-	log ("buffer_read(): read: %s (errno %d)", strerror (errno), errno);
+	logerr ("buffer_read", "read");
 	return -1;
     }
     if (n == 0)
