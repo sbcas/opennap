@@ -741,43 +741,36 @@ main (int argc, char **argv)
 	/* read incoming data into buffers, but don't process it */
 	for (i = 0; !SigCaught && n > 0 && i < Num_Clients; i++)
 	{
-	    /* client connections may disappear during this loop, so make
-	       sure to check for a valid pointer before checking for input
-	       from it.  the holes are reclaimed in a loop above (see
-	       comment there for more information) */
-	    if (Clients[i])
+	    if ((Clients[i]->flags & FLAG_CONNECTING) && WRITABLE (i))
 	    {
-		if ((Clients[i]->flags & FLAG_CONNECTING) && WRITABLE (i))
+		complete_connect (Clients[i]);
+		n--;	/* keep track of how many we've handled */
+	    }
+	    else if (READABLE (i))
+	    {
+		n--;	/* keep track of how many we've handled */
+		f = buffer_read (Clients[i]->fd,
+		    (Clients[i]->zip !=
+		     0) ? &Clients[i]->zip->
+		    inbuf : &Clients[i]->recvbuf);
+		if (f <= 0)
 		{
-		    complete_connect (Clients[i]);
-		    n--;	/* keep track of how many we've handled */
-		}
-		else if (READABLE (i))
-		{
-		    n--;	/* keep track of how many we've handled */
-		    f = buffer_read (Clients[i]->fd,
-			    (Clients[i]->zip !=
-			     0) ? &Clients[i]->zip->
-			    inbuf : &Clients[i]->recvbuf);
-		    if (f <= 0)
-		    {
-			if (f == 0)
-			    log ("main(): EOF from %s", Clients[i]->host);
-			Clients[i]->destroy = 1;
-		    }
-		}
-#if HAVE_POLL
-		/* when does this occur?  i would have thought POLLHUP
-		   would be when the connection hangs up, but it still
-		   sets POLLIN and read() returns 0 */
-		else if ((ufd[i].revents & (POLLHUP | POLLERR)) != 0)
-		{
-		    ASSERT ((ufd[i].revents & POLLHUP) == 0);
-		    ASSERT ((ufd[i].revents & POLLERR) == 0);
+		    if (f == 0)
+			log ("main(): EOF from %s", Clients[i]->host);
 		    Clients[i]->destroy = 1;
 		}
-#endif /* HAVE_POLL */
 	    }
+#if HAVE_POLL
+	    /* when does this occur?  i would have thought POLLHUP
+	       would be when the connection hangs up, but it still
+	       sets POLLIN and read() returns 0 */
+	    else if ((ufd[i].revents & (POLLHUP | POLLERR)) != 0)
+	    {
+		ASSERT ((ufd[i].revents & POLLHUP) == 0);
+		ASSERT ((ufd[i].revents & POLLERR) == 0);
+		Clients[i]->destroy = 1;
+	    }
+#endif /* HAVE_POLL */
 	}
 
 	if (SigCaught)
@@ -786,7 +779,8 @@ main (int argc, char **argv)
 	/* handle client requests */
 	for (i = 0; !SigCaught && i < Num_Clients; i++)
 	{
-	    if (Clients[i] && !Clients[i]->destroy)
+	    /* if the connection is going to be shut down, don't process it */
+	    if (!Clients[i]->destroy)
 	    {
 		/* if there is input pending, handle it now */
 		if (Clients[i]->recvbuf ||
@@ -808,35 +802,32 @@ main (int argc, char **argv)
 	/* write out data and reap dead client connections */
 	for (i = 0; !SigCaught && i < Num_Clients; i++)
 	{
-	    /* test for existence since it may have disappeared in the
-	       handle_connection() call */
-	    if (Clients[i])
+	    if (Clients[i]->zip)
 	    {
-		if (Clients[i]->zip)
-		{
-		    /* server - strategy is call send_queued_data() if there
-		       there is data to be compressed, or if the socket is
-		       writable and there is some compressed output */
-		    if (Clients[i]->sendbuf
-			|| (Clients[i]->zip->outbuf && WRITABLE (i)))
-		    {
-			if (send_queued_data (Clients[i]) == -1)
-			    Clients[i]->destroy = 1;
-		    }
-		}
-		/* client */
-		else if (Clients[i]->sendbuf && WRITABLE (i))
+		/* server - strategy is call send_queued_data() if there
+		   there is data to be compressed, or if the socket is
+		   writable and there is some compressed output */
+		if (Clients[i]->sendbuf
+		    || (Clients[i]->zip->outbuf && WRITABLE (i)))
 		{
 		    if (send_queued_data (Clients[i]) == -1)
 			Clients[i]->destroy = 1;
 		}
+	    }
+	    /* client */
+	    else if (Clients[i]->sendbuf && WRITABLE (i))
+	    {
+		if (send_queued_data (Clients[i]) == -1)
+		    Clients[i]->destroy = 1;
+	    }
 
-		/* check to see if this connection should be shut down */
-		if (Clients[i]->destroy)
-		{
-		    log ("main(): closing connection for %s", Clients[i]->host);
-		    remove_connection (Clients[i]);
-		}
+	    /* check to see if this connection should be shut down */
+	    if (Clients[i]->destroy)
+	    {
+		/* should have flushed everything */
+		ASSERT (Clients[i]->sendbuf == 0);
+		log ("main(): closing connection for %s", Clients[i]->host);
+		remove_connection (Clients[i]);
 	    }
 	}
     }
