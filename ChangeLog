@@ -30,6 +30,12 @@ listening on (only works with the win32 clients)
 
 set the tcp send/recv buffer length to 16k for server-server connections
 
+modified buffer_queue() to allocate memory in 1k chunks to avoid calling
+realloc() too often
+
+modified buffer_compress() to allocate memory in 2k chunks to avoid calling
+realloc() too often
+
 Changes from 0.11
 =================
 

@@ -46,7 +46,8 @@ struct _buffer
     unsigned int magic;
 #endif
     char *data;		/* allocated data */
-    int datasize;	/* total bytes allocated in data */
+    int datasize;	/* total bytes used in `data' */
+    int datamax;	/* size of allocated memory block */
     int consumed;	/* how many bytes of data consumed from this buffer */
     BUFFER *next;
 };
@@ -392,7 +393,6 @@ BUFFER *buffer_append (BUFFER *, BUFFER *);
 BUFFER *buffer_consume (BUFFER *, int);
 void buffer_free (BUFFER *);
 void buffer_group (BUFFER *, int);
-BUFFER *buffer_queue (BUFFER *, char *, int);
 int buffer_read (int, BUFFER **);
 int buffer_size (BUFFER *);
 #if HAVE_LIBZ

@@ -27,7 +27,7 @@ buffer_new (void)
 }
 
 /* append bytes to the buffer */
-BUFFER *
+static BUFFER *
 buffer_queue (BUFFER *b, char *d, int dsize)
 {
     BUFFER *r = b;
@@ -46,7 +46,14 @@ buffer_queue (BUFFER *b, char *d, int dsize)
 	    b = b->next;
 	}
     }
-    b->data = REALLOC (b->data, b->datasize + dsize);
+    /* if there is not enough allocated data, allocate another 1024bytes */
+    if (b->datasize + dsize > b->datamax)
+    {
+	ASSERT (dsize < 1024); /* not an error, but just a check to see if
+				  this is an ok value */
+	b->datamax += (dsize>1024)?dsize:1024;
+	b->data = REALLOC (b->data, b->datamax);
+    }
     memcpy (b->data + b->datasize, d, dsize);
     b->datasize += dsize;
     return r;
@@ -62,7 +69,8 @@ buffer_group (BUFFER *b, int n)
 	int l = b->consumed + n - b->datasize;
 
 	/* allocate 1 extra byte to hold a nul (\0) char */
-	b->data = REALLOC (b->data, b->datasize + l + 1);
+	b->datamax = b->datasize + l + 1;
+	b->data = REALLOC (b->data, b->datamax);
 	ASSERT (b->next != 0);
 	/* steal `l' bytes from the next buffer block */
 	ASSERT (b->next->datasize >= l);
@@ -106,7 +114,8 @@ buffer_read (int fd, BUFFER **b)
     }
     /* we allocate one extra byte so that we can write a \0 in it for
        debuging */
-    p->data = REALLOC (p->data, p->datasize + n + 1);
+    p->datamax = p->datasize + n + 1;
+    p->data = REALLOC (p->data, p->datamax);
     memcpy (p->data + p->datasize, Buf, n);
     p->datasize += n;
     *(p->data + p->datasize) = 0;
@@ -179,6 +188,7 @@ buffer_validate (BUFFER *b)
     ASSERT_RETURN_IF_FAIL (VALID_LEN (b, sizeof (BUFFER)), 0);
     ASSERT_RETURN_IF_FAIL (b->magic == MAGIC_BUFFER, 0);
     ASSERT_RETURN_IF_FAIL ((b->data == 0) ^ (b->datasize != 0), 0);
+    ASSERT_RETURN_IF_FAIL (b->datasize <= b->datamax, 0);
     ASSERT_RETURN_IF_FAIL (b->data == 0 || VALID_LEN (b->data, b->datasize), 0);
     ASSERT_RETURN_IF_FAIL (b->consumed == 0 || b->consumed < b->datasize, 0);
     ASSERT_RETURN_IF_FAIL (b->next == 0 || VALID_LEN (b->next, sizeof (BUFFER*)), 0);
@@ -210,11 +220,6 @@ buffer_compress (z_streamp zip, BUFFER **b)
 	flush = ((*b)->next != 0) ? Z_NO_FLUSH : Z_SYNC_FLUSH;
     }
 
-#if 0
-    log ("buffer_compress: compressing %d bytes (flush=%d)", bytes,
-	    (flush == Z_SYNC_FLUSH));
-#endif
-
     zip->next_in = (uchar *) (*b)->data + (*b)->consumed;
     zip->avail_in = bytes;
 
@@ -223,10 +228,18 @@ buffer_compress (z_streamp zip, BUFFER **b)
     /* if flushing, loop until we get all the output from the compressor */
     do
     {
-	r->data = REALLOC (r->data, r->datasize + bytes);
+	/* ensure there is at least 2k of buffer space available */
+	n = (bytes>2048)?bytes:2048;
+	if (r->datasize + n > r->datamax)
+	{
+	    r->datamax = r->datasize + n;
+	    r->data = REALLOC (r->data, r->datamax);
+	}
 	zip->next_out = (uchar *) r->data + r->datasize;
-	zip->avail_out = bytes;
-	r->datasize += bytes;
+	zip->avail_out = r->datamax - r->datasize;
+	/* set this to the full amount and then subtract the leftover bytes
+	   once we exit the loop */
+	r->datasize += r->datamax - r->datasize;
 
 	n = deflate (zip, flush);
 	if (n != Z_OK)
@@ -261,11 +274,6 @@ buffer_compress (z_streamp zip, BUFFER **b)
 	FREE (r);
 	return 0;
     }
-
-#if 0
-    log ("buffer_compress: compression ratio is %d%%",
-	    (100 * (zip->total_in - zip->total_out)) / zip->total_in);
-#endif
 
     return r;
 }
@@ -322,11 +330,6 @@ buffer_uncompress (z_streamp zip, BUFFER **b)
        handle_connection() routine expects this to be here since it needs
        to send only a portion of the string to the handler routines */
     *(cur->data + cur->datasize) = 0;
-
-#if 0
-    log ("buffer_uncompress: uncompression ratio is %d%%",
-	    (100 * (zip->total_out - zip->total_in)) / zip->total_in);
-#endif
 
     return cur;
 }
