@@ -119,7 +119,7 @@ HANDLER (emote)
 
     /* find the channel this message is going to. look the user's joined
      channels since this should be faster than lookup in the hash table */
-    if(!(chan=find_channel(user->channels,ptr)))
+    if(!(chan=find_channel(user->channels,av[0])))
     {
 	if(ISUSER(con))
 	    send_cmd(con,MSG_SERVER_NOSUCH,"You are not a member of that channel");
