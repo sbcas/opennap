@@ -54,18 +54,6 @@ get_attr (ATTRTYPE t, ATTRIBUTE * list, size_t listsize)
 }
 #endif
 
-static void
-fudge_path (const char *in, char *out)
-{
-    while (*in)
-    {
-	if(*in=='\\'||*in=='\'')
-	    *out++='\\';
-	*out++=*in++;
-    }
-    *out=0;
-}
-
 /* adds a file to the database */
 
 /* client request is of the form

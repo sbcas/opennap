@@ -19,6 +19,7 @@ HANDLER (download)
     MYSQL_RES *result;
     MYSQL_ROW row;
     int numrows;
+    char path[256];
 
     ASSERT (VALID (con));
 
@@ -37,10 +38,12 @@ HANDLER (download)
     }
     ASSERT (VALID (user));
 
+    fudge_path(fields[1], path);
+
     /* retrieve file info from the database */
     snprintf (Buf, sizeof (Buf),
 	      "SELECT * FROM library WHERE owner = '%s' && filename = '%s'",
-	      user->nick, fields[1]);
+	      user->nick, path);
     if (mysql_query (Db, Buf) != 0)
     {
 	sql_error ("download", Buf);

@@ -413,6 +413,13 @@ main (int argc, char **argv)
 	exit (1);
     }
 
+    n = 1;
+    if(setsockopt (s, SOL_SOCKET, SO_REUSEADDR, &n, sizeof (n))!=0)
+    {
+	perror("setsockopt");
+	exit(1);
+    }
+
     memset (&sin, 0, sizeof (sin));
     sin.sin_port = htons (Server_Port);
     sin.sin_addr.s_addr = INADDR_ANY;

@@ -234,6 +234,7 @@ void expand_hex (char *, int);
 void free_channel (CHANNEL *);
 void free_hotlist (HOTLIST *);
 void free_user (USER *);
+void fudge_path (const char *, char *);
 char *generate_nonce (void);
 int init_db (void);
 void log (const char *fmt, ...);

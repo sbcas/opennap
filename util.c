@@ -334,3 +334,16 @@ array_remove (void *list, int *listsize, void *ptr)
     }
     return -1; /* not found */
 }
+
+void
+fudge_path (const char *in, char *out)
+{
+    while (*in)
+    {
+	if(*in=='\\'||*in=='\'')
+	    *out++='\\';
+	*out++=*in++;
+    }
+    *out=0;
+}
+
