@@ -141,6 +141,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_REMOVE_SERVER, remove_server},	/* 10111 */
     {MSG_CLIENT_LINKS, server_links},	/* 10112 */
     {MSG_CLIENT_USAGE_STATS, server_usage},	/* 10115 */
+    {MSG_CLIENT_REGISTER_USER, register_user},	/* 10200 */
     {MSG_CLIENT_SHARE_FILE, share_file},
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);

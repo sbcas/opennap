@@ -436,7 +436,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_LINKS		10112
 #define MSG_CLIENT_USAGE_STATS		10115	/* server usage stats */
 #define MSG_SERVER_USAGE_STATS		10115
-#define MSG_SERVER_COMPRESSED_DATA	10200	/* deprecated */
+#define MSG_CLIENT_REGISTER_USER	10200
 #define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
 #define MSG_SERVER_REMOTE_ERROR		10404	/* send 404 to a remote user */
 
@@ -582,6 +582,7 @@ HANDLER (public);
 HANDLER (queue_limit);
 HANDLER (reginfo);
 HANDLER (register_nick);
+HANDLER (register_user);
 HANDLER (remote_search);
 HANDLER (remote_search_result);
 HANDLER (remote_search_end);

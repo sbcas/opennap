@@ -537,3 +537,82 @@ HANDLER (reginfo)
 	log ("reginfo(): updated accounts table for %s", fields[0]);
     userdb_free (db);
 }
+
+/* 10200 [ :<sender> ] <user> <pass> <email> [ <level> ]
+   admin command to force registration of a nickname */
+HANDLER (register_user)
+{
+    USER *sender;
+    int ac, level;
+    char *av[4];
+    USERDB *db;
+
+    (void) len;
+    ASSERT (validate_connection (con));
+    if (pop_user (con, &pkt, &sender))
+	return;
+    if (sender->level < LEVEL_ADMIN)
+    {
+	log ("register_user(): %s has no privilege", sender->nick);
+	if (ISUSER (con))
+	    permission_denied (con);
+	return;
+    }
+    ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
+    /* if the user level was specified do some security checks */
+    if (ac > 3)
+    {
+	level = get_level (av[3]);
+	/* check for a valid level */
+	if (level == -1)
+	{
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH, "Invalid level");
+	    return;
+	}
+	/* check that the user has permission to create a user of this level */
+	if (sender->level < LEVEL_ELITE && level >= sender->level)
+	{
+	    log ("register_user(): %s has no privilege to create %s accounts",
+		sender->nick, Levels[level]);
+	    if (ISUSER (con))
+		permission_denied (con);
+	    return;
+	}
+    }
+    else
+	level = LEVEL_USER; /* default */
+
+    /* first check to make sure this user is not already registered */
+    if (userdb_fetch (av[0]))
+    {
+	log ("register_user(): %s is already registered", av[0]);
+	send_user (sender, MSG_SERVER_NOSUCH, "[%s] %s is already registered",
+	    Server_Name, av[0]);
+	return;
+    }
+    if (Num_Servers)
+	pass_message_args (con, tag, ":%s %s %s %s %s",
+			   sender->nick, av[0], av[1], av[2],
+			   ac > 3 ? av[3] : "");
+
+    db = CALLOC (1, sizeof (USERDB));
+    if (!db)
+    {
+	OUTOFMEMORY ("register_user");
+	return;
+    }
+    db->nick = av[0];
+    db->password = av[1];
+    db->email = av[2];
+    db->level = level;
+    db->created = Current_Time;
+    db->lastSeen = Current_Time;
+    if (userdb_store (db))
+    {
+	log ("register_user(): userdb_store failed");
+	send_user (sender, MSG_SERVER_NOSUCH,
+	    "[%s] unable to register nick (db failure)", Server_Name);
+    }
+    FREE (db);
+}
