@@ -158,7 +158,7 @@ HANDLER (search)
 		goto done;
 	    }
 	    i++;
-	    append_string (Buf, sizeof (Buf), "%s%s%s", strlower (fields[i-2]),
+	    append_string (Buf, sizeof (Buf), " && %s%s%s", strlower (fields[i-2]),
 		    p, fields[i]);
 	}
 	else if (!strcasecmp ("type", fields[i]))
