@@ -41,7 +41,7 @@ HANDLER (upload_ok)
     if (!info ||
 	    strncasecmp(av[1],info->path->path,strlen(info->path->path))!=0)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "You are not sharing that file");
+	send_cmd (con, MSG_SERVER_NOSUCH, "You are not sharing %s", av[1]);
 	return;
     }
     if (con->user->port == 0)

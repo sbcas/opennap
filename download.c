@@ -15,6 +15,7 @@ HANDLER (download)
 {
     char *av[2];
     USER *user, *sender;
+    DATUM *info = 0;
 
     (void) len;
     ASSERT (validate_connection (con));
@@ -29,17 +30,31 @@ HANDLER (download)
     user = hash_lookup (Users, av[0]);
     if (!user)
     {
-	log ("download(): no such user %s", av[0]);
 	send_user (sender, MSG_SERVER_SEND_ERROR, "%s \"%s\"", av[0], av[1]);
 	return;
     }
-    if (ISUSER (user->con)
-	&& is_ignoring (user->con->uopt->ignore, sender->nick))
+
+    if (ISUSER (user->con))
     {
-	send_user (sender, MSG_SERVER_NOSUCH, "%s is ignoring you",
-		   user->nick);
-	return;
+	if(is_ignoring (user->con->uopt->ignore, sender->nick))
+	{
+	    send_user (sender, MSG_SERVER_NOSUCH, "%s is ignoring you",
+		    user->nick);
+	    return;
+	}
+
+	/* check to make sure the user is actually sharing this file */
+	info=hash_lookup(user->con->uopt->files, my_basename(av[1]));
+	if (!info ||
+		/* make sure the path component is also correct */
+		strncasecmp(av[1], info->path->path, strlen(info->path->path)) != 0)
+	{
+	    send_user (sender, MSG_SERVER_SEND_ERROR, "%s \"%s\"",
+		    user->nick, av[1]);
+	    return;
+	}
     }
+
     if (tag == MSG_CLIENT_DOWNLOAD)
     {
 	if (user->port == 0)
@@ -48,29 +63,16 @@ HANDLER (download)
 	       send the 500 request */
 	    if (ISUSER (user->con))
 	    {
-		DATUM *info = hash_lookup (user->con->uopt->files,
-			my_basename(av[1]));
-
-		if (!info ||
-			/* make sure the path component is also correct */
-			strncasecmp(av[1], info->path->path, strlen(info->path->path)) != 0)
-		{
-		    log("download(): %s is not sharing %s", av[1]);
-		    send_user (sender, MSG_SERVER_SEND_ERROR, "%s \"%s\"",
-			       user->nick, av[1]);
-		}
-		else
-		{
-		    send_user (sender, MSG_SERVER_FILE_READY /* 204 */ ,
-			       "%s %u %d \"%s\" %s %d", user->nick,
-			       user->ip, user->port, av[1],
+		ASSERT(info!=0);
+		send_user (sender, MSG_SERVER_FILE_READY /* 204 */ ,
+			"%s %u %d \"%s\" %s %d", user->nick,
+			user->ip, user->port, av[1],
 #if RESUME
-			       info->hash,
+			info->hash,
 #else
-			       "00000000000000000000000000000000",
+			"00000000000000000000000000000000",
 #endif
-			       user->speed);
-		}
+			user->speed);
 	    }
 	    else
 	    {
@@ -78,7 +80,7 @@ HANDLER (download)
 		   dont' have the file information local */
 		ASSERT (ISSERVER (user->con));
 		send_cmd (user->con, tag, ":%s %s \"%s\"", sender->nick,
-			  user->nick, av[1]);
+			user->nick, av[1]);
 	    }
 	    return;
 	}
@@ -90,7 +92,7 @@ HANDLER (download)
 	{
 	    /* this user is not firewalled */
 	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not firewalled",
-		      user->nick);
+		    user->nick);
 	    return;
 	}
 	if (sender->port == 0)
@@ -98,8 +100,8 @@ HANDLER (download)
 	    /* error, both clients are firewalled */
 	    ASSERT (ISUSER (con));
 	    send_cmd (con, MSG_SERVER_FILE_READY /* 204 */ ,
-		      "%s %u %d \"%s\" firewallerror %d",
-		      user->nick, user->ip, user->port, av[1], user->speed);
+		    "%s %u %d \"%s\" firewallerror %d",
+		    user->nick, user->ip, user->port, av[1], user->speed);
 	    return;
 	}
     }
@@ -108,15 +110,6 @@ HANDLER (download)
        directly */
     if (ISUSER(user->con))
     {
-	DATUM *info = hash_lookup(user->con->uopt->files, my_basename(av[1]));
-
-	if(!info||
-		/* ensure the directory component matches */
-		strncasecmp(av[1],info->path->path,strlen(info->path->path))!=0)
-	{
-	    send_user (sender, MSG_SERVER_SEND_ERROR, "%s \"%s\"", av[0], av[1]);
-	    return;
-	}
 	send_cmd (user->con, MSG_SERVER_UPLOAD_REQUEST, "%s \"%s\"",
 		sender->nick, av[1]);
     }
