@@ -76,8 +76,9 @@ search_callback (DATUM * match, SEARCH * parms)
 	ASSERT (validate_user (match->user));
 	/* 10016 <id> <user> "<filename>" <md5> <size> <bitrate> <frequency> <duration> */
 	send_cmd (parms->con, MSG_SERVER_REMOTE_SEARCH_RESULT,
-		  "%s %s \"%s\" %s %d %d %d %d",
-		  parms->id, match->user->nick, match->filename,
+		  "%s %s \"%s%s\" %s %d %d %d %d",
+		  parms->id, match->user->nick, match->path->path,
+		  match->filename,
 #if RESUME
 		  match->hash,
 #else
@@ -91,8 +92,8 @@ search_callback (DATUM * match, SEARCH * parms)
     else
     {
 	send_cmd (parms->con, MSG_SERVER_SEARCH_RESULT,
-		  "\"%s\" %s %d %d %d %d %s %u %d",
-		  match->filename,
+		  "\"%s%s\" %s %d %d %d %d %s %u %d",
+		  match->path->path, match->filename,
 #if RESUME
 		  match->hash,
 #else
