@@ -20,17 +20,17 @@ lookup_ip (const char *host)
 {
     struct hostent *he;
     unsigned int ip;
+    struct in_addr
 
-    log ("lookup_ip: resolving %s", host);
-    he = gethostbyname(host);
+    log ("lookup_ip(): resolving %s", host);
+    he = gethostbyname (host);
     if (!he)
     {
-	log ("lookup_ip: can't find ip for host %s", host);
+	log ("lookup_ip(): can't find ip for host %s", host);
 	return 0;
     }
     memcpy (&ip, &he->h_addr[0], he->h_length);
-    endhostent ();
-    log ("lookup_ip: %s is %s", host, my_ntoa (ip));
+    log ("lookup_ip(): %s is %s", host, my_ntoa (ip));
     return ip;
 }
 

@@ -284,7 +284,7 @@ handle_connection (CONNECTION * con)
     {
 	log ("handle_connection: %s is not registered, closing connection",
 	     con->host);
-	log ("handle_connection: tag=%hu, len=%hu, data=%d",
+	log ("handle_connection: tag=%hu, len=%hu, data=%s",
 		tag, len, con->recvbuf->data + con->recvbuf->consumed + 4);
 	remove_connection (con);
 	return;
