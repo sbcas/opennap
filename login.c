@@ -386,8 +386,8 @@ HANDLER (reginfo)
 	log ("reginfo(): message does not begin with :");
 	return;
     }
-    server = pkt;
-    pkt = strchr (pkt, ' ');
+    server = pkt + 1;
+    pkt = strchr (server, ' ');
     if (!pkt)
 	return;
     *pkt++ = 0;
@@ -426,7 +426,7 @@ HANDLER (reginfo)
 	mysql_free_result (result);
 	/* update our record */
 	snprintf (Buf, sizeof (Buf),
-		"UPDATE accounts SET pass='%s',level='%s',email='%s',created=%s,lastseen=%s WHERE nick='%s':",
+		"UPDATE accounts SET pass='%s',level='%s',email='%s',created=%s,lastseen=%s WHERE nick='%s'",
 		fields[1], fields[2], fields[3], fields[4], fields[5],
 		fields[0]);
 	if (mysql_query (Db, Buf) != 0)
