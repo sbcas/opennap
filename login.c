@@ -44,9 +44,16 @@ HANDLER (login)
     MYSQL_ROW row = 0;
     LEVEL level = LEVEL_USER;
 
-    (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
+
+    if (con->class == CLASS_USER)
+    {
+	log ("login(): recived command %d from a logged in user: %s", tag,
+		pkt);
+	send_cmd (con, MSG_SERVER_NOSUCH, "you are already logged in");
+	return;
+    }
 
     numfields = split_line (field, sizeof (field) / sizeof (char *), pkt);
     if (numfields < 5)
