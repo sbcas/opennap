@@ -9,7 +9,6 @@
 #include <unistd.h>
 #endif
 #include <string.h>
-#include <time.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -19,8 +18,9 @@
 HANDLER (public)
 {
     CHANNEL *chan;
-    USER *user;
-    int i, l, remote = 0;
+    USER *user, *chanUser;
+    LIST *list;
+    int l, remote = 0;
     char *ptr;
 
     (void) tag;
@@ -42,20 +42,20 @@ HANDLER (public)
     chan = hash_lookup (Channels, ptr);
     if (!chan)
     {
-	if (con->class == CLASS_USER)
+	if (ISUSER (con))
 	{
 	    /* channel does not exist */
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Channel %s does not exist!",
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Channel %s does not exist.",
 		      ptr);
 	}
 	else
 	    log ("public(): server sent message to nonexistent channel %s",
-		    ptr);
+		ptr);
 	return;
     }
     ASSERT (validate_channel (chan));
 
-    if (con->class == CLASS_SERVER)
+    if (ISSERVER (con))
     {
 	/* find the USER struct for the sender */
 	ptr = next_arg (&pkt);
@@ -77,22 +77,22 @@ HANDLER (public)
     ASSERT (validate_user (user));
 
     /* make sure this user is a member of the channel */
-    for (i = 0; i < user->numchannels; i++)
-	if (user->channels[i] == chan)
-	    break;
-
-    if (i == user->numchannels)
+    list = list_find (user->channels, chan);
+    if (!list)
     {
 	/* user is not a member of this channel */
-	if (con->class == CLASS_USER)
+	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
 		"you are not on channel %s", chan->name);
+	else
+	    log ("public(): %s is not a member of channel %s", user->nick,
+		chan->name);
 	return;
     }
 
     if (user->muzzled)
     {
-	if (con->class == CLASS_USER)
+	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "You are muzzled.");
 	return;
     }
@@ -105,11 +105,14 @@ HANDLER (public)
     set_tag (Buf, MSG_SERVER_PUBLIC);
 
     /* send this message to everyone in the channel */
-    for (i = 0; i < chan->numusers; i++)
-	if (chan->users[i]->local)
-	    queue_data (chan->users[i]->con, Buf, 4 + l);
+    for (list = chan->users; list; list = list->next)
+    {
+	chanUser = list->data;
+	if (chanUser->local)
+	    queue_data (chanUser->con, Buf, 4 + l);
 	else
 	    remote++;
+    }
 
     /* if a local user, pass this message to our peer servers */
     /* this is an optimization for the case where all the users on a given
@@ -122,10 +125,11 @@ HANDLER (public)
 /* 824 [ :<user> ] <channel> "<text>" */
 HANDLER (emote)
 {
-    USER *user;
+    USER *user, *chanUser;
     CHANNEL *chan;
-    int i, buflen;
+    int buflen, remote = 0;
     char *cname;
+    LIST *list;
 
     (void) tag;
     (void) len;
@@ -143,20 +147,18 @@ HANDLER (emote)
     }
 
     /* make sure this user is on the channel they are sending to */
-    chan = 0;
-    for (i = 0; i < user->numchannels; i++)
-    {
-	if (!strcasecmp (cname, user->channels[i]->name))
-	{
-	    chan = user->channels[i];
-	    break;
-	}
-    }
+    chan = hash_lookup (Channels, cname);
     if (!chan)
     {
-	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "you are not on channel %s",
-		    cname);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "No such channel %s", cname);
+	return;
+    }
+    if (list_find (chan->users, user) == 0)
+    {
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		"You are not a member of channel %s", chan->name);
 	return;
     }
 
@@ -170,12 +172,17 @@ HANDLER (emote)
     buflen += 4;
 
     /* send this message to all channel members */
-    for (i = 0; i < chan->numusers; i++)
-	if (chan->users[i]->local)
-	    queue_data (chan->users[i]->con, Buf, buflen);
+    for (list = chan->users; list; list = list->next)
+    {
+	chanUser = list->data;
+	if (chanUser->local)
+	    queue_data (chanUser->con, Buf, buflen);
+	else
+	    remote++; /* we have to send this to other servers */
+    }
 
     /* pass message to peer servers */
-    if (con->class == CLASS_USER && Num_Servers)
+    if (ISUSER (con) && Num_Servers && remote)
 	pass_message_args (con, MSG_CLIENT_EMOTE, ":%s %s %s",
 		user->nick, chan->name, pkt);
 }

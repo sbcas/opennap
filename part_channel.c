@@ -20,35 +20,39 @@
 void
 part_channel (CHANNEL * chan, USER * user)
 {
-    int i, len;
+    int len;
+    LIST *list;
+    USER *chanUser;
 
     ASSERT (validate_channel (chan));
     ASSERT (validate_user (user));
 
     /* remove this user from the channel list */
-    chan->users = array_remove (chan->users, &chan->numusers, user);
-
-    /* notify other members of this channel that this user has parted */
-    snprintf (Buf+4,sizeof(Buf)-4,"%s %s %d %d",
-	    chan->name, user->nick, user->shared, user->speed);
-    set_tag(Buf,MSG_SERVER_PART);
-    len=strlen(Buf+4);
-    set_len(Buf,len);
-    for (i = 0; i < chan->numusers; i++)
+    chan->users = list_delete (chan->users, user);
+    if (chan->users)
     {
-	/* we only notify local clients */
-	if (chan->users[i]->local)
+	/* notify other members of this channel that this user has parted */
+	snprintf (Buf+4,sizeof(Buf)-4,"%s %s %d %d",
+	    chan->name, user->nick, user->shared, user->speed);
+	set_tag(Buf,MSG_SERVER_PART);
+	len=strlen(Buf+4);
+	set_len(Buf,len);
+	for (list = chan->users; list; list = list->next)
 	{
-	    ASSERT (validate_user (chan->users[i]));
-	    ASSERT (validate_connection (chan->users[i]->con));
-	    queue_data (chan->users[i]->con, Buf, len + 4);
+	    /* we only notify local clients */
+	    chanUser = list->data;
+	    ASSERT (validate_user (chanUser));
+	    if (chanUser->local)
+	    {
+		ASSERT (validate_connection (chanUser->con));
+		queue_data (chanUser->con, Buf, len + 4);
+	    }
 	}
     }
-
     /* if there are no users left in this channel, destroy it */
-    if (chan->numusers == 0)
+    else
     {
-	log("part_channel(): destroying channel %s", chan->name);
+	log ("part_channel(): destroying channel %s", chan->name);
 	hash_remove (Channels, chan->name);
     }
 }

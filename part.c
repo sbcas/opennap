@@ -5,9 +5,6 @@
    $Id$ */
 
 #include <string.h>
-#ifndef WIN32
-#include <unistd.h>
-#endif
 #include "opennap.h"
 #include "debug.h"
 
@@ -15,9 +12,9 @@
 /* [ :<nick> ] <channel> */
 HANDLER (part)
 {
-    int i;
-    CHANNEL *chan = 0;
+    CHANNEL *chan;
     USER *user;
+    LIST *list;
 
     (void) tag;
     (void) len;
@@ -28,30 +25,27 @@ HANDLER (part)
     ASSERT (validate_user (user));
 
     /* find the requested channel in the user's  list */
-    for (i = 0; i < user->numchannels; i++)
+    for (list = user->channels; list; list = list->next)
     {
-	ASSERT (validate_channel (user->channels[i]));
-	if (strcmp (pkt, user->channels[i]->name) == 0)
-	{
-	    chan = user->channels[i];
+	chan = list->data;
+	if (!strcmp (pkt, chan->name))
 	    break;
-	}
     }
 
-    if (!chan)
+    if (!list)
     {
 	/* user is not on this channel */
 	log ("part(): user %s is not on channel %s", user->nick, pkt);
-	if (con->class == CLASS_USER)
+	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		    "you are not a member of channel %s", pkt);
+		    "You are not a member of channel %s", pkt);
 	return;
     }
 
-    user->channels = array_remove (user->channels, &user->numchannels, chan);
+    user->channels = list_delete (user->channels, chan);
 
     /* if local, notify our peer servers that this client has parted */
-    if (con->class == CLASS_USER && Num_Servers)
+    if (ISUSER (con) && Num_Servers)
     {
 	/* NOTE: we use the MSG_CLIENT_PART(401) message instead of
 	   passing MSG_SERVER_PART(407) to pass between servers because we

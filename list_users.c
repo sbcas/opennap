@@ -11,7 +11,8 @@
 HANDLER (list_users)
 {
     CHANNEL *chan;
-    int i;
+    LIST *list;
+    USER *chanUser;
 
     (void) tag;
     (void) len;
@@ -23,22 +24,20 @@ HANDLER (list_users)
 	send_cmd (con, MSG_SERVER_NOSUCH, "channel %s does not exist", pkt);
 	return;
     }
+    ASSERT (validate_channel (chan));
     /* make sure this user is on the channel */
-    for (i = 0; i < con->user->numchannels; i++)
-	if (con->user->channels[i] == chan)
-	    break;
-    if (i == con->user->numchannels)
+    if (list_find (con->user->channels, chan) == 0)
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "you're not on channel %s",
-		chan->name);
+	    chan->name);
 	return;
     }
 
-    for (i = 0; i < chan->numusers; i++)
+    for (list = chan->users; list; list = list->next)
     {
+	chanUser = list->data;
 	send_cmd (con, MSG_SERVER_NAMES_LIST /* 825 */, "%s %s %d %d",
-		chan->name, chan->users[i]->nick, chan->users[i]->shared,
-		chan->users[i]->speed);
+		chan->name, chanUser->nick, chanUser->shared, chanUser->speed);
     }
 
     send_cmd (con, MSG_SERVER_NAMES_LIST_END /* 830 */, "");

@@ -114,7 +114,7 @@ HANDLER (join)
     }
 
     /* add this user to the members list */
-    chan->users = alist_append (chan->users, user);
+    chan->users = list_append (chan->users, user);
 
     /* notify other members of the channel that this user has joined */
     for (list = chan->users; list; list = list->next)

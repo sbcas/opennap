@@ -33,7 +33,7 @@ sync_file (DATUM *info, CONNECTION *con)
 static void
 sync_user (USER *user, CONNECTION *con)
 {
-    int i;
+    LIST *list;
 
     ASSERT (validate_connection (con));
     ASSERT (validate_user (user));
@@ -64,10 +64,10 @@ sync_user (USER *user, CONNECTION *con)
     }
 
     /* send the channels this user is listening on */
-    for (i = 0; i < user->numchannels; i++)
+    for (list = user->channels; list; list = list->next)
     {
 	send_cmd (con, MSG_CLIENT_JOIN, ":%s %s",
-		user->nick, user->channels[i]->name);
+		user->nick, ((CHANNEL *) list->data)->name);
     }
 
     /* sync the files for this user */

@@ -114,12 +114,11 @@ void
 free_channel (CHANNEL * chan)
 {
     ASSERT(validate_channel (chan));
-    ASSERT (chan->numusers == 0);
     FREE (chan->name);
     if (chan->topic)
 	FREE (chan->topic);
     if (chan->users)
-	FREE (chan->users);
+	list_free (chan->users, 0);
     FREE (chan);
 }
 
@@ -369,8 +368,7 @@ validate_user (USER *user)
     ASSERT_RETURN_IF_FAIL (VALID (user->clientinfo), 0);
     ASSERT_RETURN_IF_FAIL (user->con == 0 || VALID_LEN (user->con, sizeof (CONNECTION)), 0);
     ASSERT_RETURN_IF_FAIL (user->email == 0 || VALID (user->email), 0);
-    ASSERT_RETURN_IF_FAIL ((user->channels != 0) ^ (user->numchannels == 0), 0);
-    ASSERT_RETURN_IF_FAIL (user->numchannels == 0 || VALID_LEN (user->channels, sizeof (USER *) * user->numchannels), 0);
+    ASSERT_RETURN_IF_FAIL (user->channels == 0 || VALID_LEN (user->channels, sizeof (LIST)), 0);
     return 1;
 }
 
@@ -380,8 +378,7 @@ validate_channel (CHANNEL *chan)
     ASSERT_RETURN_IF_FAIL (VALID_LEN (chan, sizeof (CHANNEL)), 0);
     ASSERT_RETURN_IF_FAIL (chan->magic == MAGIC_CHANNEL, 0)
     ASSERT_RETURN_IF_FAIL (VALID (chan->name), 0);
-    ASSERT_RETURN_IF_FAIL ((chan->users != 0) ^ (chan->numusers == 0), 0);
-    ASSERT_RETURN_IF_FAIL (chan->numusers == 0 || VALID_LEN (chan->users, sizeof (USER *) * chan->numusers), 0);
+    ASSERT_RETURN_IF_FAIL (chan->users == 0 || VALID_LEN (chan->users, sizeof (LIST)), 0);
     return 1;
 }
 

@@ -15,7 +15,7 @@ channel_info (void *elem, void *data)
     ASSERT (VALID (elem));
     ASSERT (VALID (data));
     send_cmd ((CONNECTION *) data, MSG_SERVER_CHANNEL_LIST /* 618 */,
-	    "%s %d %s", chan->name, chan->numusers, chan->topic);
+	    "%s %d %s", chan->name, list_count (chan->users), chan->topic);
 }
 
 /* send a list of channels we know about to the user */
