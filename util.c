@@ -315,10 +315,10 @@ print_args (int ac, char **av)
 {
     int i;
 
-    fprintf (stderr, "print_args(): [%d]", ac);
+    printf ("print_args(): [%d]", ac);
     for (i = 0; i < ac; i++)
-	fprintf (stderr, " \"%s\"", av[i]);
-    fputc ('\n', stderr);
+	printf (" \"%s\"", av[i]);
+    fputc ('\n', stdout);
 }
 
 static char alphabet[] =

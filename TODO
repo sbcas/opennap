@@ -17,6 +17,3 @@
 * find the server output for the global users list
 
 * nonblocking connect() doesnt work under win32 so they can't link
-
-* win32 version crashes on the first fdb_garbage_collect() call after files
-  are shared
