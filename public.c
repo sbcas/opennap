@@ -28,6 +28,17 @@ HANDLER (public)
     if (pop_user (con, &pkt, &sender))
 	return;
     ASSERT (validate_user (sender));
+
+    /* protect against DOS attack against the windows napster client */
+    if (len > 128)
+    {
+	log ("public(): user %s is a biscuit-head (possible DOS attempt)",
+		sender->nick);
+	if (ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"BAD DOG!  NO BISCUIT!");
+	return;
+    }
+
     /* can't use split line here because the text field is considered all
        one item */
     /* extract the channel name. NOTE: we don't use next_arg() here because
@@ -41,7 +52,6 @@ HANDLER (public)
 		      "too few parameters for command");
 	return;
     }
-
     /* find the channel this message is going to */
     chan = hash_lookup (Channels, ptr);
     if (!chan)
@@ -114,6 +124,16 @@ HANDLER (emote)
     {
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "You are muzzled");
+	return;
+    }
+
+    /* protect against DOS attack against the windows napster client */
+    if (len > 128)
+    {
+	log ("emote(): user %s is a biscuit-head (possible DOS attempt)",
+		user->nick);
+	if (ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"BAD DOG!  NO BISCUIT!");
 	return;
     }
 

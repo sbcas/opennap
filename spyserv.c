@@ -62,7 +62,7 @@ pass_message (const char *id, int s, int d)
 static void
 usage(void)
 {
-    puts("usage: spyserv [ -h SERVER ] [ -p SERVERPORT ] [ -l LOCALPORT ]");
+    puts("usage: spyserv [ -s SERVER ] [ -p SERVERPORT ] [ -l LOCALPORT ]");
     exit(0);
 }
 
