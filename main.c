@@ -498,6 +498,29 @@ accept_connection (int s)
 	cli->destroy = 1;
 }
 
+static void
+report_stats (int fd)
+{
+    int n;
+    struct sockaddr_in sin;
+    socklen_t sinsize = sizeof (sin);
+    float loadavg = 0;
+
+    n = accept (fd, (struct sockaddr *) &sin, &sinsize);
+    if (n == -1)
+    {
+	log ("report_stats(): accept: %s (errno %d)", strerror (errno), errno);
+	return;
+    }
+    log ("report_stats(): connection from %s:%d", inet_ntoa (sin.sin_addr),
+	    htons (sin.sin_port));
+    /* TODO: figure out how to get the load average on a system */
+    snprintf (Buf, sizeof (Buf), "%d %d %.2f %lu 0\n", Users->dbsize, Num_Files,
+	    loadavg, (unsigned long) (Num_Gigs) * 1024);
+    write (n, Buf, strlen (Buf));
+    close (n);
+}
+
 #ifndef WIN32
 static void
 init_signals (void)
@@ -557,6 +580,7 @@ main (int argc, char **argv)
     int s;			/* server socket */
     int i;			/* generic counter */
     int n;			/* number of ready sockets */
+    int sp;			/* stats port */
     int f, pending = 0, port = 0, iface = INADDR_ANY;
 #if HAVE_POLL
     struct pollfd *ufd = 0;
@@ -720,6 +744,17 @@ main (int argc, char **argv)
 
     log ("listening on %s port %d", my_ntoa (Interface), Server_Port);
 
+    /* listen on port 8889 for stats reporting */
+    if ((sp = new_tcp_socket ()) == -1)
+	exit (1);
+    if (bind_interface (sp, Interface, 8889))
+	exit (1);
+    if (listen (sp, BACKLOG))
+    {
+	perror ("listen");
+	exit (1);
+    }
+
 #ifndef HAVE_DEV_RANDOM
     init_random ();
 #endif /* !HAVE_DEV_RANDOM */
@@ -728,18 +763,26 @@ main (int argc, char **argv)
     while (!SigCaught)
     {
 #if HAVE_POLL
-	/* ensure that we have enough pollfd structs.  add one extra for
-	   the incoming connections port */
-	if (Num_Clients + 1 > ufdsize)
+	/* ensure that we have enough pollfd structs.  add two extra for
+	   the incoming connections port and the stats port */
+	if (Num_Clients + 2 > ufdsize)
 	{
-	    ufd = REALLOC (ufd, sizeof (struct pollfd) * (Num_Clients + 1));
-	    ufdsize = Num_Clients + 1;
+	    ufd = REALLOC (ufd, sizeof (struct pollfd) * (Num_Clients + 2));
+	    if (!ufd)
+	    {
+		log ("main(): OUT OF MEMORY");
+		break; /* nothing to do here but shut down */
+	    }
+	    ufdsize = Num_Clients + 2;
 	}
 #else
 	FD_ZERO (&set);
 	FD_ZERO (&wset);
 	maxfd = s;
 	FD_SET (s, &set);
+	FD_SET (sp, &set);
+	if (sp > maxfd)
+	    maxfd = sp;
 #endif /* HAVE_POLL */
 
 	for (n = 0, i = 0; i < Num_Clients; i++)
@@ -793,11 +836,13 @@ main (int argc, char **argv)
 	/* if there is pending data in client queues, don't block on the
 	   select call */
 #if HAVE_POLL
-	/* add an entry for the incoming connections socket */
+	/* add entries for the incoming connections socket and stats socket */
 	ufd[Num_Clients].fd = s;
 	ufd[Num_Clients].events = POLLIN;
+	ufd[Num_Clients+1].fd = sp;
+	ufd[Num_Clients+1].events = POLLIN;
 
-	if ((n = poll (ufd, Num_Clients + 1, pending ? 0 : Stat_Click * 1000)) < 0)
+	if ((n = poll (ufd, Num_Clients + 2, pending ? 0 : Stat_Click * 1000)) < 0)
 	{
 	    perror ("poll");
 	    continue;
@@ -822,6 +867,16 @@ main (int argc, char **argv)
 #endif
 	{
 	    accept_connection (s);
+	    n--;
+	}
+
+#if HAVE_POLL
+	if (ufd[Num_Clients+1].revents & POLLIN)
+#else
+	if (FD_ISSET (sp, &set))
+#endif
+	{
+	    report_stats (sp);
 	    n--;
 	}
 

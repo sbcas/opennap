@@ -78,7 +78,7 @@ new_tcp_socket (void)
 {
     int f;
 
-    f = socket (PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    f = socket (AF_INET, SOCK_STREAM, 0);
     if (f < 0)
     {
 	log("new_tcp_socket(): socket: %s", strerror (errno));

@@ -6,16 +6,11 @@ remote server.
 
 mod+ users are now notified when someone does a /whois on them
 
-filename field in the library SQL table reduced to 237 chars.  Anything
-longer than that seems to cause MySQL 3.22.32 to die unexpectedly.
-
 fixed to missed calls to close() which should use CLOSE() as a wrapper for
 closing sockets (needed for win32)
 
 calls to write() should check for EWOULDBLOCK to avoid closing the
 connection unnecessarily
-
-fixed mising quotes around md5 string in SQL query in resume() 
 
 reordered code in login() so that no messages get sent to a client prior to
 the login/email ack being sent to avoid confusing the win32 client
