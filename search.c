@@ -142,9 +142,9 @@ tokenize (char *s)
 	   any of these it doesnt do any good for the search engine because
 	   it won't match on them.  its doubtful that these would narrow
 	   searches down any even after the selection of the bin to search */
-	if (!strcmp ("a", s) ||
-	    !strcmp ("i", s) ||
+	if (!strcmp ("a", s) || !strcmp ("i", s) ||
 	    !strcmp ("the", s) || !strcmp ("and", s) || !strcmp ("in", s) ||
+	    !strcmp ("of", s) || !strcmp ("you", s) ||
 	    /* the following are common path names and don't really
 	       provide useful information */
 	    !strcmp ("mp3", s) ||
@@ -160,6 +160,7 @@ tokenize (char *s)
 	    !strcmp ("desktop", s) ||
 	    !strcmp ("my", s) ||
 	    !strcmp ("documents", s) ||
+	    !strcmp ("mp3's", s) ||
 	    !strcmp ("winamp", s) || !strcmp ("mp3s", s))
 	{
 	    s = ptr;
@@ -221,7 +222,7 @@ typedef struct
 }
 GARBAGE;
 
-#define THRESH 10000
+#define THRESH 5000
 
 static void
 collect_garbage (FLIST * files, GARBAGE * data)
