@@ -17,7 +17,7 @@ ac_help="$ac_help
 ac_help="$ac_help
   --disable-warnings	Turn of GCC compiler warnings "
 ac_help="$ac_help
-  --disable-debug	Turn off memory debugging code"
+  --enable-debug	Turn on memory debugging code"
 ac_help="$ac_help
   --with-fd-setsize=N	Set max connections with select() to N"
 ac_help="$ac_help
@@ -1695,16 +1695,19 @@ fi
 if test $ac_cv_warnings != "no"; then
 	CFLAGS="-W -Wall -Wmissing-prototypes -Wcast-align -pedantic $CFLAGS"
 fi
-ac_cv_debug=yes
+
 # Check whether --enable-debug or --disable-debug was given.
 if test "${enable_debug+set}" = set; then
   enableval="$enable_debug"
-  ac_cv_debug=$enableval
+  if test $enableval=yes; then
+		cat >> confdefs.h <<\EOF
+#define DEBUG 1
+EOF
+
+	fi
 fi
 
-if test $ac_cv_debug = yes; then
-	CFLAGS="-DDEBUG=1 $CFLAGS"
-fi
+
 # Check whether --with-fd-setsize or --without-fd-setsize was given.
 if test "${with_fd_setsize+set}" = set; then
   withval="$with_fd_setsize"

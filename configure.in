@@ -25,12 +25,12 @@ AC_ARG_ENABLE(warnings, [  --disable-warnings	Turn of GCC compiler warnings ],
 if test $ac_cv_warnings != "no"; then
 	CFLAGS="-W -Wall -Wmissing-prototypes -Wcast-align -pedantic $CFLAGS"
 fi
-ac_cv_debug=yes
-AC_ARG_ENABLE(debug, [  --disable-debug	Turn off memory debugging code],
-	[ac_cv_debug=$enableval])
-if test $ac_cv_debug = yes; then
-	CFLAGS="-DDEBUG=1 $CFLAGS"
-fi
+
+AC_ARG_ENABLE(debug, [  --enable-debug	Turn on memory debugging code],
+	[if test $enableval=yes; then
+		AC_DEFINE(DEBUG)
+	fi])
+
 AC_ARG_WITH(fd-setsize,
 	[  --with-fd-setsize=N	Set max connections with select() to N],
 	[AC_DEFINE_UNQUOTED(FD_SETSIZE,$withval)])
