@@ -217,6 +217,11 @@ insert_datum (DATUM * info, char *av)
     {
 	/* create the hash table */
 	info->user->files = hash_init (257, (hash_destroy) free_datum);
+	if (!info->user->files)
+	{
+	    OUTOFMEMORY ("insert_datum");
+	    return;
+	}
     }
 
     /* add this entry to the hash table for this user's files */
