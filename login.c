@@ -438,7 +438,12 @@ HANDLER (register_nick)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-    CHECK_USER_CLASS ("register_nick");
+    if (con->class != CLASS_UNKNOWN)
+    {
+	log ("register_nick(): command received after registration");
+	send_cmd (con, MSG_SERVER_NOSUCH, "You are already logged in.");
+	return;
+    }
     log ("register_nick(): attempting to register %s", pkt);
     if ((db = userdb_fetch (pkt)))
     {
