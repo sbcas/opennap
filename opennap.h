@@ -306,10 +306,11 @@ DATUM;
 
 typedef struct _ban
 {
-    char *target;
-    char *setby;
-    char *reason;
-    time_t when;
+    char *target;	/* target of the ban */
+    char *setby;	/* user/server that set the ban */
+    char *reason;	/* reason for the ban */
+    time_t when;	/* when the ban was set */
+    int timeout;	/* how many secs the ban is active for */
 }
 BAN;
 
@@ -637,6 +638,7 @@ USERDB *create_db (USER *);
 void dump_channels(void);
 void exec_timers (time_t);
 void expand_hex (char *, int);
+void expire_bans (void);
 void fdb_garbage_collect (HASH *);
 void finalize_compress (SERVER *);
 CHANNEL *find_channel (LIST *, const char *);

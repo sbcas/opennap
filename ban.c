@@ -52,38 +52,26 @@ normalize_ban(/*const*/ char *src, char *dest, int destlen)
     return dest;
 }
 
-/* 612 [ :<sender> ] <user!ip> [ "<reason>" ] */
+/* 612 [ :<sender> ] <user!ip> [ "<reason>" [time] ] */
 HANDLER (ban)
 {
     BAN *b;
     LIST *list;
     int ac = -1;
-    char *av[2], *sender;
+    char *av[3], *sendernick;
     char *banptr, realban[256];
+    USER *sender;
+    int timeout = 0;
 
     (void) len;
     ASSERT (validate_connection (con));
-    /* servers have to sync bans, so we don't authenticate the sender,
-       we assume the other servers do their job */
-    if (ISSERVER (con))
+
+    if(pop_user_server(con,tag,&pkt,&sendernick,&sender))
+	return;
+    if(sender && sender->level < LEVEL_MODERATOR)
     {
-	if (*pkt != ':')
-	{
-	    log ("ban(): missing sender name for server message");
-	    return;
-	}
-	pkt++;
-	sender = next_arg (&pkt);
-    }
-    else
-    {
-	/* make sure this user has privilege */
-	if (con->user->level < LEVEL_MODERATOR)
-	{
 	    permission_denied (con);
 	    return;
-	}
-	sender = con->user->nick;
     }
     if (pkt)
 	ac = split_line (av, FIELDS (av), pkt);
@@ -91,6 +79,17 @@ HANDLER (ban)
     {
 	unparsable (con);
 	return;
+    }
+
+    if(ac>2)
+    {
+	timeout = atoi (av[2]);
+	if(timeout < 0)
+	{
+	    if(ISUSER(con))
+		send_cmd(con,MSG_SERVER_NOSUCH,"invalid ban timeout");
+	    return;
+	}
     }
 
     banptr=normalize_ban(av[0], realban, sizeof(realban));
@@ -106,9 +105,12 @@ HANDLER (ban)
 	    return;
 	}
     }
+
     if (ac > 1)
 	truncate_reason (av[1]);
-    pass_message_args (con, tag, ":%s %s \"%s\"", sender, av[0], ac>1?av[1]:"");
+
+    pass_message_args (con, tag, ":%s %s \"%s\" %d", sendernick,
+	    av[0], ac>1?av[1]:"", timeout);
 
     do
     {
@@ -117,20 +119,28 @@ HANDLER (ban)
 	    break;
 	if (!(b->target = STRDUP (banptr)))
 	    break;
-	if (!(b->setby = STRDUP (sender)))
+	if (!(b->setby = STRDUP (sendernick)))
 	    break;
 	if (!(b->reason = STRDUP (ac > 1 ? av[1] : "")))
 	    break;
 	b->when = Current_Time;
-	/* determine if this ban is on an ip or a user */
+	b->timeout = timeout;
+
 	list = CALLOC (1, sizeof (LIST));
 	if (!list)
+	{
+	    OUTOFMEMORY("ban");
 	    break;
+	}
 	list->data = b;
 	list->next = Bans;
 	Bans = list;
-	notify_mods (BANLOG_MODE, "%s banned %s: %s", sender, b->target,
-		     b->reason);
+	notify_mods (BANLOG_MODE,
+		"%s banned %s%s%s%s: %s", sender, b->target,
+		(timeout>0) ? " for " : "",
+		(timeout>0) ? av[2] : "",
+		(timeout>0) ? " seconds" : "",
+		b->reason);
 	return;
     }
     while (1);
@@ -210,8 +220,8 @@ HANDLER (banlist)
     {
 	ban = list->data;
 	send_cmd (con, MSG_SERVER_IP_BANLIST /* 616 */ ,
-		  "%s %s \"%s\" %ld 0", ban->target, ban->setby,
-		  ban->reason, ban->when);
+		  "%s %s \"%s\" %ld %d", ban->target, ban->setby,
+		  ban->reason, ban->when, ban->timeout);
     }
     /* terminate the banlist */
     send_cmd (con, MSG_CLIENT_BANLIST /* 615 */ , "");
@@ -228,7 +238,8 @@ check_ban (CONNECTION * con, const char *nick, const char *host)
     for (list = Bans; list; list = list->next)
     {
 	ban = list->data;
-	if(glob_match(ban->target,mask))
+	if((ban->timeout == 0 || ban->when + ban->timeout > Current_Time) &&
+		glob_match(ban->target,mask))
 	{
 	    notify_mods (BANLOG_MODE,
 		    "Connection from %s: %s banned: %s",
@@ -278,8 +289,8 @@ save_bans (void)
     for (list = Bans; list; list = list->next)
     {
 	b = list->data;
-	fprintf (fp, "%s %s %d \"%s\"", b->target, b->setby,
-		(int) b->when, b->reason);
+	fprintf (fp, "%s %s %d \"%s\" %d", b->target, b->setby,
+		(int) b->when, b->reason, b->timeout);
 #ifdef WIN32
 	fputc ('\r', fp);
 #endif
@@ -300,7 +311,7 @@ load_bans (void)
     LIST *list, **last = &Bans;
     BAN *b;
     int ac;
-    char *av[4], path[_POSIX_PATH_MAX];
+    char *av[5], path[_POSIX_PATH_MAX];
     char *banptr, realban[256];
 
     snprintf (path, sizeof (path), "%s/bans", Config_Dir);
@@ -336,6 +347,8 @@ load_bans (void)
 	    b->when = atol (av[2]);
 	    truncate_reason (av[3]);
 	    b->reason = STRDUP (av[3]);
+	    if(ac>4)
+		b->timeout = atoi (av[4]);
 	}
 	else
 	{
@@ -359,4 +372,32 @@ load_bans (void)
     }
     fclose (fp);
     return 0;
+}
+
+/* reap expired bans from the list */
+void
+expire_bans (void)
+{
+    LIST **list, *tmp;
+    BAN *b;
+
+    list=&Bans;
+    while(*list)
+    {
+	b=(*list)->data;
+	if(b->timeout > 0 && b->when + b->timeout < Current_Time)
+	{
+	    tmp=*list;
+	    *list=(*list)->next;
+	    FREE(tmp);
+	    /* make sure all servers are synched up */
+	    pass_message_args(NULL,MSG_CLIENT_UNBAN,":%s %s \"expired after %d seconds\"",
+		    Server_Name, b->target, b->timeout);
+	    notify_mods(BANLOG_MODE,"%s removed ban on %s: expired after %d seconds",
+		    Server_Name, b->target, b->timeout);
+	    free_ban(b);
+	    continue;
+	}
+	list=&(*list)->next;
+    }
 }

@@ -195,6 +195,14 @@ specifying what input it expects.
 		meaningless (and are set to 0 in this implmentation).  The
 		client can then download as they would any other mp3 file.
 
+612	ban user/ip [CLIENT]
+
+	Format: <user|ip> [ "reason" [timeout] ]
+
+	opennap adds the optional `timeout' fields which specifies the time,
+	in seconds, that the ban should be enforced.  Note that if `timeout'
+	is present, the `reason' field MUST be present, even if empty.
+
 * Non-standard messages
 
 The following messages are not present in the official napster servers, but
