@@ -132,11 +132,19 @@ SOURCE=.\download.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\filter.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\free_user.c
 # End Source File
 # Begin Source File
 
 SOURCE=.\getopt.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\glob.c
 # End Source File
 # Begin Source File
 
@@ -225,6 +233,10 @@ SOURCE=.\privmsg.c
 # Begin Source File
 
 SOURCE=.\public.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\redirect.c
 # End Source File
 # Begin Source File
 

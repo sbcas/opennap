@@ -906,6 +906,7 @@ typedef unsigned int socklen_t;
 #define vsnprintf _vsnprintf
 #define snprintf _snprintf
 #define getuid() 0	/* just fake it */
+#define getpid() 0	/* just fake it */
 
 extern int _getopt (int, char **, char *);
 

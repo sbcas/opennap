@@ -1,3 +1,80 @@
+2000-08-13  drscholl  <drscholl@users.sourceforge.net>
+
+	* TODO, browse.c, resume.c:
+	fixes to compile with --enable-resume
+
+2000-08-10  drscholl  <drscholl@users.sourceforge.net>
+
+	* channel.c, synch.c:
+	when syncing bans, the server should just say that it set the ban so that
+	pop_user_server() doesnt return NULL for *sendernick.
+
+2000-08-09  drscholl  <drscholl@users.sourceforge.net>
+
+	* NEWS, sample.conf:
+	added additional information about flood control to the NEWS and sample.conf
+	files
+
+	* NEWS, TODO, config.c, handler.c, join.c, login.c, main.c, opennap.h, sample.conf, usermode.c:
+	comma (,) is no longer a valid char in nicks/channels
+
+	added server-side flood protection controlled by new config vars
+	`flood_commands' and `flood_time'.  mods+ notification is controlled by
+	usermode FLOOD.
+
+2000-08-08  drscholl  <drscholl@users.sourceforge.net>
+
+	* change.c:
+	change_pass() now reports back success to the user
+
+	* ban.c, config.c, filter.c, login.c, main.c, opennap.h:
+	changed search token filter to be a hash table.  linked list traversal
+	consumed too much cpu time
+
+	notify_mods() call in ban() used sender instead of sendernick as as arg.
+
+	check_ban() should be called prior to eject_client() in login()
+
+	* search.c, level.c:
+	find_search() had %d instead of %s to print out the id of expired searches
+
+	* level.c:
+	level() should force an update when it detects an out of date timestamp so
+	that desyncs are corrected.
+
+	* NEWS, config.c, login.c, opennap.h, sample.conf:
+	made the ejection of nonsharing clients a boolean configuration option
+
+	* ChangeLog, Makefile.am, Makefile.in, NEWS, TODO, config.c, filter.c, handler.c, init.c, kill_user.c, main.c, opennap.h, sample.filter, search.c:
+	search token filtering is now configurable instead of hardcoded.  opennap
+	now reads the `filter' file to determine which words to ignore.
+
+	server_stats() should not use `tag' since it is called by login() with no
+	arguments.
+
+2000-08-07  drscholl  <drscholl@users.sourceforge.net>
+
+	* Makefile.am, Makefile.in, NEWS, browse.c, configure, configure.in, handler.c, join.c, login.c, main.c, napster.txt, opennap.h, opennap.init:
+	changed basename() to my_basename() to avoid compilation errors on some
+	systems.
+
+	look for -lz in /usr/local/lib
+
+	opennap should return message 13 when receving unknown commands prior to
+	receipt of the login (2) message.
+
+	added support for tcp_wrappers
+
+	mods+ could not bypass the strict channel join setting
+
+	opennap should send the 316 numeric prior to disconnecting clients to be
+	compatible with the napster.com servers
+
+	updated napster.txt with new information
+
+	sysv-init style script for starting opennap at boot from
+	Geoffrey Lee <snailtalk@linux-mandrake.com>
+
 2000-08-07  drscholl  <drscholl@users.sourceforge.net>
 
 	* Makefile.am, Makefile.in, NEWS, browse.c, configure, configure.in, handler.c, join.c, login.c, main.c, napster.txt, opennap.h, opennap.init:

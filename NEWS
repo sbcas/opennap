@@ -1,4 +1,4 @@
-[opennap 0.40]
+[opennap 0.36]
 
 `*', `?', `.' and `!' are no longer valid chars in nicks.  This is needed to
 support the new expanded ban syntax
