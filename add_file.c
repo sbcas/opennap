@@ -233,7 +233,7 @@ HANDLER (add_file)
 
     /* form the SQL request */
     snprintf (Buf, sizeof (Buf),
-	      "INSERT INTO library VALUES('%s','%s',%s,'%s',%s,%s,%s,%d,'%s')",
+	      "INSERT INTO library VALUES('%s','%s',%s,'%s',%s,%s,%s,%d,'%s','audio/mp3')",
 	      user->nick, path, field[2], field[1],
 	      field[3], field[4], field[5], user->speed, soundex);
 
@@ -267,5 +267,50 @@ HANDLER (add_file)
 	pass_message_args (con, MSG_CLIENT_ADD_FILE,
 		":%s \"%s\" %s %s %s %s %s", user->nick, field[0], field[1],
 		field[2], field[3], field[4], field[5]);
+    }
+}
+
+/* 10300 [ :<user> ] "<filename>" <size> <hash> <content-type> */
+HANDLER (share_file)
+{
+    char *field[4], path[256], soundex[256], *p;
+    USER *user;
+
+    (void) len;
+    (void) tag;
+
+    if (pop_user (con, &pkt, &user) != 0)
+	return;
+
+    if (split_line (field, sizeof (field) / sizeof (char *), pkt) != 4)
+    {
+	log ("share_file: wrong number of fields");
+	if (user->con)
+	    send_cmd (user->con, MSG_SERVER_NOSUCH, "wrong number of fields");
+	return;
+    }
+
+    fudge_path (field[0], path, sizeof (path));
+    p=strrchr(field[0],'\\');
+    if(p)
+	p++;
+    else
+	p=field[0];
+    compute_soundex(soundex,sizeof(soundex), p);
+    snprintf (Buf, sizeof (Buf),
+	    "INSERT INTO library VALUES ('%s',%s,'%s','%s',0,0,0,%d,'%s','%s')",
+	    user->nick, field[0], field[1], field[2], user->speed, soundex,
+	    field[3]);
+    if (mysql_query (Db, Buf) != 0)
+    {
+	sql_error ("share_file", Buf);
+	if (user->con)
+	    send_cmd (user->con, MSG_SERVER_NOSUCH, "error adding file to db");
+	return;
+    }
+    if (con->class == CLASS_USER && Num_Servers)
+    {
+	pass_message_args (con, MSG_CLIENT_SHARE_FILE, ":%s \"%s\" %s %s %s",
+		user->nick, field[0], field[1], field[2], field[3]);
     }
 }

@@ -60,7 +60,7 @@ HANDLER (search)
     int i, numrows, numwords, max_results = Max_Search_Results, compound = 0;
     size_t l;
     USER *user;
-    char quoted[128];
+    char quoted[128], *type = "mp3";	/* default */
 
     (void) tag;
     (void) len;
@@ -87,7 +87,7 @@ HANDLER (search)
 	    if (strcasecmp ("contains", fields[i]) != 0)
 	    {
 		log
-		    ("search(): error in search string, expected '%s CONTAINS'",
+		    ("search: error in search string, expected '%s CONTAINS'",
 		     fields[i - 1]);
 		return;
 	    }
@@ -152,7 +152,7 @@ HANDLER (search)
 	    }
 	    else
 	    {
-		log ("search(): bad compare function: %s", fields[i]);
+		log ("search: bad compare function: %s", fields[i]);
 		return;
 	    }
 	    i++;
@@ -160,16 +160,28 @@ HANDLER (search)
 	    i++;
 	    compound = 1;
 	}
+	else if (!strcasecmp ("type", fields[i]))
+	{
+	    i++;
+	    type = fields[i];
+	}
 	else
 	{
-	    log ("search(): unknown search field: %s", fields[i]);
+	    log ("search: unknown search field: %s", fields[i]);
 	    return;
 	}
     }
+    /* if we are only searching for a particular content-type, add it now */
+    if (strcasecmp (type, "any"))
+    {
+	snprintf (Buf + strlen (Buf), sizeof (Buf) - strlen (Buf),
+		  " && type LIKE '%%%s%%'", type);
+    }
+
     /* add the limit and make sure we don't return matches for the user that
        issued the search (we assume they know what files they are sharing) */
     snprintf (Buf + strlen (Buf), sizeof (Buf) - strlen (Buf),
-	    " && owner != '%s' LIMIT %d", con->user->nick, max_results);
+	      " && owner != '%s' LIMIT %d", con->user->nick, max_results);
 
     log ("search: %s", Buf);
 

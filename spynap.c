@@ -4,8 +4,10 @@
 
    $Id$ */
 
+#ifndef PACKAGE
 #define PACKAGE "spynap"
 #define VERSION "0.10"
+#endif
 
 #include <stdio.h>
 #include <readline/readline.h>
@@ -94,7 +96,7 @@ static void
 do_output (const char *fmt, ...)
 {
     va_list ap;
-    char buf[128];
+    char buf[256];
     va_start(ap,fmt);
     vsnprintf(buf,sizeof(buf),fmt,ap);
     va_end(ap);
@@ -326,7 +328,7 @@ user_input (char *s)
 	    int i;
 	    for(i=0;i<Transfer_Size;i++)
 	    {
-		do_output("-:- Downloads:");
+		do_output("Downloads:");
 		if(Transfer[i]->download)
 		{
 		    do_output ("%d \"%s\" %s %d/%d (%d%%) (%d bytes/sec avg)",
@@ -334,8 +336,8 @@ user_input (char *s)
 			    Transfer[i]->filename, Transfer[i]->nick,
 			    Transfer[i]->bytes,
 			    Transfer[i]->filesize,
-			    (100*Transfer[i]->bytes)/Transfer[i]->filesize,
-			    Transfer[i]->bytes / (int) (time(0)-Transfer[i]->start));
+			    (100*Transfer[i]->bytes)/(Transfer[i]->filesize+1),
+			    Transfer[i]->bytes / (int) (time(0)-Transfer[i]->start+1));
 		}
 	    }
 	    return;
@@ -751,6 +753,7 @@ xmit_read (struct xmit *xmit)
 	    }
 	    fwrite(&c,1,1,xmit->fp);
 	    xmit->bytes=1;
+	    MD5Update (&xmit->md, (unsigned char*)&c, 1);
 	    do_output("Downloading \"%s\" from %s (%d bytes)", xmit->filename,
 		    xmit->nick, xmit->filesize);
 	    xmit->start=time(0);
@@ -782,8 +785,8 @@ xmit_read (struct xmit *xmit)
 		    MD5Update (&xmit->md, (unsigned char *)Buf + i, 1);
 		    md = xmit->md;
 		    MD5Final (hash, &md);
-		    if (memcpy (hash, xmit->hash, 16) == 0)
-			do_output ("Hash matched at %d bytes", xmit->bytes + i);
+		    if (memcmp (hash, xmit->hash, 16) == 0)
+			do_output ("Hash matched at %d bytes", xmit->bytes + i + 1);
 		}
 	    }
 

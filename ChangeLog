@@ -18,6 +18,8 @@ search no longer returns matches for the user issuing the search
 
 search should use <= and >= for AT MOST and AT LEAST
 
+added support for sharing generic media types
+
 Changes from 0.09
 =================
 

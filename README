@@ -85,7 +85,7 @@ Last updated January 26, 2000
 			size INT UNSIGNED, md5 CHAR(48), bitrate INT UNSIGNED,
 			freq INT UNSIGNED, duration INT UNSIGNED,
 			linespeed INT UNSIGNED, soundex VARCHAR(255),
-			PRIMARY KEY (owner, filename));
+			type VARCHAR(32), PRIMARY KEY (owner, filename));
 
 		'owner' is the nick contributing the file
 		'filename' is the name of the contributed file
@@ -206,6 +206,17 @@ are implemented as additional functionality in the opennap server.
 	compressed form.  since most of the messages are text, they should
 	compress very well.  once uncompressed, the data should contain 1
 	or more valid packets
+
+10300	share generic media file [CLIENT]
+
+	"<filename>" <size> <md5> <content-type>
+
+	<content-type> is the MIME type defined for what the data is
+
+	Examples:
+
+	"C:\IMAGES\Grand Canyon.jpg" 54187 bc938fdc0ef63772bfbdbf57aabb0860-54187 image/jpeg
+	"\home\drscholl\src\opennap-0.11.tar.gz" 102161 51c07734811a26853b1a2a87b67c68a1-102161 application/x-gunzip
 
 * References
 

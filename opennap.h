@@ -344,7 +344,8 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_DISCONNECT		10101
 #define MSG_CLIENT_KILL_SERVER		10110
 #define MSG_CLIENT_REMOVE_SERVER	10111
-#define MSG_SERVER_COMPRESSED_DATA	10200
+#define MSG_SERVER_COMPRESSED_DATA	10200	/* deprecated */
+#define MSG_CLIENT_SHARE_FILE		10300	/* generic media type */
 
 /* offsets into the row returned for library searches */
 #define IDX_NICK	0
@@ -470,6 +471,7 @@ HANDLER (server_login_ack);
 HANDLER (server_reconfig);
 HANDLER (server_stats);
 HANDLER (server_version);
+HANDLER (share_file);
 HANDLER (unmuzzle);
 HANDLER (upload_ok);
 HANDLER (upload_start);
