@@ -152,7 +152,7 @@ tokenize (char *s)
 	if (*ptr)
 	    *ptr++ = 0;
 	strlower (s);		/* convert to lower case to save time */
-	/* don't bother with common words, if there is more than 1,000 of
+	/* don't bother with common words, if there is more than 5,000 of
 	   any of these it doesnt do any good for the search engine because
 	   it won't match on them.  its doubtful that these would narrow
 	   searches down any even after the selection of the bin to search */
@@ -176,7 +176,7 @@ tokenize (char *s)
 	    !strcmp ("download", s) || !strcmp ("home", s) ||
 	    !strcmp ("downloads", s) || !strcmp ("live", s) ||
 	    !strcmp ("mp3s", s) || !strcmp ("2", s) || !strcmp("1", s) ||
-	    !strcmp ("mnt", s))
+	    !strcmp ("mnt", s) || !strcmp ("mp3z", s))
 	{
 	    s = ptr;
 	    continue;
