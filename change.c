@@ -4,16 +4,9 @@
 
    $Id$ */
 
-#ifdef WIN32
-#include <windows.h>
-#endif /* WIN32 */
 #include <stdlib.h>
-#include <stdio.h>
-#include <mysql.h>
 #include "opennap.h"
 #include "debug.h"
-
-extern MYSQL *Db;
 
 /* user request to change the data port they are listening on.
    703 [ :<user> ] <port> */
@@ -77,19 +70,24 @@ HANDLER (change_speed)
 HANDLER (change_pass)
 {
     USER *user;
+    USERDB *db;
 
     (void) tag;
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;
-    snprintf (Buf, sizeof (Buf),
-	"UPDATE accounts SET password='%s' WHERE nick='%s'", pkt, user->nick);
-    if (mysql_query (Db, Buf) != 0)
+    db=userdb_fetch(user->nick);
+    if(!db)
     {
-	sql_error ("change_pass", Buf);
-	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "db error");
+	log("change_pass(): could not find user %s in the database",
+	    user->nick);
+	return;
     }
+    FREE(db->password);
+    db->password=STRDUP(pkt);
+    if(userdb_store(db))
+	log("change_pass(): userdb_store failed");
+    userdb_free(db);
 }
 
 /* 702 [ :<user> ] <email>
@@ -97,19 +95,24 @@ HANDLER (change_pass)
 HANDLER (change_email)
 {
     USER *user;
+    USERDB *db;
 
     (void) tag;
     (void) len;
     if (pop_user (con, &pkt, &user) != 0)
 	return;
-    snprintf (Buf, sizeof (Buf),
-	"UPDATE accounts SET email='%s' WHERE nick='%s'", pkt, user->nick);
-    if (mysql_query (Db, Buf) != 0)
+    db=userdb_fetch(user->nick);
+    if(!db)
     {
-	sql_error ("change_email", Buf);
-	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "db error");
+	log("change_email(): could not find user %s in the database",
+	    user->nick);
+	return;
     }
+    FREE(db->email);
+    db->email=STRDUP(pkt);
+    if(userdb_store(db))
+	log("change_email(): userdb_store failed");
+    userdb_free(db);
 }
 
 /* 613 [ :<sender> ] <user> <port> [ <reason> ]

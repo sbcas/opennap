@@ -241,6 +241,15 @@ typedef struct _ban {
     time_t when;
 } BAN;
 
+typedef struct {
+    char *nick;
+    char *password;
+    char *email;
+    int level;
+    time_t created;
+    time_t lastSeen;
+} USERDB;
+
 typedef void (*timer_t) (void *);
 
 extern char *Motd_Path;
@@ -273,6 +282,8 @@ extern int Gid;
 extern int Connection_Hard_Limit;
 extern time_t Current_Time;
 extern int Max_Nick_Length;
+extern char *User_Db_Path;
+extern char *Server_Db_Path;
 
 extern unsigned int Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
@@ -471,6 +482,7 @@ void free_hotlist (HOTLIST *);
 void free_timers (void);
 void free_user (USER *);
 char *generate_nonce (void);
+int get_level (const char *);
 void handle_connection (CONNECTION *);
 void init_compress (CONNECTION *, int);
 int init_db (void);
@@ -511,6 +523,11 @@ void sql_error (const char *function, const char *query);
 char *strlower (char *);
 void synch_server (CONNECTION *);
 LIST *tokenize (char *);
+void userdb_close (void);
+int userdb_init (const char *);
+USERDB *userdb_fetch (const char *);
+int userdb_store (USERDB *);
+void userdb_free (USERDB *);
 int validate_user (USER *);
 int validate_channel (CHANNEL *);
 int validate_connection (CONNECTION *);

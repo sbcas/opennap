@@ -6,18 +6,10 @@
 
 #include <stdio.h>
 #include <time.h>
-#ifndef WIN32
-#include <unistd.h>
-#else
-#include <windows.h>
-#endif
 #include <string.h>
 #include <stdlib.h>
-#include <mysql.h>
 #include "opennap.h"
 #include "debug.h"
-
-extern MYSQL *Db;
 
 #define WHOIS_FMT "%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\""
 
@@ -29,6 +21,7 @@ HANDLER (whois)
     char *chanlist;
     time_t online;
     LIST *chan;
+    USERDB *db;
 
     (void) tag;
     (void) len;
@@ -37,27 +30,16 @@ HANDLER (whois)
     user = hash_lookup (Users, pkt);
     if (!user)
     {
-	MYSQL_RES *result;
-	MYSQL_ROW row;
-
 	/* check to see if this is a registered nick */
-	snprintf (Buf, sizeof (Buf),
-	    "SELECT level,lastseen FROM accounts WHERE nick LIKE '%s'", pkt);
-	if (mysql_query (Db, Buf) != 0)
+	db = userdb_fetch (pkt);
+	if (db)
 	{
-	    sql_error ("whois", Buf);
-	    send_cmd (con, MSG_SERVER_NOSUCH, "db error");
-	    return;
-	}
-	result = mysql_store_result (Db);
-	if (mysql_num_rows (result) > 0)
-	{
-	    row = mysql_fetch_row (result);
-	    send_cmd (con, MSG_SERVER_WHOWAS, "%s %s %s", pkt, row[0], row[1]);
+	    send_cmd (con, MSG_SERVER_WHOWAS, "%s %s %d", db->nick,
+		      db->level, db->lastSeen);
+	    userdb_free (db);
 	}
 	else
 	    nosuchuser (con, pkt);
-	mysql_free_result (result);
 	return;
     }
 

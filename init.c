@@ -131,9 +131,11 @@ init_server (const char *cf)
 
     log ("my hostname is %s", Server_Name);
 
-    /* initialize the connection to the SQL database server */
-    if (init_db ())
+    if (userdb_init (User_Db_Path))
+    {
+	log ("init(): userdb_init failed");
 	return -1;
+    }
 
     /* initialize hash tables.  the size of the hash table roughly cuts
        the max number of matches required to find any given entry by the same

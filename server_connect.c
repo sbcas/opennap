@@ -6,17 +6,11 @@
 
 #include <stdlib.h>
 #include <string.h>
-#ifdef WIN32
-#include <windows.h>
-#else
+#ifndef WIN32
 #include <unistd.h>
 #endif
-#include <mysql.h>
-#include <stdio.h>
 #include "opennap.h"
 #include "debug.h"
-
-extern MYSQL *Db;
 
 static void
 try_connect (char *host, int port)
@@ -254,6 +248,7 @@ HANDLER (remove_server)
 	*reason++ = 0;
     snprintf (Buf, sizeof (Buf), "DELETE FROM servers WHERE server = '%s'",
 	pkt);
+#if 0
     if (mysql_query (Db, Buf) != 0)
     {
 	sql_error ("remove_server", Buf);
@@ -265,6 +260,7 @@ HANDLER (remove_server)
 	notify_mods ("%s removed server %s from database: %s",
 	    con->user->nick, pkt, reason ? reason : "");
     }
+#endif
 }
 
 /* 801 [ :<user> ] [ <server> ] */

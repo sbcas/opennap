@@ -4,12 +4,6 @@
 
    $Id$ */
 
-#ifndef WIN32
-#include <unistd.h>
-#else
-#include <windows.h>
-#endif
-#include <mysql.h>
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
@@ -17,8 +11,6 @@
 #include "opennap.h"
 #include "debug.h"
 #include "md5.h"
-
-extern MYSQL *Db;
 
 /* process a request to establish a peer server connection */
 /* <name> <nonce> <compression> */
@@ -126,8 +118,6 @@ HANDLER (server_login)
 
 HANDLER (server_login_ack)
 {
-    MYSQL_RES *result;
-    MYSQL_ROW row;
     struct md5_ctx md5;
     char hash[33];
 
@@ -150,6 +140,7 @@ HANDLER (server_login_ack)
     }
 
     /* look up the entry in our peer servers database */
+#if 0
     snprintf (Buf, sizeof (Buf),
 	"SELECT password FROM servers WHERE name = '%s'", con->host);
     if (mysql_query (Db, Buf) != 0)
@@ -172,17 +163,22 @@ HANDLER (server_login_ack)
     }
 
     row = mysql_fetch_row (result);
+#endif
 
     /* check the peers challenge response */
     md5_init_ctx (&md5);
     md5_process_bytes (con->opt.auth->nonce, strlen (con->opt.auth->nonce), &md5);
     md5_process_bytes (con->opt.auth->sendernonce, strlen (con->opt.auth->sendernonce), &md5);
+#if 0
     md5_process_bytes (row[0], strlen (row[0]), &md5); /* password for them */
+#endif
     md5_finish_ctx (&md5, hash);
     expand_hex (hash, 16);
     hash[32] = 0;
 
+#if 0
     mysql_free_result (result);
+#endif
 
     if (strcmp (hash, pkt) != 0)
     {

@@ -63,6 +63,8 @@ int Gid;
 int Connection_Hard_Limit;
 time_t Current_Time;
 int Max_Nick_Length;
+char *User_Db_Path;
+char *Server_Db_Path;
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;
@@ -649,7 +651,7 @@ main (int argc, char **argv)
 	    remove_connection (Clients[i]);
     }
 
-    close_db ();
+    userdb_close();
 
     /* only clean up memory if we are in debug mode, its kind of pointless
        otherwise */

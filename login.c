@@ -8,17 +8,9 @@
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
-#ifndef WIN32
-#include <unistd.h>
-#else
-#include <windows.h>
-#endif
-#include <mysql.h>
 #include <ctype.h>
 #include "opennap.h"
 #include "debug.h"
-
-extern MYSQL *Db;
 
 static int
 invalid_nick (const char *s)
@@ -37,16 +29,25 @@ invalid_nick (const char *s)
     return (count == 0 || (Max_Nick_Length > 0 && count > Max_Nick_Length));
 }
 
+static void
+sync_reginfo (USERDB *db)
+{
+    log ("sync_reginfo(): sending registration info to peers");
+    pass_message_args (NULL, MSG_SERVER_REGINFO,
+		       ":%s %s %s %s %s %d %d", Server_Name,
+		       db->nick, db->password, db->email,
+		       Levels[db->level], db->created,
+		       db->lastSeen);
+}
+
 /* <nick> <pass> <port> <client-info> <speed> [ <email> ] */
 HANDLER (login)
 {
     char *av[7];
     USER *user;
     HOTLIST *hotlist;
-    int i, n, ac, speed;
-    MYSQL_RES *result;
-    MYSQL_ROW row = 0;
-    int level = LEVEL_USER;
+    int i, ac, speed;
+    USERDB *db = 0;
 
     (void) len;
     ASSERT (validate_connection (con));
@@ -152,65 +153,59 @@ HANDLER (login)
 	    return;
 	}
 
-    /* see if this is a registered nick */
-    snprintf (Buf, sizeof (Buf), "SELECT * FROM accounts WHERE nick='%s'",
-	    av[0]);
-    if (mysql_query (Db, Buf) != 0)
+    user = new_user ();
+    if (user)
     {
-	if (con->class == CLASS_UNKNOWN)
-	{
-	    send_cmd (con, MSG_SERVER_ERROR, "db error");
-	    con->destroy = 1;
-	}
-	sql_error ("login", Buf);
-	return;
+	user->nick = STRDUP (av[0]);
+	user->clientinfo = STRDUP (av[3]);
+	user->pass = STRDUP (av[1]);
     }
-    result = mysql_store_result (Db);
-    n = mysql_num_rows (result);
-    if (n > 0)
+    if (!user || !user->nick || !user->clientinfo || !user->pass)
     {
-	/* yes, it is registered, fetch info */
-	row = mysql_fetch_row (result);
+	log ("login(): OUT OF MEMORY");
+	goto failed;
+    }
+    user->port = atoi (av[2]);
+    user->speed = speed;
+    user->connected = Current_Time;
+    user->level = LEVEL_USER;	/* default */
+    user->con = con;
 
+    /* see if this is a registered nick */
+    if ((db = userdb_fetch (av[0])))
+    {
+	/* yes, it is registered */
 	if (tag == MSG_CLIENT_LOGIN_REGISTER)
 	{
 	    /* oops, its already registered */
+	    log ("login(): %s is already registered", av[0]);
 	    if (con->class == CLASS_UNKNOWN)
 	    {
 		/* this could happen if two clients simultaneously connect
 		   and register */
-		log ("login(): %s is already registered", av[0]);
-
-		send_cmd (con, MSG_SERVER_ERROR,
-			"that name is already registered");
-		con->destroy = 1;
+		send_cmd (con, MSG_SERVER_ERROR, "%s is already registered.");
 	    }
 	    else
 	    {
 		ASSERT (con->class == CLASS_SERVER);
 		/* need to issue a kill and send the registration info
 		   we have on this server */
-		log ("login(): registration request for %s, already registered here",
-			row[0]);
+		log ("login(): sending KILL for user %s", av[0]);
 		pass_message_args (NULL, MSG_CLIENT_KILL,
-			":%s %s account is already registered",
-			Server_Name, row[0]);
-		pass_message_args (NULL, MSG_SERVER_REGINFO,
-			":%s %s %s %s %s %s %s", Server_Name,
-			row[0], row[1], row[2], row[3], row[4], row[5]);
+				   ":%s %s account is already registered",
+				   Server_Name, av[0]);
+		sync_reginfo (db);
 	    }
-	    mysql_free_result (result);
-	    return;
+	    goto failed;
 	}
 
 	/* verify the password */
-	if (strcmp (av[1], row[1]) != 0)
+	if (strcmp (av[1], db->password) != 0)
 	{
-	    log ("login(): bad password for user %s", row[0]);
+	    log ("login(): bad password for user %s", av[0]);
 	    if (con->class == CLASS_UNKNOWN)
 	    {
 		send_cmd (con, MSG_SERVER_ERROR, "Invalid Password");
-		con->destroy = 1;
 	    }
 	    else
 	    {
@@ -222,94 +217,102 @@ HANDLER (login)
 		   receive this message they will check the creation date and
 		   send back any entries which are more current that this one.
 		   kind of icky, but its the best we can do */
-		log ("login(): syncing registration info");
+		log ("login(): sending KILL for user %s", av[0]);
 		pass_message_args (NULL, MSG_CLIENT_KILL,
-			":%s %s invalid password", Server_Name, row[0]);
-		pass_message_args (NULL, MSG_SERVER_REGINFO,
-			":%s %s %s %s %s %s %s", Server_Name,
-			row[0], row[1], row[2], row[3], row[4], row[5]);
+			":%s %s invalid password", Server_Name, av[0]);
+		sync_reginfo (db);
 	    }
-
-	    mysql_free_result (result);
-	    return;
+	    goto failed;
 	}
 
 	/* update the last seen time */
-	snprintf (Buf, sizeof (Buf),
-		"UPDATE accounts SET lastseen=%d WHERE nick='%s'",
-		(int)time (0), av[0]);
-	if (mysql_query (Db, Buf) != 0)
-	    sql_error ("login", Buf);
+	db->lastSeen = Current_Time;
+	if (userdb_store (db))
+	    log ("login(): userdb_store failed (ignored)");
 
 	/* set the default userlevel */
-	if (!strcasecmp ("elite", row[2]))
-	    level = LEVEL_ELITE;
-	else if (!strcasecmp ("admin", row[2]))
-	    level = LEVEL_ADMIN;
-	else if (strcasecmp ("moderator", row[2]) == 0)
-	    level = LEVEL_MODERATOR;
-	else if (strcasecmp ("user", row[2]) != 0)
-	{
-	    log ("login(): unknown level %s for %s in accounts table",
-		    row[2], row[0]);
-	}
+	user->level = db->level;
+	log ("login(): set %s to level %s", user->nick, Levels[user->level]);
     }
     else if (tag == MSG_CLIENT_LOGIN_REGISTER)
     {
 	/* create the db entry now */
 	log ("login(): registering user %s", av[0]);
 
-	snprintf (Buf, sizeof (Buf),
-		"INSERT INTO accounts VALUES ('%s','%s','user','%s',%d,%d)",
-		av[0], av[1], av[5], (int)time (0), (int)time (0));
-	if (mysql_query (Db, Buf) != 0)
+	db = CALLOC (1, sizeof(USERDB));
+	if (!db)
 	{
-	    sql_error ("login", Buf);
-	    mysql_free_result (result);
-	    if (con->class == CLASS_UNKNOWN)
-	    {
-		send_cmd (con, MSG_SERVER_ERROR, "error creating account");
-		con->destroy = 1;
-	    }
+	    log("login(): OUT OF MEMORY");
 	    return;
 	}
-    }
+	db->nick = STRDUP (av[0]);
+	db->password = STRDUP (av[1]);
+	db->email = STRDUP (av[5]);
+	if (!db->nick || !db->password || !db->email)
+	{
+	    log ("login(): OUT OF MEMORY");
+	    userdb_free (db);
+	    return;
+	}
+	db->level = LEVEL_USER;
+	db->created = Current_Time;
+	db->lastSeen = Current_Time;
 
-    user = new_user ();
-    user->nick = STRDUP (av[0]);
-    user->port = atoi (av[2]);
-    user->clientinfo = STRDUP (av[3]);
-    user->pass = STRDUP (av[1]);
-    user->speed = speed;
-    user->connected = time (0);
-    user->level = LEVEL_USER;	/* default */
-    user->con = con;
+	if (userdb_store (db))
+	    log ("login(): userdb_store failed (ignored)");
+    }
 
     /* initialize the hash table to hold this user's shared files */
     user->files = hash_init (257, (hash_destroy) free_datum);
-
-    if (tag == MSG_CLIENT_LOGIN_REGISTER)
-	user->email = STRDUP (av[5]);
-    else if (row)
-	user->email = STRDUP (row[3]);
-    else
+    if (!user->files)
     {
-	snprintf (Buf, sizeof (Buf), "anon@%s", Server_Name);
-	user->email = STRDUP (Buf);
+	log ("login(): OUT OF MEMORY");
+	goto failed;
     }
 
-    mysql_free_result (result);
-
-    hash_add (Users, user->nick, user);
+    if (hash_add (Users, user->nick, user))
+    {
+	log ("login(): hash_add failed (fatal)");
+	goto failed;
+    }
 
     /* if this is a locally connected user, update our information */
     if (con->class == CLASS_UNKNOWN)
     {
 	/* save the ip address of this client */
+	user->local = 1;
 	user->host = con->ip;
 	user->conport = con->port;
 	user->server = STRDUP (Server_Name);
-	user->local = 1;
+	if (!user->server)
+	{
+	    /* TODO: this is problematic.  we've already added the this
+	       user struct to the global list and when we remove it,
+	       free_user() will get called.  hopefully that will not
+	       send messages to peer servers? */
+	    log ("login(): OUT OF MEMORY");
+	    hash_remove (Users, user->nick);
+	    goto failed;
+	}
+
+	con->class = CLASS_USER;
+	con->user = user;
+	/* send the login ack */
+	if (db)
+	    send_cmd (con, MSG_SERVER_EMAIL, db->email);
+	else
+	    send_cmd (con, MSG_SERVER_EMAIL, "anon@%s", Server_Name);
+	show_motd (con, 0, 0, NULL);
+	server_stats (con, 0, 0, NULL);
+
+	/* we do this after sending the login/email ack (7) to avoid confusing
+	   the win32 client */
+	if (user->level != LEVEL_USER)
+	{
+	    /* notify users of their change in level */
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s set your level to %s (%d).",
+		      Server_Name, Levels[user->level], user->level);
+	}
 
 	/* pass this information to our peer servers */
 	if (Num_Servers)
@@ -318,31 +321,14 @@ HANDLER (login)
 		    av[0], av[1], av[2], av[3], av[4]);
 	    pass_message_args (con, MSG_SERVER_USER_IP, "%s %lu %hu %s",
 		    av[0], user->host, user->conport, Server_Name);
+	    if (user->level != LEVEL_USER)
+		pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
+				   ":%s %s %s", Server_Name, user->nick,
+				   Levels[user->level]);
 	}
-
-	con->class = CLASS_USER;
-	con->user = user;
-	send_cmd (con, MSG_SERVER_EMAIL, user->email);
-	show_motd (con, 0, 0, NULL);
-	server_stats (con, 0, 0, NULL);
     }
 
-    /* we do this after sending the login/email ack (7) to avoid confusing the
-       win32 client */
-    if (level != LEVEL_USER)
-    {
-	user->level = level;
-
-	/* broadcast the updated userlevel to our peer servers */
-	if (Num_Servers)
-	    pass_message_args (con, MSG_CLIENT_SETUSERLEVEL,
-		    ":%s %s %s", Server_Name, user->nick, Levels[user->level]);
-	/* notify users of their change in level */
-	send_cmd (con, MSG_SERVER_NOSUCH, "%s set your level to %s (%d).",
-		Server_Name, Levels[user->level], user->level);
-
-	log ("login(): set %s to level %s", user->nick, Levels[user->level]);
-    }
+    userdb_free (db);
 
     /* check the global hotlist to see if there are any users waiting to be
        informed of this user signing on */
@@ -352,13 +338,33 @@ HANDLER (login)
 	/* notify users */
 	LIST *u;
 
+	ASSERT (validate_hotlist (hotlist));
 	ASSERT (hotlist->users != 0);
-	for (u=hotlist->users; u; u = u->next)
+	for (u = hotlist->users; u; u = u->next)
 	{
 	    ASSERT (validate_connection (u->data));
 	    send_cmd (u->data, MSG_SERVER_USER_SIGNON, "%s %d",
 		    user->nick, user->speed);
 	}
+    }
+    return;
+
+failed:
+    /* clean up anything we allocated here */
+    if (con->class == CLASS_UNKNOWN)
+	con->destroy = 1;
+    userdb_free (db);
+    if (user)
+    {
+	if (user->nick)
+	    FREE (user->nick);
+	if (user->email)
+	    FREE (user->email);
+	if (user->clientinfo)
+	    FREE (user->clientinfo);
+	if (user->files)
+	    free_hash (user->files);
+	FREE (user);
     }
 }
 
@@ -388,46 +394,32 @@ HANDLER (user_ip)
     user->host = strtoul (field[1], 0, 10);
     user->conport = strtoul (field[2], 0, 10);
     user->server = STRDUP (field[3]);
+    if (!user->server)
+	log ("user_ip(): OUT OF MEMORY");
 }
 
 /* check to see if a nick is already registered */
 /* 7 <nick> */
 HANDLER (register_nick)
 {
-    int n;
-    MYSQL_RES *result;
+    USERDB *db;
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
     log ("register_nick(): attempting to register %s", pkt);
-    snprintf (Buf, sizeof (Buf), "SELECT nick FROM accounts WHERE nick='%s'",
-	    pkt);
-    if (mysql_query (Db, Buf) != 0)
+    db = userdb_fetch (pkt);
+    if (db)
     {
-	send_cmd (con, MSG_SERVER_ERROR, "db error");
-	sql_error ("register_nick", Buf);
-	return;
-    }
-    result = mysql_store_result (Db);
-    if (result == 0)
-    {
-	log ("register_nick(): NULL result from mysql_store_result()");
-	return;
-    }
-    n = mysql_num_rows (result);
-    if (n > 0)
-    {
-	ASSERT (n == 1);
-	send_cmd (con, MSG_SERVER_REGISTER_FAIL, "");
 	log ("register_nick(): %s is already registered", pkt);
+	send_cmd (con, MSG_SERVER_REGISTER_FAIL, "");
     }
     else
     {
-	send_cmd (con, MSG_SERVER_REGISTER_OK, "");
 	log ("register_nick(): %s is not yet registered", pkt);
+	send_cmd (con, MSG_SERVER_REGISTER_OK, "");
     }
-    mysql_free_result (result);
+    userdb_free (db);
 }
 
 /* 10114 :<server> <nick> <password> <level> <email> <created> <lastseen> */
@@ -435,9 +427,7 @@ HANDLER (reginfo)
 {
     char *server;
     char *fields[6];
-    int n;
-    MYSQL_RES *result;
-    MYSQL_ROW row;
+    USERDB *db;
 
     (void) tag;
     (void) len;
@@ -449,59 +439,53 @@ HANDLER (reginfo)
 	log ("reginfo(): message does not begin with :");
 	return;
     }
-    server = pkt + 1;
-    pkt = strchr (server, ' ');
+    pkt++;
+    server = next_arg (&pkt);
     if (!pkt)
+    {
+	log ("reginfo(): too few fields in message");
 	return;
-    *pkt++ = 0;
+    }
     if (split_line (fields, sizeof (fields)/sizeof(char*), pkt) != 6)
     {
 	log ("reginfo(): wrong number of fields");
 	return;
     }
     /* look up any entry we have for this user */
-    snprintf (Buf, sizeof (Buf), "SELECT * FROM accounts WHERE nick='%s'",
-	    fields[0]);
-    if (mysql_query (Db, Buf) != 0)
+    db = userdb_fetch (pkt);
+    if (db)
     {
-	sql_error ("reginfo", Buf);
-	return;
-    }
-    result = mysql_store_result (Db);
-    n = mysql_num_rows (result);
-    if (n > 0)
-    {
-	ASSERT (n == 1);
-	row = mysql_fetch_row (result);
 	/* check the timestamp to see if this is more recent than what
 	   we have */
-	if (atol (fields[4]) > atol (row[4]))
+	if (atol (fields[4]) > db->created)
 	{
 	    /* our record was created first, notify peers */
 	    log ("reginfo(): stale reginfo received from %s", server);
-	    pass_message_args (NULL, MSG_SERVER_REGINFO,
-		    ":%s %s %s %s %s %s %s", Server_Name,
-		    row[0], row[1], row[2], row[3], row[4], row[5]);
-	    mysql_free_result (result);
+	    sync_reginfo (db);
 	    return;
 	}
-	mysql_free_result (result);
 	/* update our record */
-	snprintf (Buf, sizeof (Buf),
-	    "UPDATE accounts SET password='%s',level='%s',email='%s',created=%s,lastseen=%s WHERE nick='%s'",
-	    fields[1], fields[2], fields[3], fields[4], fields[5], fields[0]);
-	if (mysql_query (Db, Buf) != 0)
-	    sql_error ("reginfo", Buf);
-	log ("reginfo(): updated accounts table for %s", fields[0]);
+	FREE (db->password);
+	FREE (db->email);
     }
     else
     {
-	mysql_free_result (result);
-	/* create the record */
-	snprintf (Buf, sizeof (Buf),
-	    "INSERT INTO accounts VALUES ('%s','%s','%s','%s',%s,%s)",
-	    fields[0], fields[1], fields[2], fields[3], fields[4], fields[5]);
-	if (mysql_query (Db, Buf) != 0)
-	    sql_error ("reginfo", Buf);
+	db = CALLOC (1, sizeof (USERDB));
     }
+
+    db->password = STRDUP (fields[1]);
+    db->email = STRDUP (fields[2]);
+    if (!db->password || !db->email)
+    {
+	log ("reginfo(): OUT OF MEMORY");
+	userdb_free (db);
+	return;
+    }
+    db->level = get_level (fields[3]);
+    db->created = atol (fields[4]);
+    db->lastSeen = get_level (fields[5]);
+    if (userdb_store (db))
+	log("reginfo(): userdb_store failed (ignored)");
+    else
+	log ("reginfo(): updated accounts table for %s", fields[0]);
 }
