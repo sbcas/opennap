@@ -68,6 +68,7 @@ HANDLER (join)
     LIST *list;
     CHANUSER *chanUser, *cu;
     int chanop = 0;
+    char chanbuf[256];	/* needed when creating a rollover channel */
 
     (void) tag;
     (void) len;
@@ -105,6 +106,8 @@ HANDLER (join)
 
     /* this loop is here in case the channel has a limit so we can create
        the rollover channels */
+    ASSERT(sizeof(chanbuf)<Max_Channel_Length);
+    chanbuf[sizeof(chanbuf)-1]=0;
     for(;;)
     {
 	chan = hash_lookup (Channels, pkt);
@@ -194,7 +197,7 @@ HANDLER (join)
 		{
 		    if (ISUSER (con))
 			send_cmd (con, MSG_SERVER_NOSUCH,
-				"channel join failed: channel is invite only");
+				"channel join failed: invite only");
 		    return;
 		}
 
@@ -204,7 +207,7 @@ HANDLER (join)
 		    {
 			if (ISUSER (con))
 			    send_cmd (con, MSG_SERVER_NOSUCH,
-				    "channel join failed: channel is full");
+				    "channel join failed: channel full");
 			return;
 		    }
 		    /* for predefined channels, automatically create a rollover
@@ -212,21 +215,24 @@ HANDLER (join)
 		    else
 		    {
 			char *p;
-			int n = 1;
+			int n;
 
-			strncpy (Buf, chan->name, sizeof (Buf));
-			p = Buf + strlen (Buf);
-			while (p > Buf && isdigit (*(p - 1)))
+			if(pkt!=chanbuf)
+			{
+			    strncpy(chanbuf,pkt,sizeof(chanbuf)-1);
+			    pkt=chanbuf;
+			}
+			p = chanbuf + strlen (chanbuf);
+			while (p > chanbuf && isdigit (*(p - 1)))
 			    p--;
 			if (isdigit (*p))
 			{
 			    n = atoi (p);
 			    *p = 0;
 			}
-			snprintf (Buf + strlen (Buf), sizeof (Buf) - strlen (Buf),
-				"%d", n);
-			pkt = Buf;
-			log ("join(): trying channel %s", pkt);
+			snprintf (chanbuf + strlen (chanbuf),
+				sizeof (chanbuf) - strlen (Buf), "%d", n);
+			log ("join(): trying channel %s", chanbuf);
 			continue;
 		    }
 		}

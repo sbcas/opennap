@@ -1,3 +1,8 @@
+[opennap 0.35]
+
+added `max_clones' configuration variable to control how many clients may
+log into the server from the same ip address.
+
 [opennap 0.34]
 
 added channel mode command (/msg chanserv mode <channel> [mode]) where
