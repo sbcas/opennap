@@ -217,72 +217,84 @@ config (const char *path)
     }
 }
 
-/* 810 <var> <value> */
+static void
+query_var(CONNECTION *con, struct config *v)
+{
+    if (v->type == VAR_TYPE_INT)
+	send_cmd (con, MSG_SERVER_NOSUCH, "%s = %d", v->name, *(int *) v->val);
+    else if (v->type == VAR_TYPE_BOOL)
+    {
+	send_cmd (con, MSG_SERVER_NOSUCH, "%s = %s", v->name,
+		(Server_Flags & v->val) ? "on" : "off");
+    }
+    else if (v->type == VAR_TYPE_LIST)
+    {
+	char buf[1024];
+	LIST *tmpList = 0;
+
+	buf[0] = 0;
+	for (tmpList = *(LIST **) v->val; tmpList; tmpList = tmpList->next)
+	    snprintf (buf + strlen (buf), sizeof (buf) - strlen (buf),
+		    "%s ", (char *) tmpList->data);
+	send_cmd (con, MSG_SERVER_NOSUCH, "%s = %s", v->name, buf);
+    }
+    else
+    {
+	ASSERT (v->type == VAR_TYPE_STR);
+	send_cmd (con, MSG_SERVER_NOSUCH, "%s = %s", v->name, *(char **) v->val);
+    }
+}
+
+/* 810 [ <var> [ <value> ] ] */
 HANDLER (server_config)
 {
-    char *field[2];
-    int i;
+    char *av[2];
+    int ac;
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-    ASSERT (validate_user (con->user));
     CHECK_USER_CLASS ("server_config");
-    if (con->user->level < LEVEL_ELITE)
+
+    /* allow mods+ to query the config values, only elites can set them */
+    if (con->user->level < LEVEL_MODERATOR)
     {
 	permission_denied (con);
 	return;
     }
-    if ((i = split_line (field, sizeof (field) / sizeof (char *), pkt)) < 1)
-    {
-	send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of arguments");
-	return;
-    }
 
-    if (i == 2)
-	if (set_var (field[0], field[1]) != 0)
+    ac=split_line(av,FIELDS(av),pkt);
+    if(ac==0)
+    {
+	/* user requests all config variables */
+	for(ac=0;ac<Vars_Size;ac++)
+	    query_var(con, &Vars[ac]);
+    }
+    else if(ac==1)
+    {
+	/* user requests the value of a specific variable */
+	for(ac=0;ac<Vars_Size;ac++)
+	    if(!strcasecmp(av[0],Vars[ac].name))
+	    {
+		query_var(con, &Vars[ac]);
+		return;
+	    }
+	send_cmd (con, MSG_SERVER_NOSUCH, "no such variable %s", pkt);
+    }
+    else
+    {
+	if(con->user->level < LEVEL_ELITE)
+	{
+	    permission_denied(con);
+	    return;
+	}
+	/* user changes the value of a specific variable */
+	if (set_var (av[0], av[1]) != 0)
 	{
 	    send_cmd (con, MSG_SERVER_NOSUCH, "error setting variable %s",
-		      field[0]);
-	    return;
-	}
-
-    /* return the current value of the variable */
-    for (i = 0; i < Vars_Size; i++)
-    {
-	if (!strcmp (pkt, Vars[i].name))
-	{
-	    if (Vars[i].type == VAR_TYPE_INT)
-		send_cmd (con, MSG_SERVER_NOSUCH, "%s = %d", pkt,
-			  *(int *) Vars[i].val);
-	    else if (Vars[i].type == VAR_TYPE_BOOL)
-	    {
-		send_cmd (con, MSG_SERVER_NOSUCH, "%s = %s", pkt,
-			  (Server_Flags & Vars[i].val) ? "on" : "off");
-	    }
-	    else if (Vars[i].type == VAR_TYPE_LIST)
-	    {
-		char buf[1024];
-		LIST *tmpList = 0;
-
-		buf[0] = 0;
-		for (tmpList = *(LIST **) Vars[i].val; tmpList;
-		     tmpList = tmpList->next)
-		    snprintf (buf + strlen (buf), sizeof (buf) - strlen (buf),
-			      "%s ", (char *) tmpList->data);
-		send_cmd (con, MSG_SERVER_NOSUCH, "%s", buf);
-	    }
-	    else
-	    {
-		ASSERT (Vars[i].type == VAR_TYPE_STR);
-		send_cmd (con, MSG_SERVER_NOSUCH, "%s = %s", pkt,
-			  *(char **) Vars[i].val);
-	    }
-	    return;
+		    av[0]);
 	}
     }
-
-    send_cmd (con, MSG_SERVER_NOSUCH, "no such variable %s", pkt);
 }
 
 void
