@@ -20,7 +20,7 @@ static char *User_Levels[] = { "ERROR", "BAN", "CHANGE", "CHANNEL",
 
 
 /* 10203 [mode] */
-HANDLER (user_mode)
+HANDLER (user_mode_cmd)
 {
     USER *sender;
     int neg = 0, i, p;

@@ -754,7 +754,7 @@ HANDLER (user_sharing);
 HANDLER (user_speed);
 HANDLER (wallop);
 HANDLER (whois);
-HANDLER (user_mode);
+HANDLER (user_mode_cmd);
 
 #define CHECK_USER_CLASS(f) if (con->class != CLASS_USER) { log ("%s(): not USER class", f); return; }
 #define CHECK_SERVER_CLASS(f) if(con->class != CLASS_SERVER) { log ("%s(): not SERVER class", f); return; }

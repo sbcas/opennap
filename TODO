@@ -4,12 +4,4 @@
   problem since when the user first connects they will likely send a large
   amount of valid information about the contents of their mp3 library
 
-* server linking is still blocking for some reason, even thought the socket
-  is set nonblocking before the connect() call
-
 * add a timeout to check for blocked server connect() call
-
-* allow channels file to accept the default level as either a word or the
-  number
-
-* nonblocking connect() doesnt work under win32 so they can't link
