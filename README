@@ -1,7 +1,7 @@
-opennap v0.20 (ALPHA)
+opennap v0.21 (ALPHA)
 the open source (TM) napster server
 =====================
-March 3, 2000
+March 9, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -13,6 +13,7 @@ platforms.  So far this server has only been tested on:
 	* Red Hat Linux 6.1 (i686)
 	* Red Hat Linux 6.0 (Alpha)
 	* BSDI 4.1
+	* FreeBSD 4.3-stable
 	* Windows 2000 (MS VC++)
 Minimal porting should be required for compilation on other Unix variants
 (if you do a port, please send patches to drscholl@users.sourceforge.net)
@@ -265,15 +266,6 @@ are implemented as additional functionality in the opennap server.
 
 	"C:\IMAGES\Grand Canyon.jpg" 54187 bc938fdc0ef63772bfbdbf57aabb0860-54187 image/jpeg
 	"\home\drscholl\src\opennap-0.11.tar.gz" 102161 51c07734811a26853b1a2a87b67c68a1-102161 application/x-gunzip
-
-10404	error message to remote user [SERVER]
-
-	<user> <message>
-
-	This message is used to send a 404 type message to a user that is on
-	a remote server.  When the server that has the local connection to
-	the client receives this message, it reformats it as a 404 message
-	for delivery to the client.
 
 * References
 

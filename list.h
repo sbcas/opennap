@@ -31,4 +31,6 @@ int list_count (LIST *);
 
 LIST *list_find (LIST *, void *);
 
+int list_validate (LIST *);
+
 #endif /* list_h */

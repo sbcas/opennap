@@ -28,9 +28,6 @@ HANDLER (add_hotlist)
     {
 	/* no hotlist, create one */
 	hotlist = CALLOC (1, sizeof (HOTLIST));
-#if DEBUG
-	hotlist->magic = MAGIC_HOTLIST;
-#endif
 	if(hotlist)
 	    hotlist->nick = STRDUP (pkt);
 	if (!hotlist || !hotlist->nick)
@@ -38,6 +35,9 @@ HANDLER (add_hotlist)
 	    OUTOFMEMORY ("add_hotlist");
 	    return;	/* no memory */
 	}
+#if DEBUG
+	hotlist->magic = MAGIC_HOTLIST;
+#endif
 	if (hash_add (Hotlist, hotlist->nick, hotlist))
 	{
 	    FREE (hotlist->nick);

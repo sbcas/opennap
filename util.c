@@ -340,7 +340,7 @@ validate_connection (CONNECTION *con)
     if (con->recvbuf)
 	ASSERT_RETURN_IF_FAIL (buffer_validate (con->recvbuf), 0);
     if (ISUSER (con))
-	ASSERT_RETURN_IF_FAIL (con->uopt.hotlist == 0 || VALID_LEN (con->uopt.hotlist, sizeof (LIST)), 0);
+	ASSERT_RETURN_IF_FAIL (list_validate (con->uopt.hotlist), 0);
     return 1;
 }
 
@@ -373,7 +373,7 @@ validate_hotlist (HOTLIST *h)
     ASSERT_RETURN_IF_FAIL (VALID_LEN (h, sizeof (HOTLIST)), 0);
     ASSERT_RETURN_IF_FAIL (h->magic == MAGIC_HOTLIST, 0);
     ASSERT_RETURN_IF_FAIL (VALID (h->nick), 0);
-    ASSERT_RETURN_IF_FAIL (h->users == 0 || VALID_LEN (h->users, sizeof (LIST)), 0);
+    ASSERT_RETURN_IF_FAIL (list_validate (h->users), 0);
     return 1;
 }
 #endif

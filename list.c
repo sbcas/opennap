@@ -18,6 +18,7 @@ list_delete (LIST *list, void *data)
     ASSERT (data != 0);
     for (ptr = &list; *ptr; ptr = &(*ptr)->next)
     {
+	ASSERT (VALID_LEN (*ptr, sizeof (LIST)));
 	if ((*ptr)->data == data)
 	{
 	    tmp = *ptr;
@@ -35,7 +36,10 @@ list_append (LIST * l, LIST *b)
     LIST **r = &l;
 
     while (*r)
+    {
+	ASSERT (VALID_LEN (*r, sizeof (LIST)));
 	r = &(*r)->next;
+    }
     *r = b;
     return l;
 }
@@ -47,6 +51,7 @@ list_free (LIST *l, list_destroy_t cb)
 
     while (l)
     {
+	ASSERT (VALID_LEN (l, sizeof (LIST)));
 	t = l;
 	l = l->next;
 	if (cb)
@@ -61,7 +66,10 @@ list_count (LIST *list)
     int count = 0;
 
     for(;list; list = list->next)
+    {
+	ASSERT (VALID_LEN (list, sizeof (LIST)));
 	count++;
+    }
     return count;
 }
 
@@ -69,7 +77,22 @@ LIST *
 list_find (LIST *list, void *data)
 {
     for (; list; list = list->next)
+    {
+	ASSERT (VALID_LEN (list, sizeof (LIST)));
 	if (list->data == data)
 	    return list;
+    }
     return 0;
 }
+
+#if DEBUG
+int
+list_validate (LIST *list)
+{
+    for (; list; list = list->next)
+    {
+	ASSERT_RETURN_IF_FAIL (VALID_LEN (list, sizeof (LIST)), 0);
+    }
+    return 1;
+}
+#endif
