@@ -65,9 +65,11 @@ userdb_init (void)
     if (fgets (Buf, sizeof (Buf), fp))
     {
 	if (strncmp (":version 1", Buf, 10))
+	{
 	    regen = 1;
+	    rewind (fp);
+	}
     }
-    rewind (fp);
     while (fgets (Buf, sizeof (Buf), fp))
     {
 	ac = split_line (av, FIELDS (av), Buf);

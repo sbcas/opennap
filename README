@@ -1,7 +1,7 @@
 opennap v0.24 (ALPHA)
 the open source (TM) napster server
 =====================
-March 30, 2000
+April 7, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -50,12 +50,12 @@ development of the server.
 
 * INSTALLATION
 
-  1.  build and install opennap
+  1.  build and optionally install opennap
   2.  create at least one elite (server operator) nick to use on the server
 
 	edit /usr/local/share/opennap/users (c:\opennap\users on Win32)
 	add:
-		<nick> <password> <email> elite 0 0
+		<nick> <password> <email> Elite 0 0
 
       where <nick> is the nick you want to use, <email> is your email address
       (optional, but it must not be empty).  <password> is an MD5 hashed
