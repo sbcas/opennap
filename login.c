@@ -302,7 +302,7 @@ HANDLER (login)
     {
 	/* save the ip address of this client */
 	user->local = 1;
-	user->host = BSWAP32 (con->ip);	/* needs to be in little endian */
+	user->host = con->ip;
 	user->conport = con->port;
 	user->server = STRDUP (Server_Name);
 	if (!user->server)
