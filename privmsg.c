@@ -64,6 +64,8 @@ operserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_OP_LIST;
     else if (!strcasecmp ("deop", cmd))
 	tag = MSG_CLIENT_DEOP;
+    else if (!strcasecmp ("rehash", cmd))
+	tag = MSG_CLIENT_REHASH;
     else if (!strcasecmp ("help", cmd))
     {
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ Help for OperServ:");
@@ -76,6 +78,7 @@ operserv (CONNECTION * con, char *pkt)
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ links");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ reconfig");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ register");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ rehash [server]");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ stats");
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ usermode");
 	send_cmd (con, MSG_CLIENT_PRIVMSG,

@@ -345,7 +345,11 @@ are implemented as additional functionality in the opennap server.
 			currently in use, otherwise it will be -1
 	<numusers>	number of registered users		
 
-10116	rehash (reload) configuration files [CLIENT]
+10116	server ping [DEPRECATED]
+
+	note: there is now a defined command for this in napster.txt
+
+10117	rehash (reload) configuration files [CLIENT]
 
 	Format: [server]
 
