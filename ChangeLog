@@ -25,6 +25,9 @@ entries returned on a /browse command (default 1500)
 
 allow max_search_result to be 0 to allow for arbitrary size searches
 
+added support for 613 command for admin to alter the data port the client is
+listening on (only works with the win32 clients)
+
 Changes from 0.11
 =================
 

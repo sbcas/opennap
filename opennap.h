@@ -319,6 +319,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_CLIENT_KILL			610
 #define MSG_CLIENT_NUKE			611	/* not implemented */
 #define MSG_CLIENT_BAN			612
+#define MSG_CLIENT_ALTER_PORT		613
 #define MSG_CLIENT_UNBAN		614
 #define MSG_CLIENT_BANLIST		615
 #define MSG_SERVER_IP_BANLIST		616
@@ -456,6 +457,7 @@ HANDLER (dispatch_command);
 /* protocol handlers */
 HANDLER (add_file);
 HANDLER (add_hotlist);
+HANDLER (alter_port);
 HANDLER (announce);
 HANDLER (ban);
 HANDLER (banlist);

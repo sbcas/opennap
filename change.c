@@ -116,3 +116,66 @@ HANDLER (change_email)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "db error");
     }
 }
+
+/* 613 [ :<sender> ] <user> <port> [ <reason> ]
+   admin request to change a user's data port */
+HANDLER (alter_port)
+{
+    USER *sender, *user;
+    char *nick, *port;
+    int p;
+
+    ASSERT (validate_connection (con));
+    if (pop_user (con, &pkt, &sender) != 0)
+	return;
+    /* check for privilege */
+    if (sender->level < LEVEL_MODERATOR)
+    {
+	log ("alter_port(): %s has no privilege to change ports",
+		sender->nick);
+	if (con->class == CLASS_USER)
+	    permission_denied (con);
+	return;
+    }
+
+    nick = next_arg (&pkt);
+    port = next_arg (&pkt);
+    if (!nick || !port)
+    {
+	log ("alter_port(): too few arguments");
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "too few arguments");
+	return;
+    }
+    user = hash_lookup (Users, nick);
+    if (!user)
+    {
+	log ("alter_port(): no such user %s", nick);
+	if (con->class == CLASS_USER)
+	    nosuchuser (con, nick);
+	return;
+    }
+    p = atoi (port);
+    if (p < 0 || p > 65535)
+    {
+	log ("alter_port(): %d is an invalid port", p);
+	if (con->class == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is an invalid port", p);
+	return;
+    }
+    user->port = p;
+
+    /* if local user, send them the message */
+    if (user->con)
+	send_cmd (user->con, MSG_CLIENT_ALTER_PORT, "%d", p);
+
+    /* if a local admin issued the command, pass it to our peer servers.
+       note that we do this even if the target was local, because all servers
+       need to know what the new port is */
+    if (con->class == CLASS_USER && Num_Servers)
+	pass_message_args (con, MSG_CLIENT_ALTER_PORT, ":%s %s %d",
+		sender->nick, user->nick, p);
+
+    notify_mods ("%s changed %d's data port to %d: %s", sender->nick,
+	    user->nick, p, pkt ? pkt : "");
+}
