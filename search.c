@@ -145,6 +145,7 @@ tokenize (char *s)
 	if (!strcmp ("a", s) || !strcmp ("i", s) ||
 	    !strcmp ("the", s) || !strcmp ("and", s) || !strcmp ("in", s) ||
 	    !strcmp ("of", s) || !strcmp ("you", s) ||
+	    !strcmp ("me", s) || !strcmp ("to", s) ||
 	    /* the following are common path names and don't really
 	       provide useful information */
 	    !strcmp ("mp3", s) ||
@@ -161,6 +162,7 @@ tokenize (char *s)
 	    !strcmp ("my", s) ||
 	    !strcmp ("documents", s) ||
 	    !strcmp ("mp3's", s) ||
+	    !strcmp ("rock", s) ||
 	    !strcmp ("winamp", s) || !strcmp ("mp3s", s))
 	{
 	    s = ptr;

@@ -1,3 +1,5 @@
+[opennap 0.24]
+
 [opennap 0.23]
 
 Server was fixed to compile without zlib for use as a standalone server.

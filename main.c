@@ -52,6 +52,7 @@ unsigned int Bytes_In = 0;
 unsigned int Bytes_Out = 0;
 int User_Db_Interval;		/* how often to save the user database */
 int Channel_Limit;
+int Login_Timeout;
 
 #ifndef WIN32
 int Uid;
@@ -190,6 +191,7 @@ accept_connection (int s)
 	}
 	cli->port = ntohs (sin.sin_port);
 	cli->class = CLASS_UNKNOWN;
+	cli->timer = Current_Time;	/* set a login timer */
 	if (add_client (cli))
 	    return;
 	set_nonblocking (f);
@@ -461,6 +463,14 @@ main (int argc, char **argv)
 		    else if (send_queued_data (Clients[i]) == -1)
 			Clients[i]->destroy = 1;
 		}
+		/* kill idle conenctions */
+		else if (Clients[i]->class == CLASS_UNKNOWN &&
+			 Current_Time - Clients[i]->timer >= Login_Timeout)
+		{
+		    log("main(): login timeout for %s", Clients[i]->host);
+		    Clients[i]->destroy = 1;
+		}
+
 		if (Clients[i]->destroy)
 		{
 		    send_queued_data (Clients[i]);	/* flush */

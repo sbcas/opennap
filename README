@@ -53,13 +53,20 @@ development of the server.
   1.  build and install opennap
   2.  create at least one elite (server operator) nick to use on the server
 
-	edit /usr/local/share/opennap/users
+	edit /usr/local/share/opennap/users (c:\opennap\users on Win32)
 	add:
 		<nick> <password> <email> elite 0 0
 
-      where <nick> is the nick you want to use, <pass> is the password for
-      the nick, and <email> is your email address (optional, but it must not
-      be empty).
+      where <nick> is the nick you want to use, <email> is your email address
+      (optional, but it must not be empty).  <password> is an MD5 hashed
+      password which you make with the `mkpass' utility distributed with
+      opennap.  To create an MD5 password based upon a plain text password,
+      simply run
+	mkpass password
+      which will spit out a password of the form
+	1,wNmMEV+L,pGma3IflsSxFulv2jucmew
+      this is the string that gets put in the `users' file for the
+      <password> field.
 
       When you log into the server with your client, you should see a
       message from the server:
@@ -73,7 +80,7 @@ development of the server.
       ends, as it does mutual authentication to prevent bogus servers from
       being able to join.
 
-	edit /usr/local/share/opennap/servers
+	edit /usr/local/share/opennap/servers (c:\opennap\servers on Win32)
 	add:
 		<server name> <password>
 
@@ -85,7 +92,10 @@ development of the server.
        the opennap commands), specifying the host and port to connect to.
 
        In BWap, you would do:
-       /admin connect <server> <port>
+	/admin connect <server> <port>
+       In the windows client or other client which does not natively support
+       the opennap extensions, you can do:
+	/msg operserv connect <server> <port>
 
 * OperServ
 
@@ -96,11 +106,12 @@ is invisible in all other ways).  It currently supports the following
 commands:
 
 	chanlevel
-	register
 	connect
 	disconnect
+	kick
 	killserver
 	links
+	register
 	stats
 
 See below in the section `Non-standard messages' for a descripton of the

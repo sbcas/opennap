@@ -193,6 +193,7 @@ struct _connection
     unsigned int compress:4;	/* compression level for this connection */
     unsigned int class:2;	/* connection class (unknown, user, server) */
     unsigned int xxx:6;		/* unused */
+    time_t	timer;		/* timer to detect idle connections */
 };
 
 /* hotlist entry */
@@ -307,6 +308,7 @@ extern unsigned int Bytes_In;
 extern unsigned int Bytes_Out;
 extern int User_Db_Interval;
 extern int Channel_Limit;
+extern int Login_Timeout;
 
 #ifndef WIN32
 extern int Uid;
