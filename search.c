@@ -756,14 +756,14 @@ HANDLER (remote_search_result)
 
     if (ac != 8)
     {
-	log ("remote_match(): wrong number of args");
+	log ("remote_search_result(): wrong number of args");
 	print_args (ac, av);
 	return;
     }
     search = find_search (av[0]);
     if (!search)
     {
-	log ("remote_match(): could not find search id %s", av[0]);
+	log ("remote_search_result(): could not find search id %s", av[0]);
 	return;
     }
     if (ISUSER (search->con))
@@ -772,7 +772,7 @@ HANDLER (remote_search_result)
 	user = hash_lookup (Users, av[1]);
 	if (!user)
 	{
-	    log ("remote_match(): could not find user %s", av[1]);
+	    log ("remote_search_result(): could not find user %s", av[1]);
 	    return;
 	}
 	send_cmd (search->con, MSG_SERVER_SEARCH_RESULT,
@@ -854,9 +854,11 @@ cancel_search (CONNECTION * con)
 	}
 	list = &(*list)->next;
     }
+#if 0
     if (Remote_Search)
     {
 	log ("cancel_search(): %d pending search requests",
 		list_count (Remote_Search));
     }
+#endif
 }
