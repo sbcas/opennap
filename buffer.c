@@ -59,6 +59,13 @@ buffer_queue (BUFFER * b, char *d, int dsize)
 	    b->next = buffer_new ();
 	    b = b->next;
 	}
+	if(!b)
+	{
+	    /*something really bad just happened!  no choice but to close
+	      this connection since it will be out of sync*/
+	    buffer_free(r);
+	    return 0;
+	}
 	count = dsize;
 	/* dsize could be greater than what is allocated */
 	if (count > b->datamax - b->datasize)
@@ -379,7 +386,15 @@ queue_data (CONNECTION * con, char *s, int ssize)
 {
     ASSERT (validate_connection (con));
     if (ISSERVER (con))
+    {
 	con->sopt->outbuf = buffer_queue (con->sopt->outbuf, s, ssize);
+	if(!con->sopt->outbuf)
+	    con->destroy=1; /*error queuing the data, close connection*/
+    }
     else
+    {
 	con->sendbuf = buffer_queue (con->sendbuf, s, ssize);
+	if(!con->sendbuf)
+	    con->destroy=1; /*error queuing the data, close connection*/
+    }
 }
