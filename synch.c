@@ -58,7 +58,7 @@ sync_user (USER * user, CONNECTION * con)
     /* do this before the joins so the user's already in the channel see
        the real file count */
     if (user->shared)
-	send_cmd (con, MSG_SERVER_USER_SHARING, "%s %d %d", user->nick,
+	send_cmd (con, MSG_SERVER_USER_SHARING, "%s %hu %u", user->nick,
 		  user->shared, user->libsize);
 
     /* send the channels this user is listening on */

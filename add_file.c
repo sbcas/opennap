@@ -72,7 +72,7 @@ static void
 insert_datum (DATUM * info, char *av)
 {
     LIST *tokens, *ptr;
-    int fsize;
+    unsigned int fsize;
 
     ASSERT (info != 0);
     ASSERT (av != 0);
@@ -199,7 +199,7 @@ HANDLER (add_file)
 {
     char *av[6];
     DATUM *info;
-    int fsize;
+    unsigned int fsize;
 
     (void) tag;
     (void) len;
@@ -229,10 +229,12 @@ HANDLER (add_file)
     }
 
     /* ensure we have a valid byte count */
-    fsize = atoi (av[2]);
-    if (fsize < 1)
+    fsize = strtoul (av[2],0,10);
+    /* check for overflow */
+    if(con->user->libsize + fsize < con->user->libsize)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "invalid file size");
+	log("add_file(): %u byte file would overflow %s's library size",
+		fsize, con->user->nick);
 	return;
     }
 
@@ -273,6 +275,7 @@ HANDLER (share_file)
     char *av[4];
     DATUM *info;
     int i, type;
+    unsigned int fsize;
 
     (void) len;
     (void) tag;
@@ -327,10 +330,18 @@ HANDLER (share_file)
 	return;
     }
 
+    fsize = strtoul (av[1], 0, 10);
+    if(fsize + con->user->libsize < con->user->libsize)
+    {
+	log("share_file(): %u byte file would overflow %s's library size",
+		fsize, con->user->nick);
+	return;
+    }
+
     if (!(info = new_datum (av[0], av[2])))
 	return;
     info->user = con->user;
-    info->size = atoi (av[1]);
+    info->size = fsize;
     info->type = type;
 
     insert_datum (info, av[0]);
@@ -342,7 +353,8 @@ HANDLER (user_sharing)
 {
     char *av[3];
     USER *user;
-    int deltanum, deltasize;
+    int shared;
+    unsigned int libsize;
 
     (void) len;
     ASSERT (validate_connection (con));
@@ -358,13 +370,34 @@ HANDLER (user_sharing)
 	log ("user_sharing(): no such user %s (from %s)", av[0], con->host);
 	return;
     }
-    deltanum = atoi (av[1]) - user->shared;
-    Num_Files += deltanum;
-    user->shared += deltanum;
-    deltasize = atoi (av[2]) - user->libsize;
-    Num_Gigs += deltasize;
-    user->libsize += deltasize;
-    pass_message_args (con, tag, "%s %d %d", user->nick, user->shared,
+
+    shared = atoi(av[1]);
+
+    if(shared<0)
+    {
+	log("user_sharing(): negative count for %s from %s", av[0], con->host);
+	Num_Files -= user->shared;
+	Num_Gigs -= user->libsize;
+	user->shared = 0;
+	user->libsize = 0;
+    }
+    else
+    {
+	if(shared > user->shared)
+	    Num_Files += shared - user->shared;
+	else
+	    Num_Files -= user->shared - shared;
+	user->shared = shared;
+
+	libsize = strtoul (av[2],0,10);
+	if(libsize>user->libsize)
+	    Num_Gigs += libsize - user->libsize;
+	else
+	    Num_Gigs -= user->libsize - libsize;
+	user->libsize = libsize;
+    }
+
+    pass_message_args (con, tag, "%s %hu %u", user->nick, user->shared,
 		       user->libsize);
 }
 
@@ -374,7 +407,7 @@ HANDLER (add_directory)
 {
     char *dir, *basename, *md5, *size, *bitrate, *freq, *duration;
     char path[_POSIX_PATH_MAX], dirbuf[_POSIX_PATH_MAX];
-    int pathlen;
+    int pathlen, fsize;
     DATUM *info;
 
     (void) tag;
@@ -457,11 +490,18 @@ HANDLER (add_directory)
 	    continue;		/* get next file */
 	}
 
+	fsize = atoi (size);
+	if(fsize<1)
+	{
+	    send_cmd(con,MSG_SERVER_NOSUCH,"invalid size");
+	    continue;
+	}
+
 	/* create the db record for this file */
 	if (!(info = new_datum (path, md5)))
 	    return;
 	info->user = con->user;
-	info->size = atoi (size);
+	info->size = fsize;
 	info->bitrate = bitrateToMask (atoi (bitrate), con->user);
 	info->frequency = freqToMask (atoi (freq), con->user);
 	info->duration = atoi (duration);

@@ -13,7 +13,7 @@ HANDLER (remove_file)
 {
     USER *user;
     DATUM *info;
-    int fsize;
+    unsigned int fsize;
 
     (void) tag;
     (void) len;

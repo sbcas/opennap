@@ -16,13 +16,13 @@
 #include <ctype.h>
 #endif
 
+/* 214 */
 HANDLER (server_stats)
 {
     (void) pkt;
-    (void) tag;
     (void) len;
-    send_cmd (con, MSG_SERVER_STATS, "%d %d %d", Users->dbsize, Num_Files,
-	      Num_Gigs / (1024 * 1024));
+    send_cmd (con, tag, "%d %d %.0f", Users->dbsize, Num_Files,
+	      Num_Gigs / 1048576.);
 }
 
 /* 10018 :<server> <target> <packet>
@@ -479,7 +479,7 @@ handle_connection (CONNECTION * con)
 		    && tag != MSG_CLIENT_ADD_DIRECTORY)
 		{
 		    pass_message_args (con, MSG_SERVER_USER_SHARING,
-				       "%s %d %d", con->user->nick,
+				       "%s %hu %u", con->user->nick,
 				       con->user->shared, con->user->libsize);
 		    con->user->sharing = 0;
 		}
@@ -489,7 +489,7 @@ handle_connection (CONNECTION * con)
 		if (tag != MSG_CLIENT_REMOVE_FILE)
 		{
 		    pass_message_args (con, MSG_SERVER_USER_SHARING,
-				       "%s %d %d", con->user->nick,
+				       "%s %hu %u", con->user->nick,
 				       con->user->shared, con->user->libsize);
 		    con->user->unsharing = 0;
 		}
