@@ -124,7 +124,6 @@ HANDLER (banlist)
 
     (void) tag;
     (void) len;
-
     (void) pkt;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("banlist");
@@ -133,7 +132,7 @@ HANDLER (banlist)
 	if (Ban[i]->type == BAN_IP)
 	    send_cmd (con, MSG_SERVER_IP_BANLIST /* 616 */, "%s %s \"%s\" %ld",
 		    Ban[i]->target, Ban[i]->setby,
-		    Ban[i]->reason ? Ban[i]->reason : "",
+		    NONULL (Ban[i]->reason),
 		    Ban[i]->when);
     }
     for (i = 0; i < Ban_Size; i++)
@@ -141,4 +140,5 @@ HANDLER (banlist)
 	if (Ban[i]->type == BAN_USER)
 	    send_cmd (con, MSG_SERVER_NICK_BANLIST /* 626 */, "%s", Ban[i]->target);
     }
+    send_cmd (con, MSG_CLIENT_BANLIST /* 615 */, "");
 }

@@ -164,6 +164,7 @@ HANDLER (search)
 	{
 	    i++;
 	    type = fields[i];
+	    i++;
 	}
 	else
 	{
