@@ -293,7 +293,7 @@ main (int argc, char **argv)
 
     /* printf("%d\n", sizeof(DATUM)); */
 
-    while ((i = getopt (argc, argv, "c:hl:p:vD")) != EOF)
+    while ((i = getopt (argc, argv, "c:hl:p:vD")) != -1)
     {
 	switch (i)
 	{

@@ -31,19 +31,6 @@ invalid_nick (const char *s)
     return (count == 0 || (Max_Nick_Length > 0 && count > Max_Nick_Length));
 }
 
-static int
-invalid_password (const char *s)
-{
-    int count = 0;
-
-    for (; *s; s++, count++)
-    {
-	if (ISSPACE (*s))
-	    return 1;
-    }
-    return ((count == 0));
-}
-
 static void
 sync_reginfo (USERDB * db)
 {
@@ -73,37 +60,19 @@ HANDLER (login)
 	return;
     }
 
-    /* enforce maximum local users */
-    if (con->class == CLASS_UNKNOWN && Num_Clients >= Max_Connections)
-    {
-	log ("login(): max_connections (%d) reached", Max_Connections);
-	send_cmd (con, MSG_SERVER_ERROR,
-		  "This server is full (%d connections)", Max_Connections);
-	con->destroy = 1;
-	return;
-    }
-
     ac = split_line (av, FIELDS (av), pkt);
 
+    /* check for the correct number of fields for this message type.  some
+       clients send extra fields, so we just check to make sure we have
+       enough for what is required in this implementation. */
     if ((tag == MSG_CLIENT_LOGIN && ac < 5) ||
 	(tag == MSG_CLIENT_LOGIN_REGISTER && ac < 6))
     {
-	log ("login(): too few avs in message (tag=%d)", tag);
+	log ("login(): too few parameters (tag=%d)", tag);
 	print_args (ac, av);
 	if (con->class == CLASS_UNKNOWN)
 	{
 	    send_cmd (con, MSG_SERVER_ERROR, "Too few parameters for command");
-	    con->destroy = 1;
-	}
-	return;
-    }
-    speed = atoi (av[4]);
-    if (speed < 0 || speed > 10)
-    {
-	log ("login(): invalid speed %d from %s (%s)", speed, av[0], av[3]);
-	if (con->class == CLASS_UNKNOWN)
-	{
-	    send_cmd (con, MSG_SERVER_ERROR, "%d is an invalid speed", speed);
 	    con->destroy = 1;
 	}
 	return;
@@ -120,17 +89,88 @@ HANDLER (login)
 	return;
     }
 
-    /* a spurious newline in the password could cause corruption of the
-       user database, so don't allow it.  if a user logged in as such:
-       user baddpass\n"user realpass none elite 0 0"
-       they could gain elite access on a server */
-    if (invalid_password (av[0]))
+    /* look up this user in the table */
+    db = hash_lookup (User_Db, av[0]);
+
+    /* enforce maximum local users.  if the user is privileged, bypass
+     * this restriction */
+    if (con->class == CLASS_UNKNOWN &&
+	Num_Clients >= Max_Connections &&
+	(!db || db->level < LEVEL_MODERATOR))
     {
-	log ("login(): password for %s contains invalid characters", av[0]);
-	if (con->class == CLASS_UNKNOWN)
-	    send_cmd (con, MSG_SERVER_ERROR,
-		      "Your password contains illegal characters.");
+	log ("login(): max_connections (%d) reached", Max_Connections);
+	send_cmd (con, MSG_SERVER_ERROR,
+		  "This server is full (%d connections)", Max_Connections);
+	con->destroy = 1;
 	return;
+    }
+
+    speed = atoi (av[4]);
+    if (speed < 0 || speed > 10)
+    {
+	log ("login(): invalid speed %d from %s (%s)", speed, av[0], av[3]);
+	if (con->class == CLASS_UNKNOWN)
+	{
+	    send_cmd (con, MSG_SERVER_ERROR, "%d is an invalid speed", speed);
+	    con->destroy = 1;
+	}
+	return;
+    }
+
+    if (db)
+    {
+	/* check for attempt to register a nick that is already taken */
+	if (tag == MSG_CLIENT_REGISTER)
+	{
+	    log ("login(): %s is already registered", av[0]);
+	    if (con->class == CLASS_UNKNOWN)
+	    {
+		/* this could happen if two clients simultaneously connect
+		   and register */
+		send_cmd (con, MSG_SERVER_ERROR, "%s is already registered",
+			  av[0]);
+	    }
+	    else
+	    {
+		ASSERT (con->class == CLASS_SERVER);
+		/* need to issue a kill and send the registration info
+		   we have on this server */
+		log ("login(): sending KILL for user %s", av[0]);
+		pass_message_args (NULL, MSG_CLIENT_KILL,
+				   ":%s %s \"account is already registered\"",
+				   Server_Name, av[0]);
+		sync_reginfo (db);
+	    }
+	    con->destroy = 1;
+	    return;
+	}
+	/* verify the password */
+	else if (check_pass (db->password, av[1]))
+	{
+	    log ("login(): bad password for user %s", av[0]);
+	    if (con->class == CLASS_UNKNOWN)
+	    {
+		send_cmd (con, MSG_SERVER_ERROR, "Invalid Password");
+		con->destroy = 1;
+	    }
+	    else
+	    {
+		ASSERT (con->class == CLASS_SERVER);
+		/* if another server let this message pass through, that
+		   means they probably have an out of date password.  notify
+		   our peers of the registration info.  note that it could be
+		   _this_ server that is stale, but when the other servers
+		   receive this message they will check the creation date and
+		   send back any entries which are more current that this one.
+		   kind of icky, but its the best we can do */
+		log ("login(): sending KILL for user %s", av[0]);
+		pass_message_args (NULL, MSG_CLIENT_KILL,
+				   ":%s %s \"invalid password\"", Server_Name,
+				   av[0]);
+		sync_reginfo (db);
+	    }
+	    return;
+	}
     }
 
     /* check to make sure that this user isn't ready logged in */
@@ -141,9 +181,8 @@ HANDLER (login)
 
 	if (con->class == CLASS_UNKNOWN)
 	{
-	    log ("login(): user %s is already active", user->nick);
-	    send_cmd (con, MSG_SERVER_ERROR, "user %s is already active",
-		      user->nick);
+	    log ("login(): %s is already active", user->nick);
+	    send_cmd (con, MSG_SERVER_ERROR, "%s is already active", user->nick);
 	    con->destroy = 1;
 	}
 	else
@@ -178,6 +217,38 @@ HANDLER (login)
     if (check_ban (con, av[0], BAN_USER))
 	return;
 
+    if (tag == MSG_CLIENT_REGISTER)
+    {
+	log ("login(): registering %s", av[0]);
+	ASSERT (db == 0);
+	db = CALLOC (1, sizeof (USERDB));
+	if (db)
+	{
+	    db->nick = STRDUP (av[0]);
+	    db->password = generate_pass (av[1]);
+	    db->email = STRDUP (av[5]);
+	}
+	if (!db || !db->nick || !db->password || !db->email)
+	{
+	    OUTOFMEMORY ("login");
+	    if (con->class == CLASS_UNKNOWN)
+		con->destroy = 1;
+	    userdb_free (db);
+	    return;
+	}
+	db->level = LEVEL_USER;
+	db->created = Current_Time;
+	if (hash_add (User_Db, db->nick, db))
+	{
+	    log ("login(): hash_add failed (fatal)");
+	    userdb_free(db);
+	    if(con->class==CLASS_UNKNOWN)
+		con->destroy=1;
+	    return;
+	}
+    }
+    db->lastSeen = Current_Time;
+
     user = new_user ();
     if (user)
     {
@@ -193,102 +264,8 @@ HANDLER (login)
     user->port = atoi (av[2]);
     user->speed = speed;
     user->connected = Current_Time;
-    user->level = LEVEL_USER;	/* default */
+    user->level = db ? db->level : LEVEL_USER;	/* default */
     user->con = con;
-
-    /* see if this is a registered nick */
-    if ((db = hash_lookup (User_Db, av[0])))
-    {
-	/* yes, it is registered */
-	if (tag == MSG_CLIENT_LOGIN_REGISTER)
-	{
-	    /* oops, its already registered */
-	    log ("login(): %s is already registered", av[0]);
-	    if (con->class == CLASS_UNKNOWN)
-	    {
-		/* this could happen if two clients simultaneously connect
-		   and register */
-		send_cmd (con, MSG_SERVER_ERROR, "%s is already registered.",
-			av[0]);
-	    }
-	    else
-	    {
-		ASSERT (con->class == CLASS_SERVER);
-		/* need to issue a kill and send the registration info
-		   we have on this server */
-		log ("login(): sending KILL for user %s", av[0]);
-		pass_message_args (NULL, MSG_CLIENT_KILL,
-				   ":%s %s \"account is already registered\"",
-				   Server_Name, av[0]);
-		sync_reginfo (db);
-	    }
-	    goto failed;
-	}
-
-	/* verify the password */
-	if (check_pass (db->password, av[1]))
-	{
-	    log ("login(): bad password for user %s", av[0]);
-	    if (con->class == CLASS_UNKNOWN)
-		send_cmd (con, MSG_SERVER_ERROR, "Invalid Password");
-	    else
-	    {
-		ASSERT (con->class == CLASS_SERVER);
-		/* if another server let this message pass through, that
-		   means they probably have an out of date password.  notify
-		   our peers of the registration info.  note that it could be
-		   _this_ server that is stale, but when the other servers
-		   receive this message they will check the creation date and
-		   send back any entries which are more current that this one.
-		   kind of icky, but its the best we can do */
-		log ("login(): sending KILL for user %s", av[0]);
-		pass_message_args (NULL, MSG_CLIENT_KILL,
-				   ":%s %s \"invalid password\"", Server_Name,
-				   av[0]);
-		sync_reginfo (db);
-	    }
-	    goto failed;
-	}
-
-	/* update the last seen time */
-	db->lastSeen = Current_Time;
-
-	/* set the default userlevel */
-	user->level = db->level;
-	if (user->level != LEVEL_USER)
-	{
-	    log ("login(): set %s to level %s", user->nick,
-		 Levels[user->level]);
-	    notify_mods ("%s set %s's user level to %s (%d)",
-		    Server_Name, user->nick, Levels[user->level], user->level);
-	}
-    }
-    else if (tag == MSG_CLIENT_LOGIN_REGISTER)
-    {
-	/* create the db entry now */
-	log ("login(): registering user %s", av[0]);
-
-	db = CALLOC (1, sizeof (USERDB));
-	if (!db)
-	{
-	    OUTOFMEMORY ("login");
-	    goto failed;
-	}
-	db->nick = STRDUP (av[0]);
-	db->password = generate_pass (av[1]);
-	db->email = STRDUP (av[5]);
-	if (!db->nick || !db->password || !db->email)
-	{
-	    OUTOFMEMORY ("login");
-	    userdb_free (db);
-	    goto failed;
-	}
-	db->level = LEVEL_USER;
-	db->created = Current_Time;
-	db->lastSeen = Current_Time;
-	hash_add (User_Db, db->nick, db);
-    }
-
     if (hash_add (Users, user->nick, user))
     {
 	log ("login(): hash_add failed (fatal)");
@@ -364,6 +341,14 @@ HANDLER (login)
 		      user->nick, user->speed);
 	}
     }
+
+    if (user->level != LEVEL_USER)
+    {
+	log ("login(): set %s to level %s", user->nick, Levels[user->level]);
+	notify_mods ("%s set %s's user level to %s (%d)",
+		     Server_Name, user->nick, Levels[user->level], user->level);
+    }
+
     return;
 
   failed:
