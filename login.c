@@ -422,7 +422,7 @@ HANDLER (user_ip)
 	pass_message_args (con, tag, "%s %s %s %s", user->nick,
 			   field[1], field[2], field[3]);
 
-    user->host = (unsigned int) strtol (field[1], 0, 10);
+    user->host = strtoul (field[1], 0, 10);
     user->conport = atoi (field[2]);
     user->server = STRDUP (field[3]);
     if (!user->server)
