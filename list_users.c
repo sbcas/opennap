@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -6,19 +6,13 @@
 #include "debug.h"
 
 /* packet contains: <channel> */
-void
-list_users (CONNECTION *con, char *pkt)
+HANDLER (list_users)
 {
     CHANNEL *chan;
     int i;
 
     ASSERT (VALID (con));
-
-    if (con->class != CLASS_USER)
-    {
-	log ("list_users(): not USER class");
-	return;
-    }
+    CHECK_USER_CLASS ("list_users");
     chan = hash_lookup (Channels, pkt);
     if (!chan)
     {

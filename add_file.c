@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License. */
 
@@ -59,8 +59,7 @@ get_attr (ATTRTYPE t, ATTRIBUTE * list, size_t listsize)
 /* client request is of the form
    [ :<nick> ] <filename> <md5sum> <size> <bitrate> <frequency> <time> */
 
-void
-add_file (CONNECTION * con, char *pkt)
+HANDLER (add_file)
 {
     char *field[6];
     USER *user;

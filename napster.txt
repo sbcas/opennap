@@ -1,8 +1,8 @@
 napster messages
 ================
 
-by drscholl@sourceforge.net
-January 11, 2000
+by drscholl@users.sourceforge.net
+January 12, 2000
 
 0.  Forward
 
@@ -413,7 +413,8 @@ appropriate, examples of the <data> section for each message are given.
 	<user>
 
 	client is notifying the server that it no longer wishes to request
-	notifications about <user> when they sign on or off the server.
+	notifications about <user> when they sign on or off the server.  no
+	response is sent in return.
 
 400	join channel [CLIENT]
 
@@ -503,7 +504,7 @@ appropriate, examples of the <data> section for each message are given.
 	[why didn't they put a field to indicate WHO changed the topic?  as
 	it is now you can only tell that it was changed.  -ed]
 
-500	alternate download request
+500	alternate download request [CLIENT]
 
 	<nick> "<filename>"
 
@@ -694,6 +695,19 @@ appropriate, examples of the <data> section for each message are given.
 	<text>
 
 	client request send a message to all users
+
+702	change email address [CLIENT]
+
+	<email address>
+
+	client wishes to change their email address
+
+703	change data port [CLIENT]
+
+	<port>
+
+	client is changing the data port being listened on for file
+	transfers
 
 751	ping user [CLIENT, SERVER]
 

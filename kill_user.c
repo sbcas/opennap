@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -8,8 +8,7 @@
 
 /* request to kill (disconnect) a user */
 /* [ :<nick> ] <user> */
-void
-kill_user (CONNECTION * con, char *pkt)
+HANDLER (kill_user)
 {
     USER *user;
 

@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License */
 
@@ -21,21 +21,15 @@ level_name (int flag)
 
 #define WHOIS_FMT "%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\""
 
-/* <user> */
-void
-whois (CONNECTION * con, char *pkt)
+/* packet contains: <user> */
+HANDLER (whois)
 {
     USER *user;
     int i, l;
     char *chanlist;
 
     ASSERT (VALID (con));
-    if (con->class != CLASS_USER)
-    {
-	log ("whois(): only USER class may execute this command");
-	return;
-    }
-
+    CHECK_USER_CLASS ("whois");
     user = hash_lookup (Users, pkt);
     if (!user)
     {

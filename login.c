@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -12,9 +12,8 @@
 
 extern MYSQL *Db;
 
-/* <nick> <pass> <port> <client-info> <link-speed> [ <email> ] */
-void
-login (CONNECTION * con, char *pkt)
+/* packet contains: <nick> <pass> <port> <client-info> <speed> [ <email> ] */
+HANDLER (login)
 {
     char *field[6];
     USER *user;

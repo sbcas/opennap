@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -35,8 +35,7 @@ format_request (char *s)
     }
 }
 
-void
-search (CONNECTION * con, char *pkt)
+HANDLER (search)
 {
     char *fields[32], *p;
     MYSQL_RES *result;
@@ -44,6 +43,8 @@ search (CONNECTION * con, char *pkt)
     int i, numrows, numwords, max_results = 100, compound = 0;
     size_t l;
     USER *user;
+
+    CHECK_USER_CLASS ("search");
 
     log ("search(): %s", pkt);
 

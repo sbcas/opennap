@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -11,8 +11,7 @@
 
 extern MYSQL *Db;
 
-void
-browse (CONNECTION * con, char *pkt)
+HANDLER (browse)
 {
     MYSQL_RES *result;
     MYSQL_ROW row;
@@ -20,11 +19,7 @@ browse (CONNECTION * con, char *pkt)
     USER *user;
 
     ASSERT (VALID (con));
-    if (con->class != CLASS_USER)
-    {
-	log ("browse(): only USER class may execute this command");
-	return;
-    }
+    CHECK_USER_CLASS("browse");
     user = hash_lookup (Users, pkt);
     if (!user)
     {

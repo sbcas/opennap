@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -10,8 +10,7 @@
 
 /* handles private message commands */
 /* [ :<nick> ] <user> <text> */
-void
-privmsg (CONNECTION * con, char *pkt)
+HANDLER (privmsg)
 {
     char *ptr;
     USER *sender, *user /* recip */;

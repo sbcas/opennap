@@ -7,3 +7,10 @@
   need some way to prevent the user from flooding the server.  this is a
   problem since when the user first connects they will likely send a large
   amount of valid information about the contents of their mp3 library
+
+* add support for PostgreSQL
+
+  someone pointed out that mysql is not free for commercial use.  i doubt
+  that anyone would want to run a for pay napster server, but to be
+  politically correct opennap should at least have support for the open
+  source alternative as well

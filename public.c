@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -10,10 +10,9 @@
 #include "debug.h"
 
 /* user sent a public message to a channel */
-/* server sends : <channel> <nick> <text> */
+/* server sends: <channel> <nick> <text> */
 /* client sends: <channel> <text> */
-void
-public (CONNECTION * con, char *pkt)
+HANDLER (public)
 {
     CHANNEL *chan;
     USER *user;

@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -6,17 +6,13 @@
 #include "debug.h"
 
 /* packet contains: <user> */
-void
-add_hotlist (CONNECTION *con, char *pkt)
+HANDLER (add_hotlist)
 {
     HOTLIST *hotlist;
+    int i;
 
     ASSERT (VALID (con));
-    if (con->class != CLASS_USER)
-    {
-	log ("add_hotlist(): only USER class may issue this command");
-	return;
-    }
+    CHECK_USER_CLASS ("add_hotlist");
 
     /* check to see if there is an existing global hotlist entry for this
        user */
@@ -27,6 +23,13 @@ add_hotlist (CONNECTION *con, char *pkt)
 	hotlist = CALLOC (1, sizeof (HOTLIST));
 	hotlist->nick = STRDUP (pkt);
 	hash_add (Hotlist, hotlist->nick, hotlist);
+    }
+
+    /* make sure this user isn't already listed */
+    for (i = 0; i < hotlist->numusers; i++)
+    {
+	if (hotlist->users[i] == con->user)
+	    return; /* already present */
     }
 
     /* add this user to the list of users waiting for notification */
@@ -42,18 +45,13 @@ add_hotlist (CONNECTION *con, char *pkt)
 }
 
 /* packet contains: <user> */
-void
-remove_hotlist (CONNECTION *con, char *pkt)
+HANDLER (remove_hotlist)
 {
     int i;
     HOTLIST *h = 0;
 
     ASSERT (VALID (con));
-    if (con->class != CLASS_USER)
-    {
-	log ("remove_hotlist(): only USER class may issue this command");
-	return;
-    }
+    CHECK_USER_CLASS ("remove_hotlist");
 
     /* find the user in this user's hotlist */
     for (i = 0; i < con->hotlistsize; i++)

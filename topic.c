@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License. */
 
@@ -10,8 +10,7 @@
 /* topic for channel has changed */
 /* [ :<nick> ] <channel> <topic> */
 
-void
-topic (CONNECTION * con, char *pkt)
+HANDLER (topic)
 {
     CHANNEL *chan;
     int i, l;

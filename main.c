@@ -287,6 +287,8 @@ handle_connection (CONNECTION *con)
 
     log ("main(): unknown message: tag=%d, length=%d, data=%s", tag, len,
 	len ? con->recvdata : "(empty)");
+
+    send_cmd (con, MSG_SERVER_NOSUCH, "unknown command code %d", tag);
 }
 
 void

@@ -109,6 +109,7 @@ struct _hotlist
    note that in some cases CLIENT messages are sent to peer servers
    by the receiving server */
 
+#define MSG_SERVER_ERROR		0
 #define MSG_CLIENT_LOGIN		2
 #define MSG_SERVER_EMAIL		3
 #define MSG_CLIENT_LOGIN_REGISTER	6
@@ -165,6 +166,7 @@ struct _hotlist
 #define MSG_CLIENT_UNMUZZLE		623
 #define MSG_CLIENT_WALLOP		627
 #define MSG_CLIENT_ANNOUNCE		628
+#define MSG_CLIENT_CHANGE_DATA_PORT	703
 #define MSG_CLIENT_PING			751
 #define MSG_SERVER_PING			751
 #define MSG_CLIENT_PONG			752
@@ -255,36 +257,40 @@ void sql_error (const char *function, const char *query);
 void synch_server (CONNECTION *);
 
 /* protocol handlers */
-void add_file (CONNECTION * con, char *pkt);
-void add_hotlist (CONNECTION *con, char *pkt);
-void announce (CONNECTION *, char *);
-void browse (CONNECTION *, char *);
-void client_quit (CONNECTION * con, char *pkt);
-void download (CONNECTION *, char *);
-void download_ack (CONNECTION *, char *);
-void join (CONNECTION * con, char *pkt);
-void kill_user (CONNECTION *, char *);
-void level (CONNECTION *, char *);
-void list_channels (CONNECTION *, char *);
-void list_users (CONNECTION *, char *);
-void login (CONNECTION *, char *);
-void muzzle (CONNECTION *, char *);
-void nuke_user (CONNECTION *, char *);
-void privmsg (CONNECTION *, char *);
-void part (CONNECTION * con, char *pkt);
-void ping (CONNECTION * con, char *pkt);
-void pong (CONNECTION * con, char *pkt);
-void public (CONNECTION * con, char *pkt);
-void remove_file (CONNECTION *con, char *pkt);
-void remove_hotlist (CONNECTION *con, char *pkt);
-void resume (CONNECTION *con, char *pkt);
-void search (CONNECTION *, char *pkt);
-void server_connect (CONNECTION *, char *);
-void server_login (CONNECTION * con, char *pkt);
-void server_login_ack (CONNECTION * con, char *pkt);
-void unmuzzle (CONNECTION *, char *);
-void upload_complete (CONNECTION *, char *);
-void topic (CONNECTION *, char *);
-void whois (CONNECTION * con, char *pkt);
+#define HANDLER(f) void f (CONNECTION *con, char *pkt)
+HANDLER (add_file);
+HANDLER (add_hotlist);
+HANDLER (announce);
+HANDLER (browse);
+HANDLER (change_data_port);
+HANDLER (client_quit);
+HANDLER (download);
+HANDLER (download_ack);
+HANDLER (join);
+HANDLER (kill_user);
+HANDLER (level);
+HANDLER (list_channels);
+HANDLER (list_users);
+HANDLER (login);
+HANDLER (muzzle);
+HANDLER (nuke_user);
+HANDLER (privmsg);
+HANDLER (part);
+HANDLER (ping);
+HANDLER (pong);
+HANDLER (public);
+HANDLER (remove_file);
+HANDLER (remove_hotlist);
+HANDLER (resume);
+HANDLER (search);
+HANDLER (server_connect);
+HANDLER (server_login);
+HANDLER (server_login_ack);
+HANDLER (unmuzzle);
+HANDLER (upload_complete);
+HANDLER (topic);
+HANDLER (whois);
+
+#define CHECK_USER_CLASS(f) if (con->class != CLASS_USER) { log ("%s: not USER class", f); return; }
 
 #endif /* opennap_h */

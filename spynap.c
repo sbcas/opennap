@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the GNU Public
    License.  See the file COPYING for details. */
 
@@ -63,6 +63,11 @@ void user_input (char *s)
 	    s += 3;
 	    type = 205;
 	}
+	else if (!strncmp("whois", s, 5))
+	{
+	    s += 5;
+	    type = 603;
+	}
 	else
 	{
 	    puts("\runknown command[K");
@@ -126,6 +131,26 @@ server_output (void)
     return 0;
 }
 
+static void
+usage (void)
+{
+    printf ("usage: %s [ -rhv ] [ -s SERVER ] [ -p PORT ] [ -u USER ]\n", PACKAGE);
+puts   ("  -h		display this help message");
+puts   ("  -r		auto reconnect to server");
+puts   ("  -s SERVER	connect to SERVER");
+puts   ("  -p PORT	connect to PORT");
+puts   ("  -u USER	log in as USER");
+puts   ("  -v		display version information");
+    exit (0);
+}
+
+static void
+version (void)
+{
+    printf ("%s %s\n", PACKAGE, VERSION);
+    exit (0);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -138,7 +163,7 @@ main (int argc, char **argv)
     struct hostent *he;
     int reconnect = 0;
 
-    while ((i = getopt (argc, argv, "rs:p:u:")) != -1)
+    while ((i = getopt (argc, argv, "hrs:p:u:v")) != -1)
     {
 	switch (i)
 	{
@@ -154,6 +179,11 @@ main (int argc, char **argv)
 	    case 'u':
 		user = optarg;
 		break;
+	    case 'v':
+		version ();
+	    case 'h':
+	    default:
+		usage ();
 	}
     }
 

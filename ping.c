@@ -1,4 +1,4 @@
-/* Copyright (C) 2000 drscholl@sourceforge.net
+/* Copyright (C) 2000 drscholl@users.sourceforge.net
    This is free software distributed under the terms of the
    GNU Public License.  See the file COPYING for details. */
 
@@ -39,15 +39,13 @@ ping_wrapper (CONNECTION *con, char *pkt, int msg)
     }
 }
 
-void
-ping (CONNECTION *con, char *pkt)
+HANDLER (ping)
 {
     ASSERT (VALID (con));
     ping_wrapper (con, pkt, MSG_SERVER_PING);
 }
 
-void
-pong (CONNECTION *con, char *pkt)
+HANDLER (pong)
 {
     ASSERT (VALID (con));
     ping_wrapper (con, pkt, MSG_SERVER_PONG);
