@@ -236,27 +236,12 @@ HANDLER (channel_level)
     else
 	sender = con->user->nick;
     ac = split_line (av, sizeof (av) / sizeof (char), pkt);
-    if (ac != 2)
+    if (ac == 0)
     {
 	log ("channel_level(): wrong number of paramenters");
 	print_args (ac, av);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid number of parameters");
-	return;
-    }
-    level = get_level (av[1]);
-    if (level == -1)
-    {
-	log ("channel_level(): unknown level %s", av[1]);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid level %s", av[1]);
-	return;
-    }
-    if (ISUSER (con) && level > con->user->level)
-    {
-	log ("channel_level(): %s no privilege for channel %s to level %s",
-		con->user->nick, Levels[level]);
-	permission_denied (con);
 	return;
     }
     chan = hash_lookup (Channels, av[0]);
@@ -267,7 +252,8 @@ HANDLER (channel_level)
 	    send_cmd (con, MSG_SERVER_NOSUCH, "No such channel %s", av[0]);
 	return;
     }
-	/* ensure the user is a member of this channel */
+    ASSERT (validate_channel);
+    /* ensure the user is a member of this channel */
     if (ISUSER (con) && list_find (con->user->channels, chan) == 0)
     {
 	log ("channel_level(): %s is not a member of channel %s",
@@ -276,12 +262,37 @@ HANDLER (channel_level)
 		"You are not a member of channel %s", chan->name);
 	return;
     }
-
-    pass_message_args (con, tag, ":%s %s %s", sender, chan->name,
-	    Levels[level]);
-
-    chan->level = level;
-
-    notify_mods ("%s set channel %s to level %s.", sender, chan->name,
-	    Levels[level]);
+    if (ac == 2)
+    {
+	level = get_level (av[1]);
+	if (level == -1)
+	{
+	    log ("channel_level(): unknown level %s", av[1]);
+	    if (ISUSER (con))
+		send_cmd (con, MSG_SERVER_NOSUCH, "Invalid level %s", av[1]);
+	    return;
+	}
+	if (ISUSER (con) && level > con->user->level)
+	{
+	    log ("channel_level(): %s no privilege for channel %s to level %s",
+		    con->user->nick, Levels[level]);
+	    permission_denied (con);
+	    return;
+	}
+	pass_message_args (con, tag, ":%s %s %s", sender, chan->name,
+		Levels[level]);
+	chan->level = level;
+	notify_mods ("%s set channel %s to level %s.", sender, chan->name,
+		Levels[level]);
+    }
+    else
+    {
+	/* report the current level */
+	ASSERT (ac == 1);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Channel %s is set to level %s.",
+		    Levels[chan->level]);
+	else
+	    log ("channel_level(): query from server (should not happen)");
+    }
 }
