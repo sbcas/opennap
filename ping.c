@@ -30,25 +30,25 @@ HANDLER (ping)
 	if (ISUSER (con))
 	{
 	    send_cmd (con, MSG_SERVER_NOSUCH, "ping failed, %s is not online",
-		nick);
+		      nick);
 	}
 	return;
     }
 
     if (ISUSER (user->con))
     {
-	if (!is_ignoring(user->con->uopt->ignore,orig->nick))
+	if (!is_ignoring (user->con->uopt->ignore, orig->nick))
 	    send_cmd (user->con, tag, "%s%s%s", orig->nick, pkt ? " " : "",
-		    NONULL (pkt));
+		      NONULL (pkt));
 	else
-	    send_user(orig,MSG_SERVER_NOSUCH,"%s is ignoring you",
-		    user->nick);
+	    send_user (orig, MSG_SERVER_NOSUCH, "%s is ignoring you",
+		       user->nick);
     }
     else
     {
 	/* send the message to the server which this user appears to be
 	   behind */
 	send_cmd (user->con, tag, ":%s %s%s%s", orig->nick, user->nick,
-		pkt ? " " : "", NONULL (pkt));
+		  pkt ? " " : "", NONULL (pkt));
     }
 }

@@ -48,7 +48,7 @@ HANDLER (ban)
 	    return;
 	}
 	pkt++;
-	sender=next_arg(&pkt);
+	sender = next_arg (&pkt);
     }
     else
     {
@@ -58,7 +58,7 @@ HANDLER (ban)
 	    permission_denied (con);
 	    return;
 	}
-	sender=con->user->nick;
+	sender = con->user->nick;
     }
     if (pkt)
 	ac = split_line (av, FIELDS (av), pkt);
@@ -77,7 +77,7 @@ HANDLER (ban)
 	    log ("ban(): %s is already banned", av[0]);
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already banned",
-			av[0]);
+			  av[0]);
 	    return;
 	}
     }
@@ -106,7 +106,8 @@ HANDLER (ban)
 	    break;
 	list->data = b;
 	Bans = list_append (Bans, list);
-	notify_mods (BANLOG_MODE, "%s banned %s: %s", sender, av[0], b->reason);
+	notify_mods (BANLOG_MODE, "%s banned %s: %s", sender, av[0],
+		     b->reason);
 	return;
     }
     while (1);
@@ -273,9 +274,9 @@ save_bans (void)
 	else
 	    fprintf (fp, "%s", b->target);
 #ifdef WIN32
-	fputc('\r', fp);
+	fputc ('\r', fp);
 #endif
-	fputc('\n', fp);
+	fputc ('\n', fp);
     }
     if (fclose (fp))
     {
@@ -297,8 +298,8 @@ load_bans (void)
     snprintf (path, sizeof (path), "%s/bans", Config_Dir);
     if (!(fp = fopen (path, "r")))
     {
-	if(errno!=ENOENT)
-	    logerr("load_bans",path);
+	if (errno != ENOENT)
+	    logerr ("load_bans", path);
 	return -1;
     }
     while (fgets (Buf, sizeof (Buf) - 1, fp))
@@ -323,8 +324,8 @@ load_bans (void)
 	    }
 	    else
 	    {
-		log("load_bans(): too few parameters for ban");
-		print_args(ac,av);
+		log ("load_bans(): too few parameters for ban");
+		print_args (ac, av);
 	    }
 	}
 	else

@@ -73,13 +73,13 @@ CONNECTION **Clients = NULL;
 int Num_Clients = 0;
 int Max_Clients = 0;
 
-HASH *Users;		/* global users list */
-HASH *File_Table;	/* global file list */
-HASH *Channels;		/* global channel list */
-HASH *Hotlist; /* global hotlist */
+HASH *Users;			/* global users list */
+HASH *File_Table;		/* global file list */
+HASH *Channels;			/* global channel list */
+HASH *Hotlist;			/* global hotlist */
 
 #if RESUME
-HASH *MD5; /* global hash list */
+HASH *MD5;			/* global hash list */
 #endif /* RESUME */
 
 /* local server list.  NOTE that this contains pointers into the Clients
@@ -465,7 +465,7 @@ main (int argc, char **argv)
 		    maxfd = Clients[i]->fd;
 		/* check sockets for writing */
 #define CheckWrite(p) (p->sendbuf || (ISSERVER(p) && p->sopt->outbuf))
-		if (Clients[i]->connecting || CheckWrite(Clients[i]))
+		if (Clients[i]->connecting || CheckWrite (Clients[i]))
 		    FD_SET (Clients[i]->fd, &wset);
 	    }
 	}
@@ -540,9 +540,9 @@ main (int argc, char **argv)
     if (sp != -1)
 	CLOSE (sp);
 
-    userdb_dump ();	/* write out the user database */
-    save_bans ();	/* write out server bans */
-    dump_channels();	/* write out persistent channels file */
+    userdb_dump ();		/* write out the user database */
+    save_bans ();		/* write out server bans */
+    dump_channels ();		/* write out persistent channels file */
 
     /* close all client connections */
     for (i = 0; i < Max_Clients; i++)

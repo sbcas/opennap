@@ -20,7 +20,7 @@ HANDLER (upload_ok)
 
     (void) tag;
     (void) len;
-    CHECK_USER_CLASS("upload_ok");
+    CHECK_USER_CLASS ("upload_ok");
     ASSERT (validate_connection (con));
     if ((ac = split_line (av, sizeof (av) / sizeof (char *), pkt)) != 2)
     {
@@ -41,33 +41,33 @@ HANDLER (upload_ok)
     if (!info)
     {
 	log ("upload_ok(): user %s does not have file %s",
-		con->user->nick, av[1]);
+	     con->user->nick, av[1]);
 	send_cmd (con, MSG_SERVER_NOSUCH, "You are not sharing \"%s\"",
-		av[1]);
+		  av[1]);
 	return;
     }
     if (con->user->port == 0)
     {
 	/* firewalled user, give the info back to the uploader */
 	send_cmd (con, MSG_SERVER_UPLOAD_FIREWALL /* 501 */ ,
-		"%s %u %d \"%s\" %s %d",
-		recip->nick, recip->host, recip->port, av[1],
+		  "%s %u %d \"%s\" %s %d",
+		  recip->nick, recip->host, recip->port, av[1],
 #if RESUME
-		info->hash,
+		  info->hash,
 #else
-		"00000000000000000000000000000000",
+		  "00000000000000000000000000000000",
 #endif
-		recip->speed);
+		  recip->speed);
     }
     else
 	/* recipient of this message may be on a remote server, use
 	   send_user() here */
 	send_user (recip, MSG_SERVER_FILE_READY, "%s %u %d \"%s\" %s %d",
-		con->user->nick, con->user->host, con->user->port, av[1],
+		   con->user->nick, con->user->host, con->user->port, av[1],
 #if RESUME
-		info->hash,
+		   info->hash,
 #else
-		"00000000000000000000000000000000",
+		   "00000000000000000000000000000000",
 #endif
-		con->user->speed);
+		   con->user->speed);
 }

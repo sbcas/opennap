@@ -88,28 +88,27 @@ exec_timers (time_t now)
 	(*current->func) (current->arg);
 	switch (current->events)
 	{
-	    case 0:
-		FREE (current);
-		break;
-	    default:
-		current->events--;
-	    case -1:
-		/* reschedule */
-		current->next_time = Current_Time + current->interval;
-		schedule_timer (current);
-		break;
+	case 0:
+	    FREE (current);
+	    break;
+	default:
+	    current->events--;
+	case -1:
+	    /* reschedule */
+	    current->next_time = Current_Time + current->interval;
+	    schedule_timer (current);
+	    break;
 	}
     }
 }
 
 /* returns the time offset at which the next pending event is scheduled */
-time_t
-next_timer (void)
+time_t next_timer (void)
 {
     if (Pending_Timers)
     {
 	if (Pending_Timers->next_time < Current_Time)
-	    return 0;	/* now! */
+	    return 0;		/* now! */
 	return (Pending_Timers->next_time - Current_Time);
     }
     return -1;

@@ -50,8 +50,8 @@ static struct config Vars[] = {
 #ifndef WIN32
     {"uid", VAR_TYPE_INT, UL & Uid, -1},
     {"gid", VAR_TYPE_INT, UL & Gid, -1},
-    
-	{"connection_hard_limit", VAR_TYPE_INT, UL & Connection_Hard_Limit,
+
+    {"connection_hard_limit", VAR_TYPE_INT, UL & Connection_Hard_Limit,
      FD_SETSIZE},
     {"max_data_size", VAR_TYPE_INT, UL & Max_Data_Size, -1},
     {"max_rss_size", VAR_TYPE_INT, UL & Max_Rss_Size, -1},
@@ -65,7 +65,7 @@ static struct config Vars[] = {
     {"config_dir", VAR_TYPE_STR, UL & Config_Dir, UL SHAREDIR},
     {"registered_only", VAR_TYPE_BOOL, ON_REGISTERED_ONLY, 0},
     {"auto_register", VAR_TYPE_BOOL, ON_AUTO_REGISTER, 0},
-    {"max_channel_length",VAR_TYPE_INT,UL &Max_Channel_Length, 32},
+    {"max_channel_length", VAR_TYPE_INT, UL & Max_Channel_Length, 32},
 };
 
 static int Vars_Size = sizeof (Vars) / sizeof (struct config);

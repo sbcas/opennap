@@ -141,8 +141,8 @@ HANDLER (server_login)
 	log ("server_login(): no entry for server %s", con->host);
 	send_cmd (con, MSG_SERVER_ERROR, "Permission Denied");
 	con->destroy = 1;
-	if(localPass)
-	    FREE(localPass);
+	if (localPass)
+	    FREE (localPass);
 	return;
     }
     FREE (pass);
@@ -212,7 +212,7 @@ HANDLER (server_login)
     /* now we wait for the peers ACK */
     log ("server_login(): sent login ACK");
 
-    FREE(localPass);
+    FREE (localPass);
 }
 
 HANDLER (server_login_ack)

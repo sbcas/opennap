@@ -64,24 +64,25 @@ operserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_OP_LIST;
     else if (!strcasecmp ("deop", cmd))
 	tag = MSG_CLIENT_DEOP;
-    else if (!strcasecmp("help",cmd))
+    else if (!strcasecmp ("help", cmd))
     {
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ Help for OperServ:");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ cloak");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ config");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ connect");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ deop");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ disconnect");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ help");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ killserver");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ links");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ op");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ oplist");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ reconfig");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ register");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ stats");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ usermode");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"OperServ END of help for OperServ");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ Help for OperServ:");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ cloak");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ config");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ connect");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ deop");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ disconnect");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ help");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ killserver");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ links");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ op");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ oplist");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ reconfig");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ register");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ stats");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "OperServ usermode");
+	send_cmd (con, MSG_CLIENT_PRIVMSG,
+		  "OperServ END of help for OperServ");
 	return;
     }
     else
@@ -129,18 +130,23 @@ chanserv (CONNECTION * con, char *pkt)
 	tag = MSG_CLIENT_CHANNEL_LIMIT;
     else if (!strcasecmp ("help", cmd))
     {
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ HELP for ChanServ commands:");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ ban <channel> <user> [reason]");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ banclear <channel>");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ banlist <channel>");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ clear <channel>");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ help");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ kick <channel> <user> [reason]");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ limit <channel> <number>");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ oplist <channel>");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ topic <channel> [topic]");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ unban <channel>");
-	send_cmd(con,MSG_CLIENT_PRIVMSG,"ChanServ END of ChanServ HELP");
+	send_cmd (con, MSG_CLIENT_PRIVMSG,
+		  "ChanServ HELP for ChanServ commands:");
+	send_cmd (con, MSG_CLIENT_PRIVMSG,
+		  "ChanServ ban <channel> <user> [reason]");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ banclear <channel>");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ banlist <channel>");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ clear <channel>");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ help");
+	send_cmd (con, MSG_CLIENT_PRIVMSG,
+		  "ChanServ kick <channel> <user> [reason]");
+	send_cmd (con, MSG_CLIENT_PRIVMSG,
+		  "ChanServ limit <channel> <number>");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ oplist <channel>");
+	send_cmd (con, MSG_CLIENT_PRIVMSG,
+		  "ChanServ topic <channel> [topic]");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ unban <channel>");
+	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ END of ChanServ HELP");
 	return;
     }
     else

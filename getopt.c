@@ -24,12 +24,12 @@ _getopt (int ac, char **av, const char *opts)
 	    p = strchr (opts, av[optind][1]);
 	    if (!p)
 		return '?';
-	    if (*(p+1) == ':')
+	    if (*(p + 1) == ':')
 	    {
 		/* requires arg */
 		optind++;
 		if (!av[optind] || *av[optind] == '-')
-		    return ':'; /* missing argument */
+		    return ':';	/* missing argument */
 		optarg = av[optind];
 	    }
 	    else

@@ -15,32 +15,37 @@ direct the client to the opennap server */
    THIS PROGRAM. */
 
 /* where to seek() in the stream to find the metaserver address */
-#define OFFSET 0x004e598 /* nap v1.0 beta */
+#define OFFSET 0x004e598	/* nap v1.0 beta */
 #if 0
-#define OFFSET 0x004e6c5 /* nap v1.0 beta */
-/* #define OFFSET 0x005a79c */ /* nap v0.9 beta */
-/* #define OFFSET 0x00596bc */ /* nap v0.8 beta */
+#define OFFSET 0x004e6c5	/* nap v1.0 beta */
+/* #define OFFSET 0x005a79c *//* nap v0.9 beta */
+/* #define OFFSET 0x00596bc *//* nap v0.8 beta */
 #endif
 
 int
-main(int argc,char**argv)
+main (int argc, char **argv)
 {
-	FILE *f;
-	char meta[16];
-	meta[15]=0;
-	if(argc<2){
-		puts("usage: patchnap <nap-binary> <meta-server>\n");
-		exit(1);
-	}
-	f=fopen(argv[1],"r+");
-	if (!f){
-		perror(argv[1]);
-		exit(1);
-	}
-	fseek(f,OFFSET,SEEK_SET);
-	fread(meta,1,sizeof(meta)-1,f);
-	printf("we've secretely replace your premium blend (%s) with folger's crytals (%s).\n", meta, argv[2]);
-	fseek(f,OFFSET,SEEK_SET);
-	fwrite(argv[2],1,strlen(argv[2])+1,f);
-	fclose(f);
+    FILE *f;
+    char meta[16];
+
+    meta[15] = 0;
+    if (argc < 2)
+    {
+	puts ("usage: patchnap <nap-binary> <meta-server>\n");
+	exit (1);
+    }
+    f = fopen (argv[1], "r+");
+    if (!f)
+    {
+	perror (argv[1]);
+	exit (1);
+    }
+    fseek (f, OFFSET, SEEK_SET);
+    fread (meta, 1, sizeof (meta) - 1, f);
+    printf
+	("we've secretely replace your premium blend (%s) with folger's crytals (%s).\n",
+	 meta, argv[2]);
+    fseek (f, OFFSET, SEEK_SET);
+    fwrite (argv[2], 1, strlen (argv[2]) + 1, f);
+    fclose (f);
 }

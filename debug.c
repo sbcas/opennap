@@ -61,13 +61,13 @@ debug_hash (void *ptr)
 }
 
 static int
-debug_overflow (BLOCK *block, const char *func)
+debug_overflow (BLOCK * block, const char *func)
 {
     if (*((unsigned char *) block->val + block->len) != END_BYTE)
     {
 	fprintf (stderr,
-		"debug_%s: buffer overflow detected in data allocated at %s:%d\n",
-		func, block->file, block->line);
+		 "debug_%s: buffer overflow detected in data allocated at %s:%d\n",
+		 func, block->file, block->line);
 	return 1;
     }
     return 0;
@@ -76,8 +76,9 @@ debug_overflow (BLOCK *block, const char *func)
 static void
 debug_exhausted (const char *file, int line)
 {
-    fprintf (stderr, "debug_malloc(): memory exhausted at %s:%d (%d bytes allocated)\n",
-	    file, line, Memory_Usage);
+    fprintf (stderr,
+	     "debug_malloc(): memory exhausted at %s:%d (%d bytes allocated)\n",
+	     file, line, Memory_Usage);
 }
 
 void *
@@ -128,6 +129,7 @@ void *
 debug_calloc (int count, int bytes, const char *file, int line)
 {
     void *ptr = debug_malloc (count * bytes, file, line);
+
     if (!ptr)
 	return 0;
     memset (ptr, 0, count * bytes);
@@ -140,7 +142,8 @@ find_block (void *ptr)
     int offset = debug_hash (ptr);
     BLOCK *block;
 
-    for (block = Allocation[offset]; block && ptr > block->val; block = block->next);
+    for (block = Allocation[offset]; block && ptr > block->val;
+	 block = block->next);
     return ((block != 0 && ptr == block->val) ? block : 0);
 }
 
@@ -225,17 +228,19 @@ debug_free (void *ptr, const char *file, int line)
 #if 0
 /* display the contents of an allocated block */
 static void
-debug_dump (BLOCK *block)
+debug_dump (BLOCK * block)
 {
     int i;
 
-    fputc('\t', stderr);
+    fputc ('\t', stderr);
     for (i = 0; i < block->len && i < 8; i++)
-	fprintf(stderr, "%02x ", *((unsigned char*)block->val+i));
-    fputc('\t', stderr);
+	fprintf (stderr, "%02x ", *((unsigned char *) block->val + i));
+    fputc ('\t', stderr);
     for (i = 0; i < block->len && i < 8; i++)
-	fprintf(stderr, "%c", isprint(*((unsigned char*)block->val+i))?*((unsigned char*)block->val+i):'.');
-    fputc('\n',stderr);
+	fprintf (stderr, "%c",
+		 isprint (*((unsigned char *) block->val + i)) ?
+		 *((unsigned char *) block->val + i) : '.');
+    fputc ('\n', stderr);
 }
 #endif
 
@@ -251,7 +256,7 @@ debug_cleanup (void)
 	{
 	    debug_overflow (block, "cleanup");
 	    fprintf (stderr, "debug_cleanup: %d bytes allocated at %s:%d\n",
-		    block->len, block->file, block->line);
+		     block->len, block->file, block->line);
 #if 0
 	    debug_dump (block);
 #endif
@@ -277,12 +282,12 @@ debug_strdup (const char *s, const char *file, int line)
 int
 debug_valid (void *ptr, int len)
 {
-    BLOCK * block = find_block (ptr);
+    BLOCK *block = find_block (ptr);
 
     if (!block)
     {
 	fprintf (stderr, "debug_valid: invalid pointer\n");
-	return 0; /* not found */
+	return 0;		/* not found */
     }
     if (debug_overflow (block, "valid"))
 	return 0;

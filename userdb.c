@@ -59,7 +59,7 @@ userdb_init (void)
     char *av[6], path[_POSIX_PATH_MAX];
     USERDB *u;
 
-    snprintf(path,sizeof(path),"%s/users",Config_Dir);
+    snprintf (path, sizeof (path), "%s/users", Config_Dir);
     fp = fopen (path, "r");
     if (!fp)
     {
@@ -81,6 +81,11 @@ userdb_init (void)
 	ac = split_line (av, FIELDS (av), Buf);
 	if (ac >= 6)
 	{
+	    if(invalid_nick(av[0]))
+	    {
+		log("userdb_init(): %s: invalid nickname", av[0]);
+		continue;
+	    }
 	    u = CALLOC (1, sizeof (USERDB));
 	    if (u)
 	    {
@@ -100,9 +105,10 @@ userdb_init (void)
 		return -1;
 	    }
 	    level = get_level (av[3]);
-	    if(level < 0 || level > LEVEL_ELITE)
+	    if (level < 0 || level > LEVEL_ELITE)
 	    {
-		log("userdb_init(): invalid level %s for user %s", av[3], u->nick);
+		log ("userdb_init(): invalid level %s for user %s", av[3],
+		     u->nick);
 		level = LEVEL_USER;
 	    }
 	    u->level = level;
@@ -133,15 +139,15 @@ dump_userdb (USERDB * db, FILE * fp)
     {
 	if (db->level < LEVEL_MODERATOR)
 	{
-	    strcpy(Buf,ctime(&db->lastSeen));
-	    Buf[strlen(Buf)-1]=0;
+	    strcpy (Buf, ctime (&db->lastSeen));
+	    Buf[strlen (Buf) - 1] = 0;
 	    log ("dump_userdb(): %s has expired (last seen %s)", db->nick,
 		 Buf);
 	    return;
 	}
 	/* warn, but dont nuke expired accounts for privileged users */
-	log("dump_userdb(): %s has expired (ignored: level=%s)",
-	    db->nick,Levels[db->level]);
+	log ("dump_userdb(): %s has expired (ignored: level=%s)",
+	     db->nick, Levels[db->level]);
     }
 
     fputs (db->nick, fp);
@@ -152,7 +158,8 @@ dump_userdb (USERDB * db, FILE * fp)
     fputc (' ', fp);
     fputs (Levels[db->level], fp);
     fputc (' ', fp);
-    fprintf (fp, "%d %d %d", (int) db->created, (int) db->lastSeen, db->flags);
+    fprintf (fp, "%d %d %d", (int) db->created, (int) db->lastSeen,
+	     db->flags);
 #ifdef WIN32
     fputs ("\r\n", fp);
 #else
@@ -191,7 +198,7 @@ userdb_dump (void)
 	logerr ("userdb_dump", "fclose");
 	return -1;
     }
-    snprintf(path,sizeof(path),"%s/users",Config_Dir);
+    snprintf (path, sizeof (path), "%s/users", Config_Dir);
     if (unlink (path))
 	logerr ("userdb_dump", "unlink");	/* not fatal, may not exist */
     if (rename (tmppath, path))

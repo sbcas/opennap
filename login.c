@@ -12,17 +12,18 @@
 #include "opennap.h"
 #include "debug.h"
 
-static int
+int
 invalid_nick (const char *s)
 {
     int count = 0;
 
     /* don't allow anyone to ever have this nick */
-    if (!strcasecmp (s, "operserv") || !strcasecmp(s, "chanserv"))
+    if (!strcasecmp (s, "operserv") || !strcasecmp (s, "chanserv"))
 	return 1;
     while (*s)
     {
-	if (!ISPRINT (*s) || ISSPACE (*s) || *s == ':' || *s == '%' || *s == '$')
+	if (!ISPRINT (*s) || ISSPACE (*s) || *s == ':' || *s == '%'
+	    || *s == '$')
 	    return 1;
 	count++;
 	s++;
@@ -68,9 +69,9 @@ HANDLER (login)
     {
 	log ("login(): too few parameters (tag=%d)", tag);
 	print_args (ac, av);
-	if (ISUNKNOWN(con))
+	if (ISUNKNOWN (con))
 	{
-	    unparsable(con);
+	    unparsable (con);
 	    con->destroy = 1;
 	}
 	return;
@@ -87,9 +88,9 @@ HANDLER (login)
 	else
 	{
 	    ASSERT (ISSERVER (con));
-	    log("login(): sending KILL for %s", av[0]);
-	    pass_message_args(NULL,MSG_CLIENT_KILL,":%s %s \"invalid nick\"",
-		    Server_Name, av[0]);
+	    log ("login(): sending KILL for %s", av[0]);
+	    pass_message_args (NULL, MSG_CLIENT_KILL,
+			       ":%s %s \"invalid nick\"", Server_Name, av[0]);
 	}
 	return;
     }
@@ -99,7 +100,7 @@ HANDLER (login)
 
     /* enforce maximum local users.  if the user is privileged, bypass
      * this restriction */
-    if (ISUNKNOWN(con) && Num_Clients >= Max_Connections &&
+    if (ISUNKNOWN (con) && Num_Clients >= Max_Connections &&
 	(!db || db->level < LEVEL_MODERATOR))
     {
 	log ("login(): max_connections (%d) reached", Max_Connections);
@@ -130,14 +131,15 @@ HANDLER (login)
 
     if (!db && tag != MSG_CLIENT_LOGIN_REGISTER)
     {
-	if(Server_Flags&ON_REGISTERED_ONLY)
+	if (Server_Flags & ON_REGISTERED_ONLY)
 	{
-	    send_cmd(con,MSG_SERVER_ERROR,"only registered accounts are allowed on this server");
-	    con->destroy=1;
+	    send_cmd (con, MSG_SERVER_ERROR,
+		      "only registered accounts are allowed on this server");
+	    con->destroy = 1;
 	    return;
 	}
-	if(Server_Flags&ON_AUTO_REGISTER)
-	    tag=MSG_CLIENT_LOGIN_REGISTER;
+	if (Server_Flags & ON_AUTO_REGISTER)
+	    tag = MSG_CLIENT_LOGIN_REGISTER;
     }
     /* check for attempt to register a nick that is already taken */
     else if (db && tag == MSG_CLIENT_LOGIN_REGISTER)
@@ -210,7 +212,7 @@ HANDLER (login)
 
     /* check for a user ban, mods+ are exempt */
     if ((!db || db->level < LEVEL_MODERATOR) &&
-	    check_ban (con, av[0], BAN_USER))
+	check_ban (con, av[0], BAN_USER))
 	return;
 
     if (tag == MSG_CLIENT_LOGIN)
@@ -222,12 +224,13 @@ HANDLER (login)
 	    if (db->level > LEVEL_USER)
 	    {
 		/* warn about privileged users */
-		notify_mods(ERROR_MODE,"Bad password for %s (%s) from %s",
-			    db->nick, Levels[db->level], my_ntoa(con->ip));
-		pass_message_args(NULL,MSG_SERVER_NOTIFY_MODS,
-			 ":%s %d \"Bad password for %s (%s) from %s\"",
-			 Server_Name, ERROR_MODE,
-			 db->nick, Levels[db->level], my_ntoa(con->ip));
+		notify_mods (ERROR_MODE, "Bad password for %s (%s) from %s",
+			     db->nick, Levels[db->level], my_ntoa (con->ip));
+		pass_message_args (NULL, MSG_SERVER_NOTIFY_MODS,
+				   ":%s %d \"Bad password for %s (%s) from %s\"",
+				   Server_Name, ERROR_MODE,
+				   db->nick, Levels[db->level],
+				   my_ntoa (con->ip));
 	    }
 	    if (con->class == CLASS_UNKNOWN)
 	    {
@@ -263,12 +266,12 @@ HANDLER (login)
 	{
 	    db->nick = STRDUP (av[0]);
 	    db->password = generate_pass (av[1]);
-	    if(ac>5)
+	    if (ac > 5)
 		db->email = STRDUP (av[5]);
 	    else
 	    {
-		snprintf(Buf,sizeof(Buf),"anon@%s",Server_Name);
-		db->email=STRDUP(Buf);
+		snprintf (Buf, sizeof (Buf), "anon@%s", Server_Name);
+		db->email = STRDUP (Buf);
 	    }
 	}
 	if (!db || !db->nick || !db->password || !db->email)
@@ -355,34 +358,36 @@ HANDLER (login)
 	    /* do this before setting the user level so this user is not
 	       notified twice */
 	    notify_mods (LEVELLOG_MODE, "%s set %s's user level to %s (%d)",
-		    Server_Name, user->nick, Levels[db->level], db->level);
+			 Server_Name, user->nick, Levels[db->level],
+			 db->level);
 	    user->level = db->level;
 	    if (ISUSER (con))
 	    {
 		/* notify users of their change in level */
 		send_cmd (con, MSG_SERVER_NOSUCH,
-			"%s set your user level to %s (%d).",
-			Server_Name, Levels[user->level], user->level);
+			  "%s set your user level to %s (%d).",
+			  Server_Name, Levels[user->level], user->level);
 	    }
 	}
 
 	if (db->flags & ON_MUZZLED)
 	{
 	    /* user was muzzled when they quit, remuzzle */
-	    log("login(): user %s was muzzled upon quit", user->nick);
+	    log ("login(): user %s was muzzled upon quit", user->nick);
 	    user->muzzled = 1;
 	    /* this will result in duplicate messages for the same user from
 	       each server, but its the only way to guarantee that the user
 	       is muzzled upon login */
-	    pass_message_args(NULL,MSG_CLIENT_MUZZLE,
-		    ":%s %s \"quit while muzzled\"",
-		    Server_Name, user->nick);
+	    pass_message_args (NULL, MSG_CLIENT_MUZZLE,
+			       ":%s %s \"quit while muzzled\"",
+			       Server_Name, user->nick);
 	    if (ISUSER (con))
-		send_cmd(con,MSG_SERVER_NOSUCH,
-			"You have been muzzled by %s: quit while muzzled",
-			Server_Name);
-	    notify_mods(MUZZLELOG_MODE,"%s has muzzled %s: quit while muzzled",
-		    Server_Name, user->nick);
+		send_cmd (con, MSG_SERVER_NOSUCH,
+			  "You have been muzzled by %s: quit while muzzled",
+			  Server_Name);
+	    notify_mods (MUZZLELOG_MODE,
+			 "%s has muzzled %s: quit while muzzled", Server_Name,
+			 user->nick);
 	}
 
 	if (ISUSER (con) && (db->flags & ON_CLOAKED))
@@ -573,11 +578,11 @@ HANDLER (reginfo)
 	}
 	hash_add (User_Db, db->nick, db);
     }
-    level=get_level(fields[3]);
-    if(level==-1)
+    level = get_level (fields[3]);
+    if (level == -1)
     {
-	log("reginfo(): invalid level %s", fields[3]);
-	level=LEVEL_USER;	/* reset to something reasonable */
+	log ("reginfo(): invalid level %s", fields[3]);
+	level = LEVEL_USER;	/* reset to something reasonable */
     }
 
     pass_message_args (con, tag, ":%s %s %s %s %s %s %s",
@@ -653,7 +658,8 @@ HANDLER (register_user)
     }
     /* pass the plain text password here */
     pass_message_args (con, tag, ":%s %s %s %s %s",
-		       sender->nick, av[0], av[1], av[2], ac > 3 ? av[3] : "");
+		       sender->nick, av[0], av[1], av[2],
+		       ac > 3 ? av[3] : "");
 
     db = CALLOC (1, sizeof (USERDB));
     if (!db)
@@ -691,7 +697,7 @@ HANDLER (check_password)
     if (!pkt)
     {
 	log ("check_password(): too few parameters");
-	unparsable(con);
+	unparsable (con);
 	return;
     }
     db = hash_lookup (User_Db, nick);

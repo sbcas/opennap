@@ -149,7 +149,7 @@ tokenize (char *s)
 	if (!strcmp ("a", s) || !strcmp ("i", s) ||
 	    !strcmp ("the", s) || !strcmp ("and", s) || !strcmp ("in", s) ||
 	    !strcmp ("of", s) || !strcmp ("you", s) || !strcmp ("it", s) ||
-	    !strcmp ("me", s) || !strcmp ("to", s) || !strcmp("on", s) ||
+	    !strcmp ("me", s) || !strcmp ("to", s) || !strcmp ("on", s) ||
 	    /* the following are common path names and don't really
 	       provide useful information */
 	    !strcmp ("mp3", s) || !strcmp ("c", s) || !strcmp ("d", s) ||
@@ -781,9 +781,9 @@ HANDLER (remote_search_result)
 	    return;
 	}
 	send_cmd (search->con, MSG_SERVER_SEARCH_RESULT,
-		"\"%s\" %s %s %s %s %s %s %u %d",
-		av[2], av[3], av[4], av[5], av[6], av[7], user->nick,
-		user->host, user->speed);
+		  "\"%s\" %s %s %s %s %s %s %u %d",
+		  av[2], av[3], av[4], av[5], av[6], av[7], user->nick,
+		  user->host, user->speed);
     }
 }
 
@@ -800,7 +800,8 @@ HANDLER (remote_search_end)
     search = find_search (pkt);
     if (!search)
     {
-	log ("remote_end_match(): could not find entry for search id %s",pkt);
+	log ("remote_end_match(): could not find entry for search id %s",
+	     pkt);
 	return;
     }
     ASSERT (search->numServers <= list_count (Servers));

@@ -32,7 +32,7 @@ HANDLER (show_motd)
        client */
     send_cmd (con, MSG_SERVER_MOTD, "VERSION %s %s", PACKAGE, VERSION);
 
-    snprintf(path,sizeof(path),"%s/motd",Config_Dir);
+    snprintf (path, sizeof (path), "%s/motd", Config_Dir);
     f = fopen (path, "r");
     if (!f)
     {

@@ -47,6 +47,7 @@ main (int argc, char **argv)
     char *hosts[32];
     struct sockaddr_in sin;
     int i, s, f, port = 8875, numhosts = 0;
+
 #if HAVE_POLL
     struct pollfd ufd;
 #else

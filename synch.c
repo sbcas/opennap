@@ -65,33 +65,34 @@ sync_user (USER * user, CONNECTION * con)
 }
 
 static void
-sync_chan (CHANNEL *chan, CONNECTION *con)
+sync_chan (CHANNEL * chan, CONNECTION * con)
 {
     if (chan->level != LEVEL_USER)
 	send_cmd (con, MSG_CLIENT_CHANNEL_LEVEL, ":%s %s %s",
-		Server_Name, chan->name, Levels[chan->level]);
+		  Server_Name, chan->name, Levels[chan->level]);
     if (chan->limit != Channel_Limit)
 	send_cmd (con, MSG_CLIENT_CHANNEL_LIMIT, ":%s %s %d",
 		  Server_Name, chan->name, chan->limit);
     /* synch the list of channel operators if present */
-    if(chan->ops)
+    if (chan->ops)
     {
 	char buf[2048];
 	LIST *list;
 	int len;
 
-	buf[0]=0;
-	for(list=chan->ops;list;list=list->next)
+	buf[0] = 0;
+	for (list = chan->ops; list; list = list->next)
 	{
-	    len=strlen(buf);
-	    snprintf(buf+len,sizeof(buf)-len," %s",(char*)list->data);
+	    len = strlen (buf);
+	    snprintf (buf + len, sizeof (buf) - len, " %s",
+		      (char *) list->data);
 	}
-	send_cmd(con,MSG_CLIENT_OP,"%s%s",chan->name,buf);
+	send_cmd (con, MSG_CLIENT_OP, "%s%s", chan->name, buf);
     }
 }
 
 static void
-sync_server_list (CONNECTION *con)
+sync_server_list (CONNECTION * con)
 {
     LIST *list;
     LINK *slink;
@@ -104,8 +105,8 @@ sync_server_list (CONNECTION *con)
 	if (serv != con)
 	{
 	    send_cmd (con, MSG_SERVER_LINK_INFO, "%s %d %s %d 1",
-		Server_Name, get_local_port (serv->fd),
-		serv->host, serv->port);
+		      Server_Name, get_local_port (serv->fd),
+		      serv->host, serv->port);
 	}
     }
 
@@ -114,13 +115,13 @@ sync_server_list (CONNECTION *con)
     {
 	slink = list->data;
 	send_cmd (con, MSG_SERVER_LINK_INFO, "%s %d %s %d %d",
-		slink->server, slink->port, slink->peer, slink->peerport,
-		slink->hops + 1);
+		  slink->server, slink->port, slink->peer, slink->peerport,
+		  slink->hops + 1);
     }
 }
 
 static void
-sync_banlist (CONNECTION *con)
+sync_banlist (CONNECTION * con)
 {
     LIST *list;
     BAN *b;
@@ -131,7 +132,7 @@ sync_banlist (CONNECTION *con)
 	b = list->data;
 	ASSERT (b != 0);
 	send_cmd (con, MSG_CLIENT_BAN, ":%s %s \"%s\"", b->setby,
-		b->target, b->reason);
+		  b->target, b->reason);
     }
 }
 

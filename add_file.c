@@ -259,7 +259,7 @@ new_datum (char *filename, char *hash)
 {
     DATUM *info = CALLOC (1, sizeof (DATUM));
 
-    (void)hash;
+    (void) hash;
     if (!info)
     {
 	OUTOFMEMORY ("new_datum");
@@ -321,10 +321,10 @@ HANDLER (add_file)
     }
 
     /* ensure we have a valid byte count */
-    fsize = atoi(av[2]);
-    if(fsize<1)
+    fsize = atoi (av[2]);
+    if (fsize < 1)
     {
-	send_cmd(con,MSG_SERVER_NOSUCH,"invalid file size");
+	send_cmd (con, MSG_SERVER_NOSUCH, "invalid file size");
 	return;
     }
 
@@ -377,7 +377,7 @@ HANDLER (share_file)
     {
 	log ("add_file(): %s is already sharing %d files", con->user->nick,
 	     con->user->shared);
-	if (ISUSER(con))
+	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
 		      "You may only share %d files", Max_Shared);
 	return;
@@ -402,8 +402,9 @@ HANDLER (share_file)
     if (type == -1)
     {
 	log ("share_file(): not a valid type: %s", av[3]);
-	if (ISUSER(con) == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not a valid type", av[3]);
+	if (ISUSER (con) == CLASS_USER)
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not a valid type",
+		      av[3]);
 	return;
     }
 

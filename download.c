@@ -21,7 +21,7 @@ HANDLER (download)
 	return;
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) < 2)
     {
-	unparsable(con);
+	unparsable (con);
 	return;
     }
     /* find the user to download from */
@@ -32,9 +32,11 @@ HANDLER (download)
 	send_user (sender, MSG_SERVER_SEND_ERROR, "%s \"%s\"", av[0], av[1]);
 	return;
     }
-    if (ISUSER (user->con) && is_ignoring(user->con->uopt->ignore,sender->nick))
+    if (ISUSER (user->con)
+	&& is_ignoring (user->con->uopt->ignore, sender->nick))
     {
-	send_user(sender,MSG_SERVER_NOSUCH,"%s is ignoring you",user->nick);
+	send_user (sender, MSG_SERVER_NOSUCH, "%s is ignoring you",
+		   user->nick);
 	return;
     }
     if (tag == MSG_CLIENT_DOWNLOAD)
@@ -241,7 +243,8 @@ HANDLER (data_port_error)
     pass_message_args (con, tag, ":%s %s", sender->nick, user->nick);
 
     notify_mods
-	(PORTLOG_MODE, "Notification from %s: %s (%s) - configured data port %d is unreachable.",
+	(PORTLOG_MODE,
+	 "Notification from %s: %s (%s) - configured data port %d is unreachable.",
 	 sender->nick, user->nick, my_ntoa (user->host), user->port);
 
     /* if local, notify the target of the error */
@@ -303,11 +306,12 @@ HANDLER (queue_limit)
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("queue_limit");
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
+
     if (ac != 3)
     {
 	log ("queue_limit(): wrong number of parameters");
 	print_args (ac, av);
-	unparsable(con);
+	unparsable (con);
 	return;
     }
     recip = hash_lookup (Users, av[0]);
@@ -324,7 +328,8 @@ HANDLER (queue_limit)
     if (!info)
     {
 	log ("queue_limit(): %s is not sharing %s", con->user->nick, av[1]);
-	send_cmd (con, MSG_SERVER_NOSUCH, "you aren't sharing that file", av[1]);
+	send_cmd (con, MSG_SERVER_NOSUCH, "you aren't sharing that file",
+		  av[1]);
 	return;
     }
 

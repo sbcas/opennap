@@ -39,8 +39,8 @@ buffer_queue (BUFFER * b, char *d, int dsize, int step)
 {
     BUFFER *r = b;
 
-    if(step<dsize)
-	step=dsize;
+    if (step < dsize)
+	step = dsize;
     if (!b)
     {
 	r = b = buffer_new ();
@@ -186,7 +186,8 @@ buffer_compress (z_streamp zip, BUFFER ** b)
     /* set to 0 so we allocate in the loop */
     zip->avail_out = 0;
 
-    do {
+    do
+    {
 	if (zip->avail_out == 0)
 	{
 	    /* allocate a new buffer to hold the rest of the compressed data */
@@ -223,7 +224,7 @@ buffer_compress (z_streamp zip, BUFFER ** b)
 	if (n != Z_OK)
 	{
 	    log ("buffer_compress(): deflate: %s (error %d)",
-		NONULL (zip->msg), n);
+		 NONULL (zip->msg), n);
 	    break;
 	}
     }
@@ -243,7 +244,7 @@ buffer_compress (z_streamp zip, BUFFER ** b)
 	    ASSERT (cur == r);
 	    FREE (r->data);
 	    FREE (r);
-	    r = 0 ;
+	    r = 0;
 	}
     }
 
@@ -266,7 +267,8 @@ buffer_decompress (BUFFER * b, z_streamp zip, char *in, int insize)
     zip->avail_out = b->datamax - b->datasize;
     /* set this to the max size and subtract what is left after the inflate */
     b->datasize = b->datamax;
-    do {
+    do
+    {
 	/* if there is no more output space left, create some more */
 	if (zip->avail_out == 0)
 	{
@@ -290,7 +292,8 @@ buffer_decompress (BUFFER * b, z_streamp zip, char *in, int insize)
 		 NONULL (zip->msg), n);
 	    return -1;
 	}
-    } while (zip->avail_out == 0);
+    }
+    while (zip->avail_out == 0);
     /* subtract unused bytes */
     b->datasize -= zip->avail_out;
     return 0;
@@ -406,7 +409,7 @@ void
 queue_data (CONNECTION * con, char *s, int ssize)
 {
     ASSERT (validate_connection (con));
-    if(ISSERVER(con))
+    if (ISSERVER (con))
     {
 	/* for a server connection, allocate chunks of 16k bytes */
 	con->sopt->outbuf = buffer_queue (con->sopt->outbuf, s, ssize, 16384);

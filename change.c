@@ -134,8 +134,7 @@ HANDLER (alter_port)
     {
 	log ("alter_port(): %s has no privilege to change ports",
 	     sender->nick);
-	if (con->class == CLASS_USER)
-	    permission_denied (con);
+	permission_denied (con);
 	return;
     }
 
@@ -143,21 +142,18 @@ HANDLER (alter_port)
     port = next_arg (&pkt);
     if (!nick || !port)
     {
-	log ("alter_port(): too few arguments");
 	unparsable (con);
 	return;
     }
     user = hash_lookup (Users, nick);
     if (!user)
     {
-	log ("alter_port(): no such user %s", nick);
 	nosuchuser (con);
 	return;
     }
     p = atoi (port);
     if (p < 0 || p > 65535)
     {
-	log ("alter_port(): %d is an invalid port", p);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "%d is an invalid port", p);
 	return;
@@ -197,13 +193,11 @@ HANDLER (alter_pass)
 	return;
     if (sender->level < LEVEL_ADMIN)
     {
-	log ("alter_pass(): %s has no privilege", sender->nick);
 	permission_denied (con);
 	return;
     }
     if (!pkt)
     {
-	log ("alter_pass(): missing arguments");
 	unparsable (con);
 	return;
     }
@@ -214,6 +208,11 @@ HANDLER (alter_pass)
 	log ("alter_pass(): wrong number of arguments");
 	print_args (ac, av);
 	unparsable (con);
+	return;
+    }
+    if (invalid_nick (av[0]))
+    {
+	send_cmd (con, MSG_SERVER_NOSUCH, "invalid nickname");
 	return;
     }
     /* send this now since the account might not be locally registered */
@@ -250,6 +249,7 @@ HANDLER (alter_speed)
     if (pop_user (con, &pkt, &sender))
 	return;
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
+
     if (ac < 2)
     {
 	unparsable (con);
@@ -263,7 +263,6 @@ HANDLER (alter_speed)
     speed = atoi (av[1]);
     if (speed < 0 || speed > 10)
     {
-	log ("alter_speed(): invalid speed %d", speed);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid speed");
 	return;
@@ -271,18 +270,18 @@ HANDLER (alter_speed)
     user = hash_lookup (Users, av[0]);
     if (!user)
     {
-	nosuchuser(con);
+	nosuchuser (con);
 	return;
     }
     ASSERT (validate_user (user));
-    if(user->speed == speed)
+    if (user->speed == speed)
     {
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"%s's speed is already %d",
-		    user->nick, speed);
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s's speed is already %d",
+		      user->nick, speed);
 	return;
     }
-    user->speed=speed;
+    user->speed = speed;
     pass_message_args (con, tag, ":%s %s %d", sender->nick, user->nick,
 		       speed);
     notify_mods (CHANGELOG_MODE, "%s changed %s's speed to %d.",
@@ -310,8 +309,13 @@ HANDLER (nuke)
     nick = next_arg (&pkt);
     if (!nick)
     {
-	log ("nuke(): too few parameters");
 	unparsable (con);
+	return;
+    }
+    if (invalid_nick (nick))
+    {
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "invalid nickname");
 	return;
     }
     /* pass the message in case its not locally registered */

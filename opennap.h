@@ -614,6 +614,7 @@ void init_random (void);
 int init_server (const char *);
 int invalid_channel (const char *);
 void invalid_channel_msg (CONNECTION *);
+int invalid_nick (const char *);
 int ip_glob_match (const char *pattern, const char *ip);
 int is_chanop(CHANNEL*,USER*);
 int is_ignoring (LIST *, const char *);

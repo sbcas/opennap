@@ -68,12 +68,12 @@ HANDLER (kill_user)
 	    log ("kill_user(): too few arguments in server message");
 	    return;
 	}
-	if(!is_server(killernick))
+	if (!is_server (killernick))
 	{
-	    killer=hash_lookup(Users,killernick);
-	    if(!killer)
+	    killer = hash_lookup (Users, killernick);
+	    if (!killer)
 	    {
-		log("kill_user(): could not find user %s",killernick);
+		log ("kill_user(): could not find user %s", killernick);
 		return;
 	    }
 	}
@@ -83,7 +83,7 @@ HANDLER (kill_user)
     if (ac < 1)
     {
 	log ("kill_user(): missing target user");
-	unparsable(con);
+	unparsable (con);
 	return;
     }
 
@@ -97,10 +97,11 @@ HANDLER (kill_user)
     ASSERT (validate_user (user));
 
     /* check for permission */
-    if (killer && user->level >= killer->level && killer->level != LEVEL_ELITE)
+    if (killer && user->level >= killer->level
+	&& killer->level != LEVEL_ELITE)
     {
 	log ("kill_user(): %s has no privilege to kill %s",
-	    killer->nick, user->nick);
+	     killer->nick, user->nick);
 	permission_denied (con);
 	return;
     }
@@ -114,7 +115,8 @@ HANDLER (kill_user)
     log ("kill_user(): %s killed %s: %s", killernick, user->nick, REASON);
 
     /* notify mods+ that this user was killed */
-    notify_mods (KILLLOG_MODE, "%s killed %s: %s", killernick, user->nick, REASON);
+    notify_mods (KILLLOG_MODE, "%s killed %s: %s", killernick, user->nick,
+		 REASON);
 
     /* forcefully close the client connection if local, otherwise remove
        from global user list */
@@ -124,8 +126,8 @@ HANDLER (kill_user)
 	/* notify user they were killed */
 	send_cmd (user->con, MSG_SERVER_NOSUCH,
 		  "You have been killed%s%s: %s",
-		  killer&&killer->cloaked?"":" by ",
-		  killer&&killer->cloaked?"":killernick, REASON);
+		  killer && killer->cloaked ? "" : " by ",
+		  killer && killer->cloaked ? "" : killernick, REASON);
     }
     /* remote user, just remove from the global list */
     else

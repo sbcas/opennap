@@ -39,8 +39,9 @@ HANDLER (public)
     /* protect against DoS attack against the windows napster client */
     if (len - (pkt - ptr) > 180)
     {
-	pkt[180] = 0;	/* crop the message */
-	log ("public(): cropped %d byte message from user %s", len, sender->nick);
+	pkt[180] = 0;		/* crop the message */
+	log ("public(): cropped %d byte message from user %s", len,
+	     sender->nick);
     }
 
     /* can't use split line here because the text field is considered all
@@ -50,21 +51,22 @@ HANDLER (public)
     ptr = next_arg_noskip (&pkt);
     if (!pkt)
     {
-	unparsable(con);
+	unparsable (con);
 	return;
     }
-    if(invalid_channel(pkt))
+    if (invalid_channel (pkt))
     {
-	invalid_channel_msg(con);
+	invalid_channel_msg (con);
 	return;
     }
 
     /* find the channel this message is going to. look the user's joined
-     channels since this should be faster than lookup in the hash table */
-    if(!(chan=find_channel(sender->channels,ptr)))
+       channels since this should be faster than lookup in the hash table */
+    if (!(chan = find_channel (sender->channels, ptr)))
     {
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"You are not a member of that channel");
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		      "You are not a member of that channel");
 	return;
     }
 
@@ -75,12 +77,14 @@ HANDLER (public)
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
-	ASSERT(chanUser->magic==MAGIC_CHANUSER);
+	ASSERT (chanUser->magic == MAGIC_CHANUSER);
 	if (ISUSER (chanUser->user->con))
 	{
-	    send_cmd(chanUser->user->con,MSG_SERVER_PUBLIC,"%s %s %s", chan->name,
-		    (!sender->cloaked || chanUser->user->level > LEVEL_USER)?sender->nick:"Operator",
-		    pkt);
+	    send_cmd (chanUser->user->con, MSG_SERVER_PUBLIC, "%s %s %s",
+		      chan->name, (!sender->cloaked
+				   || chanUser->user->level >
+				   LEVEL_USER) ? sender->nick : "Operator",
+		      pkt);
 	}
     }
 }
@@ -97,7 +101,7 @@ HANDLER (emote)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-    ptr=pkt;	/* save initial location */
+    ptr = pkt;			/* save initial location */
     if (pop_user (con, &pkt, &user) != 0)
 	return;
     if (user->muzzled)
@@ -111,44 +115,48 @@ HANDLER (emote)
     if (len - (pkt - ptr) > 180)
     {
 	/* crop message */
-	pkt[179]='"';
-	pkt[180]=0;
-	log ("emote(): cropped %d byte message from user %s", len, user->nick);
+	pkt[179] = '"';
+	pkt[180] = 0;
+	log ("emote(): cropped %d byte message from user %s", len,
+	     user->nick);
     }
 
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) < 2)
     {
-	unparsable(con);
+	unparsable (con);
 	return;
     }
-    if(invalid_channel(av[0]))
+    if (invalid_channel (av[0]))
     {
-	invalid_channel_msg(con);
+	invalid_channel_msg (con);
 	return;
     }
 
     /* find the channel this message is going to. look the user's joined
-     channels since this should be faster than lookup in the hash table */
-    if(!(chan=find_channel(user->channels,av[0])))
+       channels since this should be faster than lookup in the hash table */
+    if (!(chan = find_channel (user->channels, av[0])))
     {
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"You are not a member of that channel");
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		      "You are not a member of that channel");
 	return;
     }
 
     /* relay to peer servers */
-    pass_message_args (con, tag, ":%s %s \"%s\"", user->nick, chan->name, av[1]);
+    pass_message_args (con, tag, ":%s %s \"%s\"", user->nick, chan->name,
+		       av[1]);
 
     /* send this message to all channel members */
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
-	ASSERT(chanUser->magic==MAGIC_CHANUSER);
-	if (ISUSER(chanUser->user->con))
+	ASSERT (chanUser->magic == MAGIC_CHANUSER);
+	if (ISUSER (chanUser->user->con))
 	{
-	    send_cmd(chanUser->user->con,tag,"%s %s \"%s\"", chan->name,
-		    (!user->cloaked || chanUser->user->level > LEVEL_MODERATOR)?user->nick:"Operator",
-		    av[1]);
+	    send_cmd (chanUser->user->con, tag, "%s %s \"%s\"", chan->name,
+		      (!user->cloaked
+		       || chanUser->user->level >
+		       LEVEL_MODERATOR) ? user->nick : "Operator", av[1]);
 	}
     }
 }

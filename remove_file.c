@@ -44,7 +44,7 @@ HANDLER (remove_file)
     ASSERT (Local_Files > 0);
     Local_Files--;
     user->shared--;
-    user->unsharing = 1; /* note that we are unsharing */
+    user->unsharing = 1;	/* note that we are unsharing */
 
     /* this invokes free_datum() indirectly */
     hash_remove (con->uopt->files, info->filename);

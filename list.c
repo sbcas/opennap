@@ -12,6 +12,7 @@ LIST *
 list_new (void *p)
 {
     LIST *list = CALLOC (1, sizeof (LIST));
+
     if (list)
 	list->data = p;
     return list;
@@ -19,7 +20,7 @@ list_new (void *p)
 
 /* remove the element matching `data' from the list */
 LIST *
-list_delete (LIST *list, void *data)
+list_delete (LIST * list, void *data)
 {
     LIST **ptr, *tmp;
 
@@ -40,7 +41,7 @@ list_delete (LIST *list, void *data)
 }
 
 LIST *
-list_append (LIST * l, LIST *b)
+list_append (LIST * l, LIST * b)
 {
     LIST **r = &l;
 
@@ -54,7 +55,7 @@ list_append (LIST * l, LIST *b)
 }
 
 LIST *
-list_append_data (LIST *l, void *d)
+list_append_data (LIST * l, void *d)
 {
     LIST *list;
 
@@ -64,7 +65,7 @@ list_append_data (LIST *l, void *d)
 }
 
 void
-list_free (LIST *l, list_destroy_t cb)
+list_free (LIST * l, list_destroy_t cb)
 {
     LIST *t;
 
@@ -80,11 +81,11 @@ list_free (LIST *l, list_destroy_t cb)
 }
 
 int
-list_count (LIST *list)
+list_count (LIST * list)
 {
     int count = 0;
 
-    for(;list; list = list->next)
+    for (; list; list = list->next)
     {
 	ASSERT (VALID_LEN (list, sizeof (LIST)));
 	count++;
@@ -93,7 +94,7 @@ list_count (LIST *list)
 }
 
 LIST *
-list_find (LIST *list, void *data)
+list_find (LIST * list, void *data)
 {
     for (; list; list = list->next)
     {
@@ -106,7 +107,7 @@ list_find (LIST *list, void *data)
 
 #if DEBUG
 int
-list_validate (LIST *list)
+list_validate (LIST * list)
 {
     for (; list; list = list->next)
     {

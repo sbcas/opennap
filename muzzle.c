@@ -74,7 +74,7 @@ HANDLER (muzzle)
     /* check for privilege to execute */
     if (sender && sender->level < LEVEL_ELITE &&
 	((user && user->level >= sender->level) ||
-	(db && db->level >= sender->level)))
+	 (db && db->level >= sender->level)))
     {
 	permission_denied (con);
 	return;

@@ -28,7 +28,7 @@ HANDLER (topic)
     ASSERT (validate_connection (con));
 
     /* don't use pop_user() because the server can set a channel topic */
-    if (ISSERVER(con))
+    if (ISSERVER (con))
     {
 	pkt++;
 	nick = next_arg (&pkt);
@@ -47,9 +47,9 @@ HANDLER (topic)
 
     /* don't use split line because the topic could be multi-word */
     chanName = next_arg (&pkt);
-    if(invalid_channel(chanName))
+    if (invalid_channel (chanName))
     {
-	invalid_channel_msg(con);
+	invalid_channel_msg (con);
 	return;
     }
     chan = hash_lookup (Channels, chanName);
@@ -71,7 +71,7 @@ HANDLER (topic)
     {
 	/* check to make sure this user has privilege to change topic */
 	if (ISUSER (con) && con->user->level < LEVEL_MODERATOR &&
-	    !is_chanop(chan,con->user))
+	    !is_chanop (chan, con->user))
 	{
 	    permission_denied (con);
 	    return;
@@ -84,17 +84,20 @@ HANDLER (topic)
 	    return;
 	}
 	/* make sure we don't have any wacky characters in the topic */
-	for(ptr=chan->topic;*ptr;ptr++)
-	    if(*ptr=='\r' || *ptr=='\n')
-		*ptr=' ';
+	for (ptr = chan->topic; *ptr; ptr++)
+	    if (*ptr == '\r' || *ptr == '\n')
+		*ptr = ' ';
 	/* relay to peer servers */
-	pass_message_args (con, tag, ":%s %s %s", nick, chan->name, chan->topic);
+	pass_message_args (con, tag, ":%s %s %s", nick, chan->name,
+			   chan->topic);
 
-	l = form_message (Buf, sizeof (Buf), tag, "%s %s", chan->name, chan->topic);
+	l =
+	    form_message (Buf, sizeof (Buf), tag, "%s %s", chan->name,
+			  chan->topic);
 	for (list = chan->users; list; list = list->next)
 	{
-	    chanUser=list->data;
-	    ASSERT(chanUser->magic==MAGIC_CHANUSER);
+	    chanUser = list->data;
+	    ASSERT (chanUser->magic == MAGIC_CHANUSER);
 	    if (chanUser->user->local)
 		queue_data (chanUser->user->con, Buf, l);
 	}
@@ -102,7 +105,7 @@ HANDLER (topic)
 	notify_mods (TOPICLOG_MODE, "%s set topic on %s: %s", nick,
 		     chan->name, chan->topic);
 	notify_ops (chan, "%s set topic on %s: %s", nick,
-		     chan->name, chan->topic);
+		    chan->name, chan->topic);
     }
     else if (ISUSER (con))
     {

@@ -60,8 +60,8 @@ HANDLER (ping_server)
     }
     server = next_arg (&pkt);
     /* if no server is specified, assume a ping to the local server */
-    if (ISUSER(con) && !is_server(server))
-	send_cmd(con,tag,"%s%s%s",server,pkt?" ":"", NONULL(pkt));
+    if (ISUSER (con) && !is_server (server))
+	send_cmd (con, tag, "%s%s%s", server, pkt ? " " : "", NONULL (pkt));
     else if (!strcasecmp (Server_Name, server))
 	send_user (sender, tag, "%s %s", Server_Name, NONULL (pkt));
     else

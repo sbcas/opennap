@@ -19,9 +19,9 @@ HANDLER (list_users)
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("list_users");
-    if(invalid_channel(pkt))
+    if (invalid_channel (pkt))
     {
-	invalid_channel_msg(con);
+	invalid_channel_msg (con);
 	return;
     }
     chan = hash_lookup (Channels, pkt);
@@ -42,7 +42,7 @@ HANDLER (list_users)
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
-	ASSERT(chanUser->magic==MAGIC_CHANUSER);
+	ASSERT (chanUser->magic == MAGIC_CHANUSER);
 	send_cmd (con, MSG_SERVER_NAMES_LIST /* 825 */ , "%s %s %d %d",
 		  chan->name, chanUser->user->nick, chanUser->user->shared,
 		  chanUser->user->speed);

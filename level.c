@@ -76,8 +76,8 @@ HANDLER (level)
 	/* user is logged in */
 	ASSERT (validate_user (user));
 	if (ISUSER (con) && con->user->level < LEVEL_ELITE &&
-		con->user != user &&	/* allow self demotion */
-		user->level >= con->user->level)
+	    con->user != user &&	/* allow self demotion */
+	    user->level >= con->user->level)
 	{
 	    permission_denied (con);
 	    return;
@@ -102,9 +102,9 @@ HANDLER (level)
     {
 	/* registered nick */
 	if (ISUSER (con) && con->user->level < LEVEL_ELITE &&
-		/* allow self demotion */
-		strcasecmp (con->user->nick, db->nick) != 0 &&
-		con->user->level <= db->level)
+	    /* allow self demotion */
+	    strcasecmp (con->user->nick, db->nick) != 0 &&
+	    con->user->level <= db->level)
 	{
 	    ASSERT (user == 0);
 	    permission_denied (con);
@@ -126,11 +126,11 @@ HANDLER (level)
 	if (level < LEVEL_MODERATOR && (db->flags & ON_CLOAKED))
 	{
 	    db->flags &= ~ON_CLOAKED;
-	    if(user)
+	    if (user)
 	    {
-		ASSERT(user->cloaked!=0);/* should always be in sync */
-		user->cloaked=0;
-		notify_mods(CHANGELOG_MODE,"%s has decloaked",user->nick);
+		ASSERT (user->cloaked != 0);	/* should always be in sync */
+		user->cloaked = 0;
+		notify_mods (CHANGELOG_MODE, "%s has decloaked", user->nick);
 	    }
 	}
     }
@@ -157,25 +157,29 @@ HANDLER (level)
 	}
 	if (hash_add (User_Db, db->nick, db))
 	{
-	    log("level(): unable to add entry to hash table");
+	    log ("level(): unable to add entry to hash table");
 	    userdb_free (db);	/* avoid memory leak */
 	}
     }
     else
     {
-	log ("level(): %s is not logged in or registered", fields[0]);
 	/* if not linked, error out here.  if we are linked, the user could
 	   be registered on another server so we just pass the request
 	   along */
 	if (!Servers)
 	{
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "%s is not logged in or registered", fields[0]);
+	    nosuchuser (con);
+	    return;
+	}
+	if (invalid_nick (fields[0]))
+	{
+	    send_cmd (con, MSG_SERVER_NOSUCH, "invalid nickname");
 	    return;
 	}
     }
 
-    pass_message_args (con, tag, ":%s %s %s", sender, fields[0], Levels[level]);
+    pass_message_args (con, tag, ":%s %s %s", sender, fields[0],
+		       Levels[level]);
 
     notify_mods (LEVELLOG_MODE, "%s changed %s's user level to %s (%d)",
 		 sender, fields[0], Levels[level], level);
@@ -185,5 +189,6 @@ HANDLER (level)
     if (user)
 	user->level = level;
 
-    log ("level(): %s changed %s's user level to %s", sender, fields[0], Levels[level]);
+    log ("level(): %s changed %s's user level to %s", sender, fields[0],
+	 Levels[level]);
 }

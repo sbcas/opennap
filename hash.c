@@ -38,12 +38,12 @@ hash_init (int buckets, hash_destroy f)
 static unsigned int
 hash_string (HASH * table, const char *key)
 {
-    unsigned long   h = 0, g;
+    unsigned long h = 0, g;
 
     ASSERT (key != 0);
-    for (;*key;key++)
+    for (; *key; key++)
     {
-	h = (h << 4) + tolower(*key);
+	h = (h << 4) + tolower (*key);
 	if ((g = h & 0xF0000000))
 	    h ^= g >> 24;
 	h &= ~g;
@@ -60,7 +60,7 @@ hash_add (HASH * table, const char *key, void *data)
     if (!he)
 	return -1;
     ASSERT (key != 0);
-    ASSERT (data  != 0);
+    ASSERT (data != 0);
     ASSERT (table != 0);
     he->key = key;
     he->data = data;
@@ -79,7 +79,7 @@ hash_lookup (HASH * table, const char *key)
 
     if (!table)
 	return 0;
-    ASSERT (key!=0);
+    ASSERT (key != 0);
     sum = hash_string (table, key);
     he = table->bucket[sum];
 
@@ -96,7 +96,7 @@ hash_remove (HASH * table, const char *key)
 {
     HASHENT **he, *ptr;
     unsigned int sum;
-    
+
     ASSERT (table != 0);
     ASSERT (key != 0);
     sum = hash_string (table, key);
@@ -141,7 +141,7 @@ free_hash (HASH * h)
 }
 
 void
-hash_foreach (HASH *h, void (*func) (void *, void *), void *funcdata)
+hash_foreach (HASH * h, void (*func) (void *, void *), void *funcdata)
 {
     HASHENT *he, *ptr;
     int i;

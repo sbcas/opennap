@@ -28,12 +28,12 @@ HANDLER (add_hotlist)
     {
 	/* no hotlist, create one */
 	hotlist = CALLOC (1, sizeof (HOTLIST));
-	if(hotlist)
+	if (hotlist)
 	    hotlist->nick = STRDUP (pkt);
 	if (!hotlist || !hotlist->nick)
 	{
 	    OUTOFMEMORY ("add_hotlist");
-	    return;	/* no memory */
+	    return;		/* no memory */
 	}
 #if DEBUG
 	hotlist->magic = MAGIC_HOTLIST;
@@ -84,7 +84,7 @@ HANDLER (add_hotlist)
     {
 	ASSERT (validate_user (user));
 	send_cmd (con, MSG_SERVER_USER_SIGNON, "%s %d", user->nick,
-	    user->speed);
+		  user->speed);
     }
 }
 
@@ -101,7 +101,7 @@ HANDLER (remove_hotlist)
     if (!hotlist)
     {
 	send_cmd (con, MSG_SERVER_NOSUCH,
-	    "Could not find user %s in your hotlist.", pkt);
+		  "Could not find user %s in your hotlist.", pkt);
 	return;
     }
     ASSERT (validate_hotlist (hotlist));
@@ -115,7 +115,7 @@ HANDLER (remove_hotlist)
 }
 
 void
-free_hotlist (HOTLIST *h)
+free_hotlist (HOTLIST * h)
 {
     ASSERT (validate_hotlist (h));
     ASSERT (h->users == 0);	/* shouldnt free this entry unless there are

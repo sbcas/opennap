@@ -52,7 +52,7 @@ try_connect (char *host, int port)
     cli->ip = ip;
     cli->port = port;
     cli->connecting = 1;
-    cli->timer=Current_Time;
+    cli->timer = Current_Time;
     add_client (cli);
     return;
   error:
@@ -212,8 +212,8 @@ HANDLER (server_disconnect)
 
     pass_message_args (con, MSG_CLIENT_DISCONNECT, ":%s %s %s",
 		       user->nick, host, NONULL (pkt));
-    notify_mods (SERVERLOG_MODE, "%s disconnected server %s: %s", user->nick, host,
-		 NONULL (pkt));
+    notify_mods (SERVERLOG_MODE, "%s disconnected server %s: %s", user->nick,
+		 host, NONULL (pkt));
 }
 
 /* 10110 [ :<user> ] <server> [ <reason> ] */
@@ -226,7 +226,7 @@ HANDLER (kill_server)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-    ASSERT(pkt!=0);
+    ASSERT (pkt != 0);
     if (pop_user (con, &pkt, &user) != 0)
 	return;
     ASSERT (validate_user (user));
@@ -236,14 +236,15 @@ HANDLER (kill_server)
 	return;
     }
     server = next_arg (&pkt);
-    if(!server)
+    if (!server)
     {
-	unparsable(con);
+	unparsable (con);
 	return;
     }
     pass_message_args (con, MSG_CLIENT_KILL_SERVER, ":%s %s %s",
 		       user->nick, server, NONULL (pkt));
-    notify_mods (SERVERLOG_MODE, "%s killed server %s: %s", user->nick, server, NONULL (pkt));
+    notify_mods (SERVERLOG_MODE, "%s killed server %s: %s", user->nick,
+		 server, NONULL (pkt));
 
     if (!strcasecmp (server, Server_Name))
     {
@@ -310,56 +311,59 @@ HANDLER (server_error)
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("server_error");
-    notify_mods (ERROR_MODE, "server %s sent error message: %s", con->host, pkt);
+    notify_mods (ERROR_MODE, "server %s sent error message: %s", con->host,
+		 pkt);
 }
 
 static void
-link_collision (CONNECTION *con, char *server, int port, char *peer,
+link_collision (CONNECTION * con, char *server, int port, char *peer,
 		int peerport)
 {
     int tag;
 
-    log("link_collision(): already linked (%s:%d -> %s:%d)",
-	server, port, peer, peerport);
+    log ("link_collision(): already linked (%s:%d -> %s:%d)",
+	 server, port, peer, peerport);
 
     if (ISUSER (con))
-	tag=MSG_SERVER_NOSUCH;
+	tag = MSG_SERVER_NOSUCH;
     else
     {
-	tag=MSG_SERVER_ERROR;
-	log("link_collision(): terminating server connection to avoid loop");
-	con->destroy=1;
+	tag = MSG_SERVER_ERROR;
+	log ("link_collision(): terminating server connection to avoid loop");
+	con->destroy = 1;
     }
-    send_cmd(con,tag, "already linked (%s:%d -> %s:%d)",
-	     server, port, peer, peerport);
+    send_cmd (con, tag, "already linked (%s:%d -> %s:%d)",
+	      server, port, peer, peerport);
 }
 
 int
-is_linked (CONNECTION *con, const char *host)
+is_linked (CONNECTION * con, const char *host)
 {
     LIST *list;
     LINK *link;
     CONNECTION *serv;
 
     /* check local links */
-    for(list=Servers;list;list=list->next)
+    for (list = Servers; list; list = list->next)
     {
-	serv=list->data;
-	if(!strcasecmp(serv->host,host))
+	serv = list->data;
+	if (!strcasecmp (serv->host, host))
 	{
-	    link_collision(con,Server_Name,get_local_port(serv->fd),serv->host,
-			   serv->port);
+	    link_collision (con, Server_Name, get_local_port (serv->fd),
+			    serv->host, serv->port);
 	    return 1;
 	}
     }
 
     /* check remote links */
-    for (list=Server_Links;list;list=list->next)
+    for (list = Server_Links; list; list = list->next)
     {
-	link=list->data;
-	if(!strcasecmp(link->server,host)|| !strcasecmp(link->peer,host))
+	link = list->data;
+	if (!strcasecmp (link->server, host)
+	    || !strcasecmp (link->peer, host))
 	{
-	    link_collision(con,link->server,link->port,link->peer,link->peerport);
+	    link_collision (con, link->server, link->port, link->peer,
+			    link->peerport);
 	    return 1;
 	}
     }

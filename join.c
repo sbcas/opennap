@@ -22,25 +22,27 @@ invalid_channel (const char *s)
 
     while (*s)
     {
-	if (ISSPACE (*s) || !ISPRINT (*s) || *s == ':' || *s == '%' || *s == '$')
+	if (ISSPACE (*s) || !ISPRINT (*s) || *s == ':' || *s == '%'
+	    || *s == '$')
 	    return 1;
 	count++;
 	s++;
     }
-    return ((count == 0) || (Max_Channel_Length > 0 && count > Max_Channel_Length));
+    return ((count == 0)
+	    || (Max_Channel_Length > 0 && count > Max_Channel_Length));
 }
 
 #if 0
 /* returns nonzero if `user' is a member of `chan' */
 static int
-is_member(CHANNEL *chan, USER *user)
+is_member (CHANNEL * chan, USER * user)
 {
     LIST *list;
 
-    for(list=chan->users;list;list=list->next)
+    for (list = chan->users; list; list = list->next)
     {
-	ASSERT(((CHANUSER*)list->data)->magic==MAGIC_CHANUSER);
-	if(((CHANUSER*)list->data)->user == user)
+	ASSERT (((CHANUSER *) list->data)->magic == MAGIC_CHANUSER);
+	if (((CHANUSER *) list->data)->user == user)
 	    return 1;
     }
     return 0;
@@ -82,7 +84,7 @@ HANDLER (join)
     CHANNEL *chan;
     LIST *list;
     CHANUSER *chanUser;
-    int notifyUser=0;
+    int notifyUser = 0;
 
     (void) tag;
     (void) len;
@@ -92,7 +94,7 @@ HANDLER (join)
     ASSERT (validate_user (user));
     if (!pkt || !*pkt)
     {
-	unparsable(con);
+	unparsable (con);
 	return;
     }
     /* enforce a maximum channels per user */
@@ -103,7 +105,7 @@ HANDLER (join)
     {
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		    "You may only join %d channels", Max_User_Channels);
+		      "You may only join %d channels", Max_User_Channels);
 	return;
     }
     if (user->muzzled)
@@ -126,7 +128,7 @@ HANDLER (join)
 	    }
 	    if (invalid_channel (pkt))
 	    {
-		invalid_channel_msg(con);
+		invalid_channel_msg (con);
 		return;
 	    }
 	    chan = new_channel ();
@@ -142,7 +144,7 @@ HANDLER (join)
 	    }
 	    /* set the default topic */
 	    snprintf (Buf, sizeof (Buf), "Welcome to the %s channel.",
-		    chan->name);
+		      chan->name);
 	    chan->topic = STRDUP (Buf);
 	    if (!chan->topic)
 	    {
@@ -163,7 +165,7 @@ HANDLER (join)
 	{
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH,
-			"You have already joined that channel");
+			  "You have already joined that channel");
 	    return;
 	}
 	/* check to make sure the user has privilege to join */
@@ -174,20 +176,20 @@ HANDLER (join)
 	}
 	/* check to make sure this user is not banned from the channel */
 	else if (user->level < LEVEL_MODERATOR &&
-		chan->bans && banned_from_channel (chan, user))
+		 chan->bans && banned_from_channel (chan, user))
 	{
 	    /* log message is printed inside banned_from_channel() */
 	    return;
 	}
 	else if (user->level < LEVEL_MODERATOR && chan->limit > 0 &&
-		list_count (chan->users) >= chan->limit)
+		 list_count (chan->users) >= chan->limit)
 	{
 	    log ("join(): channel %s is full (%d)", chan->name, chan->limit);
 	    if (chan->userCreated)
 	    {
 		if (ISUSER (con))
 		    send_cmd (con, MSG_SERVER_NOSUCH,
-			    "channel join failed: channel is full");
+			      "channel join failed: channel is full");
 		return;
 	    }
 	    /* for predefined channels, automatically create a rollover
@@ -231,23 +233,23 @@ HANDLER (join)
     user->channels = list;
 
     /* add this user to the channel members list */
-    chanUser=CALLOC(1,sizeof(CHANUSER));
+    chanUser = CALLOC (1, sizeof (CHANUSER));
 #if DEBUG
-    chanUser->magic=MAGIC_CHANUSER;
+    chanUser->magic = MAGIC_CHANUSER;
 #endif
     chanUser->user = user;
 
     /* check if this user is a channel operator */
-    for(list=chan->ops;list;list=list->next)
+    for (list = chan->ops; list; list = list->next)
     {
-	if(!strcasecmp(user->nick,list->data))
+	if (!strcasecmp (user->nick, list->data))
 	{
-	    notifyUser=1;
-	    notify_mods(CHANGELOG_MODE,
-			"%s set %s as operator on channel %s",
+	    notifyUser = 1;
+	    notify_mods (CHANGELOG_MODE,
+			 "%s set %s as operator on channel %s",
+			 Server_Name, user->nick, chan->name);
+	    notify_ops (chan, "%s set %s as operator on channel %s",
 			Server_Name, user->nick, chan->name);
-	    notify_ops(chan,"%s set %s as operator on channel %s",
-		       Server_Name, user->nick, chan->name);
 	    chanUser->flags |= ON_OPERATOR;
 	    break;
 	}
@@ -278,10 +280,10 @@ HANDLER (join)
 	    chanUser = list->data;
 	    ASSERT (chanUser != 0);
 	    ASSERT (chanUser->magic == MAGIC_CHANUSER);
-	    if(!chanUser->user->cloaked || user->level >= LEVEL_MODERATOR)
+	    if (!chanUser->user->cloaked || user->level >= LEVEL_MODERATOR)
 		send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST /* 408 */ ,
-			"%s %s %d %d", chan->name, chanUser->user->nick,
-			chanUser->user->shared, chanUser->user->speed);
+			  "%s %s %d %d", chan->name, chanUser->user->nick,
+			  chanUser->user->shared, chanUser->user->speed);
 	}
     }
 
@@ -310,10 +312,10 @@ HANDLER (join)
 	ASSERT (chan->topic != 0);
 	send_cmd (con, MSG_SERVER_TOPIC /*410 */ , "%s %s", chan->name,
 		  chan->topic);
-	if(notifyUser)
-	    send_cmd(con,MSG_SERVER_NOSUCH,
-		     "%s set you as operator on channel %s",
-		     Server_Name, chan->name);
+	if (notifyUser)
+	    send_cmd (con, MSG_SERVER_NOSUCH,
+		      "%s set you as operator on channel %s",
+		      Server_Name, chan->name);
     }
     return;
 
@@ -353,6 +355,7 @@ HANDLER (channel_level)
     else
 	sender = con->user->nick;
     ac = split_line (av, sizeof (av) / sizeof (char), pkt);
+
     if (ac == 0)
     {
 	log ("channel_level(): wrong number of parameters");
@@ -386,10 +389,11 @@ HANDLER (channel_level)
 	    return;
 	}
 	/* check for permission */
-	if(ISUSER(con) &&
-	   (chan->level > con->user->level ||
-	    level > con->user->level ||
-	    (con->user->level < LEVEL_MODERATOR && !is_chanop(chan,con->user))))
+	if (ISUSER (con) &&
+	    (chan->level > con->user->level ||
+	     level > con->user->level ||
+	     (con->user->level < LEVEL_MODERATOR
+	      && !is_chanop (chan, con->user))))
 	{
 	    permission_denied (con);
 	    return;
@@ -455,11 +459,12 @@ HANDLER (channel_limit)
 	nosuchchannel (con);
 	return;
     }
-    if(ISUSER(con))
+    if (ISUSER (con))
     {
-	if(con->user->level < LEVEL_MODERATOR && !is_chanop(chan,con->user))
+	if (con->user->level < LEVEL_MODERATOR
+	    && !is_chanop (chan, con->user))
 	{
-	    permission_denied(con);
+	    permission_denied (con);
 	    return;
 	}
 	if (list_find (con->user->channels, chan) == 0)
@@ -473,5 +478,5 @@ HANDLER (channel_limit)
     notify_mods (CHANNELLOG_MODE, "%s set limit on channel %s to %d",
 		 sender, chan->name, limit);
     notify_ops (chan, "%s set limit on channel %s to %d",
-		 sender, chan->name, limit);
+		sender, chan->name, limit);
 }

@@ -8,18 +8,18 @@
 #include "debug.h"
 
 int
-is_chanop(CHANNEL *chan, USER *user)
+is_chanop (CHANNEL * chan, USER * user)
 {
     LIST *list;
     CHANUSER *chanUser;
 
-    for(list=chan->users;list;list=list->next)
+    for (list = chan->users; list; list = list->next)
     {
-	chanUser=list->data;
-	ASSERT(chanUser->magic==MAGIC_CHANUSER);
-	if(chanUser->user==user)
+	chanUser = list->data;
+	ASSERT (chanUser->magic == MAGIC_CHANUSER);
+	if (chanUser->user == user)
 	{
-	    return(chanUser->flags & ON_OPERATOR);
+	    return (chanUser->flags & ON_OPERATOR);
 	    break;
 	}
     }
@@ -27,11 +27,11 @@ is_chanop(CHANNEL *chan, USER *user)
 }
 
 static int
-can_kick(CHANNEL *chan, USER *sender, USER *user)
+can_kick (CHANNEL * chan, USER * sender, USER * user)
 {
-    if(sender->level == LEVEL_ELITE || sender->level > user->level ||
-       (is_chanop(chan,sender) && sender->level==user->level))
-       return 1;
+    if (sender->level == LEVEL_ELITE || sender->level > user->level ||
+	(is_chanop (chan, sender) && sender->level == user->level))
+	return 1;
     return 0;
 }
 
@@ -50,27 +50,17 @@ HANDLER (kick)
     ac = split_line (av, FIELDS (av), pkt);
     if (ac < 2)
     {
-	log ("kick(): too few parameters");
-	if (ISUSER (con))
-	    unparsable (con);
-	return;
-    }
-    if(invalid_channel(av[0]))
-    {
-	invalid_channel_msg(con);
+	unparsable (con);
 	return;
     }
     chan = hash_lookup (Channels, av[0]);
     if (!chan)
     {
-	log ("kick(): no such channel %s", av[0]);
-	if (ISUSER (con))
-	    nosuchchannel (con);
+	nosuchchannel (con);
 	return;
     }
     if (list_find (sender->channels, chan) == 0)
     {
-	log ("kick(): %s is not on channel %s", sender->nick, chan->name);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "You are not on that channel");
 	return;
@@ -81,17 +71,18 @@ HANDLER (kick)
 	nosuchuser (con);
 	return;
     }
-    if(sender->level < chan->level || !can_kick(chan,sender,user))
+    if (sender->level < chan->level || !can_kick (chan, sender, user))
     {
-	permission_denied(con);
+	permission_denied (con);
 	return;
     }
     if (list_find (user->channels, chan) == 0)
     {
-	log ("kick(): %s is not on channel %s", user->nick, chan->name);
+	/* OK to return the nick here since we checked for existence above.
+	   I'm assuming that the user could not log in with an invalid nick */
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not on that channel",
-		    user->nick);
+		      user->nick);
 	return;
     }
 
@@ -117,7 +108,7 @@ HANDLER (kick)
     notify_mods (CHANNELLOG_MODE, "%s kicked %s out of channel %s: %s",
 		 sender->nick, user->nick, chan->name, ac == 3 ? av[2] : "");
     notify_ops (chan, "%s kicked %s out of channel %s: %s",
-		 sender->nick, user->nick, chan->name, ac == 3 ? av[2] : "");
+		sender->nick, user->nick, chan->name, ac == 3 ? av[2] : "");
 
     /* has to come after the notify_mods() since it uses chan->name and
        chan may disappear if there are no users left
@@ -144,11 +135,6 @@ HANDLER (clear_channel)
 	unparsable (con);
 	return;
     }
-    if(invalid_channel(chanName))
-    {
-	invalid_channel_msg(con);
-	return;
-    }
     chan = hash_lookup (Channels, chanName);
     if (!chan)
     {
@@ -167,16 +153,19 @@ HANDLER (clear_channel)
     {
 	ASSERT (VALID_LEN (list, sizeof (LIST)));
 	chanUser = list->data;
-	ASSERT(chanUser->magic==MAGIC_CHANUSER);
+	ASSERT (chanUser->magic == MAGIC_CHANUSER);
 	/* part_channel() may free the current `list' pointer so we advance
 	   it here prior to calling it */
 	list = list->next;
-	if (chanUser->user != sender && can_kick(chan,sender,chanUser->user))
+	if (chanUser->user != sender
+	    && can_kick (chan, sender, chanUser->user))
 	{
-	    chanUser->user->channels = list_delete (chanUser->user->channels, chan);
+	    chanUser->user->channels =
+		list_delete (chanUser->user->channels, chan);
 	    if (ISUSER (chanUser->user->con))
 	    {
-		send_cmd (chanUser->user->con, MSG_CLIENT_PART, "%s", chan->name);
+		send_cmd (chanUser->user->con, MSG_CLIENT_PART, "%s",
+			  chan->name);
 		send_cmd (chanUser->user->con, MSG_SERVER_NOSUCH,
 			  "%s cleared channel %s: %s", sender->nick,
 			  chan->name, NONULL (pkt));
@@ -187,5 +176,5 @@ HANDLER (clear_channel)
     notify_mods (CHANNELLOG_MODE, "%s cleared channel %s: %s", sender->nick,
 		 chan->name, NONULL (pkt));
     notify_ops (chan, "%s cleared channel %s: %s", sender->nick,
-		 chan->name, NONULL (pkt));
+		chan->name, NONULL (pkt));
 }

@@ -48,7 +48,17 @@ HANDLER (browse)
     ASSERT (validate_connection (con));
     if (pop_user (con, &pkt, &sender))
 	return;
+    if(!pkt)
+    {
+	unparsable(con);
+	return;
+    }
     nick = next_arg (&pkt);
+    if(invalid_nick(nick))
+    {
+	send_cmd(con,MSG_SERVER_NOSUCH,"invalid nickname");
+	return;
+    }
     user = hash_lookup (Users, nick);
     if (!user)
     {

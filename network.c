@@ -29,8 +29,8 @@ lookup_ip (const char *host)
     log ("lookup_ip(): resolving %s", host);
     /* check for dot-quad notation.  Win95's gethostbyname() doesn't seem
        to return the ip address properly for this case like every other OS */
-    ip=inet_addr(host);
-    if(ip==INADDR_NONE)
+    ip = inet_addr (host);
+    if (ip == INADDR_NONE)
     {
 	he = gethostbyname (host);
 	if (!he)
@@ -66,16 +66,18 @@ set_nonblocking (int f)
 int
 set_tcp_buffer_len (int f, int bytes)
 {
-    if (setsockopt (f, SOL_SOCKET, SO_SNDBUF, SOCKOPTCAST &bytes, sizeof (bytes)) == -1)
+    if (setsockopt
+	(f, SOL_SOCKET, SO_SNDBUF, SOCKOPTCAST & bytes, sizeof (bytes)) == -1)
     {
 	log ("set_tcp_buffer_len(): setsockopt: %s (errno %d)",
-		strerror (errno), errno);
+	     strerror (errno), errno);
 	return -1;
     }
-    if (setsockopt (f, SOL_SOCKET, SO_RCVBUF, SOCKOPTCAST &bytes, sizeof (bytes)) == -1)
+    if (setsockopt
+	(f, SOL_SOCKET, SO_RCVBUF, SOCKOPTCAST & bytes, sizeof (bytes)) == -1)
     {
 	log ("set_tcp_buffer_len(): setsockopt: %s (errno %d)",
-		strerror (errno), errno);
+	     strerror (errno), errno);
 	return -1;
     }
     return 0;
@@ -89,19 +91,20 @@ new_tcp_socket (int options)
     f = socket (AF_INET, SOCK_STREAM, 0);
     if (f < 0)
     {
-	log("new_tcp_socket(): socket: %s", strerror (errno));
+	log ("new_tcp_socket(): socket: %s", strerror (errno));
 	return -1;
     }
-    if(options & ON_NONBLOCKING)
+    if (options & ON_NONBLOCKING)
     {
-	if(set_nonblocking(f))
+	if (set_nonblocking (f))
 	    return -1;
     }
-    if(options & ON_REUSEADDR)
+    if (options & ON_REUSEADDR)
     {
 	int i = 1;
-	if (setsockopt (f, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST & i, sizeof (i))
-		!= 0)
+
+	if (setsockopt
+	    (f, SOL_SOCKET, SO_REUSEADDR, SOCKOPTCAST & i, sizeof (i)) != 0)
 	{
 	    nlogerr ("new_tcp_socket", "setsockopt");
 	    exit (1);
@@ -113,10 +116,11 @@ new_tcp_socket (int options)
 int
 set_keepalive (int f, int on)
 {
-    if (setsockopt (f, SOL_SOCKET, SO_KEEPALIVE, SOCKOPTCAST &on, sizeof (on)) == -1)
+    if (setsockopt
+	(f, SOL_SOCKET, SO_KEEPALIVE, SOCKOPTCAST & on, sizeof (on)) == -1)
     {
 	log ("set_keepalive(): setsockopt: %s (errno %d).",
-		strerror (errno), errno);
+	     strerror (errno), errno);
 	return -1;
     }
     return 0;
@@ -162,8 +166,8 @@ make_tcp_connection (const char *host, int port, unsigned int *ip)
     /* turn on TCP/IP keepalive messages */
     set_keepalive (f, 1);
     log ("make_tcp_connection(): connecting to %s:%hu",
-	    inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
-    if (connect (f, (struct sockaddr*) &sin, sizeof (sin)) < 0)
+	 inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
+    if (connect (f, (struct sockaddr *) &sin, sizeof (sin)) < 0)
     {
 	if (N_ERRNO != EINPROGRESS
 #ifdef WIN32
@@ -172,7 +176,7 @@ make_tcp_connection (const char *host, int port, unsigned int *ip)
 #endif
 	    )
 	{
-	    nlogerr("make_tcp_connection","connect");
+	    nlogerr ("make_tcp_connection", "connect");
 	    CLOSE (f);
 	    return -1;
 	}
@@ -191,14 +195,14 @@ check_connect_status (int f)
 
     len = sizeof (err);
 
-    if (getsockopt (f, SOL_SOCKET, SO_ERROR, SOCKOPTCAST &err, &len) != 0)
+    if (getsockopt (f, SOL_SOCKET, SO_ERROR, SOCKOPTCAST & err, &len) != 0)
     {
-	nlogerr ("check_connect_status","getsockopt");
+	nlogerr ("check_connect_status", "getsockopt");
 	return -1;
     }
     if (err != 0)
     {
-	_logerr ("check_connect_status","connect", err);
+	_logerr ("check_connect_status", "connect", err);
 	return -1;
     }
     return 0;
@@ -246,7 +250,7 @@ set_limit (int attr, int value)
 	   requested.  this is important when making the decision as to wheter
 	   or not the server needs to be run as uid 0 */
 	log ("set_limit(): warning: %d exceeds default hard limit of %d",
-		value, lim.rlim_max);
+	     value, lim.rlim_max);
     }
     lim.rlim_cur = value;
     if (lim.rlim_max > 0 && lim.rlim_cur > lim.rlim_max)
@@ -254,8 +258,9 @@ set_limit (int attr, int value)
 #ifndef HAVE_POLL
     if (attr == RLIMIT_FD_MAX && lim.rlim_cur > FD_SETSIZE)
     {
-	log ("set_limit(): warning: compiled limit (%d) is smaller than hard limit (%d)",
-		FD_SETSIZE, lim.rlim_max);
+	log
+	    ("set_limit(): warning: compiled limit (%d) is smaller than hard limit (%d)",
+	     FD_SETSIZE, lim.rlim_max);
     }
 #endif /* HAVE_POLL */
     if (setrlimit (attr, &lim))
@@ -314,6 +319,7 @@ get_local_port (int fd)
 {
     struct sockaddr_in sin;
     socklen_t sinsize = sizeof (sin);
+
     if (getsockname (fd, (struct sockaddr *) &sin, &sinsize))
     {
 	nlogerr ("get_local_port", "getsockname");

@@ -48,8 +48,8 @@ HANDLER (user_mode_cmd)
 		if (sender->con->uopt->usermode & p)
 		{
 		    buflen = strlen (buffer);
-		    snprintf (buffer + buflen, sizeof (buffer) - buflen, "%s%s",
-			    buflen>0?" ":"", User_Levels[i]);
+		    snprintf (buffer + buflen, sizeof (buffer) - buflen,
+			      "%s%s", buflen > 0 ? " " : "", User_Levels[i]);
 		}
 	    }
 	}

@@ -27,10 +27,10 @@ HANDLER (resume)
 #if RESUME
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
     {
-	unparsable(con);
+	unparsable (con);
 	return;
     }
-    
+
     fsize = atoi (av[1]);
 
     /* search the database for a list of all files which match this hash */
@@ -44,9 +44,9 @@ HANDLER (resume)
 	    {
 		ASSERT (validate_user (d->user));
 		send_cmd (con, MSG_SERVER_RESUME_MATCH,
-			"%s %u %d \"%s\" %s %d %hu",
-			d->user->nick, d->user->host, d->user->port,
-			d->filename, d->hash, d->size, d->user->speed);
+			  "%s %u %d \"%s\" %s %d %hu",
+			  d->user->nick, d->user->host, d->user->port,
+			  d->filename, d->hash, d->size, d->user->speed);
 	    }
 	}
     }

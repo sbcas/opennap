@@ -30,9 +30,9 @@ read_bytes (int fd, int n, unsigned char *b)
 	l = read (fd, b + t, n - t);
 	if (l <= 0)
 	{
-	    if(l == -1)
-		perror("read");
-	    puts("read_bytes(): error reading data");
+	    if (l == -1)
+		perror ("read");
+	    puts ("read_bytes(): error reading data");
 	    return -1;
 	}
 	t += l;
@@ -60,10 +60,10 @@ pass_message (const char *id, int s, int d)
 }
 
 static void
-usage(void)
+usage (void)
 {
-    puts("usage: spyserv [ -s SERVER ] [ -p SERVERPORT ] [ -l LOCALPORT ]");
-    exit(0);
+    puts ("usage: spyserv [ -s SERVER ] [ -p SERVERPORT ] [ -l LOCALPORT ]");
+    exit (0);
 }
 
 int
@@ -83,17 +83,17 @@ main (int argc, char **argv)
     {
 	switch (r)
 	{
-	    case 'l':
-		localport = atoi(optarg);
-		break;
-	    case 's':
-		host = optarg;
-		break;
-	    case 'p':
-		port = atoi (optarg);
-		break;
-	    default:
-		usage();
+	case 'l':
+	    localport = atoi (optarg);
+	    break;
+	case 's':
+	    host = optarg;
+	    break;
+	case 'p':
+	    port = atoi (optarg);
+	    break;
+	default:
+	    usage ();
 	}
     }
 
@@ -104,11 +104,11 @@ main (int argc, char **argv)
 	perror ("socket");
 	exit (1);
     }
-    c=1;
-    if(setsockopt(s,SOL_SOCKET,SO_REUSEADDR,&c,sizeof(c))!=0)
+    c = 1;
+    if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, &c, sizeof (c)) != 0)
     {
-	perror("setsockopt");
-	exit(1);
+	perror ("setsockopt");
+	exit (1);
     }
     memset (&sin, 0, sizeof (sin));
     sin.sin_port = htons (localport);
@@ -141,7 +141,7 @@ main (int argc, char **argv)
 
     /* make connection to server */
     printf ("connecting to server...");
-    fflush(stdout);
+    fflush (stdout);
     r = socket (PF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (r < 0)
     {

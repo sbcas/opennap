@@ -188,7 +188,8 @@ validate_connection (CONNECTION * con)
     {
 	if (con->uopt)
 	{
-	    ASSERT_RETURN_IF_FAIL (VALID_LEN (con->uopt, sizeof (USEROPT)), 0);
+	    ASSERT_RETURN_IF_FAIL (VALID_LEN (con->uopt, sizeof (USEROPT)),
+				   0);
 	    ASSERT_RETURN_IF_FAIL (list_validate (con->uopt->hotlist), 0);
 	}
     }
@@ -233,8 +234,8 @@ int
 pop_user (CONNECTION * con, char **pkt, USER ** user)
 {
     ASSERT (validate_connection (con));
-    ASSERT(pkt!=0 && *pkt != 0);
-    ASSERT(user!=0);
+    ASSERT (pkt != 0 && *pkt != 0);
+    ASSERT (user != 0);
     if (ISSERVER (con))
     {
 	char *ptr;
@@ -274,19 +275,19 @@ pop_user (CONNECTION * con, char **pkt, USER ** user)
 }
 
 void
-unparsable(CONNECTION*con)
+unparsable (CONNECTION * con)
 {
-    ASSERT(validate_connection(con));
-    if(ISUSER(con))
-	send_cmd(con,MSG_SERVER_NOSUCH,"parameters are unparsable");
+    ASSERT (validate_connection (con));
+    if (ISUSER (con))
+	send_cmd (con, MSG_SERVER_NOSUCH, "parameters are unparsable");
 }
 
 void
-nosuchchannel(CONNECTION*con)
+nosuchchannel (CONNECTION * con)
 {
-    ASSERT(validate_connection(con));
-    if(ISUSER(con))
-	send_cmd(con,MSG_SERVER_NOSUCH,"no such channel");
+    ASSERT (validate_connection (con));
+    if (ISUSER (con))
+	send_cmd (con, MSG_SERVER_NOSUCH, "no such channel");
 }
 
 /* returns nonzero if `s' is the name of a server */
@@ -297,16 +298,16 @@ is_server (const char *s)
     CONNECTION *con;
     LINK *link;
 
-    for(list=Servers;list;list=list->next)
+    for (list = Servers; list; list = list->next)
     {
-	con=list->data;
-	if(!strcasecmp(s,con->host))
+	con = list->data;
+	if (!strcasecmp (s, con->host))
 	    return 1;
     }
-    for(list=Server_Links;list;list=list->next)
+    for (list = Server_Links; list; list = list->next)
     {
-	link=list->data;
-	if(!strcasecmp(s,link->server) || !strcasecmp(s,link->peer))
+	link = list->data;
+	if (!strcasecmp (s, link->server) || !strcasecmp (s, link->peer))
 	    return 1;
     }
     return 0;
@@ -314,18 +315,18 @@ is_server (const char *s)
 
 /* returns nonzero if `nick' is in list `ignore' */
 int
-is_ignoring (LIST *ignore, const char *nick)
+is_ignoring (LIST * ignore, const char *nick)
 {
-    for(;ignore;ignore=ignore->next)
-	if(!strcasecmp(nick,ignore->data))
+    for (; ignore; ignore = ignore->next)
+	if (!strcasecmp (nick, ignore->data))
 	    return 1;
     return 0;
 }
 
 void
-invalid_channel_msg(CONNECTION *con)
+invalid_channel_msg (CONNECTION * con)
 {
-    ASSERT(validate_connection(con));
-    if(ISUSER(con))
-	send_cmd(con,MSG_SERVER_NOSUCH,"invalid channel");
+    ASSERT (validate_connection (con));
+    if (ISUSER (con))
+	send_cmd (con, MSG_SERVER_NOSUCH, "invalid channel");
 }

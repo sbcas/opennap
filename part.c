@@ -30,13 +30,13 @@ HANDLER (part)
 	log ("part(): server message is missing channel name");
 	return;
     }
-    if(invalid_channel(pkt))
+    if (invalid_channel (pkt))
     {
-	invalid_channel_msg(con);
+	invalid_channel_msg (con);
 	return;
     }
     /* find the requested channel in the user's  list */
-    if(!(chan=find_channel(user->channels,pkt)))
+    if (!(chan = find_channel (user->channels, pkt)))
     {
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "You are not in that channel");
@@ -45,14 +45,15 @@ HANDLER (part)
 
     /* ack the user */
     if (ISUSER (con))
-	send_cmd(con,tag,"%s", chan->name);
+	send_cmd (con, tag, "%s", chan->name);
 
     /* NOTE: we use the MSG_CLIENT_PART(401) message instead of
        passing MSG_SERVER_PART(407) to pass between servers because we
        can reuse this same function for both messages easier than
        implementing support for parsing the latter.  The 401 message
        will be translated into a 407 for sending to end users. */
-    pass_message_args (con, MSG_CLIENT_PART, ":%s %s", user->nick, chan->name);
+    pass_message_args (con, MSG_CLIENT_PART, ":%s %s", user->nick,
+		       chan->name);
 
     user->channels = list_delete (user->channels, chan);
 
