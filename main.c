@@ -13,11 +13,16 @@
 #include <netdb.h>
 #include <fcntl.h>
 #include <time.h>
-#include <sys/time.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#if HAVE_POLL
+#include <sys/poll.h>
+#else
+/* use select() instead of poll() */
+#include <sys/time.h>
+#endif /* HAVE_POLL */
 #include "opennap.h"
 #include "debug.h"
 
@@ -401,6 +406,62 @@ check_accept (CONNECTION * cli)
 }
 
 static void
+accept_connection (int s)
+{
+    CONNECTION *cli;
+    socklen_t sinsize;
+    struct sockaddr_in sin;
+    int f;
+
+    sinsize = sizeof (sin);
+    if ((f = accept (s, (struct sockaddr *) &sin, &sinsize)) < 0)
+    {
+	perror ("accept_connection(): accept");
+	return;
+    }
+
+    cli = new_connection ();
+    cli->fd = f;
+    log ("accept_connection(): connection from %s, port %d",
+	    inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
+    /* if we have a local connection, use the external
+       interface so others can download from them */
+    if (sin.sin_addr.s_addr == inet_addr ("127.0.0.1"))
+    {
+	log ("accept_connection(): connected via loopback, using external ip");
+	cli->ip = Server_Ip;
+	cli->host = STRDUP (Server_Name);
+    }
+    else
+    {
+	cli->ip = sin.sin_addr.s_addr;
+	cli->host = STRDUP (inet_ntoa (sin.sin_addr));
+    }
+    cli->port = ntohs (sin.sin_port);
+    cli->class = CLASS_UNKNOWN;
+    add_client (cli);
+
+    set_nonblocking (f);
+    set_keepalive (f, 1);	/* enable tcp keepalive messages */
+
+    if (!check_accept (cli))
+	remove_connection (cli);
+}
+
+static void
+init_signals (void)
+{
+    struct sigaction sa;
+
+    memset (&sa, 0, sizeof (sa));
+    sa.sa_handler = sighandler;
+    sigaction (SIGHUP, &sa, NULL);
+    sigaction (SIGTERM, &sa, NULL);
+    sigaction (SIGINT, &sa, NULL);
+
+}
+
+static void
 usage (void)
 {
     fprintf (stderr,
@@ -426,6 +487,19 @@ version (void)
     exit (0);
 }
 
+/* wrappers to make the code in main() much cleaner */
+#if HAVE_POLL
+#define READABLE(i) (ufd[i].revents & POLLIN)
+#define WRITABLE(i) (ufd[i].revents & POLLOUT)
+#define CHECKREAD(i) ufd[i].events |= POLLIN
+#define CHECKWRITE(i) ufd[i].events |= POLLOUT
+#else
+#define READABLE(i) FD_ISSET(Clients[i]->fd, &set)
+#define WRITABLE(i) FD_ISSET(Clients[i]->fd, &wset)
+#define CHECKREAD(i) FD_SET(Clients[i]->fd, &set)
+#define CHECKWRITE(i) FD_SET(Clients[i]->fd, &wset)
+#endif /* HAVE_POLL */
+
 int
 main (int argc, char **argv)
 {
@@ -433,16 +507,18 @@ main (int argc, char **argv)
     int s;			/* server socket */
     int i;			/* generic counter */
     int n;			/* number of ready sockets */
-    int f;			/* new socket for incoming connection */
-    int pending = 0;
-    int port = 0, maxfd;
+    int f, pending = 0, port = 0;
+#if HAVE_POLL
+    struct pollfd *ufd = 0;
+    int ufdsize = 0;		/* real number of pollfd structs allocated */
+#else
     fd_set set, wset;
-    struct sigaction sa;
-    char *config_file = 0;
-    socklen_t sinsize;
-    time_t next_update = 0;
     struct timeval t;
-    unsigned int iface = INADDR_ANY;
+    int maxfd;
+#endif /* HAVE_POLL */
+    char *config_file = 0;
+    time_t next_update = 0;
+    unsigned int iface = INADDR_ANY;	/* ip address to listen on */
 
     while ((n = getopt (argc, argv, "c:hl:p:v")) != EOF)
     {
@@ -463,7 +539,6 @@ main (int argc, char **argv)
 	case 'v':
 	    version ();
 	    break;
-	case 'h':
 	default:
 	    usage ();
 	}
@@ -471,15 +546,11 @@ main (int argc, char **argv)
 
     log ("version %s starting", VERSION);
 
+    init_signals ();
+
     /* load default configuration values */
     config_defaults ();
     lookup_hostname ();
-
-    memset (&sa, 0, sizeof (sa));
-    sa.sa_handler = sighandler;
-    sigaction (SIGHUP, &sa, NULL);
-    sigaction (SIGTERM, &sa, NULL);
-    sigaction (SIGINT, &sa, NULL);
 
     /* load the config file */
     config (config_file ? config_file : SHAREDIR "/config");
@@ -541,10 +612,20 @@ main (int argc, char **argv)
     /* main event loop */
     while (!SigCaught)
     {
+#if HAVE_POLL
+	/* ensure that we have enough pollfd structs.  add one extra for
+	   the incoming connections port */
+	if (Num_Clients + 1 > ufdsize)
+	{
+	    ufd = REALLOC (ufd, sizeof (struct pollfd) * (Num_Clients + 1));
+	    ufdsize = Num_Clients + 1;
+	}
+#else
 	FD_ZERO (&set);
 	FD_ZERO (&wset);
 	maxfd = s;
 	FD_SET (s, &set);
+#endif /* HAVE_POLL */
 
 	for (n = 0, i = 0; i < Num_Clients; i++)
 	{
@@ -561,19 +642,26 @@ main (int argc, char **argv)
 		    Clients[n] = Clients[i];
 		    Clients[n]->id = n;
 		}
+#if HAVE_POLL
+		ufd[n].fd = Clients[n]->fd;
+		ufd[n].events = 0;
+#endif /* HAVE_POLL */
+
 		n++;
 
 		/* check sockets for writing */
 		if ((Clients[i]->flags & FLAG_CONNECTING) ||
 		    (Clients[i]->sendbuf ||
 		     (Clients[i]->zip && Clients[i]->zip->outbuf)))
-		    FD_SET (Clients[i]->fd, &wset);
+		    CHECKWRITE(i);
 
 		/* always check for incoming data */
-		FD_SET (Clients[i]->fd, &set);
+		CHECKREAD(i);
 
+#ifndef HAVE_POLL
 		if (Clients[i]->fd > maxfd)
 		    maxfd = Clients[i]->fd;
+#endif /* !HAVE_POLL */
 
 		/* note if their is unprocessed data in the input
 		   buffers so we dont block on select().  the incomplete
@@ -589,59 +677,36 @@ main (int argc, char **argv)
 
 	/* if there is pending data in client queues, don't block on the
 	   select call */
+#if HAVE_POLL
+	/* add an entry for the incoming connections socket */
+	ufd[Num_Clients].fd = s;
+	ufd[Num_Clients].events = POLLIN;
+
+	if ((n = poll (ufd, Num_Clients + 1, pending ? 0 : Stat_Click * 1000)) < 0)
+	{
+	    perror ("poll");
+	    break;
+	}
+#else
 	t.tv_sec = pending ? 0 : Stat_Click;
 	t.tv_usec = 0;
-
-	pending = 0;		/* reset */
-
-	n = select (maxfd + 1, &set, &wset, NULL, &t);
-
-	if (n < 0)
+	if ((n = select (maxfd + 1, &set, &wset, NULL, &t)) < 0)
 	{
 	    perror ("select");
 	    break;
 	}
+#endif /* HAVE_POLL */
+
+	pending = 0;		/* reset */
 
 	/* check for new incoming connections */
+#if HAVE_POLL
+	if (ufd[Num_Clients].revents & POLLIN)
+#else
 	if (FD_ISSET (s, &set))
+#endif
 	{
-	    sinsize = sizeof (sin);
-	    f = accept (s, (struct sockaddr *) &sin, &sinsize);
-	    if (f < 0)
-	    {
-		perror ("accept");
-	    }
-	    else
-	    {
-		CONNECTION *cli;
-
-		cli = new_connection ();
-		cli->fd = f;
-		log ("main(): connection from %s, port %d",
-			inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
-		/* if we have a local connection, use the external
-		   interface so others can download from them */
-		if (sin.sin_addr.s_addr == inet_addr ("127.0.0.1"))
-		{
-		    log ("main(): connected via loopback, using external ip");
-		    cli->ip = Server_Ip;
-		    cli->host = STRDUP (Server_Name);
-		}
-		else
-		{
-		    cli->ip = sin.sin_addr.s_addr;
-		    cli->host = STRDUP (inet_ntoa (sin.sin_addr));
-		}
-		cli->port = ntohs (sin.sin_port);
-		cli->class = CLASS_UNKNOWN;
-		add_client (cli);
-
-		set_nonblocking (f);
-		set_keepalive (f, 1);	/* enable tcp keepalive messages */
-
-		if (!check_accept (cli))
-		    remove_connection (cli);
-	    }
+	    accept_connection (s);
 	    n--;
 	}
 
@@ -654,19 +719,18 @@ main (int argc, char **argv)
 	       comment there for more information) */
 	    if (Clients[i])
 	    {
-		if ((Clients[i]->flags & FLAG_CONNECTING) &&
-		    FD_ISSET (Clients[i]->fd, &wset))
+		if ((Clients[i]->flags & FLAG_CONNECTING) && WRITABLE (i))
 		{
 		    complete_connect (Clients[i]);
 		    n--;	/* keep track of how many we've handled */
 		}
-		else if (FD_ISSET (Clients[i]->fd, &set))
+		else if (READABLE (i))
 		{
 		    n--;	/* keep track of how many we've handled */
 		    f = buffer_read (Clients[i]->fd,
-				     (Clients[i]->zip !=
-				      0) ? &Clients[i]->zip->
-				     inbuf : &Clients[i]->recvbuf);
+			    (Clients[i]->zip !=
+			     0) ? &Clients[i]->zip->
+			    inbuf : &Clients[i]->recvbuf);
 		    if (f <= 0)
 		    {
 			if (f == 0)
@@ -674,6 +738,16 @@ main (int argc, char **argv)
 			remove_connection (Clients[i]);
 		    }
 		}
+#if HAVE_POLL
+		else if (ufd[i].revents)
+		{
+		    /* when does this occur?  i would have though POLLHUP
+		       would be when the connection hangs up, but it still
+		       sets POLLIN and read() returns 0 */
+		    ASSERT ((ufd[i].revents & POLLHUP) == 0);
+		    ASSERT ((ufd[i].revents & POLLERR) == 0);
+		}
+#endif /* HAVE_POLL */
 	    }
 	}
 
@@ -716,17 +790,12 @@ main (int argc, char **argv)
 		       exists, or if the socket is writable and there is some
 		       compressed output */
 		    if ((Clients[i]->sendbuf && Clients[i]->zip->outbuf == 0)
-			|| (Clients[i]->zip->outbuf
-			    && FD_ISSET (Clients[i]->fd, &wset)))
+			    || (Clients[i]->zip->outbuf && WRITABLE (i)))
 			send_queued_data (Clients[i]);
 		}
-		else
-		{
-		    /* client */
-		    if (Clients[i]->sendbuf
-			&& FD_ISSET (Clients[i]->fd, &wset))
-			send_queued_data (Clients[i]);
-		}
+		/* client */
+		else if (Clients[i]->sendbuf && WRITABLE (i))
+		    send_queued_data (Clients[i]);
 	    }
 	}
     }
@@ -749,6 +818,11 @@ main (int argc, char **argv)
     close_db ();
 
     /* clean up */
+#if HAVE_POLL
+    if (ufd)
+	FREE (ufd);
+#endif /* HAVE_POLL */
+
     if (Clients)
 	FREE (Clients);
 

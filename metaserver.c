@@ -15,6 +15,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#if HAVE_POLL
+#include <sys/poll.h>
+#endif /* HAVE_POLL */
 
 static void
 handler (int sig)
@@ -38,14 +41,15 @@ int
 main (int argc, char **argv)
 {
     char *hosts[32];
-    int numhosts = 0;
     struct sockaddr_in sin;
-    int s, f;
+    int i, s, f, port = 8875, numhosts = 0;
+#if HAVE_POLL
+    struct pollfd ufd;
+#else
     fd_set set;
+#endif /* HAVE_POLL */
     socklen_t sinsize;
     struct sigaction sa;
-    int i;
-    int port = 8875;
     unsigned int iface = INADDR_ANY;
 
     while ((i = getopt (argc, argv, "hl:vp:")) != EOF)
@@ -107,8 +111,20 @@ main (int argc, char **argv)
 	exit (1);
     }
     i = 0;
+#if HAVE_POLL
+    memset (&ufd, 0, sizeof (ufd));
+    ufd.fd = s;
+    ufd.events = POLLIN;
+#endif /* HAVE_POLL */
     for (;;)
     {
+#if HAVE_POLL
+	if (poll (&ufd, 1, -1) == -1)
+	{
+	    perror ("poll");
+	    break;
+	}
+#else
 	FD_ZERO (&set);
 	FD_SET (s, &set);
 	if (select (s + 1, &set, 0, 0, 0) < 0)
@@ -116,6 +132,7 @@ main (int argc, char **argv)
 	    perror ("select");
 	    break;
 	}
+#endif /* HAVE_POLL */
 	sinsize = sizeof (sin);
 	f = accept (s, (struct sockaddr *) &sin, &sinsize);
 	if (f < 0)
