@@ -682,12 +682,15 @@ HANDLER (channel_mode)
 	nosuchchannel (con);
 	return;
     }
-    if (sender && sender->level < LEVEL_MODERATOR
-	&& !is_chanop (chan, sender))
+
+    /* check for permission */
+    if(sender && (sender->level<chan->level ||
+		(sender->level<LEVEL_MODERATOR && !is_chanop(chan,sender))))
     {
-	permission_denied (con);
+	permission_denied(con);
 	return;
     }
+
     if (!pkt)
     {
 	if (ISUSER (con))

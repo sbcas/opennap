@@ -5,3 +5,7 @@
   amount of valid information about the contents of their mp3 library
 
 * add a timeout to check for blocked server connect() call
+
+* add channel voice command
+
+* add channel muzzle command
