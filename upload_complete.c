@@ -24,12 +24,14 @@ HANDLER (upload_ok)
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
     {
 	log ("upload_ok(): malformed message from %s", con->user->nick);
+	send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of parameters");
 	return;
     }
     recip = hash_lookup (Users, av[0]);
     if (!recip)
     {
 	log ("upload_ok(): no such user %s", av[0]);
+	send_cmd (con, MSG_SERVER_NOSUCH, "No such user %s", av[0]);
 	return;
     }
     /* pull the hash from the data base */
@@ -38,10 +40,13 @@ HANDLER (upload_ok)
     {
 	log ("upload_ok(): user %s does not have file %s",
 		con->user->nick, av[1]);
+	send_cmd (con, MSG_SERVER_NOSUCH, "You are not sharing \"%s\"",
+		av[1]);
 	return;
     }
     log ("upload_ok(): ACK \"%s\" %s => %s", av[1], con->user->nick,
 	    recip->nick);
+
     if (con->user->port == 0)
     {
 	/* firewalled user, give the info back to the uploader */
@@ -51,6 +56,8 @@ HANDLER (upload_ok)
 		recip->speed);
     }
     else
+	/* recipient of this message may be on a remote server, use
+	   send_user() here */
 	send_user (recip, MSG_SERVER_FILE_READY, "%s %u %d \"%s\" %s %d",
 		con->user->nick, con->user->host, con->user->port, av[1],
 		info->hash, con->user->speed);

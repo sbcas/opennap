@@ -12,12 +12,12 @@
 /* handle client request for download of a file */
 HANDLER (download)
 {
-    char	*av[2];
-    USER	*user, *sender;
+    char *av[2];
+    USER *user, *sender;
 
     (void) len;
     ASSERT (validate_connection (con));
-    if(pop_user(con,&pkt,&sender))
+    if (pop_user (con, &pkt, &sender))
 	return;
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
     {
@@ -28,9 +28,12 @@ HANDLER (download)
     user = hash_lookup (Users, av[0]);
     if (!user)
     {
-	log("download(): no such user %s", av[0]);
-	if(ISUSER(con))
-	    nosuchuser (con, av[0]);
+	log ("download(): no such user %s", av[0]);
+	send_user (sender, MSG_SERVER_SEND_ERROR, "%s \"%s\"", av[0], av[1]);
+#if 0
+	send_user (sender, MSG_SERVER_NOSUCH, "[%s] could not find user %s",
+		   Server_Name, av[0]);
+#endif
 	return;
     }
     ASSERT (validate_user (user));
@@ -49,71 +52,91 @@ HANDLER (download)
 		{
 		    /* TODO: what error message to return to sender? */
 		    log ("download(): user %s does not have file %s",
-			    user->nick, av[1]);
+			 user->nick, av[1]);
+		    send_user (sender, MSG_SERVER_SEND_ERROR, "%s \"%s\"",
+			       user->nick, av[1]);
+#if 0
+		    send_user (sender, MSG_SERVER_NOSUCH,
+			       "[%s] user %s has no file named \"%s\"",
+			       Server_Name, user->nick, av[1]);
+#endif
 		}
 		else
-		    send_cmd (con, MSG_SERVER_FILE_READY /* 204 */,
-			    "%s %lu %d \"%s\" %s %d", user->nick, user->host,
-			    user->port, info->filename, info->hash, user->speed);
+		{
+		    send_user (sender, MSG_SERVER_FILE_READY /* 204 */ ,
+			       "%s %u %d \"%s\" %s %d", user->nick,
+			       BSWAP32(user->host), user->port, info->filename,
+			       info->hash, user->speed);
+		}
 	    }
 	    else
 	    {
 		/* not a local user, we have to relay this request since we
 		   dont' have the file information local */
-		log("download(): relaying request from %s to %s", sender->nick,
-			user->con->host);
-		ASSERT(ISSERVER(user->con));
-		send_cmd(user->con,tag,":%s %s \"%s\"",sender->nick,user->nick,av[1]);
+#if 0
+		log ("download(): relaying request for %s to %s", user->nick,
+		     user->con->host);
+#endif
+		ASSERT (ISSERVER (user->con));
+		send_cmd (user->con, tag, ":%s %s \"%s\"", sender->nick,
+			  user->nick, av[1]);
 	    }
 	    return;
 	}
     }
     else
     {
-	ASSERT(tag==MSG_CLIENT_DOWNLOAD_FIREWALL);
+	ASSERT (tag == MSG_CLIENT_DOWNLOAD_FIREWALL);
 	if (user->port != 0)
 	{
 	    /* this user is not firewalled */
-	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not firewalled", user->nick);
+	    send_cmd (con, MSG_SERVER_NOSUCH, "%s is not firewalled",
+		      user->nick);
 	    return;
 	}
 	if (sender->port == 0)
 	{
 	    /* error, both clients are firewalled */
-	    send_cmd (con, MSG_SERVER_FILE_READY /* 204 */,
-		    "%s %lu %d \"%s\" firewallerror %d",
-		    user->nick, user->host, user->port, av[1], user->speed);
+	    ASSERT (ISUSER (con));
+	    send_cmd (con, MSG_SERVER_FILE_READY /* 204 */ ,
+		      "%s %lu %d \"%s\" firewallerror %d",
+		      user->nick, user->host, user->port, av[1], user->speed);
 	    return;
 	}
     }
 
     /* send a message to the requestee */
-    log ("download(): REQUEST \"%s\" %s => %s", av[1], user->nick, sender->nick);
+    log ("download(): REQUEST \"%s\" %s => %s", av[1], user->nick,
+	 sender->nick);
 
     /* if the client holding the file is a local user, send the request
        directly */
     if (user->local)
     {
 	send_cmd (user->con, MSG_SERVER_UPLOAD_REQUEST, "%s \"%s\"",
-		sender->nick, av[1]);
+		  sender->nick, av[1]);
     }
     /* otherwise pass it to the peer servers for delivery */
     else
     {
+#if 0
 	log ("download(): %s is remote, relaying request to %s", user->nick,
-		user->con->host);
+	     user->con->host);
+#endif
+	/* don't use direct delivery here because the server the client is
+	   connected to needs to consult their db and rewrite this messsage */
 	send_cmd (user->con, MSG_SERVER_UPLOAD_REQUEST, ":%s %s \"%s\"",
-	    sender->nick, user->nick, av[1]);
+		  sender->nick, user->nick, av[1]);
     }
 }
 
 static USER *
-transfer_count_wrapper (CONNECTION *con, char *pkt, int numeric)
+transfer_count_wrapper (CONNECTION * con, char *pkt, int numeric)
 {
     USER *user;
 
     ASSERT (validate_connection (con));
-    if(pop_user(con,&pkt,&user))
+    if (pop_user (con, &pkt, &user))
 	return 0;
     if (Num_Servers)
 	pass_message_args (con, numeric, ":%s", user->nick);
@@ -121,7 +144,7 @@ transfer_count_wrapper (CONNECTION *con, char *pkt, int numeric)
 }
 
 /* 220 [ :<user> ] */
-HANDLER(upload_start)
+HANDLER (upload_start)
 {
     USER *user;
 
@@ -137,7 +160,7 @@ HANDLER(upload_start)
 }
 
 /* 221 [ :<user> ] */
-HANDLER(upload_end)
+HANDLER (upload_end)
 {
     USER *user;
 
@@ -153,7 +176,7 @@ HANDLER(upload_end)
 }
 
 /* 218 [ :<user> ] */
-HANDLER(download_start)
+HANDLER (download_start)
 {
     USER *user;
 
@@ -169,7 +192,7 @@ HANDLER(download_start)
 }
 
 /* 219 [ :<user> ] */
-HANDLER(download_end)
+HANDLER (download_end)
 {
     USER *user;
 
@@ -189,20 +212,20 @@ HANDLER(download_end)
 HANDLER (user_speed)
 {
     USER *user;
+
     (void) tag;
     (void) len;
-
     CHECK_USER_CLASS ("user_speed");
     user = hash_lookup (Users, pkt);
-    if(!user)
+    if (!user)
     {
-	/* TODO: what error does the server return here? */
 	log ("user_speed(): no such user %s", pkt);
+	send_cmd (con, MSG_SERVER_NOSUCH, "There is no user named  %s", pkt);
 	return;
     }
     ASSERT (validate_user (user));
-    send_cmd (con, MSG_SERVER_USER_SPEED /* 601 */, "%s %d",
-	    user->nick, user->speed);
+    send_cmd (con, MSG_SERVER_USER_SPEED /* 601 */ , "%s %d",
+	      user->nick, user->speed);
 }
 
 /* 626 [ :<nick> ] <user> */
@@ -211,6 +234,7 @@ HANDLER (user_speed)
 HANDLER (data_port_error)
 {
     USER *sender, *user;
+
     (void) tag;
     (void) len;
 
@@ -230,8 +254,9 @@ HANDLER (data_port_error)
     if (Num_Servers)
 	pass_message_args (con, tag, ":%s %s", sender->nick, user->nick);
 
-    notify_mods ("Notification from %s: %s (%s) - configured data port %d is unreachable.",
-	    sender->nick, user->nick, my_ntoa (user->host), user->port);
+    notify_mods
+	("Notification from %s: %s (%s) - configured data port %d is unreachable.",
+	 sender->nick, user->nick, my_ntoa (user->host), user->port);
 
     /* if local, notify the target of the error */
     if (user->local)
@@ -271,15 +296,15 @@ HANDLER (upload_request)
     /* if local user, deliver the message */
     if (recip->local)
     {
-	send_cmd (recip->con, MSG_SERVER_UPLOAD_REQUEST /* 607 */, "%s \"%s\"",
-	    av[0] + 1, av[2]);
+	send_cmd (recip->con, MSG_SERVER_UPLOAD_REQUEST /* 607 */ ,
+		  "%s \"%s\"", av[0] + 1, av[2]);
     }
     else
-	pass_message_args(recip->con,MSG_SERVER_UPLOAD_REQUEST,
-		":%s %s \"%s\"", av[0]+1, recip->nick, av[2]);
+	pass_message_args (recip->con, MSG_SERVER_UPLOAD_REQUEST,
+			   ":%s %s \"%s\"", av[0] + 1, recip->nick, av[2]);
 
     log ("upload_request(): REMOTE REQUEST \"%s\" %s => %s",
-	av[2], recip->nick, av[0] + 1);
+	 av[2], recip->nick, av[0] + 1);
 }
 
 /* 619 <nick> <filename> <limit> */
@@ -292,7 +317,7 @@ HANDLER (queue_limit)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
-    CHECK_USER_CLASS("queue_limit");
+    CHECK_USER_CLASS ("queue_limit");
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) < 3)
     {
 	log ("queue_limit(): too few arguments");
@@ -318,13 +343,13 @@ HANDLER (queue_limit)
     if (!info)
     {
 	log ("queue_limit(): user %s does not have file %s",
-		con->user->nick, av[1]);
+	     con->user->nick, av[1]);
 	send_cmd (con, MSG_SERVER_NOSUCH,
-		"could not locate \"%s\" in the db", av[1]);
+		  "could not locate \"%s\" in the db", av[1]);
 	return;
     }
 
     /* deliver to user even if remote */
-    send_user(recip,MSG_SERVER_LIMIT,"%s \"%s\" %d %s",
-	    con->user->nick, info->filename, info->size, av[2]);
+    send_user (recip, MSG_SERVER_LIMIT, "%s \"%s\" %d %s",
+	       con->user->nick, info->filename, info->size, av[2]);
 }
