@@ -5,13 +5,13 @@
 /* a simple napster metaserver.  redirects clients to a specific set of
    servers */
 
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <unistd.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 static void
 handler (int sig)
@@ -37,7 +37,7 @@ main (int argc, char **argv)
     struct sockaddr_in sin;
     int s, f;
     fd_set set;
-    size_t sinsize;
+    socklen_t sinsize;
     struct sigaction sa;
     int i;
     int port = 8875;
