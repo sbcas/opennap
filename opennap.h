@@ -276,6 +276,9 @@ extern int Max_Browse_Result;
 extern unsigned int Interface;
 extern time_t Server_Start;
 extern int Collect_Interval;
+extern int Uid;
+extern int Gid;
+extern int Connection_Hard_Limit;
 
 extern unsigned int Server_Flags;
 #define OPTION_STRICT_CHANNELS	1	/* only mods+ can create channels */
@@ -502,6 +505,7 @@ void remove_user (CONNECTION *);
 void send_cmd (CONNECTION *, unsigned int msgtype, const char *fmt, ...);
 int safe_realloc (void **, int);
 int set_keepalive (int, int);
+int set_max_connections (int);
 int set_nonblocking (int);
 int set_tcp_buffer_len (int, int);
 int split_line (char **template, int templatecount, char *pkt);

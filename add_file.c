@@ -225,7 +225,7 @@ HANDLER (add_file)
 
     ASSERT (validate_user (user));
 
-    if (user->shared > Max_Shared)
+    if (Max_Shared && user->shared > Max_Shared)
     {
 	log ("add_file(): %s is already sharing %d files", user->nick,
 		user->shared);
@@ -307,7 +307,7 @@ HANDLER (share_file)
     if (pop_user (con, &pkt, &user) != 0)
 	return;
 
-    if (user->shared > Max_Shared)
+    if (Max_Shared && user->shared > Max_Shared)
     {
 	log ("add_file(): %s is already sharing %d files", user->nick,
 		user->shared);

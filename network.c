@@ -13,6 +13,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <sys/resource.h>
 #endif /* !WIN32 */
 #include "opennap.h"
 #include "debug.h"
@@ -192,4 +193,53 @@ my_ntoa (unsigned int ip)
     memset (&a, 0, sizeof (a));
     a.s_addr = ip;
     return (inet_ntoa (a));
+}
+
+#ifdef RLIMIT_FDMAX
+# define RLIMIT_FD_MAX   RLIMIT_FDMAX
+#else
+# ifdef RLIMIT_NOFILE
+#  define RLIMIT_FD_MAX RLIMIT_NOFILE
+# else
+#  ifdef RLIMIT_OPEN_MAX
+#   define RLIMIT_FD_MAX RLIMIT_OPEN_MAX
+#  else
+#   undef RLIMIT_FD_MAX
+#  endif
+# endif
+#endif
+
+int
+set_max_connections (int n)
+{
+#ifdef RLIMIT_FD_MAX
+    struct rlimit lim;
+
+    if (getrlimit (RLIMIT_FD_MAX, &lim))
+    {
+	log ("set_max_connections(): getrlimit: %s (errno %d)",
+		strerror (errno), errno);
+	return -1;
+    }
+    /* attempt to increase the hard limit */
+    if (lim.rlim_max < n)
+	lim.rlim_max = n;
+#ifndef HAVE_POLL
+    if (lim.rlim_max < FD_SETSIZE)
+    {
+	log ("set_max_connections(): compiled limit (%d) is larger than hard limit (%d)",
+		FD_SETSIZE, lim.rlim_max);
+	return -1;
+    }
+#endif /* HAVE_POLL */
+    lim.rlim_cur = lim.rlim_max;	/* set the soft limit to the max */
+    if (setrlimit (RLIMIT_FD_MAX, &lim))
+    {
+	log ("set_max_connection(): setrlimit: %s (errnor %d)",
+		strerror (errno), errno);
+	return -1;
+    }
+    log ("set_max_connections(): max connections set to %d", lim.rlim_cur);
+#endif /* RLIMIT_FD_MAX */
+    return 0;
 }

@@ -101,14 +101,12 @@ HANDLER (unban)
 	if (!strcasecmp (pkt, Ban[i]->target))
 	{
 	    free_ban (Ban[i]);
-	    if (con->class == CLASS_USER)
+	    if (Num_Servers && con->class == CLASS_USER)
 	    {
-		if (Num_Servers)
-		{
-		    pass_message_args (con, MSG_CLIENT_UNBAN, ":%s %s",
-			    user->nick, pkt);
-		}
+		pass_message_args (con, MSG_CLIENT_UNBAN, ":%s %s",
+			user->nick, pkt);
 	    }
+	    Ban_Size--;
 	    notify_mods ("%s removed the ban on %s", user->nick, pkt);
 	    return;
 	}

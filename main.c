@@ -22,6 +22,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <grp.h>
+#include <pwd.h>
 #if HAVE_POLL
 #include <sys/poll.h>
 #else
@@ -62,6 +64,9 @@ int Max_Browse_Result;
 unsigned int Interface = INADDR_ANY;
 time_t Server_Start;	/* time at which the server was started */
 int Collect_Interval;
+int Uid;
+int Gid;
+int Connection_Hard_Limit;
 
 /* bans on ip addresses / users */
 BAN **Ban = 0;
@@ -611,6 +616,58 @@ main (int argc, char **argv)
 
     /* load the config file */
     config (config_file ? config_file : SHAREDIR "/config");
+
+    if (set_max_connections (Connection_Hard_Limit))
+	exit (1);
+
+    if (getuid () == 0)
+    {
+	if (Uid == -1)
+	{
+	    /* default to user nobody */
+	    struct passwd *pw;
+
+	    pw = getpwnam ("nobody");
+	    if (!pw)
+	    {
+		fputs ("ERROR: can't find user nobody to drop privileges\n",
+			stderr);
+		exit (1);
+	    }
+	    Uid = pw->pw_uid;
+	}
+
+	if (Gid == -1)
+	{
+	    /* default to group nobody */
+	    struct group *gr;
+
+	    gr = getgrnam ("nobody");
+	    if (!gr)
+	    {
+		fputs ("ERROR: can't find group nobody to drop privileges\n",
+			stderr);
+		exit (1);
+	    }
+	    Gid = gr->gr_gid;
+	}
+
+	/* change to non-privileged mode */
+	if (setgid (Gid))
+	{
+	    perror ("setgid");
+	    exit (0);
+	}
+
+	if (setuid (Uid))
+	{
+	    perror ("setuid");
+	    exit (0);
+	}
+
+    }
+
+    log ("running as user %d, group %d", getuid (), getgid ());
 
     Interface = inet_addr (Listen_Addr);
     /* if the interface was specified on the command line, override the
