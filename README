@@ -1,7 +1,7 @@
 opennap v0.27 (ALPHA)
 the open source (TM) napster server
-=====================
-May 21, 2000
+===================================
+May 23, 2000
 
 http://opennap.sourceforge.net
 IRC: #opennap on irc.openprojects.net
@@ -50,9 +50,44 @@ development of the server.
 
 * INSTALLATION
 
-  Please see README.UNIX or README.WIN32 for platform specific installation
-  steps.
+  To install, simply run the `setup' utility (provided with the binary
+  distributions, or built from source).
 
+  The installation process involves picking a directory where to install
+  OpenNap and creating an initial account for administering the server.  By
+  default, OpenNap will look for its configuration files in:
+
+	C:\opennap			Win32 platforms (Win 95/98/NT/2000)
+
+	-or-
+
+	/usr/local/share/opennap	Unix platforms
+
+  If you wish to install OpenNap in another location, simply enter the new
+  directory when `setup' prompts you.
+
+  The next step is to create an initial user account for the owner of the
+  server.  `setup' will prompt you for the nickname to use, the password for
+  the account and your email address (note that you ARE NOT required to
+  enter a real email address if you don't want to--simply use the default
+  email@here.com if you like)
+
+  IF you installed OpenNap in a different directory than the default,
+  `setup' will create a config file for you so that opennap knows that it
+  is installed in the directory you chose.  However, in order for opennap to
+  find this config file, you will have to tell it where the config file is
+  when you start the server.  You do this by specifyin the -c command line
+  option as such:
+
+	opennap -c PATH
+
+  where PATH is the _full_ path to the config file.
+
+  (NOTE: for Win32 users, `setup' will create a `launch.bat' script in the
+  directory you chose to install in which contains the above command so that
+  you can simply run the batch file to start the server.  Just make sure you
+  copy the opennap.exe executable into that directory first).
+  
 * Linking Servers
 
   1.  you need to add the dns name of the server you wish to allow to connect
