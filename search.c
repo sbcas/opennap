@@ -195,6 +195,12 @@ fdb_search (HASH *table,
     for (ptok = tokens; ptok; ptok = ptok->next)
     {
         tmp = hash_lookup (table, ptok->data);
+	if (!tmp)
+	{
+	    /* if there is no entry for this word in the hash table, then
+	       we know there are no matches */
+	    return;
+	}
         if (!flist || tmp->count < flist->count)
             flist = tmp;
     }
