@@ -29,11 +29,11 @@ buffer_new (void)
 #if DEBUG
     r->magic = MAGIC_BUFFER;
 #endif
-    r->data = mp_alloc(BufPool, 0);
-    if(!r->data)
+    r->data = mp_alloc (BufPool, 0);
+    if (!r->data)
     {
-	OUTOFMEMORY("buffer_new");
-	FREE(r);
+	OUTOFMEMORY ("buffer_new");
+	FREE (r);
 	return 0;
     }
     r->datamax = BUFFER_SIZE;
@@ -45,40 +45,30 @@ static BUFFER *
 buffer_queue (BUFFER * b, char *d, int dsize)
 {
     BUFFER *r = b;
+    int count;
 
-    if (!b)
-    {
-	r = b = buffer_new ();
-	if (!b)
-	    return 0;
-    }
-    else
-    {
-	ASSERT (buffer_validate (b));
+    if (b)
 	while (b->next)
 	    b = b->next;
-	/* if there is not enough allocated data, allocate a new buffer
-	   we avoid using realloc() here because it is
-	   potentially a very expensive operation
-	   -or-
-	   buffer is partially written, create a new buffer */
-	if (b->datasize + dsize > b->datamax || b->consumed)
+    while (dsize > 0)
+    {
+	if (!b)
+	    r = b = buffer_new ();
+	else if (b->datasize == b->datamax)
 	{
 	    b->next = buffer_new ();
-	    if (!b->next)
-		return r;
 	    b = b->next;
 	}
+	count = dsize;
+	/* dsize could be greater than what is allocated */
+	if (count > b->datamax - b->datasize)
+	    count = b->datamax - b->datasize;
+	memcpy (b->data + b->datasize, d, count);
+	dsize -= count;
+	d += count;
     }
-    memcpy (b->data + b->datasize, d, dsize);
-    b->datasize += dsize;
     return r;
 }
-
-#ifdef WIN32
-#undef errno
-#define errno h_errno
-#endif
 
 /* consume some bytes from the buffer */
 BUFFER *
@@ -202,7 +192,7 @@ buffer_compress (z_streamp zip, BUFFER ** b)
 		 NONULL (zip->msg), n);
 	    break;
 	}
-	pr=&(*pr)->next;
+	pr = &(*pr)->next;
     }
     while (zip->avail_out == 0 && flush == Z_SYNC_FLUSH);
 
@@ -213,16 +203,16 @@ buffer_compress (z_streamp zip, BUFFER ** b)
     if (r)
     {
 	pr = &r;
-	while((*pr)->next)
-	    pr=&(*pr)->next;
+	while ((*pr)->next)
+	    pr = &(*pr)->next;
 	(*pr)->datasize -= zip->avail_out;
 	/* this should only happen for the first created buffer if the
 	   input was small and there was a second buffer in the list */
 	if ((*pr)->datasize == 0)
 	{
-	    ASSERT(r->next==0);
-	    if(r->next!=0)
-		log("buffer_compress(): ERROR! r->next was not NULL");
+	    ASSERT (r->next == 0);
+	    if (r->next != 0)
+		log ("buffer_compress(): ERROR! r->next was not NULL");
 	    mp_free (BufPool, r->data);
 	    FREE (r);
 	    r = 0;
@@ -363,8 +353,8 @@ send_queued_data (CONNECTION * con)
     {
 	if (N_ERRNO != EWOULDBLOCK && N_ERRNO != EDEADLK)
 	{
-	    log("send_queued_data(): write: %s (errno %d) for host %s",
-		strerror (N_ERRNO), N_ERRNO, con->host);
+	    log ("send_queued_data(): write: %s (errno %d) for host %s",
+		 strerror (N_ERRNO), N_ERRNO, con->host);
 	    return -1;
 	}
 	return 0;
