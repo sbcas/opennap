@@ -292,7 +292,7 @@ new_datum (char *filename, char *hash)
 }
 
 static int
-bitrateToMask (int bitrate)
+bitrateToMask (int bitrate, USER *user)
 {
     unsigned int i;
 
@@ -301,12 +301,13 @@ bitrateToMask (int bitrate)
 	if(bitrate<=BitRate[i])
 	    return i;
     }
-    log("bitrateToMask(): invalid bitrate %d", bitrate);
+    log("freqToMask(): invalid bit rate %d (%s, \"%s\")", bitrate,
+	user->nick, user->clientinfo);
     return 0; /* invalid bitrate */
 }
 
 static int
-freqToMask (int freq)
+freqToMask (int freq, USER *user)
 {
     unsigned int i;
     for(i=0;i<sizeof(SampleRate)/sizeof(int);i++)
@@ -314,7 +315,8 @@ freqToMask (int freq)
 	if(freq<=SampleRate[i])
 	    return i;
     }
-    log("freqToMask(): invalid sample rate %d", freq);
+    log("freqToMask(): invalid sample rate %d (%s, \"%s\")", freq,
+	user->nick, user->clientinfo);
     return 0;
 }
 
@@ -375,8 +377,8 @@ HANDLER (add_file)
 	return;
     info->user = con->user;
     info->size = fsize;
-    info->bitrate = bitrateToMask(atoi (av[3]));
-    info->frequency = freqToMask(atoi (av[4]));
+    info->bitrate = bitrateToMask(atoi (av[3]), con->user);
+    info->frequency = freqToMask(atoi (av[4]), con->user);
     info->duration = atoi (av[5]);
     info->type = CT_MP3;
 
@@ -550,8 +552,8 @@ HANDLER (add_directory)
 	    return;
 	info->user = con->user;
 	info->size = atoi (size);
-	info->bitrate = bitrateToMask(atoi (bitrate));
-	info->frequency = freqToMask(atoi (freq));
+	info->bitrate = bitrateToMask(atoi (bitrate), con->user);
+	info->frequency = freqToMask(atoi (freq), con->user);
 	info->duration = atoi (duration);
 	info->type = CT_MP3;
 
