@@ -129,7 +129,9 @@ struct _user
     char *nick;
     char *pass;			/* password for this user, needed for sync */
     char *clientinfo;
-    char *server;		/* which server the user is connected to */
+    char *server;		/* which server the user is connected to.
+				   NOTE. this is a pointer to an entry in
+				   Server_Names, and not malloc'd. */
 
     unsigned short uploads;	/* no. of uploads in progress */
     unsigned short downloads;	/* no. of downloads in progress */
@@ -381,6 +383,7 @@ extern int Max_User_Channels;	/* # of channels is a user allowed to join */
 extern int Nick_Expire;
 extern unsigned int Server_Flags;
 extern char *Server_Name;
+extern LIST *Server_Names;
 extern char *Server_Pass;
 extern LIST *Server_Ports;
 extern int Server_Queue_Length;

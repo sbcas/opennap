@@ -533,6 +533,7 @@ HANDLER (channel_op_list)
 {
     CHANNEL *chan;
     LIST *list;
+    int count = 0;
 
     (void) tag;
     (void) len;
@@ -551,10 +552,11 @@ HANDLER (channel_op_list)
     }
     send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ Operators for channel %s:",
 	      chan->name);
-    for (list = chan->ops; list; list = list->next)
+    for (list = chan->ops; list; count++, list = list->next)
 	send_cmd (con, MSG_CLIENT_PRIVMSG, "ChanServ %s", list->data);
     send_cmd (con, MSG_CLIENT_PRIVMSG,
-	      "ChanServ END of operators for channel %s", chan->name);
+	      "ChanServ END of operators for channel %s (%d total)",
+	      chan->name, count);
 }
 
 /* 10207 [ :<sender> ] <channel> [ "<reason>" ]

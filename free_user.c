@@ -66,6 +66,6 @@ free_user (USER * user)
     FREE (user->nick);
     FREE (user->pass);
     FREE (user->clientinfo);
-    FREE (user->server);
+    /* NOTE: user->server is just a ref, not a malloc'd pointer */
     FREE (user);
 }

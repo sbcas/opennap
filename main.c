@@ -96,6 +96,9 @@ LIST *Servers = 0;
 /* list of all servers in the cluster */
 LIST *Server_Links = 0;
 
+/* Cache of server names for caching the user->server pointers */
+LIST *Server_Names = 0;
+
 int Local_Files = 0;		/* number of files shared by local users */
 int Num_Files = 0;
 double Num_Gigs = 0;	/* in kB */

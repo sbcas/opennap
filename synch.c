@@ -176,11 +176,11 @@ synch_server (CONNECTION * con)
     ASSERT (validate_connection (con));
 
     log ("synch_server(): syncing");
+    sync_server_list (con);
     /* send our peer server a list of all users we know about */
     hash_foreach (Users, (hash_callback_t) sync_user, con);
     /* sync the channel level */
     hash_foreach (Channels, (hash_callback_t) sync_chan, con);
-    sync_server_list (con);
     sync_banlist (con);
     log ("synch_server(): done");
 }

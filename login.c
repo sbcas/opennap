@@ -103,6 +103,27 @@ count_clones (unsigned int ip)
     return clones;
 }
 
+/* find the server name in the cache, or add it if it doesn't yet exist.
+ * this allows one copy of the server name in memory rather than copying it
+ * 1000 times for each user
+ */
+static char *
+find_server (char *s)
+{
+    LIST *list;
+    for(list=Server_Names;list;list=list->next)
+    {
+	if(!strcasecmp(s, list->data))
+	    return list->data;
+    }
+    /* not found yet, allocate */
+    list=CALLOC(1,sizeof(LIST));
+    list->data=STRDUP(s);
+    list->next=Server_Names;
+    Server_Names=list;
+    return list->data;
+}
+
 /* 2 <nick> <pass> <port> <client-info> <speed> [email] [build]
 
    servers append some additional information that they need to share in
@@ -216,7 +237,6 @@ HANDLER (login)
 	/* check for user!ip ban.  */
 	if (check_ban (con, av[0], host))
 	    return;
-
     }
 
     speed = atoi (av[4]);
@@ -471,11 +491,7 @@ HANDLER (login)
 	user->connected = Current_Time;
 	user->local = 1;
 	user->conport = con->port;
-	if (!(user->server = STRDUP (Server_Name)))
-	{
-	    OUTOFMEMORY ("login");
-	    goto failed;
-	}
+	user->server = Server_Name;	/* NOTE: this is not malloc'd */
 	con->uopt = CALLOC (1, sizeof (USEROPT));
 	if (!con->uopt)
 	{
@@ -499,12 +515,7 @@ HANDLER (login)
     {
 	ASSERT (ISSERVER (con));
 	user->connected = atoi (av[6]);
-	user->server = STRDUP (av[8]);
-	if (!user->server)
-	{
-	    OUTOFMEMORY ("login");
-	    goto failed;
-	}
+	user->server = find_server (av[8]);	/* just a ref, not malloc'd */
 	user->conport = atoi (av[9]);
     }
 

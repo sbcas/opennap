@@ -64,6 +64,25 @@ remove_user (CONNECTION *con)
     FREE (con->uopt);
 }
 
+static void
+free_server_name(const char *s)
+{
+    LIST **list=&Server_Names;
+    LIST *tmp;
+
+    for(;*list;list=&(*list)->next)
+    {
+	if(s == (*list)->data)
+	{
+	    tmp=*list;
+	    *list=(*list)->next;
+	    FREE(tmp->data);
+	    FREE(tmp);
+	    break;
+	}
+    }
+}
+
 void
 remove_connection (CONNECTION * con)
 {
@@ -112,6 +131,9 @@ remove_connection (CONNECTION * con)
 	finalize_compress (con->sopt);
 	buffer_free (con->sopt->outbuf);
 	FREE (con->sopt);
+
+	/* free the server name cache entry */
+	free_server_name(con->host);
     }
     else
     {
