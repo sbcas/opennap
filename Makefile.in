@@ -88,7 +88,8 @@ download.o upload_complete.o topic.o muzzle.o unmuzzle.o level.o \
 client_quit.o server_login.o server_connect.o synch.o util.o md5.o \
 hotlist.o remove_file.o list_channels.o list_users.o ping.o resume.o \
 change.o ban.o network.o buffer.o server_usage.o server_links.o init.o \
-handler.o timer.o list.o userdb.o textdb.o serverlib.o kick.o usermode.o
+handler.o timer.o list.o userdb.o textdb.o serverlib.o kick.o \
+usermode.o
 opennap_LDADD = $(LDADD)
 opennap_DEPENDENCIES = 
 opennap_LDFLAGS = 
@@ -126,7 +127,7 @@ DEP_FILES =  .deps/add_file.P .deps/announce.P .deps/ban.P \
 .deps/server_connect.P .deps/server_links.P .deps/server_login.P \
 .deps/server_usage.P .deps/serverlib.P .deps/synch.P .deps/textdb.P \
 .deps/timer.P .deps/topic.P .deps/unmuzzle.P .deps/upload_complete.P \
-.deps/userdb.P .deps/util.P .deps/whois.P .deps/usermode.P
+.deps/userdb.P .deps/usermode.P .deps/util.P .deps/whois.P
 SOURCES = $(opennap_SOURCES) $(metaserver_SOURCES) $(mkpass_SOURCES)
 OBJECTS = $(opennap_OBJECTS) $(metaserver_OBJECTS) $(mkpass_OBJECTS)
 
@@ -276,7 +277,7 @@ distdir: $(DISTFILES)
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
-	    cp -pr $$d/$$file $(distdir)/$$file; \
+	    cp -pr $$/$$file $(distdir)/$$file; \
 	  else \
 	    test -f $(distdir)/$$file \
 	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \

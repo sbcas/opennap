@@ -216,7 +216,7 @@ HANDLER (login)
 		/* warn about privileged users */
 		notify_mods(ERROR_MODE,"Bad password for %s (%s) from %s",
 			    db->nick, Levels[db->level], my_ntoa(con->ip));
-		send_cmd(NULL,MSG_SERVER_NOTIFY_MODS,
+		pass_message_args(NULL,MSG_SERVER_NOTIFY_MODS,
 			 ":%s %d \"Bad password for %s (%s) from %s\"",
 			 Server_Name, ERROR_MODE,
 			 db->nick, Levels[db->level], my_ntoa(con->ip));
