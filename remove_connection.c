@@ -66,6 +66,9 @@ remove_connection (CONNECTION *con)
 	}
 
 	list_free (con->uopt.hotlist, 0);
+
+	/* if this user had any pending searches, cancel them */
+	cancel_search (con);
     }
     else if (ISSERVER (con))
     {

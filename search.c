@@ -22,6 +22,8 @@ typedef struct
     short count;		/* how many ACKS have been recieved? */
     short numServers;		/* how many servers were connected at the time
 				   this search was issued? */
+    int valid;			/* is the user that issued this search still
+				   logged in? */
 }
 DSEARCH;
 
@@ -620,6 +622,7 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    dsearch->con = con;
 	    dsearch->nick = STRDUP (user->nick);
 	    dsearch->numServers = Num_Servers;
+	    dsearch->valid = 1;
 	    if (ISSERVER (con))
 		dsearch->numServers--;
 	    Remote_Search = list_append (Remote_Search, dsearch);
@@ -750,17 +753,21 @@ HANDLER (remote_search_result)
     }
     if (ISUSER (search->con))
     {
-	/* deliver the match to the client */
-	user = hash_lookup (Users, av[1]);
-	if (!user)
+	/* only send if the user is still logged in */
+	if (search->valid)
 	{
-	    log ("remote_match(): could not find user %s", av[1]);
-	    return;
+	    /* deliver the match to the client */
+	    user = hash_lookup (Users, av[1]);
+	    if (!user)
+	    {
+		log ("remote_match(): could not find user %s", av[1]);
+		return;
+	    }
+	    send_cmd (search->con, MSG_SERVER_SEARCH_RESULT,
+		    "\"%s\" %s %s %s %s %s %s %u %d",
+		    av[2], av[3], av[4], av[5], av[6], av[7], user->nick,
+		    user->host, user->speed);
 	}
-	send_cmd (search->con, MSG_SERVER_SEARCH_RESULT,
-		  "\"%s\" %s %s %s %s %s %s %u %d",
-		  av[2], av[3], av[4], av[5], av[6], av[7], user->nick,
-		  user->host, user->speed);
     }
 }
 
@@ -790,16 +797,38 @@ HANDLER (remote_search_end)
 	log ("remote_end_match(): sending final ACK for search %s",
 	     search->id);
 	if (ISUSER (search->con))
-	    send_cmd (search->con, MSG_SERVER_SEARCH_END, "");
+	{
+	    /* only send if the user is still logged in */
+	    if (search->valid)
+		send_cmd (search->con, MSG_SERVER_SEARCH_END, "");
+	}
 	else
 	    send_cmd (search->con, MSG_SERVER_REMOTE_SEARCH_END, "%s",
-		      search->id);
+		    search->id);
 	Remote_Search = list_delete (Remote_Search, search);
 	free_dsearch (search);
     }
     else
     {
 	log ("remote_end_match(): got %d of %d replies for id %s",
-	     search->count, search->numServers, search->id);
+		search->count, search->numServers, search->id);
+    }
+}
+
+/* if a user logs out before the search is complete, we need to cancel
+   the search so that we don't try to send the result to the client */
+void
+cancel_search (CONNECTION *con)
+{
+    LIST *list;
+    DSEARCH *d;
+
+    ASSERT (validate_connection (con));
+    ASSERT (ISUSER (con));
+    for (list = Remote_Search; list; list = list->next)
+    {
+	d = list->data;
+	if (d->con == con)
+	    d->valid = 0;
     }
 }

@@ -122,7 +122,9 @@ split_line (char **template, int templatecount, char *pkt)
 {
     int i = 0;
 
-    while (pkt && i < templatecount)
+    while (ISSPACE (*pkt))
+	pkt++;
+    while (*pkt && i < templatecount)
     {
 	if (*pkt == '"')
 	{
@@ -148,7 +150,8 @@ split_line (char **template, int templatecount, char *pkt)
 		break;
 	    *pkt++ = 0;
 	}
-
+	while (ISSPACE (*pkt))
+	    pkt++;
     }
     return i;
 }

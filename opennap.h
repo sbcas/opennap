@@ -471,6 +471,7 @@ int buffer_size (BUFFER *);
 BUFFER *buffer_uncompress (z_streamp, BUFFER **);
 #endif
 int buffer_validate (BUFFER *);
+void cancel_search (CONNECTION *con);
 int check_connect_status (int);
 void close_db (void);
 void complete_connect (CONNECTION *con);

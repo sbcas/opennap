@@ -478,19 +478,19 @@ appropriate, examples of the <data> section for each message are given.
 
 	80's espinozaf hello...hola
 
-404	user/channel does not exist [SERVER]
+404	error message [SERVER]
 
-	<error-message>
+	<text>
 
-	This message is sent to the client when the client has requested an
-	operation on another client or channel which is invalid.
+	This message is used to send general error messages to a client that
+	is logged in.  Note: Message 0 is only sent during the login process.
 
 	Examples:
 
 	User nosuchuser is not currently online.
 	Channel #nosuchchannel does not exist!
 	permission denied
-	ping failed, shtien is not online
+	ping failed, blah is not online
 
 405	join acknowledge [SERVER]
 
