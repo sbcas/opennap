@@ -240,8 +240,17 @@ insert_datum (DATUM * info, char *av)
     hash_add (info->user->con->uopt->files, info->filename, info);
     info->refcount++;
 
-    /* add this entry to the global file list */
-    for (ptr = tokens; ptr; ptr = ptr->next)
+    /* add this entry to the global file list.  the data entry currently
+    can't be referenced more than 32 times so if there are excess tokens,
+    discard the first several so that the refcount is not overflowed */
+    fsize = list_count (tokens);
+    ptr = tokens;
+    while (fsize > 30)
+    {
+	ptr=ptr->next;
+	fsize--;
+    }
+    for (; ptr; ptr = ptr->next)
 	fdb_add (File_Table, ptr->data, info);
 
     list_free (tokens, 0);
