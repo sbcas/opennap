@@ -532,6 +532,7 @@ void pass_message_args (CONNECTION * con, unsigned int msgtype,
 			const char *fmt, ...);
 void permission_denied (CONNECTION * con);
 int pop_user (CONNECTION * con, char **pkt, USER ** user);
+void print_args (int, char **);
 void queue_data (CONNECTION *, char *, int);
 size_t read_bytes (int, char *, size_t);
 void remove_connection (CONNECTION *);

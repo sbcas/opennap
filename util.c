@@ -586,3 +586,14 @@ form_message (char *d, int dsize, int tag, const char *fmt, ...)
     set_len (d, len);
     return (len + 4);
 }
+
+void
+print_args (int ac, char **av)
+{
+    int i;
+
+    fprintf (stderr, "%s: print_args(): [%d]", PACKAGE, ac);
+    for (i = 0; i < ac; i++)
+	fprintf (stderr, " \"%s\"", av[i]);
+    fputc ('\n', stderr);
+}

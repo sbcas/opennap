@@ -78,10 +78,10 @@ HANDLER (login)
 	(tag == MSG_CLIENT_LOGIN_REGISTER && ac < 6))
     {
 	log ("login(): too few avs in message (tag=%d)", tag);
+	print_args (ac, av);
 	if (con->class == CLASS_UNKNOWN)
 	{
-	    send_cmd (con, MSG_SERVER_ERROR,
-		      "Too few parameters for command");
+	    send_cmd (con, MSG_SERVER_ERROR, "Too few parameters for command");
 	    con->destroy = 1;
 	}
 	return;

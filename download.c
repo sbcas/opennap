@@ -286,6 +286,7 @@ HANDLER (upload_request)
 HANDLER (queue_limit)
 {
     char *av[3];
+    int ac;
     USER *recip;
     DATUM *info;
 
@@ -293,14 +294,12 @@ HANDLER (queue_limit)
     (void) len;
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("queue_limit");
-    if (split_line (av, sizeof (av) / sizeof (char *), pkt) < 3)
+    ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
+    if (ac != 3)
     {
-	log ("queue_limit(): too few arguments");
-	if (con->class == CLASS_USER)
-	{
-	    send_cmd (con, MSG_SERVER_NOSUCH, "too few arguments");
-	    return;
-	}
+	log ("queue_limit(): wrong number of parameters");
+	print_args (ac, av);
+	send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of parameters");
 	return;
     }
     recip = hash_lookup (Users, av[0]);

@@ -1,10 +1,10 @@
 Summary: open source napster server
 Name: opennap
-Version: 0.21
+Version: 0.22
 Release: 1
 Copyright: GPL
 Group: System Environment/Daemons
-Source: http://opennap.sourceforge.net/downloads/opennap-0.21.tar.gz
+Source: http://opennap.sourceforge.net/downloads/opennap-0.22.tar.gz
 BuildRoot: /var/tmp/%{name}-buildroot
 
 %description
