@@ -39,6 +39,8 @@ buffer_queue (BUFFER * b, char *d, int dsize, int step)
 {
     BUFFER *r = b;
 
+    if(step<dsize)
+	step=dsize;
     if (!b)
     {
 	r = b = buffer_new ();
