@@ -304,6 +304,7 @@ void set_val (char *d, unsigned short val);
 #define MSG_SERVER_USER_SPEED		601
 #define MSG_CLIENT_WHOIS		603	/* whois query */
 #define MSG_SERVER_WHOIS_RESPONSE	604
+#define MSG_SERVER_WHOWAS		605
 #define MSG_CLIENT_SETUSERLEVEL		606
 #define MSG_SERVER_UPLOAD_REQUEST	607
 #define MSG_CLIENT_UPLOAD_OK		608

@@ -57,8 +57,8 @@ HANDLER (kill_user)
 	    log ("kill_user(): malformed server message");
 	    return;
 	}
-	killernick = pkt;
-	pkt = strchr (pkt, ' ');
+	killernick = pkt + 1;
+	pkt = strchr (killernick, ' ');
 	if (!pkt)
 	{
 	    log ("kill_user(): too few arguments in server message");

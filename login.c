@@ -375,7 +375,7 @@ HANDLER (reginfo)
 {
     char *server;
     char *fields[6];
-    int n, t;
+    int n;
     MYSQL_RES *result;
     MYSQL_ROW row;
 
@@ -414,8 +414,7 @@ HANDLER (reginfo)
 	row = mysql_fetch_row (result);
 	/* check the timestamp to see if this is more recent than what
 	   we have */
-	t = atol (row[4]);
-	if (atol (fields[4]) > t)
+	if (atol (fields[4]) > atol (row[4]))
 	{
 	    /* our record was created first, notify peers */
 	    log ("reginfo(): stale reginfo received from %s", server);
@@ -428,9 +427,8 @@ HANDLER (reginfo)
 	mysql_free_result (result);
 	/* update our record */
 	snprintf (Buf, sizeof (Buf),
-		"UPDATE accounts SET pass='%s',level='%s',email='%s',created=%s,lastseen=%s WHERE nick='%s'",
-		fields[1], fields[2], fields[3], fields[4], fields[5],
-		fields[0]);
+	    "UPDATE accounts SET password='%s',level='%s',email='%s',created=%s,lastseen=%s WHERE nick='%s'",
+	    fields[1], fields[2], fields[3], fields[4], fields[5], fields[0]);
 	if (mysql_query (Db, Buf) != 0)
 	    sql_error ("reginfo", Buf);
 	log ("reginfo(): updated accounts table for %s", fields[0]);
@@ -440,9 +438,8 @@ HANDLER (reginfo)
 	mysql_free_result (result);
 	/* create the record */
 	snprintf (Buf, sizeof (Buf),
-		"INSERT INTO accounts VALUES ('%s','%s','%s','%s',%s,%s)",
-		fields[0], fields[1], fields[2], fields[3], fields[4],
-		fields[5]);
+	    "INSERT INTO accounts VALUES ('%s','%s','%s','%s',%s,%s)",
+	    fields[0], fields[1], fields[2], fields[3], fields[4], fields[5]);
 	if (mysql_query (Db, Buf) != 0)
 	    sql_error ("reginfo", Buf);
     }
