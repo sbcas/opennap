@@ -32,7 +32,15 @@ for stats reporting (by default it listens on port 8889).
 Search token filtering is now configurable instead of hard-coded.  opennap
 will read the file `filter' in the configuration directory for a list of
 words (one per line) that should be skipped when indexing.  A
-`sample.filter' file is now included with the distribution.
+`sample.filter' file is now included with the distribution.  Generally, if
+opennap gives a log message such as "bin for ... exceeds 5000 entries",
+you probably want to include that word in the filter file since searches on
+that token don't limit the search very much and won't get used (opennap uses
+the bin with the fewest entries to make the fine grain comparisons, so
+something with 5000+ entries won't likely be used).
+
+Added new config var `eject_when_full' to have opennap kill nonsharing
+clients when the server reaches max_connections.
 
 [opennap 0.35]
 

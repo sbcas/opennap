@@ -404,12 +404,15 @@ extern int Max_Data_Size;
 extern int Max_Rss_Size;
 #endif
 
+#define option(x) ((Server_Flags & (x))!=0)
+
 #define ON_STRICT_CHANNELS	1	/* only mods+ can create channels */
 #define ON_REGISTERED_ONLY	(1<<1)	/* only registered users are allowed */
 #define ON_AUTO_REGISTER	(1<<2)	/* automatically register users */
 #define ON_LOCK_MEMORY		(1<<3)	/* prevent process from being swapped */
 #define ON_NO_LISTEN		(1<<4)	/* don't listen on port 8889 */
 #define ON_BACKGROUND		(1<<5)	/* run in daemon mode */
+#define ON_EJECT_WHEN_FULL	(1<<6)	/* eject nonsharing clients when full */
 
 extern char Buf[2048];
 

@@ -260,7 +260,7 @@ HANDLER (login)
 	    if(Num_Clients >= Max_Connections)
 	    {
 		/* check if another client can be ejected */
-		if (!eject_client(con))
+		if (!option(ON_EJECT_WHEN_FULL) || !eject_client(con))
 		{
 		    log ("login(): max_connections (%d) reached",
 			    Max_Connections);
