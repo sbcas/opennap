@@ -182,7 +182,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_USAGE_STATS, server_usage},	/* 10115 */
     {MSG_CLIENT_REGISTER_USER, register_user},	/* 10200 */
     {MSG_CLIENT_CHANNEL_LEVEL, channel_level},	/* 10201 */
-    {MSG_CLIENT_KICK_USER, kick},		/* 10202 */
+    {MSG_CLIENT_KICK_USER, kick},		/* 10202 - deprecated */
     {MSG_CLIENT_USER_MODE, user_mode},		/* 10203 */
     {MSG_CLIENT_SHARE_FILE, share_file},	/* 10300 */
 };
@@ -248,11 +248,11 @@ HANDLER (dispatch_command)
     log ("dispatch_command(): unknown message: tag=%hu, length=%hu, data=%s",
 	tag, len, pkt);
     send_cmd (con, MSG_SERVER_NOSUCH, "Unknown command code %hu", tag);
+#if DEBUG
     /* if this is a server connection, shut it down to avoid flooding the
        other server with these messages */
     if (ISSERVER (con))
     {
-#if DEBUG
 	unsigned char ch;
 	int bytes;
 
@@ -270,12 +270,12 @@ HANDLER (dispatch_command)
 	    fputc(isprint(ch)?ch:'.',stdout);
 	}
 	fputc('\n',stdout);
-#endif
 #if 0
 	log ("dispatch_command(): shutting down server link");
 	con->destroy = 1;
 #endif
     }
+#endif /* DEBUG */
 done:
     /* restore the byte we overwrite at the beginning of this function */
     *(pkt + len) = byte;
@@ -442,11 +442,6 @@ handle_connection (CONNECTION * con)
 	/* check if the entire packet body has arrived */
 	if (con->recvbuf->consumed + 4 + len > con->recvbuf->datasize)
 	    break;
-#if 0
-	/* add this data to the random pool */
-	add_random_bytes (con->recvbuf->data + con->recvbuf->consumed,
-	    4 + len);
-#endif
 	/* require that the client register before doing anything else */
 	if (con->class == CLASS_UNKNOWN &&
 	    (tag != MSG_CLIENT_LOGIN && tag != MSG_CLIENT_LOGIN_REGISTER &&
@@ -505,7 +500,6 @@ handle_connection (CONNECTION * con)
 	    con->recvbuf->data + con->recvbuf->consumed + 4);
 	/* mark data as processed */
 	con->recvbuf->consumed += 4 + len;
-
     }
     if (con->recvbuf->consumed)
     {

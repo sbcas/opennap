@@ -19,8 +19,8 @@ HANDLER (public)
     CHANNEL *chan;
     USER *chanUser, *sender;
     LIST *list;
-    int l;
     char *ptr;
+    int l;
 
     (void) tag;
     (void) len;
@@ -29,7 +29,12 @@ HANDLER (public)
     ptr = pkt;
     if (pop_user (con, &pkt, &sender))
 	return;
-    ASSERT (validate_user (sender));
+    if (sender->muzzled)
+    {
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "You are muzzled.");
+	return;
+    }
 
     /* protect against DoS attack against the windows napster client */
     if (len - (pkt - ptr) > 180)
@@ -45,47 +50,16 @@ HANDLER (public)
     ptr = next_arg_noskip (&pkt);
     if (!pkt)
     {
-	log ("public(): too few fields");
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "too few parameters for command");
-	return;
-    }
-    /* find the channel this message is going to */
-    chan = hash_lookup (Channels, ptr);
-    if (!chan)
-    {
-	if (ISUSER (con))
-	{
-	    /* channel does not exist */
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Channel %s does not exist.",
-		      ptr);
-	}
-	else
-	    log ("public(): server sent message to nonexistent channel %s",
-		 ptr);
-	return;
-    }
-    ASSERT (validate_channel (chan));
-
-    /* make sure this user is a member of the channel */
-    list = list_find (sender->channels, chan);
-    if (!list)
-    {
-	/* user is not a member of this channel */
-	log ("public(): %s is not a member of channel %s", sender->nick,
-	     chan->name);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "you are not on channel %s", chan->name);
+	unparsable(con);
 	return;
     }
 
-    if (sender->muzzled)
+    /* find the channel this message is going to. look the user's joined
+     channels since this should be faster than lookup in the hash table */
+    if(!(chan=find_channel(sender->channels,ptr)))
     {
-	log ("public(): %s is muzzled", sender->nick);
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "You are muzzled.");
+	if(ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"You are not a member of that channel");
 	return;
     }
 
@@ -101,7 +75,7 @@ HANDLER (public)
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
-	if (chanUser->local)
+	if (ISUSER (chanUser->con))
 	    queue_data (chanUser->con, Buf, l);
     }
 }
@@ -139,24 +113,16 @@ HANDLER (emote)
 
     if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
     {
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_ERROR,
-		      "Wrong number of parameters for command.");
+	unparsable(con);
 	return;
     }
 
-    /* make sure this user is on the channel they are sending to */
-    chan = hash_lookup (Channels, av[0]);
-    if (!chan)
+    /* find the channel this message is going to. look the user's joined
+     channels since this should be faster than lookup in the hash table */
+    if(!(chan=find_channel(user->channels,ptr)))
     {
-	nosuchchannel(con);
-	return;
-    }
-    if (list_find (chan->users, user) == 0)
-    {
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "You are not a member of channel %s", chan->name);
+	if(ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"You are not a member of that channel");
 	return;
     }
 
@@ -174,7 +140,7 @@ HANDLER (emote)
     for (list = chan->users; list; list = list->next)
     {
 	chanUser = list->data;
-	if (chanUser->local)
+	if (ISUSER(chanUser->con))
 	    queue_data (chanUser->con, Buf, buflen);
     }
 }

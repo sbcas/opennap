@@ -116,8 +116,7 @@ HANDLER (login)
     speed = atoi (av[4]);
     if (speed < 0 || speed > 10)
     {
-	log ("login(): invalid speed %d from %s (%s)", speed, av[0], av[3]);
-	if (con->class == CLASS_UNKNOWN)
+	if (ISUNKNOWN (con))
 	{
 	    send_cmd (con, MSG_SERVER_ERROR, "invalid speed");
 	    con->destroy = 1;
@@ -128,8 +127,7 @@ HANDLER (login)
     port = atoi (av[2]);
     if (port < 0 || port > 65535)
     {
-	log ("login(): invalid port %d", port);
-	if (ISUSER (con))
+	if (ISUNKNOWN (con))
 	    send_cmd (con, MSG_SERVER_ERROR, "invalid port");
 	return;
     }

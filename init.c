@@ -154,9 +154,9 @@ init_server (const char *cf)
        factor.  so a 256 entry hash table with 1024 entries will take rougly
        4 comparisons max to find any one entry.  we use prime numbers here
        because that gives the table a little better spread */
-    Users = hash_init (257, (hash_destroy) free_user);
+    Users = hash_init (521, (hash_destroy) free_user);
     Channels = hash_init (257, (hash_destroy) free_channel);
-    Hotlist = hash_init (257, (hash_destroy) free_hotlist);
+    Hotlist = hash_init (521, (hash_destroy) free_hotlist);
     File_Table = hash_init (2053, (hash_destroy) free_flist);
     MD5 = hash_init (2053, (hash_destroy) free_flist);
 

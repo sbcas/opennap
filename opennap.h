@@ -555,6 +555,7 @@ void exec_timers (time_t);
 void expand_hex (char *, int);
 void fdb_garbage_collect (HASH *);
 void finalize_compress (SERVER *);
+CHANNEL *find_channel (LIST *, const char *);
 int form_message (char *, int, int, const char *, ...);
 void free_ban (BAN *);
 void free_channel (CHANNEL *);

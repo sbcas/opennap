@@ -1067,7 +1067,7 @@ appropriate, examples of the <data> section for each message are given.
 
 	<channel>
 
-	[what does this do? -ed]
+	remove all users from the specified channel
 
 821	??? [CLIENT, SERVER]
 

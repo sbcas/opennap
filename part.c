@@ -14,7 +14,6 @@ HANDLER (part)
 {
     CHANNEL *chan = 0;
     USER *user;
-    LIST *list;
 
     (void) tag;
     (void) len;
@@ -34,27 +33,16 @@ HANDLER (part)
 
     if (invalid_channel (pkt))
     {
-	log ("part(): invalid channel name: %s", pkt);
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid channel name.");
+	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid channel name");
 	return;
     }
 
     /* find the requested channel in the user's  list */
-    for (list = user->channels; list; list = list->next)
+    if(!(chan=find_channel(user->channels,pkt)))
     {
-	chan = list->data;
-	ASSERT (validate_channel (chan));
-	if (!strcasecmp (pkt, chan->name))
-	    break;
-    }
-
-    if (!list)
-    {
-	/* user is not on this channel */
-	log ("part(): %s is not on channel %s", user->nick, pkt);
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "You are not in that channel.");
+	    send_cmd (con, MSG_SERVER_NOSUCH, "You are not in that channel");
 	return;
     }
 

@@ -508,3 +508,12 @@ ip_glob_match (const char *pattern, const char *ip)
     else
 	return ((strcmp (pattern, ip) == 0));
 }
+
+CHANNEL *
+find_channel (LIST *channels, const char *s)
+{
+    for(;channels;channels=channels->next)
+	if(!strcasecmp(((CHANNEL*)channels->data)->name,s))
+	    return channels->data;
+    return 0;
+}

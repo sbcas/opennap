@@ -448,7 +448,8 @@ main (int argc, char **argv)
 
 	/* process incoming requests */
 	for (i = 0; !SigCaught && i < Max_Clients; i++)
-	    if (Clients[i] && FD_ISSET (Clients[i]->fd, &set))
+	    if (Clients[i] && !Clients[i]->destroy &&
+		    FD_ISSET (Clients[i]->fd, &set))
 		handle_connection (Clients[i]);
 
 	if (SigCaught)
@@ -474,7 +475,6 @@ main (int argc, char **argv)
 		    log("main(): login timeout for %s", Clients[i]->host);
 		    Clients[i]->destroy = 1;
 		}
-
 		if (Clients[i]->destroy)
 		{
 		    send_queued_data (Clients[i]);	/* flush */

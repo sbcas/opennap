@@ -73,34 +73,31 @@ HANDLER (join)
     ASSERT (validate_user (user));
     if (!pkt || !*pkt)
     {
-	log ("join(): missing channel name");
-	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "Missing channel name.");
+	unparsable(con);
 	return;
     }
     if (invalid_channel (pkt))
     {
-	log ("join(): invalid channel name");
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "Invalid channel name.");
 	return;
     }
     /* enforce a maximum channels per user */
+    /* TODO: if linked servers have different settings, the channel membership
+       could become desynched */
     if (user->level < LEVEL_MODERATOR &&
 	list_count (user->channels) > Max_User_Channels)
     {
-	log ("join(): %s reached max channel count (%d)", user->nick,
-	     Max_User_Channels);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "Maximum number of channels is %d.", Max_User_Channels);
+		    "You may only join %d channels.", Max_User_Channels);
 	return;
     }
     if (user->muzzled)
     {
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "Muzzled users may not join chat rooms.");
+		      "Can't join channels while muzzled.");
 	return;
     }
     do
@@ -145,19 +142,14 @@ HANDLER (join)
 	/* ensure that this user isn't already on this channel */
 	else if (list_find (user->channels, chan))
 	{
-	    log ("join(): user %s is already on channel %s", user->nick,
-		 chan->name);
 	    if (ISUSER (con))
 		send_cmd (con, MSG_SERVER_NOSUCH,
-			  "You are already a member of channel %s",
-			  chan->name);
+			  "You have already joined that channel.");
 	    return;
 	}
 	/* check to make sure the user has privilege to join */
 	else if (user->level < chan->level)
 	{
-	    log ("join(): channel %s is set to level %s", chan->name,
-		 Levels[chan->level]);
 	    permission_denied (con);
 	    return;
 	}
@@ -209,23 +201,25 @@ HANDLER (join)
     ASSERT (validate_channel (chan));
 
     /* add this channel to the list of this user is subscribed to */
-    list = CALLOC (1, sizeof (LIST));
+    list = MALLOC (sizeof (LIST));
     if (!list)
     {
 	OUTOFMEMORY ("join");
 	goto error;
     }
     list->data = chan;
+    list->next = 0;
     user->channels = list_append (user->channels, list);
 
     /* add this user to the channel members list */
-    list = CALLOC (1, sizeof (LIST));
+    list = MALLOC (sizeof (LIST));
     if (!list)
     {
 	OUTOFMEMORY ("join");
 	goto error;
     }
     list->data = user;
+    list->next = 0;
     chan->users = list_append (chan->users, list);
 
     /* if there are linked servers, send this message along */
@@ -281,7 +275,7 @@ HANDLER (join)
     /* set things back to a sane state */
     chan->users = list_delete (chan->users, user);
     user->channels = list_delete (user->channels, chan);
-    if (chan->users == 0)
+    if (!chan->users)
     {
 	log ("join(): destroying channel %s", chan->name);
 	hash_remove (Channels, chan->name);
@@ -313,7 +307,6 @@ HANDLER (channel_level)
     else
 	sender = con->user->nick;
     ac = split_line (av, sizeof (av) / sizeof (char), pkt);
-
     if (ac == 0)
     {
 	log ("channel_level(): wrong number of parameters");
@@ -333,10 +326,8 @@ HANDLER (channel_level)
     /* ensure the user is a member of this channel */
     if (ISUSER (con) && list_find (con->user->channels, chan) == 0)
     {
-	log ("channel_level(): %s is not a member of channel %s",
-	     sender, chan->name);
 	send_cmd (con, MSG_SERVER_NOSUCH,
-		  "You are not a member of channel %s", chan->name);
+		  "You are not a member of that channel");
 	return;
     }
     if (ac > 1)
@@ -406,7 +397,6 @@ HANDLER (channel_limit)
     chanName = next_arg (&pkt);
     if (!chanName || !pkt)
     {
-	log ("channel_limit(): too few parameters");
 	unparsable (con);
 	return;
     }
