@@ -272,13 +272,9 @@ version (void)
 #if HAVE_POLL
 #define READABLE(i) (ufd[i+2].revents & (POLLIN | POLLERR))
 #define WRITABLE(i) (ufd[i+2].revents & POLLOUT)
-#define CHECKREAD(i) ufd[i+2].events |= POLLIN
-#define CHECKWRITE(i) ufd[i+2].events |= POLLOUT
 #else
 #define READABLE(i) FD_ISSET(Clients[i]->fd, &set)
 #define WRITABLE(i) FD_ISSET(Clients[i]->fd, &wset)
-#define CHECKREAD(i) FD_SET(Clients[i]->fd, &set)
-#define CHECKWRITE(i) FD_SET(Clients[i]->fd, &wset)
 #endif /* HAVE_POLL */
 
 int
@@ -289,7 +285,6 @@ main (int argc, char **argv)
     int i, j;			/* generic counter */
     int n;			/* number of ready sockets */
     int port = 0, iface = INADDR_ANY, nolisten = 0;
-
 #if HAVE_POLL
     struct pollfd *ufd = 0;
     int ufdsize;		/* number of entries in ufd */
@@ -485,9 +480,8 @@ main (int argc, char **argv)
 		    maxfd = Clients[i]->fd;
 #endif /* HAVE_POLL */
 		/* check sockets for writing */
-		if ((Clients[i]->connecting) ||
-		    (Clients[i]->sendbuf ||
-		     (ISSERVER (Clients[i]) && Clients[i]->sopt->outbuf)))
+		if (Clients[i]->connecting || Clients[i]->sendbuf ||
+		     (ISSERVER (Clients[i]) && Clients[i]->sopt->outbuf))
 		{
 #ifdef HAVE_POLL
 		    ufd[j+2].events |= POLLOUT;
@@ -498,6 +492,7 @@ main (int argc, char **argv)
 		j++;
 	    }
 	}
+	ASSERT (j == Num_Clients);
 
 #if HAVE_POLL
 	i = next_timer () * 1000;
@@ -542,20 +537,9 @@ main (int argc, char **argv)
 			ASSERT(ufd[i].fd==-1);
 		    }
 		}
-#if 1
 		break;	/* die gracefully */
-#else
-		/* reallocate the ufd structs just to make sure */
-		FREE (ufd);
-		ufdsize=2;
-		ufd=CALLOC(ufdsize,sizeof(struct pollfd));
-		ufd[0].fd=s;
-		ufd[0].events=POLLIN;
-		ufd[1].fd=sp;
-		ufd[1].events=POLLIN;
-#endif
-		continue;
 	    }
+	    continue;
 	}
 #else
 	t.tv_sec = next_timer ();
@@ -568,29 +552,25 @@ main (int argc, char **argv)
 #endif /* HAVE_POLL */
 
 	/* process incoming requests */
-	for (i = 0; !SigCaught && n > 0 && i < Num_Clients; i++)
+	for (i = 0; !SigCaught && i < Num_Clients; i++)
 	{
-	    if (WRITABLE (i) && Clients[i]->connecting)
-	    {
-		complete_connect (Clients[i]);
-		n--;	/* track of how many handled */
-	    }
-	    else if (READABLE (i))
-	    {
+	    if (READABLE (i))
 		handle_connection (Clients[i]);
-		n--;	/* track of how many handled */
-	    }
 	}
 
 	if (SigCaught)
 	    break;
 
 	/* write out data and reap dead client connections
-	   Num_Clients is altered by remove_connection() so we set its
-	   current value to the temp variable j to loop over */
+	   Num_Clients is altered by remove_connection() or
+	   complete_connection() so set its current value to the temp
+	   variable j to loop over */
 	for (i = 0, j = Num_Clients; !SigCaught && i < j; i++)
 	{
-	    if (ISSERVER (Clients[i]))
+	    /* check for return from nonblocking connect() call */
+	    if (WRITABLE (i) && Clients[i]->connecting)
+		complete_connect (Clients[i]);
+	    else if (ISSERVER (Clients[i]))
 	    {
 		/* server - strategy is call send_queued_data() if there
 		   there is data to be compressed, or if the socket is

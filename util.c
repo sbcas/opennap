@@ -551,7 +551,8 @@ add_client (CONNECTION * cli)
 	    Clients[Max_Clients++] = 0;
     }
     cli->id = Num_Clients;
-    Clients[Num_Clients++] = cli;
+    Clients[Num_Clients] = cli;
+    Num_Clients++;
     return 0;
 }
 
