@@ -381,6 +381,8 @@ failed:
 	    FREE (user->email);
 	if (user->clientinfo)
 	    FREE (user->clientinfo);
+	if (user->pass)
+	    FREE (user->pass);
 	if (user->files)
 	    free_hash (user->files);
 	FREE (user);
