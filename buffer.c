@@ -60,10 +60,9 @@ buffer_group (BUFFER *b, int n)
 	b->data = REALLOC (b->data, b->datasize + l + 1);
 	ASSERT (b->next != 0);
 	memcpy (b->data + b->datasize, b->next->data, l);
-	b->next->consumed += l;
-	ASSERT (b->next->consumed != b->next->datasize);
 	b->datasize += l;
 	*(b->data + b->datasize) = 0;
+	b->next = buffer_consume (b->next, l);
     }
 }
 
@@ -169,8 +168,7 @@ buffer_validate (BUFFER *b)
     ASSERT_RETURN_IF_FAIL ((b->data == 0) ^ (b->datasize != 0), 0);
     ASSERT_RETURN_IF_FAIL (b->data == 0 || VALID_LEN (b->data, b->datasize), 0);
     ASSERT_RETURN_IF_FAIL (b->consumed == 0 || b->consumed < b->datasize, 0);
-    if (b->next)
-	ASSERT_RETURN_IF_FAIL (buffer_validate (b->next), 0);
+    ASSERT_RETURN_IF_FAIL (b->next == 0 || VALID_LEN (b->next, sizeof (BUFFER*)), 0);
     return 1;
 }
 
