@@ -125,8 +125,9 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_DOWNLOAD_START, download_start }, /* 218 */
     { MSG_CLIENT_DOWNLOAD_END, download_end }, /* 219 */
     { MSG_CLIENT_UPLOAD_START, upload_start }, /* 220 */
-    { MSG_CLIENT_UPLOAD_END, upload_end }, /* 220 */
+    { MSG_CLIENT_UPLOAD_END, upload_end }, /* 221 */
     { MSG_CLIENT_REMOVE_HOTLIST, remove_hotlist }, /* 303 */
+    { MSG_CLIENT_DOWNLOAD_FIREWALL, download }, /* 500 */
     { MSG_CLIENT_WHOIS, whois },
     { MSG_CLIENT_JOIN, join },
     { MSG_CLIENT_PART, part },
@@ -147,11 +148,11 @@ static HANDLER Protocol[] = {
     { MSG_CLIENT_NAMES_LIST, list_users }, /* 830 */
 
     /* non-standard messages */
-    {MSG_CLIENT_QUIT, client_quit},
-    {MSG_SERVER_LOGIN, server_login},
-    {MSG_CLIENT_CONNECT, server_connect},
-    {MSG_SERVER_LOGIN, server_login},
-    {MSG_SERVER_LOGIN_ACK, server_login_ack}
+    { MSG_CLIENT_QUIT, client_quit },
+    { MSG_SERVER_LOGIN, server_login },
+    { MSG_CLIENT_CONNECT, server_connect },
+    { MSG_SERVER_LOGIN, server_login },
+    { MSG_SERVER_LOGIN_ACK, server_login_ack }
 };
 static int Protocol_Size = sizeof (Protocol) / sizeof (HANDLER);
 

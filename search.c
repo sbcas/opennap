@@ -24,14 +24,21 @@ convert_to_lower_case (char *s)
 	*s = tolower (*s);
 }
 
-/* convert spaces to % for SQL query */
+/* convert spaces to % for SQL query, and quoted specials chars */
 static void
-format_request (char *s)
+format_request (const char *s, char *d, int dsize)
 {
     for (;*s;s++)
     {
 	if (*s == ' ')
-	    *s = '%';
+	    *d++ = '%';
+	else if (*s == '\'' || *s == '%' || *s == '_' || *s == '\\')
+	{
+	    *d++ = '\\';
+	    *d++ = *s;
+	}
+	else
+	    *d++ = *s;
     }
 }
 
@@ -43,6 +50,7 @@ HANDLER (search)
     int i, numrows, numwords, max_results = 100, compound = 0;
     size_t l;
     USER *user;
+    char quoted[128];
 
     CHECK_USER_CLASS ("search");
 
@@ -82,12 +90,12 @@ HANDLER (search)
 		p--;
 	    }
 
-	    /* convert spaces to % for SQL query */
-	    format_request (fields[i]);
+	    /* convert for SQL query */
+	    format_request (fields[i], quoted, sizeof (quoted));
 
 	    l = strlen (Buf);
 	    snprintf (Buf + l, sizeof (Buf) - l, " %sfilename LIKE '%%%s%%'",
-		    compound ? " && " : "", fields[i]);
+		    compound ? " && " : "", quoted);
 	    i++;
 	    compound = 1;
 	}

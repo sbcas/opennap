@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-January 15, 2000
+January 16, 2000
 
 0.  Forward
 
@@ -380,19 +380,35 @@ appropriate, examples of the <data> section for each message are given.
 	this messag terminates a list of 216 messages initiated by a 215
 	client request
 
-218	downloading file
+218	downloading file [CLIENT]
 
 	no body.
 
 	client sends this message to the server to indicate they are in the
-	process of downloading a file
+	process of downloading a file.  this adds 1 to the download count
+	which the server maintains.
 
-219	download complete
+219	download complete [CLIENT]
 
 	no body.
 
 	client sends this message to the server to indicate they have
-	completed the file for which a prior 218 message was sent
+	completed the file for which a prior 218 message was sent.  this
+	subtracts one from the download count the server maintains
+
+220	uploading file [CLIENT]
+
+	no body.
+
+	client sends this message to indicate they are uploading a file.
+	this adds one to the upload count maintained by the server.
+
+221	upload complete [CLIENT]
+
+	no body.
+
+	client sends this message when they are finished uploading a file.
+	this subtracts one from the upload count maintained by the server.
 
 301	hotlist ack [SERVER]
 
@@ -518,7 +534,12 @@ appropriate, examples of the <data> section for each message are given.
 
 501	alternate download ack [SERVER]
 
-	[i'm not sure this message really exists.  -ed]
+	<nick> <ip> <port> "<filename>" <md5> <speed>
+
+	this message is sent to the uploader when their data port is set to
+	0 to indicate they are behind a firewall and need to push all data
+	outware.  the uploader is responsible for connecting to the
+	downloader to transfer the file.
 
 600	request user's link speed [CLIENT]
 

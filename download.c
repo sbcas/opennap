@@ -8,11 +8,13 @@
 #include "debug.h"
 
 /* 203 <nick> <filename> */
+/* 500 <nick> <filename> */
 /* handle client request for download of a file */
 HANDLER (download)
 {
     char *fields[2];
     USER *user;
+    short msg;
 
     ASSERT (VALID (con));
 
@@ -30,6 +32,26 @@ HANDLER (download)
 	return;
     }
     ASSERT (VALID (user));
+
+    /* peek at the message type since we use this for both 203 and 500 */
+    memcpy (&msg, con->recvhdr + 2, 2);
+#if __BYTE_ORDER == __BIG_ENDIAN
+    msg=bswap_16(msg);
+#endif
+
+    /* make sure both parties are not firewalled
+       -and-
+       client is not making a 203 request to a firewalled user (this isn't
+       really necessary it seems, but to maintain compatibility with the
+       official server, we'll return an error */
+    if (user->port == 0 &&
+	    (con->user->port == 0 || msg == MSG_CLIENT_DOWNLOAD))
+    {
+	send_cmd (con, MSG_SERVER_FILE_READY,
+		"%s %lu %d \"%s\" firewallerror 0", user->nick, user->host,
+		user->port, fields[1]);
+	return;
+    }
 
     /* send a message to the requestee */
     log ("download(): sending upload request to %s", user->nick);
@@ -82,14 +104,6 @@ HANDLER(download_end)
     ASSERT(VALID(con));
     CHECK_USER_CLASS("download_end");
     con->user->downloads--;
-}
-
-/* 500 <user> <filename> */
-HANDLER(download_firewall)
-{
-    (void)con;
-    (void)pkt;
-    log("download_firewall(): command not implemented yet");
 }
 
 /* 600 <user> */

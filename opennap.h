@@ -154,7 +154,8 @@ struct _hotlist
 #define MSG_SERVER_CHANNEL_USER_LIST	408	/* list of users in a channel */
 #define MSG_SERVER_CHANNEL_USER_LIST_END	409
 #define MSG_SERVER_TOPIC		410	/* server and client */
-#define MSG_SERVER_DOWNLOAD_FIREWALL	500
+#define MSG_CLIENT_DOWNLOAD_FIREWALL	500
+#define MSG_SERVER_UPLOAD_FIREWALL	501
 #define MSG_CLIENT_USERSPEED		600
 #define MSG_SERVER_USER_SPEED		601
 #define MSG_CLIENT_WHOIS		603	/* whois query */
@@ -272,9 +273,8 @@ HANDLER (browse);
 HANDLER (change_data_port);
 HANDLER (client_quit);
 HANDLER (download);
-HANDLER (download_firewall);
-HANDLER (download_start);
 HANDLER (download_end);
+HANDLER (download_start);
 HANDLER (join);
 HANDLER (kill_user);
 HANDLER (level);

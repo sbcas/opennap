@@ -28,6 +28,8 @@ read_bytes (int fd, int n, unsigned char *b)
 	l = read (fd, b + t, n - t);
 	if (l <= 0)
 	{
+	    if(l == -1)
+		perror("read");
 	    puts("read_bytes(): error reading data");
 	    return -1;
 	}

@@ -13,6 +13,10 @@ fixed downloads to follow the correct sequence.  server should not send the
 204 message to the downloader until recieving the 608 response from the
 uploader
 
+added support for downloading from firewalled clients (500,501)
+
+search patterns need to have %, ', _ and \ quoted in the SQL query
+
 Changes from 0.06
 =================
 
