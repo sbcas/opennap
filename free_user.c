@@ -25,11 +25,14 @@ free_user (USER * user)
 	pass_message_args (user->con, MSG_CLIENT_QUIT, "%s", user->nick);
     }
 
-    /* remove all files for this user from the database */
-    snprintf (Buf, sizeof (Buf), "DELETE FROM library WHERE owner = '%s'",
-	      user->nick);
-    if (mysql_query (Db, Buf) != 0)
-	sql_error ("free_user", Buf);
+    if (!SigCaught)
+    {
+	/* remove all files for this user from the database */
+	snprintf (Buf, sizeof (Buf), "DELETE FROM library WHERE owner = '%s'",
+		user->nick);
+	if (mysql_query (Db, Buf) != 0)
+	    sql_error ("free_user", Buf);
+    }
 
     /* remove this user from any channels they were on */
     if (user->channels)

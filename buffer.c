@@ -47,6 +47,32 @@ buffer_queue (BUFFER *b, char *d, int dsize)
     return r;
 }
 
+#if 0
+static void
+check_stream (BUFFER *b)
+{
+    ushort len, tag;
+    long offset = b->consumed;
+    BUFFER *c = b;
+
+    while (offset + 4 <= c->datasize)
+    {
+	memcpy (&len, c->data + offset, 2);
+	offset+=2;
+	memcpy (&tag, c->data + offset, 2);
+	offset+=2;
+	if (tag == 100)
+	{
+	    if (*(c->data + offset) != ':')
+	    {
+		ASSERT (0);
+	    }
+	}
+	offset += len;
+    }
+}
+#endif
+
 /* ensure that at least 'n' bytes exist in the first buffer fragment */
 void
 buffer_group (BUFFER *b, int n)
@@ -54,12 +80,13 @@ buffer_group (BUFFER *b, int n)
     ASSERT (buffer_validate (b));
     if (b->consumed + n > b->datasize)
     {
-	int l = n - b->datasize + b->consumed;
+	int l = b->consumed + n - b->datasize;
 
 	/* allocate 1 extra byte to hold a nul (\0) char */
 	b->data = REALLOC (b->data, b->datasize + l + 1);
 	ASSERT (b->next != 0);
-	memcpy (b->data + b->datasize, b->next->data, l);
+	/* steal `l' bytes from the next buffer block */
+	memcpy (b->data + b->datasize, b->next->data + b->next->consumed, l);
 	b->datasize += l;
 	*(b->data + b->datasize) = 0;
 	b->next = buffer_consume (b->next, l);
@@ -196,8 +223,10 @@ buffer_compress (z_streamp zip, BUFFER **b)
 	flush = ((*b)->next != 0) ? Z_NO_FLUSH : Z_SYNC_FLUSH;
     }
 
+#if 0
     log ("buffer_compress: compressing %d bytes (flush=%d)", bytes,
 	    (flush == Z_SYNC_FLUSH));
+#endif
 
     zip->next_in = (uchar *) (*b)->data + (*b)->consumed;
     zip->avail_in = bytes;
@@ -207,10 +236,10 @@ buffer_compress (z_streamp zip, BUFFER **b)
     /* if flushing, loop until we get all the output from the compressor */
     do
     {
-	r->data = REALLOC (r->data, r->datasize + Compression_Threshold);
+	r->data = REALLOC (r->data, r->datasize + bytes);
 	zip->next_out = (uchar *) r->data + r->datasize;
-	zip->avail_out = Compression_Threshold;
-	r->datasize += Compression_Threshold;
+	zip->avail_out = bytes;
+	r->datasize += bytes;
 
 	n = deflate (zip, flush);
 	if (n != Z_OK)
@@ -246,8 +275,10 @@ buffer_compress (z_streamp zip, BUFFER **b)
 	return 0;
     }
 
+#if 0
     log ("buffer_compress: compression ratio is %d%%",
 	    (100 * (zip->total_in - zip->total_out)) / zip->total_in);
+#endif
 
     return r;
 }
@@ -285,11 +316,12 @@ buffer_uncompress (z_streamp zip, BUFFER **b)
 	    FREE (cur);
 	    return 0;
 	}
+	cur->datasize -= zip->avail_out;	/* subtract leftover space
+						   because this is not real
+						   data */
     }
-    cur->datasize -= zip->avail_out;	/* subtract leftover space because
-					   this is not real data */
     ASSERT (zip->avail_in == 0);	/* should have uncompressed all data */
-    *b = buffer_consume (*b, (*b)->datasize - zip->avail_in);
+    *b = buffer_consume (*b, (*b)->datasize - (*b)->consumed - zip->avail_in);
 
     /* if nothing came out, don't return an empty structure */
     if (cur->datasize == 0)
