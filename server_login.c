@@ -359,6 +359,8 @@ HANDLER (server_quit)
 {
     int ac;
     char *av[2];
+    LIST *list;
+    LINK *link;
 
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("server_quit");
@@ -380,7 +382,19 @@ HANDLER (server_quit)
     log ("server_quit(): %s reported that %s has quit", av[0], av[1]);
     /* remove all link info for any servers behind the one that just
        disconnected */
-    remove_links (av[1]);
+    for(list=Server_Links;list;list=list->next)
+    {
+	link=list->data;
+	if(!strcasecmp(link->server,av[0]) &&
+		!strcasecmp(link->peer,av[1]))
+	{
+	    link->port=-1;
+	    link->peerport=-1;
+	    remove_links(link->peer);
+	    break;
+	}
+    }
+
     /* notify interested parties */
     notify_mods ("Server %s has quit", av[1]);
     /* pass along to peers */
@@ -394,9 +408,11 @@ mark_links (const char *host)
     LIST *list = Server_Links;
     LINK *link;
 
+    ASSERT (host != 0);
     for (; list; list = list->next)
     {
 	link = list->data;
+	ASSERT (link != 0);
 	if (!strcasecmp (host, link->server))
 	{
 	    link->port = -1;

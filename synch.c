@@ -100,19 +100,33 @@ sync_server_list (CONNECTION *con)
     }
 }
 
+static void
+sync_banlist (CONNECTION *con)
+{
+    LIST *list;
+    BAN *b;
+
+    ASSERT (validate_connection (con));
+    for (list = Bans; list; list = list->next)
+    {
+	b = list->data;
+	ASSERT (b != 0);
+	send_cmd (con, MSG_CLIENT_BAN, ":%s %s %s", b->setby,
+		b->target, b->reason);
+    }
+}
+
 void
 synch_server (CONNECTION * con)
 {
     ASSERT (validate_connection (con));
 
     log ("synch_server(): syncing");
-
     /* send our peer server a list of all users we know about */
     hash_foreach (Users, (hash_callback_t) sync_user, con);
     /* sync the channel level */
     hash_foreach (Channels, (hash_callback_t) sync_chan, con);
-    /* sync the list of known servers */
     sync_server_list (con);
-
+    sync_banlist (con);
     log ("synch_server(): done");
 }

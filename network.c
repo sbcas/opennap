@@ -304,5 +304,5 @@ get_local_port (int fd)
 	logerr ("get_local_port", "getsockname");
 	return 0;
     }
-    return sin.sin_port;
+    return (ntohs (sin.sin_port));
 }

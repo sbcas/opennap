@@ -175,6 +175,7 @@ find_handler (unsigned int tag)
 	    max = try - 1;
 	else
 	    min = try + 1;
+	ASSERT (min <= max);
     }
     return -1;
 }

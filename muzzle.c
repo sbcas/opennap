@@ -30,7 +30,7 @@ HANDLER (muzzle)
     if (!user)
     {
 	if (ISUSER (con))
-	    nosuchuser (con, pkt);
+	    nosuchuser (con, nick);
 	return;
     }
     ASSERT (validate_user (user));

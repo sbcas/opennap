@@ -25,14 +25,16 @@ HANDLER (public)
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
+    /* save the starting position of the pkt */
+    ptr = pkt;
     if (pop_user (con, &pkt, &sender))
 	return;
     ASSERT (validate_user (sender));
 
-    /* protect against DOS attack against the windows napster client */
-    if (len > 128)
+    /* protect against DoS attack against the windows napster client */
+    if (len - (pkt - ptr) > 180)
     {
-	pkt[128] = 0;	/* crop the message */
+	pkt[180] = 0;	/* crop the message */
 	log ("public(): cropped %d byte message from user %s", len, sender->nick);
     }
 
@@ -109,12 +111,13 @@ HANDLER (emote)
     USER *user, *chanUser;
     CHANNEL *chan;
     int buflen;
-    char *av[2];
+    char *ptr, *av[2];
     LIST *list;
 
     (void) tag;
     (void) len;
     ASSERT (validate_connection (con));
+    ptr=pkt;	/* save initial location */
     if (pop_user (con, &pkt, &user) != 0)
 	return;
     if (user->muzzled)
@@ -124,12 +127,12 @@ HANDLER (emote)
 	return;
     }
 
-    /* protect against DOS attack against the windows napster client */
-    if (len > 128)
+    /* protect against DoS attack against the windows napster client */
+    if (len - (pkt - ptr) > 180)
     {
 	/* crop message */
-	pkt[127]='"';
-	pkt[128]=0;
+	pkt[179]='"';
+	pkt[180]=0;
 	log ("emote(): cropped %d byte message from user %s", len, user->nick);
     }
 

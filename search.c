@@ -839,7 +839,7 @@ cancel_search (CONNECTION * con)
 	    if (d->con != con)
 	    {
 		/* send the final ack */
-		log ("cancel_search(): sending find ACK for id %s", d->id);
+		log ("cancel_search(): sending final ACK for id %s", d->id);
 		if (ISUSER (d->con))
 		    send_cmd (d->con, MSG_SERVER_SEARCH_END, "");
 		else

@@ -23,9 +23,17 @@ HANDLER (privmsg)
     (void) len;
     ASSERT (validate_connection (con));
 
+    ptr = pkt; /* save the start offset of pkt for length check */
     if (pop_user (con, &pkt, &sender) != 0)
 	return;
     ASSERT (validate_user (sender));
+
+    /* prevent DoS attack againt windows napster client */
+    if (len - (pkt - ptr) > 180)
+    {
+	log ("privmsg(): truncated %d byte message from %s", len, sender->nick);
+	pkt[180] = 0;
+    }
 
     /* check to see if the recipient of the message is local */
     ptr = next_arg_noskip (&pkt);
