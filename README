@@ -24,7 +24,7 @@ Last updated January 21, 2000
         Enter password:
 
 	mysql> use mp3;
-	mysql> insert into accounts ('nick','pass','elite');
+	mysql> insert into accounts values('nick','pass','elite');
 	mysql> quit;
 
       where 'nick' is the nick you want to use, 'pass' is the password for

@@ -309,6 +309,7 @@ void fudge_path (const char *, char *);
 char *generate_nonce (void);
 int init_db (void);
 void log (const char *fmt, ...);
+char *my_ntoa (unsigned long);
 USER *new_user (void);
 CHANNEL *new_channel (void);
 HOTLIST *new_hotlist (void);

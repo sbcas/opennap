@@ -4,8 +4,6 @@
 
 #include <unistd.h>
 #include <stdio.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -153,15 +151,6 @@ HANDLER(user_speed)
     }
     send_cmd(con,MSG_SERVER_USER_SPEED /* 601 */, "%s %d",
 	    user->nick,user->speed);
-}
-
-static char *
-my_ntoa (unsigned long ip)
-{
-    struct in_addr a;
-    memset(&a,0,sizeof(a));
-    a.s_addr = ip;
-    return (inet_ntoa (a));
 }
 
 /* 626 [ :<nick> ] <user> */

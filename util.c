@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -436,4 +438,13 @@ new_connection (void)
     c->magic = MAGIC_CONNECTION;
 #endif
     return c;
+}
+
+char *
+my_ntoa (unsigned long ip)
+{
+    struct in_addr a;
+    memset(&a,0,sizeof(a));
+    a.s_addr = ip;
+    return (inet_ntoa (a));
 }

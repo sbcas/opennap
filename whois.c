@@ -53,11 +53,12 @@ HANDLER (whois)
     else
     {
 	send_cmd (con, MSG_SERVER_WHOIS_RESPONSE,
-		"%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %lu %d %d %s",
+		"%s \"%s\" %d \"%s\" \"Active\" %d %d %d %d \"%s\" %d %d %s %d %d %s",
 		user->nick, Levels[user->level], online, chanlist, user->shared,
 		user->downloads, user->uploads, user->speed, user->clientinfo,
-		user->totalup, user->totaldown, user->host, user->conport,
-		user->port, user->email ? user->email : "unknown");
+		user->totalup, user->totaldown, my_ntoa (user->host),
+		user->conport, user->port,
+		user->email ? user->email : "unknown");
     }
     FREE (chanlist);
 }
