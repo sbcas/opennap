@@ -53,9 +53,13 @@ int Max_Browse_Result;
 unsigned int Interface = INADDR_ANY;
 time_t Server_Start;	/* time at which the server was started */
 int Collect_Interval;
+#ifndef WIN32
 int Uid;
 int Gid;
 int Connection_Hard_Limit;
+int Max_Data_Size;
+int Max_Rss_Size;
+#endif
 time_t Current_Time;
 int Max_Nick_Length;
 char *User_Db_Path;

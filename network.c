@@ -197,6 +197,8 @@ my_ntoa (unsigned int ip)
     return (inet_ntoa (a));
 }
 
+#ifndef WIN32
+
 #ifdef RLIMIT_FDMAX
 # define RLIMIT_FD_MAX   RLIMIT_FDMAX
 #else
@@ -211,40 +213,76 @@ my_ntoa (unsigned int ip)
 # endif
 #endif
 
-int
-set_max_connections (int n)
+static int
+set_limit (int attr, int value)
 {
-#ifdef RLIMIT_FD_MAX
     struct rlimit lim;
 
-    if (getrlimit (RLIMIT_FD_MAX, &lim))
+    if (getrlimit (attr, &lim))
     {
-	log ("set_max_connections(): getrlimit: %s (errno %d)",
-		strerror (errno), errno);
+	logerr ("set_limit_size", "getrlimit");
 	return -1;
     }
-    /* attempt to increase the hard limit */
-    if (lim.rlim_max < n)
+    if (lim.rlim_max > 0 && value > lim.rlim_max)
     {
-	log ("set_max_connections(): default hard limit was %d", lim.rlim_max);
-	lim.rlim_max = n;
+	/* give feedback to the operator if the default value is lower than
+	   requested.  this is important when making the decision as to wheter
+	   or not the server needs to be run as uid 0 */
+	log ("set_limit(): warning: %d exceeds default hard limit of %d",
+		value, lim.rlim_max);
     }
+    lim.rlim_cur = value;
+    if (lim.rlim_max > 0 && lim.rlim_cur > lim.rlim_max)
+	lim.rlim_max = lim.rlim_cur;	/* adjust max value */
 #ifndef HAVE_POLL
-    if (lim.rlim_max < FD_SETSIZE)
+    if (attr == RLIMIT_FD_MAX && lim.rlim_cur < FD_SETSIZE)
     {
-	log ("set_max_connections(): compiled limit (%d) is larger than hard limit (%d)",
+	log ("set_limit(): compiled limit (%d) is larger than hard limit (%d)",
 		FD_SETSIZE, lim.rlim_max);
 	return -1;
     }
 #endif /* HAVE_POLL */
-    lim.rlim_cur = lim.rlim_max;	/* set the soft limit to the max */
-    if (setrlimit (RLIMIT_FD_MAX, &lim))
+    if (setrlimit (attr, &lim))
     {
-	log ("set_max_connection(): setrlimit: %s (errnor %d)",
-		strerror (errno), errno);
+	logerr ("set_limit", "setrlimit");
 	return -1;
     }
-    log ("set_max_connections(): max connections set to %d", lim.rlim_cur);
-#endif /* RLIMIT_FD_MAX */
     return 0;
 }
+
+int
+set_max_connections (int n)
+{
+    if (set_limit (RLIMIT_FD_MAX, n))
+    {
+	log ("set_max_connections(): unable to set resource limit");
+	return -1;
+    }
+    log ("set_max_connections(): max connections set to %d", n);
+    return 0;
+}
+
+int
+set_data_size (int n)
+{
+    if (set_limit (RLIMIT_DATA, n))
+    {
+	log ("set_data_size(): unable to set resource limit");
+	return -1;
+    }
+    log ("set_data_size(): max data segment size set to %d", n);
+    return 0;
+}
+
+int
+set_rss_size (int n)
+{
+    if (set_limit (RLIMIT_RSS, n))
+    {
+	log ("set_rss_size(): unable to set resource limit");
+	return -1;
+    }
+    log ("set_rss_size(): max rss segment size set to %d", n);
+    return 0;
+}
+#endif /* !WIN32 */

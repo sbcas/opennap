@@ -49,9 +49,13 @@ static CONFIG Vars[] = {
     { "listen_addr", VAR_TYPE_STR, UL &Listen_Addr, UL "0.0.0.0" },
     { "max_browse_result", VAR_TYPE_INT, UL &Max_Browse_Result, 500 },
     { "collect_interval", VAR_TYPE_INT, UL &Collect_Interval, 380 },
+#ifndef WIN32
     { "uid", VAR_TYPE_INT, UL &Uid, -1 },
     { "gid", VAR_TYPE_INT, UL &Gid, -1 },
     { "connection_hard_limit", VAR_TYPE_INT, UL &Connection_Hard_Limit, FD_SETSIZE },
+    { "max_data_size", VAR_TYPE_INT, UL &Max_Data_Size, -1 },
+    { "max_rss_size", VAR_TYPE_INT, UL &Max_Rss_Size, -1 },
+#endif
     { "max_nick_length", VAR_TYPE_INT, UL &Max_Nick_Length, 32 },
     { "user_db_path", VAR_TYPE_STR, UL &User_Db_Path, UL SHAREDIR "/users" },
     { "server_db_path", VAR_TYPE_STR, UL &Server_Db_Path, UL SHAREDIR "/servers" },

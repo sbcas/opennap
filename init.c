@@ -76,10 +76,14 @@ init_server (const char *cf)
     /* load the config file */
     config (cf ? cf : SHAREDIR "/config");
 
+#ifndef WIN32
     if (set_max_connections (Connection_Hard_Limit))
 	return -1;
+    if (Max_Data_Size != -1 && set_data_size (Max_Data_Size))
+	return -1;
+    if (Max_Rss_Size != -1 && set_rss_size (Max_Rss_Size))
+	return -1;
 
-#ifndef WIN32
     if (getuid () == 0)
     {
 	if (Uid == -1)
