@@ -294,10 +294,14 @@ save_bans (void)
     {
 	b = list->data;
 	if (b->type == BAN_IP)
-	    fprintf (fp, "%s %s %d \"%s\"\n", b->target, b->setby,
-		     (int) b->when, NONULL (b->reason));
+	    fprintf (fp, "%s %s %d \"%s\"", b->target, b->setby,
+		     (int) b->when, b->reason);
 	else
-	    fprintf (fp, "%s\n", b->target);
+	    fprintf (fp, "%s", b->target);
+#ifdef WIN32
+	fputc('\r', fp);
+#endif
+	fputc('\n', fp);
     }
     if (fclose (fp))
     {
@@ -333,13 +337,27 @@ load_bans (void)
 	    return -1;
 	}
 	b->target = STRDUP (av[0]);
-	if (ac == 4)
+	if (is_ip (av[0]))
 	{
-	    b->type = BAN_IP;
-	    b->setby = STRDUP (av[1]);
-	    b->when = atol (av[2]);
-	    if (*av[3])
+	    if (ac >= 4)
+	    {
+		b->type = BAN_IP;
+		b->setby = STRDUP (av[1]);
+		b->when = atol (av[2]);
 		b->reason = STRDUP (av[3]);
+	    }
+	    else
+	    {
+		log("load_bans(): too few parameters for ban");
+		print_args(ac,av);
+	    }
+	}
+	else
+	{
+	    b->type = BAN_USER;
+	    b->setby = STRDUP (Server_Name);
+	    b->reason = STRDUP ("");
+	    b->when = Current_Time;
 	}
 	list = CALLOC (1, sizeof (LIST));
 	if (!list)
