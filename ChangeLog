@@ -39,6 +39,9 @@ realloc() too often
 send_queued_data() should be called if there is uncompressed data waiting to
 be sent to the server
 
+client connections should be closed from handler routines by setting
+the .destroy membery instead of calling remove_connection()
+
 Changes from 0.11
 =================
 

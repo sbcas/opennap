@@ -92,7 +92,7 @@ HANDLER (whois)
 		user->totalup, user->totaldown, my_ntoa (user->host),
 		user->conport, user->port,
 		user->email ? user->email : "unknown",
-		user->serv ? user->serv->host : Server_Name);
+		user->server ? user->server : Server_Name);
     }
     else
     {
