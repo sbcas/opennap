@@ -99,35 +99,7 @@ HANDLER (muzzle)
 	{
 	    /* force registration */
 	    log ("muzzle(): forcing registration for %s", user->nick);
-	    db = CALLOC (1, sizeof (USERDB));
-	    if (db)
-	    {
-		db->nick = STRDUP (user->nick);
-		db->password = generate_pass (user->pass);
-#if EMAIL
-		snprintf (Buf, sizeof (Buf), "anon@%s", Server_Name);
-		db->email = STRDUP (Buf);
-#endif
-		db->level = user->level;
-		db->created = Current_Time;
-		db->lastSeen = Current_Time;
-		if (db->nick && db->password
-#if EMAIL
-		    && db->email
-#endif
-		    )
-		{
-		    if (hash_add (User_Db, db->nick, db))
-			userdb_free (db);
-		}
-		else
-		{
-		    OUTOFMEMORY ("muzzle");
-		    userdb_free (db);
-		}
-	    }
-	    else
-		OUTOFMEMORY ("muzzle");
+	    db = create_db(user);
 	}
 	if ((user && user->muzzled) || (db && (db->flags & ON_MUZZLED)))
 	{

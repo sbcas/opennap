@@ -58,7 +58,7 @@ userdb_init (void)
 {
     FILE *fp;
     int ac, regen = 0, level;
-    char *av[6], path[_POSIX_PATH_MAX];
+    char *av[7], path[_POSIX_PATH_MAX];
     USERDB *u;
 
     snprintf (path, sizeof (path), "%s/users", Config_Dir);
@@ -120,7 +120,7 @@ userdb_init (void)
 		level = LEVEL_USER;
 	    }
 	    u->level = level;
-	    u->created = atol (av[4]);
+	    u->timestamp = atol (av[4]);
 	    u->lastSeen = atol (av[5]);
 	    if (ac > 6)
 		u->flags = atoi (av[6]);
@@ -170,7 +170,7 @@ dump_userdb (USERDB * db, FILE * fp)
     fputc (' ', fp);
     fputs (Levels[db->level], fp);
     fputc (' ', fp);
-    fprintf (fp, "%d %d %d", (int) db->created, (int) db->lastSeen,
+    fprintf (fp, "%d %d %d", (int) db->timestamp, (int) db->lastSeen,
 	     db->flags);
 #ifdef WIN32
     fputs ("\r\n", fp);
@@ -220,4 +220,39 @@ userdb_dump (void)
     }
     log ("userdb_dump(): wrote %d entries", User_Db->dbsize);
     return 0;
+}
+
+/* create a default USERDB record from the existing user */
+USERDB *
+create_db (USER *user)
+{
+    USERDB *db = CALLOC (1, sizeof(USERDB));
+    if(db)
+    {
+	db->nick=STRDUP(user->nick);
+	db->password=generate_pass(user->pass);
+#if EMAIL
+	snprintf(Buf,sizeof(Buf),"anon@%s", Server_Name);
+	db->email = STRDUP(Buf);
+#endif
+	db->level = user->level;
+	db->timestamp = Current_Time;
+	db->lastSeen = Current_Time;
+    }
+    if(!db||!db->nick||!db->password
+#if EMAIL
+       || !db->email
+#endif
+       )
+    {
+	OUTOFMEMORY("create_db");
+	userdb_free(db);
+	return 0;
+    }
+    if (hash_add (User_Db, db->nick, db))
+    {
+	userdb_free (db);
+	return 0;
+    }
+    return db;
 }

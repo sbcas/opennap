@@ -156,6 +156,13 @@ commands:
 See below in the section `Non-standard messages' for a descripton of the
 syntax for these commands.
 
+* ChanServ
+
+Similar to OperServ, ChanServ is a means of maintaining channels.  It
+provides the necessary commands to channel operators for those who don't
+have built in client support.  ``/msg chanserv help'' for a list of
+all supported commands.
+
 * Server to Server messages
 
 There are many cases where client commands need to be passed to peer servers

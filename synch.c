@@ -46,9 +46,16 @@ sync_user (USER * user, CONNECTION * con)
     /* update the user's level */
     if (user->level != LEVEL_USER)
     {
-	send_cmd (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s",
-		  Server_Name, user->nick, Levels[user->level]);
+	/* get the timestamp from the user db entry */
+	USERDB *db = hash_lookup(User_Db, user->nick);
+	ASSERT (db!=0);
+	send_cmd (con, MSG_CLIENT_SETUSERLEVEL, ":%s %s %s %d",
+		  Server_Name, user->nick, Levels[user->level],
+		  db->timestamp);
     }
+
+    if (user->cloaked)
+	send_cmd(con,MSG_CLIENT_CLOAK,":%s 1",user->nick);
 
     /* do this before the joins so the user's already in the channel see
        the real file count */
@@ -62,6 +69,10 @@ sync_user (USER * user, CONNECTION * con)
 	send_cmd (con, MSG_CLIENT_JOIN, ":%s %s",
 		  user->nick, ((CHANNEL *) list->data)->name);
     }
+
+    /* MUST be after the join's since muzzled users cant join */
+    if (user->muzzled)
+	send_cmd (con, MSG_CLIENT_MUZZLE, ":%s %s", Server_Name, user->nick);
 }
 
 static void

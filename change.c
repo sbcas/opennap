@@ -85,6 +85,7 @@ HANDLER (change_pass)
     }
     FREE (db->password);
     db->password = generate_pass (pkt);
+    db->timestamp = Current_Time;
 }
 
 #if EMAIL
@@ -115,6 +116,7 @@ HANDLER (change_email)
     }
     FREE (db->email);
     db->email = STRDUP (pkt);
+    db->timestamp = Current_Time;
 }
 #endif
 
@@ -237,6 +239,7 @@ HANDLER (alter_pass)
 	}
 	FREE (db->password);
 	db->password = newpass;
+	db->timestamp = Current_Time;
     }
     notify_mods (CHANGELOG_MODE, "%s changed %s's password: %s",
 		 sender->nick, av[0], av[2]);
@@ -388,8 +391,10 @@ HANDLER (unnuke)
 }
 #endif
 
-/* 652 [ :<sender> ]
-   toggle the invisible state of the current user */
+/* 652 [ :<sender> [1] ]
+   toggle the invisible state of the current user.  when a server is the
+   sender of the message, the 1 signifies that the cloak status should
+   absolutely be turned on rather than toggled (used for synch) */
 HANDLER (cloak)
 {
     USER *sender;
@@ -404,6 +409,9 @@ HANDLER (cloak)
 	permission_denied (con);
 	return;
     }
+    /* check for absolute cloak (synch) */
+    if(ISSERVER(con) && pkt && atoi(pkt) == 1 && sender->cloaked)
+	return; /* already cloaked */
     sender->cloaked = !sender->cloaked;	/* toggle cloak state */
     /* save cloak state in the user db */
     db = hash_lookup (User_Db, sender->nick);
@@ -416,6 +424,7 @@ HANDLER (cloak)
 	db->flags |= ON_CLOAKED;
     else
 	db->flags &= ~ON_CLOAKED;
+    db->timestamp = Current_Time;
     pass_message_args (con, tag, ":%s", sender->nick);
     notify_mods (CLOAKLOG_MODE, "%s has %scloaked", sender->nick,
 		 sender->cloaked ? "" : "de");

@@ -10,11 +10,11 @@
 #include "opennap.h"
 #include "debug.h"
 
-/* change the user level for a user */
-/* [ :<nick> ] <user> <level> */
+/* [ :<nick> ] <user> <level> [timestamp]
+   change the user level for a user */
 HANDLER (level)
 {
-    char *sender, *fields[2];
+    char *sender, *av[3];
     USER *user, *senderUser=0;
     int level, ac;
     USERDB *db;
@@ -22,11 +22,6 @@ HANDLER (level)
     (void) len;
     ASSERT (validate_connection (con));
 
-    /* NOTE: we implicity trust that messages we receive from other servers
-       are authentic, so we don't check the user privileges here.  we have
-       to trust that the peer servers perform due dilegence before sending
-       a message to us, otherwise we could never propogate initial user
-       levels across all servers */
     if (ISSERVER (con))
     {
 	/* skip over who set the user level */
@@ -55,15 +50,15 @@ HANDLER (level)
 	senderUser = con->user;
     }
 
-    if ((ac = split_line (fields, FIELDS (fields), pkt)) != 2)
+    if ((ac = split_line (av, FIELDS (av), pkt)) < 2)
     {
 	log ("level(): malformed request");
-	print_args (ac, fields);
+	print_args (ac, av);
 	unparsable (con);
 	return;
     }
 
-    if ((level = get_level (fields[1])) == -1)
+    if ((level = get_level (av[1])) == -1)
     {
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "invalid level");
@@ -79,129 +74,106 @@ HANDLER (level)
 	return;
     }
 
-    if ((user = hash_lookup (Users, fields[0])))
+    /* check to see if the user is registered */
+    db = hash_lookup (User_Db, av[0]);
+
+    /* if the level is already correct, just ignore it */
+    if (db && db->level == level)
     {
-	/* user is logged in */
-	ASSERT (validate_user (user));
-	if (level == user->level)
-	    return;	/* ignore */
-	if (ISUSER (con) && con->user->level < LEVEL_ELITE &&
-	    con->user != user &&	/* allow self demotion */
-	    user->level >= con->user->level)
+	if(ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"user %s is already level %s",
+		     db->nick, Levels[db->level]);
+	return;
+    }
+
+    /* check to see if the user is logged in */
+    user = hash_lookup (Users, av[0]);
+
+    /* if the level is already correct, just ignore it */
+    if (user && user->level == level)
+    {
+	ASSERT(level==LEVEL_USER);
+	if(ISUSER(con))
+	    send_cmd(con,MSG_SERVER_NOSUCH,"user %s is already level %s",
+		     user->nick, Levels[user->level]);
+	return;
+    }
+
+    if (!db)
+    {
+	if (user)
 	{
-	    permission_denied (con);
+	    /* create db entry based on logged in user */
+	    db = create_db (user);
+	    if(!db)
+		return;
+	}
+	else
+	{
+	    log("level(): unable to register account for %s", av[0]);
+	    if(ISUSER(con))
+		send_cmd(con,MSG_SERVER_NOSUCH,"user is is not registered");
 	    return;
 	}
-	if (user->level == level)
+    }
+
+    ASSERT(db!=0);
+
+    /* if the server sent a timestamp, check it now */
+    if (ISSERVER(con) && ac>2)
+    {
+	time_t ts = atoi(av[2]);
+	if(ts>db->timestamp)
 	{
-	    if (ISUSER (con))
-		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already %s",
-			  user->nick, Levels[level]);
+	    log("level(): TS for %s is newer", db->nick);
 	    return;
 	}
-	if (ISUSER (user->con))
+	else if(ts==db->timestamp)
+	{
+	    /* TODO: handle this case */
+	    log("level(): ERROR: TS is equal but value is different");
+	}
+    }
+
+    /* check for permission, allow self-demotion */
+    if (senderUser && senderUser != user && senderUser->level < LEVEL_ELITE &&
+	senderUser->level <= user->level)
+    {
+	permission_denied(con);
+	return;
+    }
+
+    /* update the db entry */
+    db->level = level;
+    db->timestamp = Current_Time;
+    /* non-mod+ users can't decloak so make sure they are not cloaked */
+    if(level < LEVEL_MODERATOR && (db->flags & ON_CLOAKED))
+	db->flags &= ~ON_CLOAKED;
+
+    pass_message_args (con, tag, ":%s %s %s", sender, db->nick, Levels[level]);
+
+    /* notify now so the user doesnt get notified twice when going from
+       user to mod+ */
+    notify_mods (LEVELLOG_MODE, "%s changed %s's user level to %s (%d)",
+		 sender, db->nick, Levels[level], level);
+
+    /* if the user is currently logged in, change their level now */
+    if (user)
+    {
+	if(ISUSER(user->con))
 	    send_cmd (user->con, MSG_SERVER_NOSUCH,
 		      "%s changed your user level to %s (%d)",
 		      (senderUser && senderUser->cloaked && level < LEVEL_MODERATOR) ? "Operator" : sender,
 		      Levels[level], level);
-	/* delay setting user->level until after the notify_mods() call so
-	   that a user promoted to mod+ doesnt get notified twice */
-    }
 
-    if ((db = hash_lookup (User_Db, fields[0])))
-    {
-	/* registered nick */
-	if (ISUSER (con) && con->user->level < LEVEL_ELITE &&
-	    /* allow self demotion */
-	    strcasecmp (con->user->nick, db->nick) != 0 &&
-	    con->user->level <= db->level)
-	{
-	    ASSERT (user == 0);
-	    permission_denied (con);
-	    return;
-	}
-	if (db->level == level)
-	{
-	    ASSERT (user == 0 || user->level == db->level);
-	    if (user)
-		user->level = db->level;	/* just to be safe */
-	    if (ISUSER (con))
-		send_cmd (con, MSG_SERVER_NOSUCH, "%s is already %s",
-			  db->nick, Levels[level]);
-	    return;
-	}
-	db->level = level;
-	/* user can't decloak if they become unprivileged, so ensure we
-	   are in a sane state */
-	if (level < LEVEL_MODERATOR && (db->flags & ON_CLOAKED))
-	{
-	    db->flags &= ~ON_CLOAKED;
-	    if (user)
-	    {
-		ASSERT (user->cloaked != 0);	/* should always be in sync */
-		user->cloaked = 0;
-		notify_mods (CHANGELOG_MODE, "%s has decloaked", user->nick);
-	    }
-	}
-    }
-    else if (user)
-    {
-	/* create a db entry for it now.  we already checked for permission
-	   above so don't do it here */
-	ASSERT (user->level == LEVEL_USER);
-	db = CALLOC (1, sizeof (USERDB));
-	if (db)
-	{
-	    db->nick = STRDUP (user->nick);
-	    db->password = generate_pass (user->pass);
-#if EMAIL
-	    snprintf (Buf, sizeof (Buf), "anon@%s", Server_Name);
-	    db->email = STRDUP (Buf);
-#endif
-	    db->level = level;
-	    db->created = Current_Time;
-	    db->lastSeen = Current_Time;
-	}
-	if (!db || !db->nick || !db->password
-#if EMAIL
-	    || !db->email
-#endif
-	    )
-	{
-	    OUTOFMEMORY ("level");
-	    return;
-	}
-	if (hash_add (User_Db, db->nick, db))
-	{
-	    log ("level(): unable to add entry to hash table");
-	    userdb_free (db);	/* avoid memory leak */
-	}
-    }
-    else
-    {
-	/* if not linked, error out here.  if we are linked, the user could
-	   be registered on another server so we just pass the request
-	   along */
-	if (!Servers)
-	{
-	    nosuchuser (con);
-	    return;
-	}
-	if (invalid_nick (fields[0]))
-	{
-	    invalid_nick_msg(con);
-	    return;
-	}
-    }
-
-    pass_message_args (con, tag, ":%s %s %s", sender, fields[0],
-		       Levels[level]);
-
-    notify_mods (LEVELLOG_MODE, "%s changed %s's user level to %s (%d)",
-		 sender, fields[0], Levels[level], level);
-
-    /* we set this after the notify_mods so that the user being changed
-       doesnt get notified twice */
-    if (user)
 	user->level = level;
+	/* non-mod+ users can't decloak so make sure they are not cloaked */
+	if(level < LEVEL_MODERATOR && user->cloaked)
+	{
+	    user->cloaked = 0;
+	    notify_mods (CHANGELOG_MODE, "%s has decloaked", user->nick);
+	    if(ISUSER(user->con))
+		send_cmd(user->con,MSG_SERVER_NOSUCH,"You are no longer cloaked.");
+	}
+    }
 }

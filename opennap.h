@@ -89,7 +89,6 @@ struct _channel
 #ifdef DEBUG
     unsigned int magic;
 #endif
-    time_t created;		/* when the channel was created */
     char *name;			/* name of the channel */
     char *topic;		/* current topic of discussion */
     LIST *ops;			/* list of operators for the channel */
@@ -317,7 +316,7 @@ typedef struct
 #endif
     unsigned short level;
     unsigned short flags;
-    time_t created;
+    time_t timestamp;	/* when the record was last modified */
     time_t lastSeen;
 }
 USERDB;
@@ -602,6 +601,7 @@ void close_db (void);
 void complete_connect (CONNECTION * con);
 void config (const char *);
 void config_defaults (void);
+USERDB *create_db (USER *);
 void dump_channels(void);
 void exec_timers (time_t);
 void expand_hex (char *, int);

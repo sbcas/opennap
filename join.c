@@ -134,8 +134,8 @@ HANDLER (join)
 	    chan = new_channel ();
 	    if (!chan)
 		return;		/* out of memory */
-	    chan->created = Current_Time;
 	    chan->name = STRDUP (pkt);
+	    chan->timestamp = Current_Time;
 	    if (!chan->name)
 	    {
 		OUTOFMEMORY ("join");

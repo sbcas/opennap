@@ -45,7 +45,7 @@ sync_reginfo (USERDB * db)
 #else
 		       "unknown",
 #endif
-		       Levels[db->level], db->created, db->lastSeen);
+		       Levels[db->level], db->timestamp, db->lastSeen);
 }
 
 /* <nick> <pass> <port> <client-info> <speed> [email] [build] */
@@ -335,7 +335,7 @@ HANDLER (login)
 	    return;
 	}
 	db->level = LEVEL_USER;
-	db->created = Current_Time;
+	db->timestamp = Current_Time;
 	if (hash_add (User_Db, db->nick, db))
 	{
 	    log ("login(): hash_add failed (fatal)");
@@ -430,7 +430,6 @@ HANDLER (login)
 	if (db->flags & ON_MUZZLED)
 	{
 	    /* user was muzzled when they quit, remuzzle */
-	    log ("login(): user %s was muzzled upon quit", user->nick);
 	    user->muzzled = 1;
 	    /* this will result in duplicate messages for the same user from
 	       each server, but its the only way to guarantee that the user
@@ -577,7 +576,7 @@ HANDLER (register_nick)
 	send_cmd (con, MSG_SERVER_REGISTER_OK, "");
 }
 
-/* 10114 :<server> <nick> <password> <level> <email> <created> <lastseen> */
+/* 10114 :<server> <nick> <password> <level> <email> <timestamp> <lastseen> */
 HANDLER (reginfo)
 {
     char *server;
@@ -613,7 +612,7 @@ HANDLER (reginfo)
     {
 	/* check the timestamp to see if this is more recent than what
 	   we have */
-	if (atol (fields[4]) > db->created)
+	if (atol (fields[4]) > db->timestamp)
 	{
 	    /* our record was created first, notify peers */
 	    log ("reginfo(): stale reginfo received from %s", server);
@@ -671,7 +670,7 @@ HANDLER (reginfo)
 	return;
     }
     db->level = level;
-    db->created = atol (fields[4]);
+    db->timestamp = atol (fields[4]);
     db->lastSeen = atol (fields[5]);
 }
 
@@ -762,7 +761,7 @@ HANDLER (register_user)
 	return;
     }
     db->level = level;
-    db->created = Current_Time;
+    db->timestamp = Current_Time;
     db->lastSeen = Current_Time;
     hash_add (User_Db, db->nick, db);
 }
