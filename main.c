@@ -513,6 +513,19 @@ main (int argc, char **argv)
 
 	pending = 0;		/* reset */
 
+	/* check for stats request.  NOTE: this _MUST_ come before the
+	   check for new connections since Num_Clients will increase and
+	   we will check the wrong pollfd struct */
+#if HAVE_POLL
+	if (ufd[Num_Clients+1].revents & POLLIN)
+#else
+	if (FD_ISSET (sp, &set))
+#endif
+	{
+	    report_stats (sp);
+	    n--;
+	}
+
 	/* check for new incoming connections */
 #if HAVE_POLL
 	if (ufd[Num_Clients].revents & POLLIN)
@@ -521,16 +534,6 @@ main (int argc, char **argv)
 #endif
 	{
 	    accept_connection (s);
-	    n--;
-	}
-
-#if HAVE_POLL
-	if (ufd[Num_Clients+1].revents & POLLIN)
-#else
-	if (FD_ISSET (sp, &set))
-#endif
-	{
-	    report_stats (sp);
 	    n--;
 	}
 
