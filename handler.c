@@ -148,9 +148,7 @@ static HANDLER Protocol[] = {
     {MSG_CLIENT_CLOAK, cloak},	/* 652 */
     {MSG_CLIENT_CHANGE_SPEED, change_speed},	/* 700 */
     {MSG_CLIENT_CHANGE_PASS, change_pass},	/* 701 */
-#if EMAIL
     {MSG_CLIENT_CHANGE_EMAIL, change_email},	/* 702 */
-#endif
     {MSG_CLIENT_CHANGE_DATA_PORT, change_data_port},	/* 703 */
     {MSG_CLIENT_PING_SERVER, ping_server},	/* 750 */
     {MSG_CLIENT_PING, ping},	/* 751 */

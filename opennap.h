@@ -708,9 +708,7 @@ HANDLER (ban);
 HANDLER (banlist);
 HANDLER (browse);
 HANDLER (change_data_port);
-#if EMAIL
 HANDLER (change_email);
-#endif
 HANDLER (change_speed);
 HANDLER (change_pass);
 HANDLER (channel_ban);

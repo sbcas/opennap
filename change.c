@@ -88,11 +88,11 @@ HANDLER (change_pass)
     db->timestamp = Current_Time;
 }
 
-#if EMAIL
 /* 702 [ :<user> ] <email>
    change email address */
 HANDLER (change_email)
 {
+#if EMAIL
     USER *user;
     USERDB *db;
 
@@ -117,8 +117,13 @@ HANDLER (change_email)
     FREE (db->email);
     db->email = STRDUP (pkt);
     db->timestamp = Current_Time;
-}
+#else
+    (void)tag;
+    (void)len;
+    (void)pkt;
+    (void)con;
 #endif
+}
 
 /* 613 [ :<sender> ] <user> <port> [ <reason> ]
    admin request to change a user's data port */
