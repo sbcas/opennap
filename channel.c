@@ -568,8 +568,9 @@ HANDLER (channel_drop)
 	nosuchchannel (con);
 	return;
     }
-    if ((chan->flags & ON_CHANNEL_USER) == 0)
+    if (chan->flags & ON_CHANNEL_USER)
     {
+	/* user created channel, nothing to drop */
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH, "channel %s is not registered",
 		      chan->name);
