@@ -652,6 +652,9 @@ main (int argc, char **argv)
 
     close_db ();
 
+    /* only clean up memory if we are in debug mode, its kind of pointless
+       otherwise */
+#if DEBUG
     /* clean up */
 #if HAVE_POLL
     if (ufd)
@@ -681,6 +684,7 @@ main (int argc, char **argv)
 
     /* this displays a list of leaked memory.  pay attention to this. */
     CLEANUP ();
+#endif
 
 #ifdef WIN32
     WSACleanup ();

@@ -128,7 +128,7 @@ HANDLER (emote)
     USER *user, *chanUser;
     CHANNEL *chan;
     int buflen, remote = 0;
-    char *cname;
+    char *av[2];
     LIST *list;
 
     (void) tag;
@@ -137,21 +137,19 @@ HANDLER (emote)
     if (pop_user (con, &pkt, &user) != 0)
 	return;
 
-    cname = next_arg (&pkt);
-    if (!cname || !pkt)
+    if (split_line (av, sizeof (av) / sizeof (char *), pkt) != 2)
     {
-	log ("emote(): expected 2 args");
-	if (con->class == CLASS_USER)
-	    send_cmd (con, MSG_SERVER_NOSUCH, "too few arguments");
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_ERROR, "Wrong number of parameters for command.");
 	return;
     }
 
     /* make sure this user is on the channel they are sending to */
-    chan = hash_lookup (Channels, cname);
+    chan = hash_lookup (Channels, av[0]);
     if (!chan)
     {
 	if (ISUSER (con))
-	    send_cmd (con, MSG_SERVER_NOSUCH, "No such channel %s", cname);
+	    send_cmd (con, MSG_SERVER_NOSUCH, "No such channel %s", av[0]);
 	return;
     }
     if (list_find (chan->users, user) == 0)
@@ -165,8 +163,8 @@ HANDLER (emote)
     /* since we send the same data to multiple clients, format the data once
        and queue it up directly */
     set_tag (Buf, MSG_CLIENT_EMOTE);
-    snprintf (Buf + 4, sizeof (Buf) - 4, "%s %s %s",
-	    chan->name, user->nick, pkt);
+    snprintf (Buf + 4, sizeof (Buf) - 4, "%s %s \"%s\"",
+	    chan->name, user->nick, av[1]);
     buflen = strlen (Buf + 4);
     set_len (Buf, buflen);
     buflen += 4;
@@ -183,6 +181,6 @@ HANDLER (emote)
 
     /* pass message to peer servers */
     if (ISUSER (con) && Num_Servers && remote)
-	pass_message_args (con, MSG_CLIENT_EMOTE, ":%s %s %s",
-		user->nick, chan->name, pkt);
+	pass_message_args (con, MSG_CLIENT_EMOTE, ":%s %s \"%s\"",
+		user->nick, chan->name, av[1]);
 }

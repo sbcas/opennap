@@ -858,9 +858,13 @@ appropriate, examples of the <data> section for each message are given.
 822	???
 823	???
 
-824	emote [CLIENT]
+824	emote [CLIENT, SERVER]
 
-	<text>
+	client: <channel> "<text>"
+	server: <channel> <user> "<text>"
+
+	A variation of the public message command to indicate an action by
+	the user.  Often implemented as the "/me" command in IRC clients.
 
 825	user list entry [SERVER]
 
