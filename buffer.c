@@ -411,11 +411,12 @@ send_queued_data (CONNECTION *con)
 	con->sendbuf->datasize - con->sendbuf->consumed);
     if (n == -1)
     {
-	if (errno != EWOULDBLOCK)
+	if (errno != EWOULDBLOCK && errno != EDEADLK)
 	{
-	    log ("send_queued_data: write: %s (errno %d)", strerror (errno),
-		    errno);
-	    con->destroy = 1;
+	    log ("send_queued_data(): write: %s (errno %d)",
+		    strerror (errno), errno);
+	    log ("send_queued_data(): closing connection for %s", con->host);
+	    remove_connection (con);
 	}
 	return;
     }
@@ -427,15 +428,16 @@ send_queued_data (CONNECTION *con)
 
     if (buffer_size (con->sendbuf) > n)
     {
-	log ("send_queued_data: output buffer for %s exceeded %d bytes", 
+	log ("send_queued_data(): output buffer for %s exceeded %d bytes", 
 		con->host, n);
-	con->destroy = 1;
+	log ("send_queued_data(): closing connection for %s", con->host);
+	remove_connection (con);
 	return;
     }
 
     if (con->sendbuf)
-	log ("send_queued_data: %d bytes remain in the output buffer",
-		buffer_size (con->sendbuf));
+	log ("send_queued_data(): %d bytes remain in the output buffer for %s",
+		buffer_size (con->sendbuf), con->host);
 }
 
 void

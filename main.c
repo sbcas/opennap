@@ -322,7 +322,7 @@ handle_connection (CONNECTION * con)
 
     if (con->destroy)
     {
-	log ("handle_connection: closing connection to %s", con->host);
+	log ("handle_connection(): closing connection to %s", con->host);
 	remove_connection (con);
     }
     else
