@@ -17,7 +17,7 @@ static void
 browse_callback (DATUM *info, BROWSE *ctx)
 {
     /* avoid flooding the client */
-    if (ctx->count < Max_Browse_Result)
+    if (Max_Browse_Result == 0 || ctx->count < Max_Browse_Result)
     {
 	send_cmd (ctx->con, MSG_SERVER_BROWSE_RESPONSE,
 	    "%s \"%s\" %s %d %hu %hu %hu",

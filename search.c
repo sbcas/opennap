@@ -63,7 +63,10 @@ search_callback (DATUM *match, SEARCH *parms)
 static LIST *
 new_list (void)
 {
-    return (CALLOC (1, sizeof (LIST)));
+    LIST *ptr = CALLOC (1, sizeof (LIST));
+    if (!ptr)
+	log ("new_list(): OUT OF MEMORY");
+    return ptr;
 }
 
 LIST *
@@ -72,12 +75,18 @@ list_append (LIST * l, void *data)
     LIST *r = l;
 
     if (!l)
-        l = r = CALLOC (1, sizeof (LIST));
+    {
+        l = r = new_list ();
+	if (!r)
+	    return 0;
+    }
     else
     {
         while (l->next)
             l = l->next;
-        l->next = CALLOC (1, sizeof (LIST));
+        l->next = new_list ();
+	if (!l->next)
+	    return r;
         l = l->next;
     }
     l->data = data;
@@ -113,6 +122,7 @@ list_free (LIST *l, list_destroy_t cb)
 void
 free_flist (FLIST *ptr)
 {
+    ASSERT ((ptr->count == 0) ^ (ptr->list != 0));
     FREE (ptr->key);
     list_free (ptr->list, (list_destroy_t) free_datum);
     FREE (ptr);
@@ -177,6 +187,7 @@ free_datum (DATUM *d)
 {
     ASSERT (d->refcount > 0);
     d->valid = 0;
+    d->user = 0;
     d->refcount--;
     if (d->refcount == 0)
     {
