@@ -137,7 +137,7 @@ HANDLER (level)
 
     /* check for permission, allow self-demotion */
     if (senderUser && senderUser != user && senderUser->level < LEVEL_ELITE &&
-	senderUser->level <= user->level)
+	senderUser->level <= db->level)
     {
 	permission_denied(con);
 	return;

@@ -153,6 +153,10 @@ HANDLER (clear_channel)
 	truncate_reason(pkt);
     pass_message_args (con, tag, ":%s %s %s", sender->nick, chan->name,
 	    NONULL (pkt));
+    notify_mods (CHANNELLOG_MODE, "%s cleared channel %s: %s", sender->nick,
+	    chan->name, NONULL (pkt));
+    notify_ops (chan, "%s cleared channel %s: %s", sender->nick,
+	    chan->name, NONULL (pkt));
     list = chan->users;
     while (list)
     {
@@ -178,8 +182,4 @@ HANDLER (clear_channel)
 	    part_channel (chan, chanUser->user);
 	}
     }
-    notify_mods (CHANNELLOG_MODE, "%s cleared channel %s: %s", sender->nick,
-	    chan->name, NONULL (pkt));
-    notify_ops (chan, "%s cleared channel %s: %s", sender->nick,
-	    chan->name, NONULL (pkt));
 }

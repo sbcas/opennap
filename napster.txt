@@ -2,7 +2,7 @@ napster messages
 ================
 
 by drscholl@users.sourceforge.net
-May 31, 2000
+June 1, 2000
 
 0.  Foreward
 
@@ -850,31 +850,35 @@ appropriate, examples of the <data> section for each message are given.
 
 614	unban user [CLIENT]
 
-	<nick | ip> [ "<reason>" ]
+	Format: <nick | ip> [ "<reason>" ]
 
 615	show bans for server [CLIENT]
 
+	Format: (empty)
+
 	client requests the list of banned ips for the current server
 
-616	ip ban notification [SERVER]
+616	(ip?) ban list entry [SERVER]
 
-	<ip> <nick> "<reason>" <time>
+	Format: <ip> <nick> "<reason>" <time> <n>
 
 	<ip> is the string version of the ip banned
 	<nick> is the user setting the ban
 	<reason> is the reason given
 	<time> is the time_t when the ban was set
+	<n> is ???.  value is either 0 or 1
 
 	This message is sent in response to the 615 client request, one
-	for each ban.
+	for each ban.  The list is terminated with a 0 length 615 message
+	from the server.
 
 	Example:
 	
-	207.172.245. valkyrie "" 947304224
+	207.172.245. valkyrie "DoS exploit" 947304224 0
 
 617	list channels [CLIENT, SERVER]
 
-	no data.
+	Format: (empty)
 
 	client requests a list of channels on the server.  server responds
 	with 618/617
@@ -883,7 +887,7 @@ appropriate, examples of the <data> section for each message are given.
 
 618	channel list entry [SERVER]
 
-	<channel-name> <number-of-users> <topic>
+	Format: <channel-name> <number-of-users> <topic>
 
 	this is the server response to a 617 client request, one for each
 	channel.
@@ -894,7 +898,7 @@ appropriate, examples of the <data> section for each message are given.
 
 619	queue limit [CLIENT]
 
-	<nick> "<filename>" <n>
+	Format: <nick> "<filename>" <n>
 
 	a client may limit the number of downloads from a particular client.
 	once the limit for a particular user has been reached, the uploading
@@ -982,7 +986,7 @@ appropriate, examples of the <data> section for each message are given.
 
 629	banned users [SERVER]
 
-	<nick>
+	Format: <nick>
 
 	when displaying the ban list for the server, this message is used
 	to indicate banned nicknames.

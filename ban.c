@@ -192,18 +192,22 @@ HANDLER (banlist)
     for (list = Bans; list; list = list->next)
     {
 	ban = list->data;
-	if (ban->type == BAN_IP)
-	    send_cmd (con, MSG_SERVER_IP_BANLIST /* 616 */ ,
-		      "%s %s \"%s\" %ld", ban->target, ban->setby,
-		      ban->reason, ban->when);
+	send_cmd (con, MSG_SERVER_IP_BANLIST /* 616 */ ,
+		"%s %s \"%s\" %ld 0", ban->target, ban->setby,
+		ban->reason, ban->when);
     }
+#if 0
+    /* the following doesnt seem to work with the windows client.  not sure
+       that this is correct at all */
     for (list = Bans; list; list = list->next)
     {
 	ban = list->data;
 	if (ban->type == BAN_USER)
 	    send_cmd (con, MSG_SERVER_NICK_BANLIST /* 626 */ , "%s",
-		      ban->target);
+		    ban->target);
     }
+#endif
+    /* terminate the banlist */
     send_cmd (con, MSG_CLIENT_BANLIST /* 615 */ , "");
 }
 

@@ -19,3 +19,11 @@ EXTRA_DIST=sample.conf sample.motd napster.txt .indent.pro \
 	getopt.c mkpass.dsp sample.channels \
 	napchk logchk setup.dsp
 INCLUDES=-DSHAREDIR=\"$(pkgdatadir)\"
+
+.PHONY: log
+
+log:
+	rcs2log -h users.sourceforge.net | \
+		sed 's;/cvsroot/opennap/opennap/;;g' > ChangeLog.new
+	cat ChangeLog >> ChangeLog.new
+	mv ChangeLog.new ChangeLog

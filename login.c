@@ -189,6 +189,8 @@ HANDLER (login)
 		pass_message_args(NULL,MSG_CLIENT_KILL,
 			":%s %s \"ghost (%s)\"",
 			Server_Name, user->nick, user->server);
+		notify_mods(KILLLOG_MODE,"%s killed %s: ghost (%s)",
+			Server_Name, user->nick, user->server);
 		/* remove the old entry */
 		if(ISUSER(user->con))
 		{
@@ -207,6 +209,7 @@ HANDLER (login)
 		    tempCon->class = CLASS_UNKNOWN;
 		    tempCon->uopt = 0;/* just to be safe since it was free'd*/
 		    tempCon->destroy=1;
+		    tempCon->user = 0;
 		}
 		else
 		    hash_remove(Users,user->nick);
@@ -232,6 +235,8 @@ HANDLER (login)
 		pass_message_args (NULL, MSG_CLIENT_KILL,
 				   ":%s %s \"nick collision\"", Server_Name,
 				   user->nick);
+		notify_mods(KILLLOG_MODE,"%s killed %s: nick collision",
+			Server_Name, user->nick);
 		send_cmd(user->con,MSG_SERVER_NOSUCH,
 			"You were killed by %s: nick collision",
 			Server_Name);
