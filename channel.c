@@ -1031,7 +1031,7 @@ HANDLER (channel_muzzle)
 	return;
     }
     /* don't allow ops to muzzle mods+ */
-    if (sender->level != LEVEL_ELITE && sender->level < user->level)
+    if (sender && sender->level != LEVEL_ELITE && sender->level < user->level)
     {
 	permission_denied (con);
 	return;

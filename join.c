@@ -66,7 +66,7 @@ HANDLER (join)
     USER *user;
     CHANNEL *chan;
     LIST *list;
-    CHANUSER *chanUser;
+    CHANUSER *chanUser, *cu;
     int chanop = 0;
 
     (void) tag;
@@ -84,8 +84,8 @@ HANDLER (join)
     if (user->level < LEVEL_MODERATOR)
     {
 	/* enforce a maximum channels per user */
-	/* TODO: if linked servers have different settings, the channel membership
-	   could become desynched */
+	/* TODO: if linked servers have different settings, the channel
+	   membership could become desynched */
 	if (list_count (user->channels) > Max_User_Channels)
 	{
 	    if (ISUSER (con))
@@ -284,25 +284,25 @@ HANDLER (join)
 	/* send the client the list of current users in the channel */
 	for (list = chan->users; list; list = list->next)
 	{
-	    chanUser = list->data;
-	    ASSERT (chanUser != 0);
-	    ASSERT (chanUser->magic == MAGIC_CHANUSER);
-	    if (!chanUser->user->cloaked || user->level >= LEVEL_MODERATOR)
+	    cu = list->data;
+	    ASSERT (cu != 0);
+	    ASSERT (cu->magic == MAGIC_CHANUSER);
+	    if (!cu->user->cloaked || user->level >= LEVEL_MODERATOR)
 		send_cmd (con, MSG_SERVER_CHANNEL_USER_LIST /* 408 */ ,
-			  "%s %s %d %d", chan->name, chanUser->user->nick,
-			  chanUser->user->shared, chanUser->user->speed);
+			  "%s %s %d %d", chan->name, cu->user->nick,
+			  cu->user->shared, cu->user->speed);
 	}
     }
 
     /* notify members of the channel that this user has joined */
     for (list = chan->users; list; list = list->next)
     {
-	chanUser = list->data;
-	ASSERT (chanUser != 0);
-	ASSERT (chanUser->magic == MAGIC_CHANUSER);
-	if (ISUSER (chanUser->user->con) && chanUser->user != user &&
-	    (!user->cloaked || chanUser->user->level >= LEVEL_MODERATOR))
-	    send_cmd (chanUser->user->con, MSG_SERVER_JOIN, "%s %s %d %d",
+	cu = list->data;
+	ASSERT (cu != 0);
+	ASSERT (cu->magic == MAGIC_CHANUSER);
+	if (ISUSER (cu->user->con) && cu->user != user &&
+	    (!user->cloaked || cu->user->level >= LEVEL_MODERATOR))
+	    send_cmd (cu->user->con, MSG_SERVER_JOIN, "%s %s %d %d",
 		      chan->name, user->nick, user->shared, user->speed);
     }
 
