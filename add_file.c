@@ -310,7 +310,7 @@ bitrateToMask (int bitrate, USER *user)
 	if(bitrate<=BitRate[i])
 	    return i;
     }
-    log("freqToMask(): invalid bit rate %d (%s, \"%s\")", bitrate,
+    log("bitrateToMask(): invalid bit rate %d (%s, \"%s\")", bitrate,
 	user->nick, user->clientinfo);
     return 0; /* invalid bitrate */
 }

@@ -175,7 +175,7 @@ HANDLER (server_connect)
 		 fields[1]);
 }
 
-/* 10101 [ :<nick> ] <server> <reason> */
+/* 10101 [ :<nick> ] <server> [reason] */
 HANDLER (server_disconnect)
 {
     USER *user;
@@ -196,6 +196,11 @@ HANDLER (server_disconnect)
 	return;
     }
     host = next_arg (&pkt);
+    if(!host)
+    {
+	unparsable(con);
+	return;
+    }
     for (list = &Servers; *list; list = &(*list)->next)
     {
 	serv = (*list)->data;
