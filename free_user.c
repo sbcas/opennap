@@ -13,6 +13,7 @@ free_user (USER * user)
 {
     HOTLIST *hotlist;
     LIST *list;
+    USERDB *db;
 
     ASSERT (validate_user (user));
 
@@ -55,6 +56,10 @@ free_user (USER * user)
 	for (list = hotlist->users; list; list = list->next)
 	    send_cmd (list->data, MSG_SERVER_USER_SIGNOFF, "%s", user->nick);
     }
+
+    /* record the log off time */
+    if ((db = hash_lookup (User_Db, user->nick)))
+	db->lastSeen = Current_Time;
 
     FREE (user->nick);
     FREE (user->pass);
