@@ -4,6 +4,7 @@
 
    $Id$ */
 
+#include <string.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -26,19 +27,19 @@ HANDLER (upload_ok)
     {
 	log ("upload_ok(): malformed message from %s", con->user->nick);
 	print_args (ac, av);
-	send_cmd (con, MSG_SERVER_NOSUCH, "wrong number of parameters");
+	unparsable(con);
 	return;
     }
     recip = hash_lookup (Users, av[0]);
     if (!recip)
     {
-	log ("upload_ok(): no such user %s", av[0]);
-	send_cmd (con, MSG_SERVER_NOSUCH, "No such user %s", av[0]);
+	nosuchuser(con);
 	return;
     }
     /* pull the hash from the data base */
     info = hash_lookup (con->uopt->files, my_basename(av[1]));
-    if (!info)
+    if (!info ||
+	    strncasecmp(av[1],info->path->path,strlen(info->path->path))!=0)
     {
 	send_cmd (con, MSG_SERVER_NOSUCH, "You are not sharing that file");
 	return;

@@ -5,3 +5,6 @@
   amount of valid information about the contents of their mp3 library
 
 * add a timeout to check for blocked server connect() call
+
+* create a list of servernames with refcounts to conserve memory for the
+  user->server field

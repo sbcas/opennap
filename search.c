@@ -85,8 +85,7 @@ search_callback (DATUM * match, SEARCH * parms)
 		  "00000000000000000000000000000000",
 #endif
 		  match->size, BitRate[match->bitrate],
-		  SampleRate[match->frequency],
-		  match->duration);
+		  SampleRate[match->frequency], match->duration);
     }
     /* if a local user issued the search, notify them of the match */
     else
@@ -162,7 +161,7 @@ tokenize (char *s)
 	    !strcmp ("the", s) || !strcmp ("and", s) || !strcmp ("in", s) ||
 	    !strcmp ("of", s) || !strcmp ("you", s) || !strcmp ("it", s) ||
 	    !strcmp ("me", s) || !strcmp ("to", s) || !strcmp ("on", s) ||
-	    !strcmp ("love", s) || !strcmp ("g",s) || !strcmp("m",s) ||
+	    !strcmp ("love", s) || !strcmp ("g", s) || !strcmp ("m", s) ||
 	    !strcmp ("s", s) ||
 	    /* the following are common path names and don't really
 	       provide useful information */
@@ -178,7 +177,7 @@ tokenize (char *s)
 	    !strcmp ("agent", s) || !strcmp ("stuff", s) ||
 	    !strcmp ("download", s) || !strcmp ("home", s) ||
 	    !strcmp ("downloads", s) || !strcmp ("live", s) ||
-	    !strcmp ("mp3s", s) || !strcmp ("2", s) || !strcmp("1", s) ||
+	    !strcmp ("mp3s", s) || !strcmp ("2", s) || !strcmp ("1", s) ||
 	    !strcmp ("mnt", s) || !strcmp ("mp3z", s) ||
 	    !strcmp ("cd", s) || !strcmp ("remix", s))
 	{
@@ -222,17 +221,17 @@ void
 free_datum (DATUM * d)
 {
     ASSERT (d->refcount > 0);
-    d->size = -1;	/* mark as invalid */
+    d->size = -1;		/* mark as invalid */
     d->user = 0;
     d->refcount--;
-    ASSERT(d->path!=0);
+    ASSERT (d->path != 0);
     if (d->refcount == 0)
     {
 	/* no more references, we can free this memory */
 
 	/* remove the path pointer for this file */
-	if(--d->path->refs==0)
-	    hash_remove(Paths,d->path->path);
+	if (--d->path->refs == 0)
+	    hash_remove (Paths, d->path->path);
 	FREE (d->filename);
 #if RESUME
 	FREE (d->hash);
@@ -267,7 +266,7 @@ collect_garbage (FLIST * files, GARBAGE * data)
     while (*ptr)
     {
 	d = (*ptr)->data;
-	if (d->size == (unsigned)-1)
+	if (d->size == (unsigned) -1)
 	{
 	    files->count--;
 	    ++data->reaped;
@@ -365,28 +364,28 @@ fdb_search (HASH * table,
     }
     if (!flist)
 	return 0;		/* no matches */
-    path[sizeof(path)-1]=0;
+    path[sizeof (path) - 1] = 0;
     /* find the list of files which contain all search tokens */
     for (ptok = flist->list; ptok; ptok = ptok->next)
     {
 	d = (DATUM *) ptok->data;
 	ASSERT (VALID_LEN (d, sizeof (DATUM)));
-	if (d->size != (unsigned)-1)
+	if (d->size != (unsigned) -1)
 	{
 	    /* reconstruct the full filename */
-	    ASSERT(d->path!=0);
-	    len=strlen(d->path->path);
-	    if(len>(int)sizeof(path)-1)
-		len=sizeof(path)-1;
-	    strncpy(path,d->path->path,sizeof(path)-1);
-	    strncpy(path+len,d->filename,sizeof(path)-1-len);
+	    ASSERT (d->path != 0);
+	    len = strlen (d->path->path);
+	    if (len > (int) sizeof (path) - 1)
+		len = sizeof (path) - 1;
+	    strncpy (path, d->path->path, sizeof (path) - 1);
+	    strncpy (path + len, d->filename, sizeof (path) - 1 - len);
 
-	    if(match (tokens, path) && cb (d, cbdata))
+	    if (match (tokens, path) && cb (d, cbdata))
 	    {
 		/* callback accepted match */
 		hits++;
 		if (hits == maxhits)
-		    break;		/* finished */
+		    break;	/* finished */
 	    }
 	}
     }
@@ -480,21 +479,21 @@ free_dsearch (DSEARCH * d)
 }
 
 static int
-set_compare(CONNECTION *con, const char *op, int val, int *min, int *max)
+set_compare (CONNECTION * con, const char *op, int val, int *min, int *max)
 {
-    ASSERT(validate_connection(con));
-    ASSERT(min!=NULL);
-    ASSERT(max!=NULL);
-    if(!strcasecmp(op,"equal to"))
+    ASSERT (validate_connection (con));
+    ASSERT (min != NULL);
+    ASSERT (max != NULL);
+    if (!strcasecmp (op, "equal to"))
 	*min = *max = val;
-    else if(!strcasecmp(op,"at least"))
+    else if (!strcasecmp (op, "at least"))
 	*min = val;
-    else if(!strcasecmp(op,"at best"))
+    else if (!strcasecmp (op, "at best"))
 	*max = val;
-    else if (ISUSER(con))
+    else if (ISUSER (con))
     {
-	send_cmd(con,MSG_SERVER_NOSUCH,"%s: invalid comparison for search",
-		op);
+	send_cmd (con, MSG_SERVER_NOSUCH, "%s: invalid comparison for search",
+		  op);
 	return 1;
     }
     return 0;
@@ -523,22 +522,22 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
     parms.id = id;
 
     /* prime the first argument */
-    arg=next_arg(&pkt);
+    arg = next_arg (&pkt);
     while (arg)
     {
 	if (!strcasecmp ("filename", arg))
 	{
-	    arg=next_arg(&pkt);
-	    arg1=next_arg(&pkt);
-	    if(!arg || !arg1)
+	    arg = next_arg (&pkt);
+	    arg1 = next_arg (&pkt);
+	    if (!arg || !arg1)
 	    {
-		invalid=1;
+		invalid = 1;
 		goto done;
 	    }
 	    /* word should be "contains" */
 	    if (strcasecmp ("contains", arg))
 	    {
-		invalid=1;
+		invalid = 1;
 		goto done;
 	    }
 	    /* do an implicit AND operation if multiple FILENAME CONTAINS
@@ -547,17 +546,17 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	}
 	else if (!strcasecmp ("max_results", arg))
 	{
-	    arg=next_arg(&pkt);
-	    if(!arg)
+	    arg = next_arg (&pkt);
+	    if (!arg)
 	    {
-		invalid=1;
+		invalid = 1;
 		goto done;
 	    }
 	    max_results = strtol (arg, &ptr, 10);
-	    if(*ptr)
+	    if (*ptr)
 	    {
 		/* not a number */
-		invalid=1;
+		invalid = 1;
 		goto done;
 	    }
 	    if (Max_Search_Results > 0 && max_results > Max_Search_Results)
@@ -565,10 +564,10 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	}
 	else if (!strcasecmp ("type", arg))
 	{
-	    arg=next_arg(&pkt);
-	    if(!arg)
+	    arg = next_arg (&pkt);
+	    if (!arg)
 	    {
-		invalid=1;
+		invalid = 1;
 		goto done;
 	    }
 	    parms.type = -1;
@@ -584,59 +583,59 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	    {
 		if (ISUSER (con))
 		    send_cmd (con, MSG_SERVER_NOSUCH,
-			    "%s: invalid type for search", arg);
+			      "%s: invalid type for search", arg);
 		goto done;
 	    }
 	}
-	else if ((!strcasecmp ("linespeed", arg) && (i=1)) ||
-		(!strcasecmp("bitrate",arg) && (i=2)) ||
-		(!strcasecmp("freq",arg) && (i=3)))
+	else if ((!strcasecmp ("linespeed", arg) && (i = 1)) ||
+		 (!strcasecmp ("bitrate", arg) && (i = 2)) ||
+		 (!strcasecmp ("freq", arg) && (i = 3)))
 	{
 	    int *min, *max;
 
-	    arg=next_arg(&pkt);	/* comparison operation */
-	    arg1=next_arg(&pkt);	/* value */
-	    if(!arg || !arg1)
+	    arg = next_arg (&pkt);	/* comparison operation */
+	    arg1 = next_arg (&pkt);	/* value */
+	    if (!arg || !arg1)
 	    {
-		invalid=1;
+		invalid = 1;
 		goto done;
 	    }
-	    n = strtol (arg1,&ptr,10);
-	    if(*ptr)
+	    n = strtol (arg1, &ptr, 10);
+	    if (*ptr)
 	    {
 		/* not a number */
-		invalid=1;
+		invalid = 1;
 		goto done;
 	    }
-	    if(i==1)
+	    if (i == 1)
 	    {
-		min=&parms.minspeed;
-		max=&parms.maxspeed;
+		min = &parms.minspeed;
+		max = &parms.maxspeed;
 	    }
-	    else if(i==2)
+	    else if (i == 2)
 	    {
-		min=&parms.minbitrate;
-		max=&parms.maxbitrate;
+		min = &parms.minbitrate;
+		max = &parms.maxbitrate;
 	    }
 	    else
 	    {
-		min=&parms.minfreq;
-		max=&parms.maxfreq;
+		min = &parms.minfreq;
+		max = &parms.maxfreq;
 	    }
-	    if(set_compare(con,arg,n,min,max))
+	    if (set_compare (con, arg, n, min, max))
 		goto done;
 	}
-	else if (!strcasecmp("local",arg))
+	else if (!strcasecmp ("local", arg))
 	{
-	    local=1;/* only search for files from users on the same server */
+	    local = 1;		/* only search for files from users on the same server */
 	}
 	else
 	{
 	    log ("search(): %s: unknown search argument", arg);
-	    invalid=1;
+	    invalid = 1;
 	    goto done;
 	}
-	arg=next_arg(&pkt);	/* skip to next token */
+	arg = next_arg (&pkt);	/* skip to next token */
     }
 
     n = fdb_search (File_Table, tokens, max_results, search_callback, &parms);
@@ -705,12 +704,12 @@ search_internal (CONNECTION * con, USER * user, char *id, char *pkt)
 	done = 0;		/* delay sending the end-of-search message */
     }
 
-done:
+  done:
 
-    if(invalid)
+    if (invalid)
     {
-	if(ISUSER(con))
-	    send_cmd(con,MSG_SERVER_NOSUCH,"invalid search request");
+	if (ISUSER (con))
+	    send_cmd (con, MSG_SERVER_NOSUCH, "invalid search request");
     }
 
     list_free (tokens, 0);
@@ -768,7 +767,7 @@ HANDLER (remote_search)
     if (!nick || !id || !pkt)
     {
 	/* try to terminate the search anyway */
-	if(id)
+	if (id)
 	    send_cmd (con, MSG_SERVER_REMOTE_SEARCH_END, "%s", id);
 	log ("remote_search(): too few parameters");
 	return;
@@ -777,7 +776,7 @@ HANDLER (remote_search)
     if (!user)
     {
 	log ("remote_search(): could not locate user %s (from %s)", nick,
-		con->host);
+	     con->host);
 	/* imediately notify the peer that we don't have any matches */
 	send_cmd (con, MSG_SERVER_REMOTE_SEARCH_END, "%s", id);
 	return;
@@ -800,6 +799,7 @@ HANDLER (remote_search_result)
     ASSERT (validate_connection (con));
     CHECK_SERVER_CLASS ("remote_search_result");
     ac = split_line (av, sizeof (av) / sizeof (char *), pkt);
+
     if (ac != 8)
     {
 	log ("remote_search_result(): wrong number of args");
@@ -819,7 +819,7 @@ HANDLER (remote_search_result)
 	if (!user)
 	{
 	    log ("remote_search_result(): could not find user %s (from %s)",
-		    av[1], con->host);
+		 av[1], con->host);
 	    return;
 	}
 	send_cmd (search->con, MSG_SERVER_SEARCH_RESULT,
@@ -830,11 +830,11 @@ HANDLER (remote_search_result)
     else
     {
 	/* pass the message back to the server we got the request from */
-	ASSERT(ISSERVER(search->con));
+	ASSERT (ISSERVER (search->con));
 	/* should not send it back to the server we just recieved it from */
-	ASSERT(con!=search->con);
+	ASSERT (con != search->con);
 	send_cmd (search->con, tag, "%s %s \"%s\" %s %s %s %s %s",
-		av[0], av[1], av[2], av[3], av[4], av[5], av[6], av[7]);
+		  av[0], av[1], av[2], av[3], av[4], av[5], av[6], av[7]);
     }
 }
 

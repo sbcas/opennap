@@ -4,6 +4,7 @@
 
    $Id$ */
 
+#include <string.h>
 #include "opennap.h"
 #include "debug.h"
 
@@ -21,15 +22,16 @@ HANDLER (remove_file)
     user = con->user;
     if (!user->shared)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "you are not sharing any files");
+	send_cmd (con, MSG_SERVER_NOSUCH, "You are not sharing any files");
 	return;
     }
 
     /* find the file in the user's list */
     info = hash_lookup (con->uopt->files, my_basename(pkt));
-    if (!info)
+    if (!info||
+	    strncasecmp(pkt,info->path->path,strlen(info->path->path))!=0)
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "you are not sharing that file");
+	send_cmd (con, MSG_SERVER_NOSUCH, "You are not sharing %s", pkt);
 	return;
     }
 

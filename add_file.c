@@ -384,7 +384,7 @@ HANDLER (share_file)
      */
     if (con->uopt->files && hash_lookup (con->uopt->files, fname))
     {
-	send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file");
+	send_cmd (con, MSG_SERVER_NOSUCH, "duplicate file: %s", fname);
 	return;
     }
 

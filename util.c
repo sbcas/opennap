@@ -392,34 +392,6 @@ generate_pass (const char *pass)
     return (STRDUP (output));
 }
 
-/* an ip address consists of only numbers and dots */
-int
-is_ip (const char *s)
-{
-    if(!*s)
-	return 0;/* empty */
-    for (; *s; s++)
-	if (!isdigit ((unsigned char) *s) && *s != '.')
-	    return 0;
-    return 1;
-}
-
-int
-ip_glob_match (const char *pattern, const char *ip)
-{
-    int l;
-
-    ASSERT (pattern != 0);
-    ASSERT (ip != 0);
-    /* if `pattern' ends with a `.', we ban an entire subclass */
-    l = strlen (pattern);
-    ASSERT (l > 0);
-    if (pattern[l - 1] == '.')
-	return ((strncmp (pattern, ip, l) == 0));
-    else
-	return ((strcmp (pattern, ip) == 0));
-}
-
 CHANNEL *
 find_channel (LIST * channels, const char *s)
 {
@@ -439,7 +411,8 @@ char *
 my_basename (char *s)
 {
     char *p = s + strlen (s);
-    while(p>s && *(p-1)!='/' && *(p-1)!='\\')
+
+    while (p > s && *(p - 1) != '/' && *(p - 1) != '\\')
 	p--;
     return p;
 }

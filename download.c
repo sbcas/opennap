@@ -110,7 +110,9 @@ HANDLER (download)
     {
 	DATUM *info = hash_lookup(user->con->uopt->files, my_basename(av[1]));
 
-	if(!info||strncasecmp(av[1],info->path->path,strlen(info->path->path))!=0)
+	if(!info||
+		/* ensure the directory component matches */
+		strncasecmp(av[1],info->path->path,strlen(info->path->path))!=0)
 	{
 	    send_user (sender, MSG_SERVER_SEND_ERROR, "%s \"%s\"", av[0], av[1]);
 	    return;
@@ -291,8 +293,16 @@ HANDLER (upload_request)
     ASSERT (validate_user (recip));
 
     /* if local user, deliver the message */
-    if (recip->local)
+    if (ISUSER(recip->con))
     {
+	/* make sure the user is actually sharing this file */
+	DATUM *info = hash_lookup(recip->con->uopt->files, my_basename(av[2]));
+	if(!info||
+		strncasecmp(av[2],info->path->path,strlen(info->path->path)!=0))
+	{
+	    log("upload_request(): %s is not sharing %s", recip->nick, av[2]);
+	    return;
+	}
 	send_cmd (recip->con, MSG_SERVER_UPLOAD_REQUEST /* 607 */ ,
 		  "%s \"%s\"", av[0] + 1, av[2]);
     }
@@ -333,10 +343,10 @@ HANDLER (queue_limit)
 
     /* look up the filesize in the db */
     info = hash_lookup (con->uopt->files, my_basename(av[1]));
-    if (!info)
+    if (!info ||
+	    strncasecmp(av[1],info->path->path,strlen(info->path->path))!=0)
     {
-	log ("queue_limit(): %s is not sharing %s", con->user->nick, av[1]);
-	send_cmd (con, MSG_SERVER_NOSUCH, "you aren't sharing that file", av[1]);
+	send_cmd (con, MSG_SERVER_NOSUCH, "You are not sharing %s", av[1]);
 	return;
     }
 
