@@ -10,21 +10,21 @@
 #include "debug.h"
 
 static void
-server_split (void *puser, void *pcon)
+server_split (USER *user, CONNECTION *con)
 {
-    USER *user = (USER *) puser;
-    CONNECTION *con = (CONNECTION *) pcon;
-
     ASSERT (validate_user (user));
     ASSERT (validate_connection (con));
 
-    /* on split, we have to notify our peer servers that this user
-       is no longer online */
-    if (Num_Servers)
-	pass_message_args (con, MSG_CLIENT_QUIT, "%s", user->nick);
-
+    /* check to see if this user was behind the server that just split */
     if (user->serv == con)
+    {
+	/* on split, we have to notify our peer servers that this user
+	   is no longer online */
+	if (Num_Servers)
+	    pass_message_args (con, MSG_CLIENT_QUIT, "%s", user->nick);
+	/* remove the user from the hash table */
 	hash_remove (Users, user->nick);
+    }
 }
 
 void
@@ -79,7 +79,7 @@ remove_connection (CONNECTION *con)
 	   this should be an infrequent enough occurance than iterating the
 	   entire hash table does not need to be optimized the way we split
 	   out the server connections. */
-	hash_foreach (Users, server_split, con);
+	hash_foreach (Users, (hash_callback_t) server_split, con);
     }
 
     /* destroy authentication information */

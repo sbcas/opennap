@@ -259,7 +259,7 @@ handle_connection (CONNECTION * con)
     buffer_group (con->recvbuf, 4 + len);
 
 #ifndef HAVE_DEV_RANDOM
-    add_random_bytes (recvbuf->data + recvbuf->consumed, 4 + len);
+    add_random_bytes (con->recvbuf->data + con->recvbuf->consumed, 4 + len);
 #endif /* !HAVE_DEV_RANDOM */
 
     /* require that the client register before doing anything else */

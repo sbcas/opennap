@@ -63,6 +63,7 @@ free_user (USER * user)
     FREE (user->nick);
     FREE (user->clientinfo);
     FREE (user->server);
-    FREE (user->email);
+    if (user->email)
+	FREE (user->email);
     FREE (user);
 }
