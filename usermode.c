@@ -13,7 +13,7 @@
 #include "debug.h"
 
 static char *User_Levels[] = { "ERROR", "BAN", "CHANGE", "CHANNEL",
-    "KILL", "LEVEL", "SERVER", "MUZZLE", ""
+    "KILL", "LEVEL", "SERVER", "MUZZLE", "PORT", ""
 };
 
 
@@ -54,6 +54,7 @@ HANDLER (user_mode)
 	send_cmd (con, MSG_SERVER_USER_MODE, "%s", buffer);
 	return;
     }
+    level = con->uopt->usermode;
     while ((av = next_arg (&pkt)))
     {
 	if (!strcasecmp (av, "ALL"))
