@@ -19,6 +19,4 @@
 
 * whowas should have the extra info for mods like whois
 
-* add support for a compressed data message to reduce the amount of data
-  transferred between servers.  possibly use a threshhold for the amount of
-  data so that not every message is compressed
+* add support for other media types
