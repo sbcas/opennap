@@ -142,7 +142,7 @@ duplicate (LIST * list, const char *s)
 LIST *
 tokenize (char *s)
 {
-    LIST *r = 0, *cur = 0;
+    LIST *r = 0, **cur = &r;
     char *ptr;
 
     while (*s)
@@ -156,179 +156,16 @@ tokenize (char *s)
 	    *ptr++ = 0;
 	strlower (s);		/* convert to lower case to save time */
 
-#if 0
 	/* don't bother with common words, if there is more than 5,000 of
 	   any of these it doesnt do any good for the search engine because
 	   it won't match on them.  its doubtful that these would narrow
 	   searches down any even after the selection of the bin to search */
-	if (*s == 'a')
-	{
-	    if (!*(s + 1) || !strcmp ("nd", s + 1) || !strcmp ("gent", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'c')
-	{
-	    if (!*(s + 1) || !strcmp ("d", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'd')
-	{
-	    if (!*(s + 1) || !strcmp ("esktop", s + 1)
-		|| !strcmp ("ocuments", s + 1) || !strcmp ("ownload", s + 1)
-		|| !strcmp ("ownloads", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'e' || *s == 'g' || *s == '2' || *s == '1')
-	{
-	    if (!*(s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'f')
-	{
-	    if (!*(s + 1) || !strcmp ("iles", s + 1) || !strcmp("or",s+1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'h')
-	{
-	    if (!strcmp ("ome", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'i')
-	{
-	    if (!*(s + 1) || !strcmp ("n", s + 1) || !strcmp ("t", s + 1) ||
-		    !strcmp("mport", s+1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'l')
-	{
-	    if (!strcmp ("ove", s + 1) || !strcmp ("ive", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'm')
-	{
-	    if (!*(s + 1) || !strcmp ("e", s + 1) || !strcmp ("p3", s + 1) ||
-		!strcmp ("usic", s + 1) || !strcmp ("y", s + 1) ||
-		!strcmp ("p3's", s + 1) || !strcmp ("edia", s + 1) ||
-		!strcmp ("p3s", s + 1) || !strcmp ("p3z", s + 1) ||
-		!strcmp ("nt", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'n')
-	{
-	    if (!strcmp ("apster", s + 1) || !strcmp ("ew", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'o')
-	{
-	    if (!strcmp ("f", s + 1) || !strcmp ("n", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'p')
-	{
-	    if (!strcmp ("rogram", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'r')
-	{
-	    if (!strcmp ("ock", s + 1) || !strcmp ("emix", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 's')
-	{
-	    if (!*(s + 1) || !strcmp ("ongs", s + 1)
-		|| !strcmp ("cour", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 't')
-	{
-	    if (!strcmp ("he", s + 1) || !strcmp ("o", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'v')
-	{
-	    if (!strcmp ("arious", s+1))
-	    {
-		s=ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'w')
-	{
-	    if (!strcmp ("indows", s + 1) || !strcmp ("inamp", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == 'y')
-	{
-	    if (!strcmp ("ou", s + 1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-	else if (*s == '0')
-	{
-	    if (!strcmp ("1", s+1) || !strcmp ("2",s+1) || !strcmp ("3",s+1))
-	    {
-		s = ptr;
-		continue;
-	    }
-	}
-#else
 	/* new dynamic table from config file */
 	if(is_filtered(s))
 	{
 	    s=ptr;
 	    continue;
 	}
-#endif
 
 	/* don't add duplicate tokens to the list.  this will cause searches
 	   on files that have the same token more than once to show up how
@@ -338,26 +175,15 @@ tokenize (char *s)
 	    s = ptr;
 	    continue;
 	}
-	if (cur)
+
+	*cur = CALLOC (1, sizeof(LIST));
+	if(!*cur)
 	{
-	    cur->next = CALLOC (1, sizeof (LIST));
-	    if (!cur->next)
-	    {
-		OUTOFMEMORY ("tokenize");
-		return r;
-	    }
-	    cur = cur->next;
+	    OUTOFMEMORY("tokenize");
+	    return r;
 	}
-	else
-	{
-	    cur = r = CALLOC (1, sizeof (LIST));
-	    if (!cur)
-	    {
-		OUTOFMEMORY ("tokenize");
-		return 0;
-	    }
-	}
-	cur->data = s;
+	(*cur)->data = s;
+	cur = &(*cur)->next;
 	s = ptr;
     }
     return r;
@@ -886,7 +712,7 @@ find_search (const char *id)
 	/* expire timed-out search requests */
 	if (ds->timestamp + Search_Timeout < Current_Time)
 	{
-	    log ("find_search(): expiring request %d", ds->id);
+	    log ("find_search(): expiring request %s", ds->id);
 	    if (ISUSER (ds->con))
 		send_cmd (ds->con, MSG_SERVER_SEARCH_END, "");
 	    else

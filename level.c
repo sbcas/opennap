@@ -107,6 +107,7 @@ HANDLER (level)
 	    /* TODO: handle this case */
 	    log("level(): ERROR: TS is equal but value is different");
 	}
+	db->timestamp = ts;
     }
 
     /* check for permission, allow self-demotion */
