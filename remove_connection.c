@@ -58,6 +58,11 @@ remove_connection (CONNECTION *con)
 		    break;
 		}
 	    }
+	    if (((HOTLIST *) u->data)->users == 0)
+	    {
+		/* more more users, free up this entry */
+		hash_remove (Hotlist, ((HOTLIST *) u->data)->nick);
+	    }
 	}
 
 	list_free (con->uopt.hotlist, 0);

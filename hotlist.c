@@ -114,6 +114,6 @@ free_hotlist (HOTLIST *h)
     ASSERT (validate_hotlist (h));
     FREE (h->nick);
     if (h->users)
-	FREE (h->users);
+	list_free (h->users, 0);
     FREE (h);
 }

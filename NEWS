@@ -10,8 +10,8 @@ opennap is an Open Source(TM) server implementation of the popular
 Napster protocol.  It is written in ANSI C and was designed to run on Unix
 platforms and uses a MySQL (www.mysql.org) server to handle the search
 requests.  So far this server has only been tested on:
-	* Red Hat Linux 6.1 (i686) running MySQL 3.23.30
-	* Red Hat Linux 6.0 (Alpha) running MySQL 3.23.30
+	* Red Hat Linux 6.1 (i686) running MySQL 3.23.32
+	* Red Hat Linux 6.0 (Alpha) running MySQL 3.23.32
 	* BSDI 4.1
 	* Win32 (using MS VC++ 6.0)
 Minimal porting should be required for compilation on other Unix variants
@@ -37,3 +37,7 @@ What's included?
 * metaserver for directing clients to server groups
 * protocol specification
 * SOURCE CODE!
+
+There is also a mailing list opennap-admin@lists.sourceforge.net for people
+running live servers to share information not directly related to the
+development of the server.
