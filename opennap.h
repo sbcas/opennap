@@ -14,8 +14,12 @@
 #define MAGIC_HOTLIST 0xb0f8ad23
 #define MAGIC_CONNECTION 0x3c4474a3
 
-/* swap the bytes of a 16-bit integer */
-#define BSWAP16(c) (((c & 0xff) << 4) | ((c >> 4) & 0xff))
+/* convert the bytes of a 16-bit integer to little endian */
+#if WORDS_BIGENDIAN
+#define BSWAP16(c) (((c & 0xff) << 8) | ((c >> 8) & 0xff))
+#else
+#define BSWAP16(c) c
+#endif
 
 typedef unsigned char uchar;
 

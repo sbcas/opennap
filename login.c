@@ -39,6 +39,8 @@ HANDLER (login)
 	if (con->class == CLASS_UNKNOWN)
 	{
 	    log ("login(): user %s is already active", user->nick);
+	    send_cmd (con, MSG_SERVER_ERROR, "user %s is already active",
+		user->nick);
 	    remove_connection (con);
 	}
 	else
@@ -96,13 +98,6 @@ HANDLER (login)
 	con->class = CLASS_USER;
 	con->user = user;
 	user->con = con;
-
-	/* ack the login - we don't really keep track of email addresses,
-	   so fake it the way that napster does */
-	send_cmd (con, MSG_SERVER_EMAIL, "anon@%s", Server_Name);
-
-	show_motd (con);
-	server_stats (con, NULL);
 
 	/* query our local accounts database for mod/admin privileges */
 	snprintf (Buf, sizeof (Buf),
@@ -164,7 +159,14 @@ HANDLER (login)
 	    }
 
 	    mysql_free_result (result);
+
 	}
+
+	/* ack the login - we don't really keep track of email addresses,
+	   so fake it the way that napster does */
+	send_cmd (con, MSG_SERVER_EMAIL, "anon@%s", Server_Name);
+	show_motd (con);
+	server_stats (con, NULL);
     }
     else
     {
