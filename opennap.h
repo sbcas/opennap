@@ -289,6 +289,8 @@ extern int Max_Browse_Result;
 extern unsigned int Interface;
 extern time_t Server_Start;
 extern int Collect_Interval;
+extern unsigned int Bytes_In;
+extern unsigned int Bytes_Out;
 
 #ifndef WIN32
 extern int Uid;

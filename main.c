@@ -53,6 +53,8 @@ int Max_Browse_Result;
 unsigned int Interface = INADDR_ANY;
 time_t Server_Start;		/* time at which the server was started */
 int Collect_Interval;
+unsigned int Bytes_In = 0;
+unsigned int Bytes_Out = 0;
 
 #ifndef WIN32
 int Uid;
@@ -101,20 +103,27 @@ HASH *Hotlist;
 
 #define BACKLOG 50
 
+static time_t Last_Click = 0;
+
 static void
 update_stats (void)
 {
     int i, l;
     int numServers = list_count (Servers);
+    time_t delta;
 
     strcpy (Buf, ctime (&Current_Time));
     Buf[strlen (Buf) - 1] = 0;
     log ("update_stats(): current time is %s", Buf);
-    log
-	("update_stats(): library is %d kilobytes (%d gigabytes), %d files, %d users",
+    log ("update_stats(): library is %d KB (%d GB), %d files, %d users",
 	 Num_Gigs, Num_Gigs / (1024 * 1024), Num_Files, Users->dbsize);
-    log ("update_stats: %d local clients, %d linked servers",
+    log ("update_stats(): %d local clients, %d linked servers",
 	 Num_Clients - numServers, numServers);
+    delta = Current_Time - Last_Click;
+    log ("update_stats(): %.2d kbytes/sec in, %.2d kbytes/sec out",
+	(float) Bytes_In / delta, (float) Bytes_Out / delta);
+    Bytes_In = 0;
+    Bytes_Out = 0;
 
     /* since we send the same data to many people, optimize by forming
        the message once then writing it out */
@@ -203,10 +212,6 @@ accept_connection (int s)
 	return;
     }
     cli->fd = f;
-#if 0
-    log ("accept_connection(): connection from %s, port %d",
-	 inet_ntoa (sin.sin_addr), ntohs (sin.sin_port));
-#endif
     /* if we have a local connection, use the external
        interface so others can download from them */
     if (sin.sin_addr.s_addr == inet_addr ("127.0.0.1"))
@@ -437,6 +442,10 @@ main (int argc, char **argv)
 	       File_Table);
     add_timer (Collect_Interval, -1, (timer_cb_t) fdb_garbage_collect, MD5);
     add_timer (Stat_Click, -1, (timer_cb_t) update_stats, 0);
+
+    /* initialize so we get the correct delta for the first call to
+       update_stats() */
+    Last_Click = Current_Time;
 
 #if HAVE_POLL
     /* these only need to be set once */

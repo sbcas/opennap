@@ -389,6 +389,8 @@ send_queued_data (CONNECTION * con)
 	/* mark data as written */
 	con->sendbuf = buffer_consume (con->sendbuf, n);
     }
+    /* keep track of the outgoing bandwidth */
+    Bytes_Out += n;
 
     /* check to make sure the queue hasn't gotten too big */
     n =

@@ -241,6 +241,7 @@ handle_connection (CONNECTION * con)
 	    con->destroy = 1;
 	    return;
 	}
+	Bytes_In += n;
 	if (buffer_decompress (con->recvbuf, con->sopt->zin, Buf, n))
 	{
 	    con->destroy = 1;
@@ -294,6 +295,7 @@ handle_connection (CONNECTION * con)
 		con->destroy = 1;
 		return;
 	    }
+	    Bytes_In += n;
 	    con->recvbuf->datasize += n;
 	}
 	/* read the packet body */
@@ -338,6 +340,7 @@ handle_connection (CONNECTION * con)
 		return;
 	    }
 	    con->recvbuf->datasize += n;
+	    Bytes_In += n;
 	}
     }
     /* process as many complete commands as possible.  for a client this
