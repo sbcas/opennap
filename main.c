@@ -176,10 +176,7 @@ HANDLER (dispatch_command)
        handlers.  the buffer_read() function should always allocate 1 byte
        more than necessary for this purpose */
     ASSERT (VALID_LEN (con->recvbuf->data, con->recvbuf->consumed + 4 + len + 1));
-
     byte = *(pkt + len);
-    ASSERT (byte != END_BYTE);	/* make sure we didn't run off the end of the
-				   buffer */
     *(pkt + len) = 0;
 
     for (l = 0; l < Protocol_Size; l++)
