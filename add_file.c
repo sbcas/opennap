@@ -197,6 +197,7 @@ fdb_add (HASH * table, char *key, DATUM * d)
 	    hash_remove (table, files->key);
 	return;
     }
+    list->data = d;
     files->list = list_append (files->list, list);
     files->count++;
     d->refcount++;

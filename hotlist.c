@@ -28,6 +28,9 @@ HANDLER (add_hotlist)
     {
 	/* no hotlist, create one */
 	hotlist = CALLOC (1, sizeof (HOTLIST));
+#if DEBUG
+	hotlist->magic = MAGIC_HOTLIST;
+#endif
 	if(hotlist)
 	    hotlist->nick = STRDUP (pkt);
 	if (!hotlist || !hotlist->nick)
