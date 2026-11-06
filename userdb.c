@@ -88,6 +88,8 @@ userdb_init (void)
 		log("userdb_init(): %s: invalid nickname", av[0]);
 		continue;
 	    }
+            if (!regen && !valid_pass_record (av[1]))
+                log ("userdb_init(): invalid password record for %s; login disabled", av[0]);
 	    u = CALLOC (1, sizeof (USERDB));
 	    if (u)
 	    {

@@ -290,7 +290,7 @@ b64_encode (char *out, int *outsize, char *in, int insize)
     return 0;
 }
 
-static char b64_lookup[128] = {
+static signed char b64_lookup[128] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,
@@ -301,69 +301,56 @@ static char b64_lookup[128] = {
     41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1
 };
 
-#define b64_lookup(c) b64_lookup[(unsigned int)c]
-
-static int
-b64_decode (char *out, int *outsize, const char *in)
+/* Stored records contain an eight-character salt and an unpadded MD5 digest. */
+int
+valid_pass_record (const char *info)
 {
-    unsigned char a, b, c, d;
-    unsigned char b2, b3;
-    char *pout = out;
-
-    while (*in)
+    size_t i;
+    if (!info || strlen (info) != 33 || info[0] != '1' ||
+        info[1] != ',' || info[10] != ',')
+        return 0;
+    for (i = 2; i < 33; i++)
     {
-	a = b64_lookup (*in++);
-	b = b64_lookup (*in++);
-	*out++ = a << 2 | b >> 4;
-	b2 = b << 4;
-	if (*in && *in != '=')
-	{
-	    c = b64_lookup (*in++);
-	    b2 |= c >> 2;
-	    *out++ = b2;
-	    b3 = c << 6;
-	    if (*in && *in != '=')
-	    {
-		d = b64_lookup (*in++);
-		b3 |= d;
-		*out++ = b3;
-	    }
-	    else
-		break;
-	}
-	else
-	    break;
+        unsigned char c = (unsigned char) info[i];
+        if (i == 10)
+            continue;
+        if (c >= sizeof (b64_lookup) || b64_lookup[c] < 0)
+            return 0;
     }
-    *outsize = out - pout;
-    return 0;
+    /* The final base64 character contains only two significant bits. */
+    return (b64_lookup[(unsigned char) info[32]] & 15) == 0;
 }
 
 int
 check_pass (const char *info, const char *pass)
 {
     struct md5_ctx md;
-    char hash[16], real[16];
-    int realsize;
+    unsigned char real[16];
+    char hash[16];
+    size_t i, out = 0;
+    unsigned int bits = 0, nbits = 0;
 
-    ASSERT (info != 0);
-    ASSERT (pass != 0);
-    if (*info != '1' || *(info + 1) != ',')
-	return -1;
-    info += 2;
+    if (!pass || !valid_pass_record (info))
+        return -1;
+    for (i = 11; i < 33; i++)
+    {
+        bits = (bits << 6) | (unsigned char) b64_lookup[(unsigned char) info[i]];
+        nbits += 6;
+        if (nbits >= 8)
+        {
+            nbits -= 8;
+            if (out >= sizeof (real))
+                return -1;
+            real[out++] = (unsigned char) (bits >> nbits);
+        }
+    }
+    if (out != sizeof (real))
+        return -1;
     md5_init_ctx (&md);
-    md5_process_bytes (info, 8, &md);
-    info += 8;
-    if (*info != ',')
-	return -1;
-    info++;
+    md5_process_bytes (info + 2, 8, &md);
     md5_process_bytes (pass, strlen (pass), &md);
     md5_finish_ctx (&md, hash);
-    realsize = sizeof (real);
-    b64_decode (real, &realsize, info);
-    ASSERT (realsize == 16);
-    if (memcmp (real, hash, 16) == 0)
-	return 0;
-    return -1;
+    return memcmp (real, hash, sizeof (real)) == 0 ? 0 : -1;
 }
 
 char *

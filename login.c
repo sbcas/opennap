@@ -754,6 +754,11 @@ HANDLER (reginfo)
 	log ("reginfo(): wrong number of fields");
 	return;
     }
+    if (!valid_pass_record (fields[1]))
+    {
+        log ("reginfo(): invalid password record from %s", con->host);
+        return;
+    }
     /* look up any entry we have for this user */
     db = hash_lookup (User_Db, pkt);
     if (db)

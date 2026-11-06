@@ -233,9 +233,14 @@ int
 buffer_decompress (BUFFER * b, z_streamp zip, char *in, int insize)
 {
     int n;
+    /* Bound expansion and arithmetic before growing the linked-server buffer. */
+    const int max_server_input = 1024 * 1024;
 
     ASSERT (buffer_validate (b));
     ASSERT (insize > 0);
+    if (!b || !zip || b->datasize < 0 || b->datamax < b->datasize ||
+        b->datamax > max_server_input)
+        return -1;
     zip->next_in = (unsigned char *) in;
     zip->avail_in = insize;
     zip->next_out = (unsigned char *) b->data + b->datasize;
@@ -247,7 +252,12 @@ buffer_decompress (BUFFER * b, z_streamp zip, char *in, int insize)
 	/* if there is no more output space left, create some more */
 	if (zip->avail_out == 0)
 	{
-	    /* allocate one extra byte to write a \0 char */
+            /* One extra byte is reserved for the dispatch terminator. */
+            if (b->datamax > max_server_input - 2048)
+            {
+                log ("buffer_decompress(): server input limit exceeded");
+                return -1;
+            }
 	    if (safe_realloc ((void **) &b->data, b->datamax + 2049))
 	    {
 		OUTOFMEMORY ("buffer_decompress");
@@ -274,7 +284,7 @@ buffer_decompress (BUFFER * b, z_streamp zip, char *in, int insize)
     return 0;
 }
 
-void
+int
 init_compress (CONNECTION * con, int level)
 {
     int n;
@@ -282,33 +292,28 @@ init_compress (CONNECTION * con, int level)
     ASSERT (validate_connection (con));
     ASSERT (ISSERVER (con));
     con->sopt->zin = CALLOC (1, sizeof (z_stream));
-    if (!con->sopt->zin)
-    {
-	OUTOFMEMORY ("init_compress");
-	return;
-    }
     con->sopt->zout = CALLOC (1, sizeof (z_stream));
-    if (!con->sopt->zout)
-    {
-	FREE (con->sopt->zin);
-	OUTOFMEMORY ("init_compress");
-	return;
-    }
-
+    if (!con->sopt->zin || !con->sopt->zout)
+        goto fail_alloc;
     n = inflateInit (con->sopt->zin);
     if (n != Z_OK)
-    {
-	log ("init_compress: inflateInit: %s (%d)",
-	     NONULL (con->sopt->zin->msg), n);
-    }
+        goto fail_alloc;
     n = deflateInit (con->sopt->zout, level);
     if (n != Z_OK)
     {
-	log ("init_compress: deflateInit: %s (%d)",
-	     NONULL (con->sopt->zout->msg), n);
+        inflateEnd (con->sopt->zin);
+        goto fail_alloc;
     }
-
     log ("init_compress(): compressing server stream at level %d", level);
+    return 0;
+
+  fail_alloc:
+    log ("init_compress(): unable to initialize compression");
+    if (con->sopt->zin) FREE (con->sopt->zin);
+    if (con->sopt->zout) FREE (con->sopt->zout);
+    con->sopt->zin = 0;
+    con->sopt->zout = 0;
+    return -1;
 }
 
 void

@@ -293,13 +293,25 @@ HANDLER (server_login_ack)
 	return;
     }
 
+    con->opt.server = CALLOC (1, sizeof (SERVER));
+    if (!con->opt.server)
+    {
+        FREE (list);
+        con->destroy = 1;
+        return;
+    }
+    con->class = CLASS_SERVER;
+    if (init_compress (con, con->compress))
+    {
+        FREE (con->opt.server);
+        con->opt.server = 0;
+        con->class = CLASS_UNKNOWN;
+        FREE (list);
+        con->destroy = 1;
+        return;
+    }
     list->data = con;
     Servers = list_append (Servers, list);
-
-    con->class = CLASS_SERVER;
-    con->opt.server = CALLOC (1, sizeof (SERVER));
-    /* set up the compression handlers for this connection */
-    init_compress (con, con->compress);
 
     log("server_login_ack(): server %s has joined", con->host);
 

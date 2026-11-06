@@ -209,10 +209,12 @@ HANDLER (add_file)
 
     ASSERT (validate_user (con->user));
 
-    if (Max_Shared && con->user->shared > Max_Shared)
+    if (con->user->shared == 65535 ||
+        (Max_Shared > 0 && con->user->shared >= Max_Shared))
     {
 	send_cmd (con, MSG_SERVER_NOSUCH,
-		  "You may only share %d files", Max_Shared);
+		  "You may only share %d files",
+                  Max_Shared > 0 && Max_Shared < 65535 ? Max_Shared : 65535);
 	return;
     }
 
@@ -283,13 +285,15 @@ HANDLER (share_file)
     ASSERT (validate_connection (con));
     CHECK_USER_CLASS ("share_file");
 
-    if (Max_Shared && con->user->shared > Max_Shared)
+    if (con->user->shared == 65535 ||
+        (Max_Shared > 0 && con->user->shared >= Max_Shared))
     {
 	log ("add_file(): %s is already sharing %d files", con->user->nick,
 	     con->user->shared);
 	if (ISUSER (con))
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "You may only share %d files", Max_Shared);
+		      "You may only share %d files",
+                      Max_Shared > 0 && Max_Shared < 65535 ? Max_Shared : 65535);
 	return;
     }
 
@@ -451,10 +455,12 @@ HANDLER (add_directory)
 
     while (pkt)
     {
-	if (Max_Shared && con->user->shared > Max_Shared)
+	if (con->user->shared == 65535 ||
+        (Max_Shared > 0 && con->user->shared >= Max_Shared))
 	{
 	    send_cmd (con, MSG_SERVER_NOSUCH,
-		      "You may only share %d files", Max_Shared);
+		      "You may only share %d files",
+                      Max_Shared > 0 && Max_Shared < 65535 ? Max_Shared : 65535);
 	    return;
 	}
 	basename = next_arg (&pkt);
