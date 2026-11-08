@@ -1,0 +1,76 @@
+Dual-endian legacy client support
+================================
+
+Problem
+-------
+The supplied Napster v2.0 BETA 10.4 capture contains big-endian 16-bit
+length and command fields. OpenNap 0.36 reads only little-endian fields.
+
+Captured header    Intended command/length     Original OpenNap interpretation
+00 10 00 04        version check, 16 bytes     command 1024, length 4096
+00 07 00 07        nickname check, 7 bytes     command 1792, length 1792
+00 0e 00 0b        password check, 14 bytes    command 2816, length 3584
+
+With the default 2048-byte limit, the version/password messages cause a
+disconnect. The nickname check instead waits for a body that never arrives.
+The metaserver redirect to 172.16.1.39:8888 succeeds in the capture.
+
+Behavior
+--------
+Each connection selects its header byte order from the first complete
+four-byte header. Initial client commands 2, 4, 6, 7, 11 and 300 distinguish
+the two orders. Unknown or ambiguous initial headers retain the historical
+little-endian interpretation and normal validation. Detection does not relax
+the command-length limit or reinterpret an oversized message as another order.
+The decision remains fixed throughout the connection, including after login.
+
+Only header fields are converted. Payloads, passwords, strings and decimal
+IP fields retain their original bytes. Output conversion happens for each
+recipient, on a private copy, and supports multiple concatenated frames.
+This covers normal replies, shared chat/statistics buffers and batched MOTD.
+Command 4 is accepted silently instead of generating an unknown-command reply.
+
+Internal frames and server-to-server links remain little-endian. A big-endian
+client cannot switch into the compressed peer-server protocol. This patch
+does not implement big-endian server federation or change the metaserver,
+HTTP pages, client installer or direct peer-to-peer file-transfer protocol.
+
+Testing
+-------
+After building the server, run from the source directory:
+
+    python3 tests/endian.py ./opennap
+
+The standard-library-only test starts a disposable loopback server and user
+database. It checks both endian orders for fragmented version/registration
+messages, new accounts, existing password checks and login, nickname replies,
+first-command detection without a version check, coalesced packets, batched
+MOTD, length boundaries, and connections that try to change byte order.
+Four mixed-endian clients exercise broadcasts in both directions and a
+private message. The big-endian server-link transition is rejected.
+
+Validation performed against source commit
+a5f87521e91f8392bd097a94b1fcf1d398c9847c:
+
+  - Built and passed the integration suite on macOS ARM64 / Apple Clang.
+  - Passed the integration suite with AddressSanitizer and
+    UndefinedBehaviorSanitizer, configured to stop on errors.
+  - Existing tests/security.c passed with both sanitizers enabled.
+
+Because this 2000-era tree predates modern compiler defaults, the local
+configure/build used CFLAGS supplied in the environment:
+
+    -O0 -g -std=gnu89 -Wno-error=implicit-function-declaration
+    -Wno-error=int-conversion -Wno-error=incompatible-function-pointer-types
+    -Wno-error=incompatible-pointer-types
+
+The sanitizer build used -O1 -g, the same language/compatibility flags, plus
+-fsanitize=address,undefined -fno-omit-frame-pointer.
+These compatibility flags are not changes to the project's build files.
+
+The Windows GUI client has not been run against this build. A new capture
+from the real client is the remaining deployment verification. The expected
+big-endian nickname-available reply is 00 00 00 08 and the successful
+password-check reply is 00 00 00 0c. The subsequent login/register command
+should receive command 3, followed by MOTD/statistics. Actual peer-server
+federation and MP3 transfers were not exercised by this test suite.

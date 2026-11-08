@@ -398,7 +398,51 @@ queue_data (CONNECTION * con, char *s, int ssize)
     }
     else
     {
-	con->sendbuf = buffer_queue (con->sendbuf, s, ssize);
+	/* All producers use LE frames, sometimes several at once (MOTD).
+	   Convert into a private copy so broadcasts to mixed-endian clients
+	   never modify their shared source buffer.  Bodies are opaque bytes. */
+	if (con->wire_big_endian && ssize > 0)
+	{
+	    char *wire;
+	    int offset, len;
+	    unsigned char *p;
+	    unsigned char byte;
+
+	    wire = MALLOC (ssize);
+	    if (!wire)
+	    {
+	        OUTOFMEMORY ("queue_data");
+	        con->destroy = 1;
+	        return;
+	    }
+	    memcpy (wire, s, ssize);
+	    for (offset = 0; offset < ssize; offset += 4 + len)
+	    {
+	        if (ssize - offset < 4)
+	            break;
+	        p = (unsigned char *) wire + offset;
+	        len = p[0] | (p[1] << 8);
+	        if (len > ssize - offset - 4)
+	            break;
+	        byte = p[0];
+	        p[0] = p[1];
+	        p[1] = byte;
+	        byte = p[2];
+	        p[2] = p[3];
+	        p[3] = byte;
+	    }
+	    if (offset != ssize)
+	    {
+	        log ("queue_data(): incomplete internal frame for %s", con->host);
+	        FREE (wire);
+	        con->destroy = 1;
+	        return;
+	    }
+	    con->sendbuf = buffer_queue (con->sendbuf, wire, ssize);
+	    FREE (wire);
+	}
+	else
+	    con->sendbuf = buffer_queue (con->sendbuf, s, ssize);
 	if(!con->sendbuf)
 	    con->destroy=1; /*error queuing the data, close connection*/
     }

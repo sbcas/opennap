@@ -18,6 +18,34 @@
 
 static char LastFlooder[64] = {0};
 
+/* Decode wire values explicitly, independently of the host byte order. */
+static unsigned short
+wire_value (const char *p, int big_endian)
+{
+    const unsigned char *u = (const unsigned char *) p;
+    return big_endian ? (u[0] << 8) | u[1] : u[0] | (u[1] << 8);
+}
+
+/* These are the client commands accepted before login.  Their byte-swapped
+   values are not initial commands, so tag (not a guessed length) selects
+   the order.  Ambiguous/unknown headers retain the historical LE default. */
+static int
+initial_client_command (unsigned short tag)
+{
+    return tag == MSG_CLIENT_LOGIN || tag == 4 ||
+        tag == MSG_CLIENT_LOGIN_REGISTER || tag == MSG_CLIENT_REGISTER ||
+        tag == MSG_CLIENT_CHECK_PASS || tag == MSG_CLIENT_CHECK_PORT;
+}
+
+/* 4: version check.  No upgrade is required by this server. */
+static HANDLER (version_check)
+{
+    (void) con;
+    (void) tag;
+    (void) len;
+    (void) pkt;
+}
+
 /* 214 */
 HANDLER (server_stats)
 {
@@ -91,6 +119,7 @@ HANDLER;
    THIS TABLE MUST BE SORTED BY MESSAGE TYPE */
 static HANDLER Protocol[] = {
     {MSG_CLIENT_LOGIN, login},	/* 2 */
+    {4, version_check},		/* 4 */
     {MSG_CLIENT_LOGIN_REGISTER, login},	/* 6 */
     {MSG_CLIENT_REGISTER, register_nick},	/* 7 */
     {MSG_CLIENT_CHECK_PASS, check_password},	/* 11 */
@@ -379,9 +408,22 @@ handle_connection (CONNECTION * con)
 	    Bytes_In += n;
 	    con->recvbuf->datasize += n;
 	}
+	/* Select once, after all four header bytes have arrived.  Keep the
+	   header untouched while a fragmented body is still arriving. */
+	if (!con->wire_order_known)
+	{
+	    unsigned short little_tag, big_tag;
+	    little_tag = wire_value (con->recvbuf->data + 2, 0);
+	    big_tag = wire_value (con->recvbuf->data + 2, 1);
+	    con->wire_big_endian = initial_client_command (big_tag) &&
+	        !initial_client_command (little_tag) &&
+	        little_tag != MSG_SERVER_LOGIN &&
+	        little_tag != MSG_SERVER_LOGIN_ACK &&
+	        little_tag != MSG_SERVER_ERROR;
+	    con->wire_order_known = 1;
+	}
 	/* read the packet body */
-	memcpy (&len, con->recvbuf->data, 2);
-	len = BSWAP16 (len);
+	len = wire_value (con->recvbuf->data, con->wire_big_endian);
 	if (len > 0)
 	{
 	    if (len > Max_Command_Length)
@@ -442,13 +484,21 @@ handle_connection (CONNECTION * con)
 	if (con->recvbuf->datasize - con->recvbuf->consumed < 4)
 	    break;
 	/* read the packet header */
-	memcpy (&len, con->recvbuf->data + con->recvbuf->consumed, 2);
-	memcpy (&tag, con->recvbuf->data + con->recvbuf->consumed + 2, 2);
-	len = BSWAP16 (len);
-	tag = BSWAP16 (tag);
+	len = wire_value (con->recvbuf->data + con->recvbuf->consumed,
+	                  con->wire_big_endian);
+	tag = wire_value (con->recvbuf->data + con->recvbuf->consumed + 2,
+	                  con->wire_big_endian);
 	/* check if the entire packet body has arrived */
 	if (con->recvbuf->consumed + 4 + len > con->recvbuf->datasize)
 	    break;
+	/* Peer-server authentication/compression keeps the original LE wire
+	   format.  A BE client must not switch into that connection class. */
+	if (con->wire_big_endian &&
+	    (tag == MSG_SERVER_LOGIN || tag == MSG_SERVER_LOGIN_ACK))
+	{
+	    con->destroy = 1;
+	    return;
+	}
 	/* require that the client register before doing anything else */
 	if (con->class == CLASS_UNKNOWN &&
 	    (tag != MSG_CLIENT_LOGIN && tag != MSG_CLIENT_LOGIN_REGISTER &&
@@ -540,6 +590,9 @@ handle_connection (CONNECTION * con)
 		}
 	    }
 	}
+	/* Internal frames (including any relayed frame) always remain LE. */
+	set_len (con->recvbuf->data + con->recvbuf->consumed, len);
+	set_tag (con->recvbuf->data + con->recvbuf->consumed, tag);
 	/* call the protocol handler */
 	dispatch_command (con, tag, len,
 			  con->recvbuf->data + con->recvbuf->consumed + 4);

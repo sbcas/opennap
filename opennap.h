@@ -251,7 +251,9 @@ struct _connection
     unsigned int compress:4;	/* compression level for this connection */
     unsigned int class:2;	/* connection class (unknown, user, server) */
     unsigned int numerics:1;	/* use real numerics for opennap extensions */
-    unsigned int xxx:5;		/* unused */
+    unsigned int wire_order_known:1; /* first complete header selects order */
+    unsigned int wire_big_endian:1;  /* client framing only; server links are LE */
+    unsigned int xxx:3;		/* unused */
 
     short yyy; /* unused - remaining 16 bits of above bitmasks */
 };
